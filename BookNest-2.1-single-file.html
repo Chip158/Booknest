@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BookNest 2.1 — Library & Recs</title>
+  <style>
+/* Modern Kindle-like grid and details modal */
+:root{
+  --bg: #ffffff;
+  --text:#16181d;
+  --muted:#687087;
+  --panel:#f6f7fb;
+  --card:#ffffff;
+  --line:#e7e9f1;
+  --accent:#3b82f6;
+  --ok:#16a34a;
+  --bad:#dc2626;
+}
+:root.dark{
+  --bg:#0c111b;
+  --text:#e9eefc;
+  --muted:#a9b1c7;
+  --panel:#0f1624;
+  --card:#0e1420;
+  --line:#1a2440;
+  --accent:#60a5fa;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.topbar{position:sticky;top:0;z-index:10;display:flex;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--bg);backdrop-filter:saturate(1.1) blur(6px)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#22c6b3)}
+.search{flex:1;min-width:140px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text)}
+.actions{display:flex;gap:8px}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--text);padding:8px 12px;border-radius:10px;font-weight:600;cursor:pointer}
+.btn.primary{border-color:color-mix(in oklab,var(--accent) 40%, var(--line));box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--accent) 40%, transparent)}
+.btn.ghost{background:transparent}
+.tabs{display:flex;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--bg)}
+.tabs button{background:transparent;border:none;padding:8px 10px;border-radius:8px;font-weight:600;color:var(--muted);cursor:pointer}
+.tabs button.active{color:var(--text);background:var(--panel)}
+main{max-width:1200px;margin:0 auto;padding:16px}
+.filters{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.chip{border:1px solid var(--line);background:var(--card);padding:6px 10px;border-radius:999px;font-weight:600;color:var(--text);cursor:pointer}
+.stats{color:var(--muted);font-size:14px}
+/* Kindle-like compact cards */
+.grid.kindle{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px}
+.card.kindle{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:8px;cursor:pointer;transition:transform .08s ease}
+.card.kindle:hover{transform:translateY(-2px)}
+.card.kindle img{width:100%;height:200px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:#cbd5e1}
+.card.kindle .title{font-size:13px;margin:6px 0 0;line-height:1.2}
+.card.kindle .author{color:var(--muted);font-size:12px}
+.status-pill{display:inline-block;margin-top:6px;font-size:10px;padding:3px 6px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+/* Reviews grid (list-like) */
+.grid.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.card.review{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px}
+.card.review img{width:100%;height:220px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.card.review h3{margin:8px 0 4px}
+.meta{color:var(--muted);font-size:13px;margin-bottom:6px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.tag{padding:3px 8px;border-radius:999px;border:1px solid var(--line);font-size:12px}
+.tag.ok{background:color-mix(in oklab,#22c55e 18%, transparent);color:#166534}
+.tag.bad{background:color-mix(in oklab,#ef4444 18%, transparent);color:#991b1b}
+.controls{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+a.btnlink{display:inline-block;text-decoration:none;border:1px solid var(--line);background:var(--card);color:var(--text);padding:6px 8px;border-radius:8px;font-weight:600}
+/* Dialogs */
+dialog{border:none;border-radius:16px;padding:0;background:transparent}
+.modal{min-width:min(920px, 95vw);background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.modal-hd{display:flex;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--bg)}
+.modal-bd{padding:14px}
+.modal-ft{padding:12px 14px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end}
+.spacer{flex:1}
+.modal-tabs{display:flex;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--bg)}
+.modal-tabs button{border:none;background:transparent;padding:8px 10px;border-radius:8px;font-weight:600;color:var(--muted);cursor:pointer}
+.modal-tabs button.active{background:var(--panel);color:var(--text)}
+.search-row{display:flex;gap:8px}
+.grid.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:10px}
+.hidden{display:none}
+.formgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.formgrid label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+.formgrid .full{grid-column:1/-1}
+.input{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text)}
+.voice-box{display:grid;gap:10px}
+.voice-row{display:flex;gap:10px;align-items:center}
+.muted{color:var(--muted)}
+/* Details modal layout */
+.details{display:grid;grid-template-columns:160px 1fr;gap:14px}
+.details img{width:160px;height:230px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.details h3{margin:0 0 4px}
+.details .meta{margin:0 0 8px}
+@media (max-width:720px){ .details{grid-template-columns:1fr} .details img{width:100%;height:260px} }
+
+</style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="dot"></div><span>BookNest</span>
+    </div>
+    <input id="globalSearch" class="search" placeholder="Search your library…" />
+    <div class="actions">
+      <button id="themeToggle" class="btn ghost">Toggle theme</button>
+      <button id="openAdd" class="btn primary">+ Add Book</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button data-view="library" class="active">Library</button>
+    <button data-view="reviews">Reviews</button>
+    <button data-view="recs">Recommendations</button>
+  </nav>
+
+  <main>
+    <section id="view-library" class="view active">
+      <div class="filters">
+        <div class="left">
+          <button class="chip" data-filter="all">All</button>
+          <button class="chip" data-filter="read">Read</button>
+          <button class="chip" data-filter="tbr">TBR</button>
+          <button class="chip" data-filter="dnf">DNF</button>
+        </div>
+        <div class="right stats">
+          <span id="statTotal">0</span> total ·
+          <span id="statRead">0</span> read ·
+          <span id="statTbr">0</span> TBR
+        </div>
+      </div>
+      <div id="libraryGrid" class="grid kindle"></div>
+    </section>
+
+    <section id="view-reviews" class="view">
+      <div id="reviewsList" class="grid list"></div>
+    </section>
+
+    <section id="view-recs" class="view">
+      <div class="grid recs" id="recsGrid"></div>
+    </section>
+  </main>
+
+  <!-- Add / Edit Modal -->
+  <dialog id="addModal">
+    <form method="dialog" class="modal">
+      <div class="modal-hd">
+        <strong id="modalTitle">Add a book</strong>
+        <div class="spacer"></div>
+        <button class="btn ghost" value="close" id="closeModal">Close</button>
+      </div>
+
+      <div class="modal-tabs">
+        <button type="button" data-mode="search" class="active">Search</button>
+        <button type="button" data-mode="manual">Manual</button>
+      </div>
+
+      <div class="modal-bd">
+        <!-- SEARCH MODE -->
+        <div id="mode-search">
+          <div class="search-row">
+            <input id="searchInput" class="input" placeholder="Search Google Books by title or author…" />
+            <button id="doSearch" type="button" class="btn primary">Search</button>
+          </div>
+          <div id="searchResults" class="grid results"></div>
+        </div>
+
+        <!-- MANUAL MODE -->
+        <div id="mode-manual" class="hidden">
+          <div class="formgrid">
+            <label>Title<input id="mTitle" class="input"/></label>
+            <label>Author<input id="mAuthor" class="input"/></label>
+            <label>Status
+              <select id="mStatus" class="input">
+                <option value="tbr">TBR</option>
+                <option value="read">Read</option>
+                <option value="dnf">DNF</option>
+              </select>
+            </label>
+            <label>Liked?
+              <select id="mLiked" class="input">
+                <option value="">—</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+                <option value="mixed">Mixed</option>
+              </select>
+            </label>
+            <label>Cover URL<input id="mCover" class="input"/></label>
+            <label>ISBN<input id="mIsbn" class="input"/></label>
+            <label>Tags — liked<input id="mProsTags" class="input" placeholder="psychological, twisty"/></label>
+            <label>Tags — disliked<input id="mConsTags" class="input" placeholder="ambiguous ending"/></label>
+            <label class="full">What you liked<textarea id="mPros" class="input" rows="3"></textarea></label>
+            <label class="full">What you didn’t like<textarea id="mCons" class="input" rows="3"></textarea></label>
+          </div>
+          <div class="modal-ft">
+            <button id="mSave" type="button" class="btn primary">Save</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Voice Review Modal -->
+  <dialog id="voiceModal">
+    <form method="dialog" class="modal">
+      <div class="modal-hd">
+        <strong>Dictate Review</strong>
+        <div class="spacer"></div>
+        <button class="btn ghost" value="close">Close</button>
+      </div>
+      <div class="modal-bd">
+        <div class="voice-box">
+          <div class="voice-row">
+            <button id="micBtn" type="button" class="btn primary">🎤 Start</button>
+            <span id="micStatus" class="muted">Idle</span>
+          </div>
+          <label>Raw transcript<textarea id="voiceRaw" class="input" rows="6"></textarea></label>
+          <div class="voice-row">
+            <button id="polishBtn" type="button" class="btn">✨ Polish</button>
+            <span class="muted">Local rewrite to tighten & clarify</span>
+          </div>
+          <label>Polished<textarea id="voicePolished" class="input" rows="6"></textarea></label>
+        </div>
+      </div>
+      <div class="modal-ft">
+        <button id="usePolished" type="button" class="btn primary">Use polished</button>
+        <button id="useRaw" type="button" class="btn">Use raw</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Details Modal (click a cover to view review/details) -->
+  <dialog id="detailsModal">
+    <form method="dialog" class="modal">
+      <div class="modal-hd">
+        <strong id="dTitle">Book</strong>
+        <div class="spacer"></div>
+        <button class="btn ghost" value="close">Close</button>
+      </div>
+      <div class="modal-bd" id="detailsContent"></div>
+      <div class="modal-ft" id="detailsActions"></div>
+    </form>
+  </dialog>
+
+  <script>
+// BookNest 2.1 — Kindle-like grid + details modal
+const STORAGE_KEY = 'booknest.v5';
+let books = load() || seed();
+let currentFilter = 'all';
+
+function seed(){
+  const data = [
+    {title:'None of This Is True', author:'Lisa Jewell', status:'read', liked:'yes',
+      prosTags:['psychological','mystery','unreliable narrator','fast paced','atmospheric','twisty plotting','strong pov shifts'],
+      consTags:['ambiguous ending'],
+      pros:'Atmospheric, twisty plotting, strong POV shifts.',
+      cons:'Ending slightly ambiguous for my taste.',
+      cover:'', description:'', isbn:''},
+    {title:'We Used to Live Here', author:'Marcus Kliewer', status:'read', liked:'mixed',
+      prosTags:['ambiguous','creepy','suburban gothic','moody','eerie','great sense of place'],
+      consTags:['open ending','wanted more clarity'],
+      pros:'Moody and eerie. Great sense of place.',
+      cons:'Wanted a touch more clarity at the end.',
+      cover:'', description:'', isbn:''},
+    {title:'Shrike', author:'Joe Donnelly', status:'tbr', liked:null,
+      prosTags:['folk horror'], consTags:[], pros:'', cons:'', cover:'', description:'', isbn:''}
+  ];
+  save(data);
+  return data;
+}
+function load(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) } catch { return null } }
+function save(arr){ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr || books)); }
+
+// DOM helpers
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+function esc(s){ return (''+s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
+function splitTags(s){ return (s||'').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean) }
+function matches(b,q){
+  if(!q) return true;
+  const hay = (b.title+' '+(b.author||'')+' '+(b.prosTags||[]).join(' ')+' '+(b.consTags||[]).join(' ')).toLowerCase();
+  return hay.includes(q.toLowerCase());
+}
+
+// Theme
+(function initTheme(){
+  const key='booknest.theme';
+  const saved = localStorage.getItem(key);
+  if(saved==='dark'){ document.documentElement.classList.add('dark'); }
+  $('#themeToggle').addEventListener('click', ()=>{
+    const dark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem(key, dark?'dark':'light');
+  });
+})();
+
+// Navigation
+$$('.tabs button').forEach(btn=>btn.addEventListener('click', ()=>{
+  $$('.tabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  $$('.view').forEach(v=>v.classList.remove('active'));
+  $('#view-'+btn.dataset.view).classList.add('active');
+}));
+
+// Stats + render
+function renderStats(){
+  $('#statTotal').textContent = books.length;
+  $('#statRead').textContent = books.filter(b=>b.status==='read').length;
+  $('#statTbr').textContent = books.filter(b=>b.status==='tbr').length;
+}
+
+function kindleCard(b){
+  const div = document.createElement('div'); div.className='card kindle';
+  const cover = b.cover || 'https://via.placeholder.com/300x440?text=No+Cover';
+  div.innerHTML = `
+    <img alt="" src="${cover}" loading="lazy">
+    <div class="title">${esc(b.title)}</div>
+    <div class="author">${esc(b.author||'')}</div>
+    <div class="status-pill">${b.status.toUpperCase()}${b.liked? ' · '+b.liked.toUpperCase():''}</div>
+  `;
+  div.addEventListener('click', ()=> openDetails(b));
+  return div;
+}
+
+function renderLibrary(filter='all', q=''){
+  const grid = $('#libraryGrid'); grid.innerHTML='';
+  books.filter(b=> (filter==='all'||b.status===filter) && matches(b,q))
+       .forEach(b=> grid.appendChild(kindleCard(b)));
+}
+
+function reviewCard(b){
+  const el = document.createElement('div'); el.className='card review';
+  const cover = b.cover || 'https://via.placeholder.com/300x440?text=No+Cover';
+  el.innerHTML = `
+    <img alt="" src="${cover}" loading="lazy">
+    <h3>${esc(b.title)}</h3>
+    <div class="meta">${esc(b.author||'')}</div>
+    ${(b.prosTags||[]).length? `<div class="tags">${b.prosTags.map(t=>`<span class="tag ok">+ ${esc(t)}</span>`).join(' ')}</div>`:''}
+    ${b.pros? `<p>${esc(b.pros)}</p>`:''}
+    ${(b.consTags||[]).length? `<div class="tags">${b.consTags.map(t=>`<span class="tag bad">− ${esc(t)}</span>`).join(' ')}</div>`:''}
+    ${b.cons? `<p>${esc(b.cons)}</p>`:''}
+    <div class="controls">
+      <button class="btn" data-act="voice">🎤 Speak review</button>
+      <button class="btn" data-act="edit">Edit</button>
+      <a class="btnlink" href="${goodreadsLink(b)}" target="_blank">Goodreads</a>
+      <a class="btnlink" href="${amazonLink(b)}" target="_blank">Amazon</a>
+    </div>
+  `;
+  $('[data-act="voice"]', el).addEventListener('click', ()=>openVoice(b));
+  $('[data-act="edit"]', el).addEventListener('click', ()=>openManual(b));
+  return el;
+}
+function renderReviews(){
+  const list = $('#reviewsList'); list.innerHTML='';
+  const rows = books.filter(b=>b.status==='read');
+  if(rows.length===0){ list.innerHTML='<div class="meta">No reviews yet.</div>'; return; }
+  rows.forEach(b=> list.appendChild(reviewCard(b)));
+}
+
+// Details modal
+const detailsModal = $('#detailsModal');
+function openDetails(b){
+  $('#dTitle').textContent = b.title;
+  const cover = b.cover || 'https://via.placeholder.com/300x440?text=No+Cover';
+  $('#detailsContent').innerHTML = `
+    <div class="details">
+      <img alt="" src="${cover}">
+      <div>
+        <h3>${esc(b.title)}</h3>
+        <div class="meta">${esc(b.author||'')}</div>
+        <div class="meta">Status: ${b.status.toUpperCase()} ${b.liked? '· '+b.liked.toUpperCase():''}</div>
+        ${(b.prosTags||[]).length? `<div class="tags">${b.prosTags.map(t=>`<span class="tag ok">+ ${esc(t)}</span>`).join(' ')}</div>`:''}
+        ${b.pros? `<p>${esc(b.pros)}</p>`:''}
+        ${(b.consTags||[]).length? `<div class="tags">${b.consTags.map(t=>`<span class="tag bad">− ${esc(t)}</span>`).join(' ')}</div>`:''}
+        ${b.cons? `<p>${esc(b.cons)}</p>`:''}
+        ${b.description? `<p class="meta">${esc(b.description)}</p>`:''}
+      </div>
+    </div>
+  `;
+  $('#detailsActions').innerHTML = `
+    <button class="btn" id="dVoice">🎤 Speak review</button>
+    <button class="btn" id="dEdit">Edit</button>
+    <a class="btnlink" href="${goodreadsLink(b)}" target="_blank">Goodreads</a>
+    <a class="btnlink" href="${amazonLink(b)}" target="_blank">Amazon</a>
+  `;
+  $('#dVoice').onclick = ()=>{ openVoice(b); detailsModal.close(); };
+  $('#dEdit').onclick = ()=>{ openManual(b); detailsModal.close(); };
+  showDialog(detailsModal);
+}
+
+// Recommendations
+function renderRecs(){
+  const grid = $('#recsGrid'); grid.innerHTML='';
+  const prefs = computePrefs();
+  if(prefs.length===0){ grid.innerHTML = '<div class="meta">Add a couple reviews/tags for recommendations.</div>'; return; }
+  prefs.slice(0,3).forEach(async tag=>{
+    const items = await searchGoogleBooks(tag + ' fiction');
+    items.slice(0,6).forEach(v=> grid.appendChild(recCard(v)));
+  });
+}
+function recCard(v){
+  const vi = v.volumeInfo||{};
+  const title = vi.title||'Untitled';
+  const author = (vi.authors||[]).join(', ');
+  const cover = (vi.imageLinks && (vi.imageLinks.thumbnail || vi.imageLinks.smallThumbnail)) || 'https://via.placeholder.com/300x440?text=No+Cover';
+  const isbn = (vi.industryIdentifiers||[]).find(x=>x.type==='ISBN_13'||x.type==='ISBN_10')?.identifier || '';
+  const el = document.createElement('div'); el.className='card review';
+  el.innerHTML = `
+    <img alt="" src="${cover}" loading="lazy">
+    <h3>${esc(title)}</h3>
+    <div class="meta">${esc(author)}</div>
+    <div class="controls">
+      <button class="btn" data-act="add">Add to TBR</button>
+      <a class="btnlink" href="${goodreadsLink({title,author})}" target="_blank">Goodreads</a>
+      <a class="btnlink" href="${amazonLink({isbn,title,author})}" target="_blank">Amazon</a>
+    </div>`;
+  $('[data-act="add"]', el).addEventListener('click', ()=>{
+    books.unshift({title, author, status:'tbr', liked:null, prosTags:[], consTags:[], pros:'', cons:'', cover, description:vi.description||'', isbn});
+    save(); rerender();
+  });
+  return el;
+}
+function computePrefs(){
+  const likedWeights = {}; const disliked = new Set();
+  books.filter(b=>b.status==='read').forEach(b=>{
+    (b.prosTags||[]).forEach(t=> likedWeights[t]=(likedWeights[t]||0)+(b.liked==='no'?-1: b.liked==='mixed'?0.5:1));
+    (b.consTags||[]).forEach(t=> disliked.add(t));
+    tokenize(b.pros).forEach(t=> likedWeights[t]=(likedWeights[t]||0)+0.25);
+    tokenize(b.cons).forEach(t=> disliked.add(t));
+  });
+  return Object.entries(likedWeights).filter(([t,w])=>w>0 && !disliked.has(t)).sort((a,b)=>b[1]-a[1]).map(([t])=>t);
+}
+function tokenize(s){ if(!s) return []; return s.toLowerCase().replace(/[^a-z0-9\s-]/g,' ').split(/\s+/).filter(w=>w.length>=4 && !STOP.has(w)); }
+const STOP = new Set('this that with from about were have which into over under after before because while there their them they then than like just good great very more less most least thing things also some much many been being make made still only even book story plot ending start beginning middle character characters part'.split(' '));
+
+// Global search
+$('#globalSearch').addEventListener('input', e=>{
+  renderLibrary(currentFilter, e.target.value);
+});
+document.addEventListener('keydown', e=>{ if(e.key==='/' && document.activeElement.tagName!=='INPUT'){ e.preventDefault(); $('#globalSearch').focus(); }});
+
+// Filter chips
+$$('.chip').forEach(btn=>btn.addEventListener('click', ()=>{
+  currentFilter = btn.dataset.filter;
+  renderLibrary(currentFilter, $('#globalSearch').value);
+}));
+
+// Add modal & search
+const addModal = $('#addModal');
+$('#openAdd').addEventListener('click', ()=>{ $('#modalTitle').textContent='Add a book'; showDialog(addModal); $('#searchInput').focus(); });
+$('#closeModal').addEventListener('click', ()=> addModal.close());
+
+// Tabs in modal
+$$('.modal-tabs button').forEach(b=> b.addEventListener('click', ()=>{
+  $$('.modal-tabs button').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+  const mode = b.dataset.mode;
+  $('#mode-search').classList.toggle('hidden', mode!=='search');
+  $('#mode-manual').classList.toggle('hidden', mode!=='manual');
+}));
+
+// Google Books search
+async function searchGoogleBooks(q){
+  try{
+    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=20`);
+    const j = await r.json();
+    return j.items||[];
+  }catch(e){ console.warn(e); return []; }
+}
+$('#doSearch').addEventListener('click', async ()=>{
+  const q = $('#searchInput').value.trim(); if(!q) return;
+  const items = await searchGoogleBooks(q);
+  renderSearchResults(items);
+});
+$('#searchInput').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); $('#doSearch').click(); }});
+function renderSearchResults(items){
+  const grid = $('#searchResults'); grid.innerHTML='';
+  if(!items.length){ grid.innerHTML = '<div class="meta">No results.</div>'; return; }
+  items.forEach(v=>{
+    const vi = v.volumeInfo||{};
+    const title = vi.title||'Untitled';
+    const author = (vi.authors||[]).join(', ');
+    const cover = (vi.imageLinks && (vi.imageLinks.thumbnail || vi.imageLinks.smallThumbnail)) || 'https://via.placeholder.com/300x440?text=No+Cover';
+    const isbn = (vi.industryIdentifiers||[]).find(x=>x.type==='ISBN_13'||x.type==='ISBN_10')?.identifier || '';
+    const card = document.createElement('div'); card.className='card review';
+    card.innerHTML = `
+      <img alt="" src="${cover}" loading="lazy">
+      <h3>${esc(title)}</h3>
+      <div class="meta">${esc(author)}</div>
+      <div class="controls">
+        <button class="btn primary" data-act="add">Add to TBR</button>
+        <a class="btnlink" href="${goodreadsLink({title,author})}" target="_blank">Goodreads</a>
+      </div>`;
+    $('[data-act="add"]', card).addEventListener('click', ()=>{
+      books.unshift({title, author, status:'tbr', liked:null, prosTags:[], consTags:[], pros:'', cons:'', cover, description:vi.description||'', isbn});
+      save(); rerender(); addModal.close();
+    });
+    grid.appendChild(card);
+  });
+}
+
+// Manual save
+$('#mSave').addEventListener('click', ()=>{
+  const entry = {
+    title: $('#mTitle').value.trim(),
+    author: $('#mAuthor').value.trim(),
+    status: $('#mStatus').value,
+    liked: $('#mLiked').value || null,
+    cover: $('#mCover').value.trim(),
+    isbn: $('#mIsbn').value.trim(),
+    prosTags: splitTags($('#mProsTags').value),
+    consTags: splitTags($('#mConsTags').value),
+    pros: $('#mPros').value.trim(),
+    cons: $('#mCons').value.trim(),
+    description: ''
+  };
+  if(!entry.title){ alert('Title required'); return; }
+  books.unshift(entry); save(); rerender(); addModal.close();
+});
+
+function openManual(b){
+  $('#modalTitle').textContent = 'Edit book';
+  showDialog(addModal);
+  // Switch to manual tab
+  $$('.modal-tabs button').forEach(x=>x.classList.remove('active'));
+  $$('.modal-tabs button')[1].classList.add('active');
+  $('#mode-search').classList.add('hidden');
+  $('#mode-manual').classList.remove('hidden');
+  // Fill
+  $('#mTitle').value = b.title||'';
+  $('#mAuthor').value = b.author||'';
+  $('#mStatus').value = b.status||'tbr';
+  $('#mLiked').value = b.liked||'';
+  $('#mCover').value = b.cover||'';
+  $('#mIsbn').value = b.isbn||'';
+  $('#mProsTags').value = (b.prosTags||[]).join(', ');
+  $('#mConsTags').value = (b.consTags||[]).join(', ');
+  $('#mPros').value = b.pros||'';
+  $('#mCons').value = b.cons||'';
+  $('#mSave').onclick = ()=>{
+    Object.assign(b, {
+      title: $('#mTitle').value.trim(),
+      author: $('#mAuthor').value.trim(),
+      status: $('#mStatus').value,
+      liked: $('#mLiked').value || null,
+      cover: $('#mCover').value.trim(),
+      isbn: $('#mIsbn').value.trim(),
+      prosTags: splitTags($('#mProsTags').value),
+      consTags: splitTags($('#mConsTags').value),
+      pros: $('#mPros').value.trim(),
+      cons: $('#mCons').value.trim(),
+    });
+    save(); rerender(); addModal.close();
+  };
+}
+
+// Voice-to-text review (Web Speech API) + Local "polish"
+const voiceDialog = $('#voiceModal');
+let currentReviewTarget = null;
+function openVoice(book){
+  currentReviewTarget = book;
+  $('#voiceRaw').value = '';
+  $('#voicePolished').value = '';
+  $('#micStatus').textContent = 'Idle';
+  showDialog(voiceDialog);
+}
+let recognition = null;
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'en-US';
+  recognition.interimResults = true;
+}
+$('#micBtn').addEventListener('click', ()=>{
+  if(!recognition){ alert('Speech recognition not supported in this browser. Try Chrome.'); return; }
+  let final = '';
+  $('#micStatus').textContent = 'Listening…';
+  recognition.onresult = (e)=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const trans = e.results[i][0].transcript;
+      if(e.results[i].isFinal) final += trans + ' ';
+      else interim += trans;
+    }
+    $('#voiceRaw').value = final + interim;
+  };
+  recognition.onend = ()=> $('#micStatus').textContent = 'Stopped';
+  recognition.start();
+});
+$('#polishBtn').addEventListener('click', ()=>{
+  const raw = $('#voiceRaw').value.trim(); if(!raw){ return; }
+  const polished = polishText(raw);
+  $('#voicePolished').value = polished;
+});
+$('#usePolished').addEventListener('click', ()=>{
+  if(!currentReviewTarget) return;
+  currentReviewTarget.pros = (currentReviewTarget.pros? currentReviewTarget.pros+' ' : '') + $('#voicePolished').value.trim();
+  save(); rerender(); voiceDialog.close();
+});
+$('#useRaw').addEventListener('click', ()=>{
+  if(!currentReviewTarget) return;
+  currentReviewTarget.pros = (currentReviewTarget.pros? currentReviewTarget.pros+' ' : '') + $('#voiceRaw').value.trim();
+  save(); rerender(); voiceDialog.close();
+});
+function polishText(t){
+  const fillers = /\b(uh|um|like|you know|sort of|kind of|basically|literally)\b/gi;
+  t = t.replace(fillers, '').replace(/\s{2,}/g,' ');
+  const parts = t.split(/([.!?])\s+/).reduce((acc,cur,i,arr)=>{ if(i%2===0){ const end = arr[i+1]||''; acc.push(cur.trim()+end); } return acc; },[]).map(s=> s.charAt(0).toUpperCase()+s.slice(1));
+  let out = parts.join(' ').trim();
+  if(out.length>800){ out = out.slice(0,800)+'…'; }
+  return out;
+}
+
+// Links
+function amazonLink({isbn,title,author}){
+  if (isbn) return `https://www.amazon.com/s?k=${encodeURIComponent(isbn)}&i=stripbooks`;
+  const q = [title,author].filter(Boolean).join(' ');
+  return `https://www.amazon.com/s?k=${encodeURIComponent(q)}&i=stripbooks`;
+}
+function goodreadsLink({title,author}){
+  const q = [title,author].filter(Boolean).join(' ');
+  return `https://www.goodreads.com/search?q=${encodeURIComponent(q)}`;
+}
+
+// Utilities
+function showDialog(d){
+  if(typeof d.showModal==='function'){ d.showModal(); }
+  else { d.style.display='block'; }
+}
+function rerender(){
+  renderStats();
+  renderLibrary(currentFilter, $('#globalSearch').value);
+  renderReviews();
+  renderRecs();
+}
+
+// Google Books search used by recs and add flow
+async function searchGoogleBooks(q){
+  try{
+    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=20`);
+    const j = await r.json();
+    return j.items||[];
+  }catch(e){ console.warn(e); return []; }
+}
+
+rerender();
+
+</script>
+</body>
+</html>
