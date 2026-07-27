@@ -6,181 +6,214 @@
     <title>The Bennett Archive</title>
     <style>
       :root {
-        --bg: #0b0e14;
-        --panel: #121722;
-        --panel-2: #0e131c;
-        --line: #232b3a;
-        --text: #e7ecf5;
-        --muted: #8b97ad;
-        --accent: #7c9cff;
-        --accent-2: #38d3b5;
-        --user: #1d2740;
+        --bg: #0b0e14; --panel: #121722; --panel-2: #0e131c; --line: #232b3a;
+        --text: #e7ecf5; --muted: #8b97ad; --accent: #7c9cff; --accent-2: #38d3b5;
+        --user: #1d2740; --good: #38d3b5; --bad: #ff6b6b;
       }
       * { box-sizing: border-box; }
       html, body { height: 100%; margin: 0; }
       body {
         background: radial-gradient(1200px 600px at 80% -10%, #16203a 0%, var(--bg) 55%);
-        color: var(--text);
-        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
+        color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+        display: flex; flex-direction: column; height: 100vh;
       }
-      header {
-        display: flex; align-items: center; gap: 12px;
-        padding: 14px 18px; border-bottom: 1px solid var(--line);
-        background: rgba(10, 13, 20, 0.6); backdrop-filter: blur(6px);
-      }
+      header { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--line); background: rgba(10,13,20,.6); backdrop-filter: blur(6px); }
       .moth { width: 30px; height: 30px; flex: none; }
       header h1 { font-size: 16px; margin: 0; letter-spacing: .5px; }
       header .sub { color: var(--muted); font-size: 12px; }
-      .layout { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
-      aside {
-        border-right: 1px solid var(--line); background: var(--panel-2);
-        overflow-y: auto; padding: 12px;
-      }
+      nav.tabs { margin-left: auto; display: flex; gap: 6px; }
+      nav.tabs button { background: transparent; border: 1px solid transparent; color: var(--muted); padding: 8px 14px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+      nav.tabs button.active { color: var(--text); background: var(--panel); border-color: var(--line); }
+      .banner { background: #3a2417; color: #ffd9b0; padding: 8px 18px; font-size: 13px; border-bottom: 1px solid var(--line); display: none; }
+      .view { flex: 1; min-height: 0; display: none; }
+      .view.active { display: flex; }
+
+      /* Chat */
+      .chat-layout { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; width: 100%; }
+      aside { border-right: 1px solid var(--line); background: var(--panel-2); overflow-y: auto; padding: 12px; }
       aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 6px 6px 10px; }
-      .entry {
-        padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
-        margin-bottom: 8px; cursor: pointer; background: var(--panel);
-        transition: border-color .1s, transform .05s;
-      }
-      .entry:hover { border-color: var(--accent); transform: translateY(-1px); }
+      .entry { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; cursor: pointer; background: var(--panel); }
+      .entry:hover { border-color: var(--accent); }
       .entry .t { font-size: 13px; font-weight: 600; }
       .entry .c { font-size: 11px; color: var(--muted); margin-top: 3px; }
-      main { display: flex; flex-direction: column; min-height: 0; }
+      main { display: flex; flex-direction: column; min-height: 0; flex: 1; }
       #messages { flex: 1; overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 14px; }
       .msg { max-width: 760px; padding: 12px 15px; border-radius: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
       .msg.user { align-self: flex-end; background: var(--user); border: 1px solid var(--line); }
       .msg.assistant { align-self: flex-start; background: var(--panel); border: 1px solid var(--line); }
-      .msg.system { align-self: center; color: var(--muted); font-size: 13px; background: transparent; max-width: 620px; text-align: center; }
+      .msg.system { align-self: center; color: var(--muted); font-size: 13px; max-width: 620px; text-align: center; }
       .composer { border-top: 1px solid var(--line); padding: 14px 18px; display: flex; gap: 10px; background: var(--panel-2); }
-      textarea {
-        flex: 1; resize: none; min-height: 46px; max-height: 160px;
-        background: var(--panel); color: var(--text);
-        border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
-        font: inherit; outline: none;
-      }
+      textarea { flex: 1; resize: none; min-height: 46px; max-height: 160px; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font: inherit; outline: none; }
       textarea:focus { border-color: var(--accent); }
-      button.send {
-        border: none; border-radius: 12px; padding: 0 20px; font-weight: 600; cursor: pointer;
-        background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #06121a;
-      }
-      button.send:disabled { opacity: .5; cursor: default; }
-      .dots span { animation: blink 1.2s infinite both; }
-      .dots span:nth-child(2){ animation-delay:.2s } .dots span:nth-child(3){ animation-delay:.4s }
+      button.send { border: none; border-radius: 12px; padding: 0 20px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #06121a; }
+      button.send:disabled { opacity: .5; }
+      .dots span { animation: blink 1.2s infinite both; } .dots span:nth-child(2){animation-delay:.2s} .dots span:nth-child(3){animation-delay:.4s}
       @keyframes blink { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
+
+      /* Dashboard */
+      .dash { flex: 1; overflow-y: auto; padding: 22px; width: 100%; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-bottom: 18px; }
+      .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+      .card h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+      .big { font-size: 34px; font-weight: 700; }
+      .delta { font-size: 13px; margin-top: 4px; }
+      .delta.up { color: var(--good); } .delta.down { color: var(--bad); }
+      .chan { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+      .chan:last-child { border-bottom: none; }
+      .chan .p { color: var(--muted); font-size: 12px; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+      th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+      .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 20px 4px 10px; }
+      .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .row input, .row select { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; }
+      .row input.num { width: 90px; }
+      .btn { border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+      .btn.primary { border: none; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #06121a; }
+      .analysis { white-space: pre-wrap; line-height: 1.55; font-size: 14px; }
+      .muted { color: var(--muted); }
+
       dialog { border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 14px; max-width: min(760px, 92vw); padding: 0; }
       dialog::backdrop { background: rgba(0,0,0,.6); }
       .modal-hd { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
       .modal-bd { padding: 16px; max-height: 60vh; overflow: auto; white-space: pre-wrap; line-height: 1.55; font-size: 14px; }
       .x { background: transparent; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
-      .banner { background: #3a2417; color: #ffd9b0; padding: 8px 18px; font-size: 13px; border-bottom: 1px solid var(--line); display: none; }
-      @media (max-width: 720px) { .layout { grid-template-columns: 1fr; } aside { display: none; } }
+      @media (max-width: 720px) { .chat-layout { grid-template-columns: 1fr; } aside { display: none; } }
     </style>
   </head>
   <body>
     <header>
-      <svg class="moth" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <svg class="moth" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <ellipse cx="32" cy="34" rx="4" ry="14" fill="#7c9cff"/>
-        <path d="M32 24C20 10 6 14 6 26c0 10 12 14 26 8Z" fill="#38d3b5" opacity="0.8"/>
-        <path d="M32 24C44 10 58 14 58 26c0 10-12 14-26 8Z" fill="#38d3b5" opacity="0.8"/>
-        <path d="M32 34C22 34 12 40 12 50c0 6 10 8 20 2Z" fill="#7c9cff" opacity="0.7"/>
-        <path d="M32 34C42 34 52 40 52 50c0 6-10 8-20 2Z" fill="#7c9cff" opacity="0.7"/>
+        <path d="M32 24C20 10 6 14 6 26c0 10 12 14 26 8Z" fill="#38d3b5" opacity=".8"/>
+        <path d="M32 24C44 10 58 14 58 26c0 10-12 14-26 8Z" fill="#38d3b5" opacity=".8"/>
+        <path d="M32 34C22 34 12 40 12 50c0 6 10 8 20 2Z" fill="#7c9cff" opacity=".7"/>
+        <path d="M32 34C42 34 52 40 52 50c0 6-10 8-20 2Z" fill="#7c9cff" opacity=".7"/>
         <circle cx="28" cy="27" r="2.2" fill="#ff5c5c"/><circle cx="36" cy="27" r="2.2" fill="#ff5c5c"/>
       </svg>
       <div>
         <h1>THE BENNETT ARCHIVE</h1>
         <div class="sub">Midnight Archive · Issue 001 — The Mothman of Point Pleasant</div>
       </div>
+      <nav class="tabs">
+        <button data-tab="chat" class="active">Chat</button>
+        <button data-tab="dashboard">Dashboard</button>
+      </nav>
     </header>
     <div class="banner" id="banner"></div>
-    <div class="layout">
-      <aside>
-        <h2>Archive <span id="count"></span></h2>
-        <div id="entries"></div>
-      </aside>
-      <main>
-        <div id="messages"></div>
-        <form class="composer" id="composer">
-          <textarea id="input" placeholder="Ask the archive anything — or tell it to record something new…" autofocus></textarea>
-          <button class="send" id="send" type="submit">Send</button>
-        </form>
-      </main>
+
+    <!-- CHAT -->
+    <div class="view active" id="view-chat">
+      <div class="chat-layout">
+        <aside>
+          <h2>Archive <span id="count"></span></h2>
+          <div id="entries"></div>
+        </aside>
+        <main>
+          <div id="messages"></div>
+          <form class="composer" id="composer">
+            <textarea id="input" placeholder="Ask the archive, log a number, or ask what to make next…" autofocus></textarea>
+            <button class="send" id="send" type="submit">Send</button>
+          </form>
+        </main>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="view" id="view-dashboard">
+      <div class="dash">
+        <div class="grid" id="statCards"></div>
+
+        <div class="card">
+          <h3>Log an update</h3>
+          <div class="row" style="margin-bottom:10px;">
+            <input id="chName" placeholder="Channel (e.g. The Daily)" />
+            <input id="chPlatform" placeholder="Platform (TikTok…)" />
+            <input id="chSubs" class="num" type="number" placeholder="subs" />
+            <label class="muted" style="font-size:13px;"><input type="checkbox" id="chPrimary" /> primary</label>
+            <button class="btn" id="saveChannel">Save subscribers</button>
+          </div>
+          <div class="row">
+            <input id="pTitle" placeholder="Post title" />
+            <input id="pChannel" placeholder="channel" style="width:110px" />
+            <input id="pType" placeholder="type (reel…)" style="width:110px" />
+            <input id="pViews" class="num" type="number" placeholder="views" />
+            <input id="pLikes" class="num" type="number" placeholder="likes" />
+            <input id="pShares" class="num" type="number" placeholder="shares" />
+            <button class="btn" id="savePost">Log post</button>
+          </div>
+        </div>
+
+        <div class="section-title">Top performing content</div>
+        <div class="card"><div id="topPosts" class="muted">Loading…</div></div>
+
+        <div class="section-title">What should I make next?</div>
+        <div class="card">
+          <button class="btn primary" id="analyzeBtn">Analyze my content →</button>
+          <div id="analysis" class="analysis" style="margin-top:12px;"></div>
+        </div>
+      </div>
     </div>
 
     <dialog id="entryModal">
-      <div class="modal-hd">
-        <strong id="modalTitle"></strong>
-        <button class="x" onclick="document.getElementById('entryModal').close()">✕</button>
-      </div>
+      <div class="modal-hd"><strong id="modalTitle"></strong><button class="x" onclick="document.getElementById('entryModal').close()">✕</button></div>
       <div class="modal-bd" id="modalBody"></div>
     </dialog>
 
     <script>
-      const messagesEl = document.getElementById("messages");
-      const entriesEl = document.getElementById("entries");
-      const countEl = document.getElementById("count");
-      const bannerEl = document.getElementById("banner");
-      const input = document.getElementById("input");
-      const sendBtn = document.getElementById("send");
+      const $ = (id) => document.getElementById(id);
       const history = [];
 
-      function addMessage(role, text) {
-        const div = document.createElement("div");
-        div.className = "msg " + role;
-        div.textContent = text;
-        messagesEl.appendChild(div);
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-        return div;
-      }
+      // ---- tabs ----
+      document.querySelectorAll("nav.tabs button").forEach((b) => {
+        b.onclick = () => {
+          document.querySelectorAll("nav.tabs button").forEach((x) => x.classList.remove("active"));
+          b.classList.add("active");
+          document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
+          $("view-" + b.dataset.tab).classList.add("active");
+          if (b.dataset.tab === "dashboard") loadDashboard();
+        };
+      });
 
+      // ---- chat ----
+      const messagesEl = $("messages");
+      function addMessage(role, text) {
+        const d = document.createElement("div");
+        d.className = "msg " + role;
+        d.textContent = text;
+        messagesEl.appendChild(d);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        return d;
+      }
       async function loadEntries() {
-        const res = await fetch("/api/entries");
-        const list = await res.json();
-        countEl.textContent = "(" + list.length + ")";
-        entriesEl.innerHTML = "";
+        const list = await (await fetch("/api/entries")).json();
+        $("count").textContent = "(" + list.length + ")";
+        const box = $("entries");
+        box.innerHTML = "";
         for (const e of list) {
-          const div = document.createElement("div");
-          div.className = "entry";
-          div.innerHTML = '<div class="t"></div><div class="c"></div>';
-          div.querySelector(".t").textContent = e.title;
-          div.querySelector(".c").textContent = e.category || "";
-          div.onclick = () => openEntry(e.id);
-          entriesEl.appendChild(div);
+          const d = document.createElement("div");
+          d.className = "entry";
+          d.innerHTML = '<div class="t"></div><div class="c"></div>';
+          d.querySelector(".t").textContent = e.title;
+          d.querySelector(".c").textContent = e.category || "";
+          d.onclick = async () => {
+            const full = await (await fetch("/api/entries/" + e.id)).json();
+            $("modalTitle").textContent = full.title;
+            $("modalBody").textContent = full.content;
+            $("entryModal").showModal();
+          };
+          box.appendChild(d);
         }
       }
-
-      async function openEntry(id) {
-        const res = await fetch("/api/entries/" + id);
-        const e = await res.json();
-        document.getElementById("modalTitle").textContent = e.title;
-        document.getElementById("modalBody").textContent = e.content;
-        document.getElementById("entryModal").showModal();
-      }
-
-      async function checkHealth() {
-        try {
-          const res = await fetch("/api/health");
-          const h = await res.json();
-          if (!h.hasKey) {
-            bannerEl.style.display = "block";
-            bannerEl.textContent =
-              "⚠ No ANTHROPIC_API_KEY set on the server — browsing works, but chat is disabled until you add a key.";
-          }
-        } catch {}
-      }
-
       async function send(text) {
         history.push({ role: "user", content: text });
         addMessage("user", text);
         const pending = addMessage("assistant", "");
         pending.innerHTML = '<span class="dots"><span>·</span><span>·</span><span>·</span></span>';
-        sendBtn.disabled = true;
+        $("send").disabled = true;
         try {
           const res = await fetch("/api/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+            method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ messages: history }),
           });
           const data = await res.json();
@@ -191,29 +224,113 @@
         } catch (err) {
           pending.textContent = "⚠ " + err.message;
         } finally {
-          sendBtn.disabled = false;
-          input.focus();
+          $("send").disabled = false;
+          $("input").focus();
+        }
+      }
+      $("composer").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const t = $("input").value.trim();
+        if (!t) return;
+        $("input").value = "";
+        send(t);
+      });
+      $("input").addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("composer").requestSubmit(); }
+      });
+
+      // ---- dashboard ----
+      function fmt(n) { return (n ?? 0).toLocaleString(); }
+      async function loadDashboard() {
+        const d = await (await fetch("/api/dashboard")).json();
+        const cards = [];
+        const primaryName = d.primary ? d.primary.name : "Subscribers";
+        const primaryVal = d.primary ? d.primary.subscribers : 0;
+        let delta = "";
+        if (d.subscriberDelta != null && d.subscriberDelta !== 0) {
+          const up = d.subscriberDelta > 0;
+          delta = `<div class="delta ${up ? "up" : "down"}">${up ? "▲" : "▼"} ${fmt(Math.abs(d.subscriberDelta))} since last</div>`;
+        }
+        cards.push(`<div class="card"><h3>${primaryName}</h3><div class="big">${fmt(primaryVal)}</div>${delta}</div>`);
+
+        // orders
+        let ordersHtml;
+        if (!d.orders || d.orders.configured === false) {
+          ordersHtml = `<div class="muted" style="font-size:13px">Connect Shopify (set SHOPIFY_STORE + SHOPIFY_ADMIN_TOKEN) to see live orders.</div>`;
+        } else if (d.orders.error) {
+          ordersHtml = `<div class="delta down">⚠ ${d.orders.error}</div>`;
+        } else {
+          ordersHtml = `<div class="big">${fmt(d.orders.count)}</div><div class="delta">${d.orders.currency} ${fmt(d.orders.revenue)} today</div>`;
+        }
+        cards.push(`<div class="card"><h3>Orders today</h3>${ordersHtml}</div>`);
+
+        // channels
+        let chanHtml = d.channels.length
+          ? d.channels.map((c) => `<div class="chan"><span>${c.name} <span class="p">${c.platform}</span></span><strong>${fmt(c.subscribers)}</strong></div>`).join("")
+          : '<div class="muted" style="font-size:13px">No channels yet — log one below.</div>';
+        cards.push(`<div class="card"><h3>Channels</h3>${chanHtml}</div>`);
+
+        cards.push(`<div class="card"><h3>Content logged</h3><div class="big">${fmt(d.totalPosts)}</div><div class="delta muted">posts tracked</div></div>`);
+        $("statCards").innerHTML = cards.join("");
+
+        // top posts
+        if (d.topByViews.length) {
+          const rows = d.topByViews.map((p) => `<tr><td>${p.title}</td><td>${p.channel}</td><td>${p.contentType}</td><td>${fmt(p.views)}</td><td>${fmt(p.likes)}</td></tr>`).join("");
+          $("topPosts").innerHTML = `<table><thead><tr><th>Title</th><th>Channel</th><th>Type</th><th>Views</th><th>Likes</th></tr></thead><tbody>${rows}</tbody></table>`;
+        } else {
+          $("topPosts").innerHTML = '<span class="muted">No content logged yet. Log a post above or tell the chat "the mothman reel got 60k views".</span>';
         }
       }
 
-      document.getElementById("composer").addEventListener("submit", (e) => {
-        e.preventDefault();
-        const text = input.value.trim();
-        if (!text) return;
-        input.value = "";
-        send(text);
-      });
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          document.getElementById("composer").requestSubmit();
-        }
-      });
+      $("saveChannel").onclick = async () => {
+        const name = $("chName").value.trim();
+        if (!name) return alert("Channel name required");
+        await fetch("/api/metrics/channel", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name, platform: $("chPlatform").value.trim(),
+            subscribers: $("chSubs").value === "" ? undefined : Number($("chSubs").value),
+            isPrimary: $("chPrimary").checked,
+          }),
+        });
+        $("chName").value = $("chPlatform").value = $("chSubs").value = "";
+        $("chPrimary").checked = false;
+        loadDashboard();
+      };
+      $("savePost").onclick = async () => {
+        const title = $("pTitle").value.trim();
+        if (!title) return alert("Post title required");
+        await fetch("/api/metrics/post", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title, channel: $("pChannel").value.trim(), contentType: $("pType").value.trim(),
+            views: Number($("pViews").value) || 0, likes: Number($("pLikes").value) || 0,
+            shares: Number($("pShares").value) || 0,
+          }),
+        });
+        ["pTitle","pChannel","pType","pViews","pLikes","pShares"].forEach((id) => ($(id).value = ""));
+        loadDashboard();
+      };
+      $("analyzeBtn").onclick = async () => {
+        const out = $("analysis");
+        out.textContent = "Analyzing…";
+        try {
+          const data = await (await fetch("/api/analyze", { method: "POST" })).json();
+          out.textContent = data.analysis || data.error || "No analysis.";
+        } catch (err) { out.textContent = "⚠ " + err.message; }
+      };
 
-      addMessage(
-        "system",
-        "This is the Bennett Archive. Ask about the Mothman story, the field kit, the Seedance scripts, or the Echoes episode — or tell me to record something new and I'll add it to the archive.",
-      );
+      // ---- boot ----
+      async function checkHealth() {
+        try {
+          const h = await (await fetch("/api/health")).json();
+          if (!h.hasKey) {
+            $("banner").style.display = "block";
+            $("banner").textContent = "⚠ No ANTHROPIC_API_KEY set — browsing and logging work, but chat & analysis are off until you add a key.";
+          }
+        } catch {}
+      }
+      addMessage("system", "This is the Bennett Archive. Ask about the Mothman story or field kit, tell me your latest numbers, or ask what content to make next.");
       checkHealth();
       loadEntries();
     </script>

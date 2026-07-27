@@ -13,3 +13,8 @@ services:
         sync: false
       - key: ANTHROPIC_MODEL
         value: claude-opus-5
+      # Optional — live "orders today" from Shopify. Leave unset to skip.
+      - key: SHOPIFY_STORE
+        sync: false
+      - key: SHOPIFY_ADMIN_TOKEN
+        sync: false
