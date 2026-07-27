@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Bennett Archive</title>
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #121722;
+        --panel-2: #0e131c;
+        --line: #232b3a;
+        --text: #e7ecf5;
+        --muted: #8b97ad;
+        --accent: #7c9cff;
+        --accent-2: #38d3b5;
+        --user: #1d2740;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        background: radial-gradient(1200px 600px at 80% -10%, #16203a 0%, var(--bg) 55%);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+      header {
+        display: flex; align-items: center; gap: 12px;
+        padding: 14px 18px; border-bottom: 1px solid var(--line);
+        background: rgba(10, 13, 20, 0.6); backdrop-filter: blur(6px);
+      }
+      .moth { width: 30px; height: 30px; flex: none; }
+      header h1 { font-size: 16px; margin: 0; letter-spacing: .5px; }
+      header .sub { color: var(--muted); font-size: 12px; }
+      .layout { flex: 1; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
+      aside {
+        border-right: 1px solid var(--line); background: var(--panel-2);
+        overflow-y: auto; padding: 12px;
+      }
+      aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 6px 6px 10px; }
+      .entry {
+        padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+        margin-bottom: 8px; cursor: pointer; background: var(--panel);
+        transition: border-color .1s, transform .05s;
+      }
+      .entry:hover { border-color: var(--accent); transform: translateY(-1px); }
+      .entry .t { font-size: 13px; font-weight: 600; }
+      .entry .c { font-size: 11px; color: var(--muted); margin-top: 3px; }
+      main { display: flex; flex-direction: column; min-height: 0; }
+      #messages { flex: 1; overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+      .msg { max-width: 760px; padding: 12px 15px; border-radius: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+      .msg.user { align-self: flex-end; background: var(--user); border: 1px solid var(--line); }
+      .msg.assistant { align-self: flex-start; background: var(--panel); border: 1px solid var(--line); }
+      .msg.system { align-self: center; color: var(--muted); font-size: 13px; background: transparent; max-width: 620px; text-align: center; }
+      .composer { border-top: 1px solid var(--line); padding: 14px 18px; display: flex; gap: 10px; background: var(--panel-2); }
+      textarea {
+        flex: 1; resize: none; min-height: 46px; max-height: 160px;
+        background: var(--panel); color: var(--text);
+        border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+        font: inherit; outline: none;
+      }
+      textarea:focus { border-color: var(--accent); }
+      button.send {
+        border: none; border-radius: 12px; padding: 0 20px; font-weight: 600; cursor: pointer;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #06121a;
+      }
+      button.send:disabled { opacity: .5; cursor: default; }
+      .dots span { animation: blink 1.2s infinite both; }
+      .dots span:nth-child(2){ animation-delay:.2s } .dots span:nth-child(3){ animation-delay:.4s }
+      @keyframes blink { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
+      dialog { border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 14px; max-width: min(760px, 92vw); padding: 0; }
+      dialog::backdrop { background: rgba(0,0,0,.6); }
+      .modal-hd { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+      .modal-bd { padding: 16px; max-height: 60vh; overflow: auto; white-space: pre-wrap; line-height: 1.55; font-size: 14px; }
+      .x { background: transparent; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+      .banner { background: #3a2417; color: #ffd9b0; padding: 8px 18px; font-size: 13px; border-bottom: 1px solid var(--line); display: none; }
+      @media (max-width: 720px) { .layout { grid-template-columns: 1fr; } aside { display: none; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <svg class="moth" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <ellipse cx="32" cy="34" rx="4" ry="14" fill="#7c9cff"/>
+        <path d="M32 24C20 10 6 14 6 26c0 10 12 14 26 8Z" fill="#38d3b5" opacity="0.8"/>
+        <path d="M32 24C44 10 58 14 58 26c0 10-12 14-26 8Z" fill="#38d3b5" opacity="0.8"/>
+        <path d="M32 34C22 34 12 40 12 50c0 6 10 8 20 2Z" fill="#7c9cff" opacity="0.7"/>
+        <path d="M32 34C42 34 52 40 52 50c0 6-10 8-20 2Z" fill="#7c9cff" opacity="0.7"/>
+        <circle cx="28" cy="27" r="2.2" fill="#ff5c5c"/><circle cx="36" cy="27" r="2.2" fill="#ff5c5c"/>
+      </svg>
+      <div>
+        <h1>THE BENNETT ARCHIVE</h1>
+        <div class="sub">Midnight Archive · Issue 001 — The Mothman of Point Pleasant</div>
+      </div>
+    </header>
+    <div class="banner" id="banner"></div>
+    <div class="layout">
+      <aside>
+        <h2>Archive <span id="count"></span></h2>
+        <div id="entries"></div>
+      </aside>
+      <main>
+        <div id="messages"></div>
+        <form class="composer" id="composer">
+          <textarea id="input" placeholder="Ask the archive anything — or tell it to record something new…" autofocus></textarea>
+          <button class="send" id="send" type="submit">Send</button>
+        </form>
+      </main>
+    </div>
+
+    <dialog id="entryModal">
+      <div class="modal-hd">
+        <strong id="modalTitle"></strong>
+        <button class="x" onclick="document.getElementById('entryModal').close()">✕</button>
+      </div>
+      <div class="modal-bd" id="modalBody"></div>
+    </dialog>
+
+    <script>
+      const messagesEl = document.getElementById("messages");
+      const entriesEl = document.getElementById("entries");
+      const countEl = document.getElementById("count");
+      const bannerEl = document.getElementById("banner");
+      const input = document.getElementById("input");
+      const sendBtn = document.getElementById("send");
+      const history = [];
+
+      function addMessage(role, text) {
+        const div = document.createElement("div");
+        div.className = "msg " + role;
+        div.textContent = text;
+        messagesEl.appendChild(div);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        return div;
+      }
+
+      async function loadEntries() {
+        const res = await fetch("/api/entries");
+        const list = await res.json();
+        countEl.textContent = "(" + list.length + ")";
+        entriesEl.innerHTML = "";
+        for (const e of list) {
+          const div = document.createElement("div");
+          div.className = "entry";
+          div.innerHTML = '<div class="t"></div><div class="c"></div>';
+          div.querySelector(".t").textContent = e.title;
+          div.querySelector(".c").textContent = e.category || "";
+          div.onclick = () => openEntry(e.id);
+          entriesEl.appendChild(div);
+        }
+      }
+
+      async function openEntry(id) {
+        const res = await fetch("/api/entries/" + id);
+        const e = await res.json();
+        document.getElementById("modalTitle").textContent = e.title;
+        document.getElementById("modalBody").textContent = e.content;
+        document.getElementById("entryModal").showModal();
+      }
+
+      async function checkHealth() {
+        try {
+          const res = await fetch("/api/health");
+          const h = await res.json();
+          if (!h.hasKey) {
+            bannerEl.style.display = "block";
+            bannerEl.textContent =
+              "⚠ No ANTHROPIC_API_KEY set on the server — browsing works, but chat is disabled until you add a key.";
+          }
+        } catch {}
+      }
+
+      async function send(text) {
+        history.push({ role: "user", content: text });
+        addMessage("user", text);
+        const pending = addMessage("assistant", "");
+        pending.innerHTML = '<span class="dots"><span>·</span><span>·</span><span>·</span></span>';
+        sendBtn.disabled = true;
+        try {
+          const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messages: history }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Request failed");
+          pending.textContent = data.reply;
+          history.push({ role: "assistant", content: data.reply });
+          loadEntries();
+        } catch (err) {
+          pending.textContent = "⚠ " + err.message;
+        } finally {
+          sendBtn.disabled = false;
+          input.focus();
+        }
+      }
+
+      document.getElementById("composer").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = "";
+        send(text);
+      });
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          document.getElementById("composer").requestSubmit();
+        }
+      });
+
+      addMessage(
+        "system",
+        "This is the Bennett Archive. Ask about the Mothman story, the field kit, the Seedance scripts, or the Echoes episode — or tell me to record something new and I'll add it to the archive.",
+      );
+      checkHealth();
+      loadEntries();
+    </script>
+  </body>
+</html>

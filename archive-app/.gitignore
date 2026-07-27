@@ -1,0 +1,4 @@
+node_modules/
+.env
+# Runtime archive store — seeded from data/seed on first boot.
+data/store.json

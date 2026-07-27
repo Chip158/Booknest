@@ -1,0 +1,18 @@
+{
+  "name": "bennett-archive",
+  "version": "1.0.0",
+  "description": "The Bennett / Midnight Archive — a web chat app that houses the archive and lets you talk to it.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.68.0",
+    "express": "^4.21.2"
+  }
+}
