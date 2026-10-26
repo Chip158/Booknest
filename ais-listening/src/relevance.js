@@ -93,7 +93,7 @@ async function scoreWithClaude(client, topic, batch, dismissed) {
 
 // ---------------------------------------------------------------- fallback
 
-const NEG = ['lawsuit', 'sued', 'sues', 'fine', 'fined', 'violation', 'citation', 'OSHA', 'accident', 'injury', 'injured', 'killed', 'death', 'dies', 'fatal', 'protest', 'protesters', 'damage', 'damaged', 'destroyed', 'desecration', 'investigation', 'fraud', 'delay', 'delayed', 'strike', 'spill', 'contamination', 'collapse', 'allegation', 'alleged', 'criticism', 'outrage', 'fire', 'evacuated', 'cost overrun', 'halted', 'stop work', 'complaint', 'whistleblower', 'destroys', 'destroyed', 'damages', 'desecrate', 'desecration', 'atrocity', 'toxic', 'misconduct', 'settlement', 'abuse', 'probed', 'fabricated', 'falsified', 'flooding', 'injuries'];
+const NEG = ['lawsuit', 'sued', 'sues', 'fine', 'fined', 'violation', 'citation', 'OSHA', 'accident', 'injury', 'injured', 'killed', 'death', 'dies', 'fatal', 'protest', 'protesters', 'damage', 'damaged', 'destroyed', 'desecration', 'investigation', 'fraud', 'delay', 'delayed', 'strike', 'spill', 'contamination', 'collapse', 'allegation', 'alleged', 'criticism', 'outrage', 'fire', 'evacuated', 'cost overrun', 'halted', 'stop work', 'complaint', 'whistleblower', 'destroys', 'damages', 'desecrate', 'desecration', 'atrocity', 'toxic', 'misconduct', 'settlement', 'abuse', 'probed', 'fabricated', 'falsified', 'flooding', 'injuries'];
 const POS = ['award', 'awarded', 'wins', 'won', 'completed', 'completion', 'milestone', 'celebrates', 'honored', 'recognized', 'record', 'safety award', 'grant', 'donation', 'volunteer', 'community', 'hires', 'expands', 'opens', 'ribbon cutting', 'partnership'];
 
 export function ruleScore(topic, c, penalties) {

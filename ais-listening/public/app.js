@@ -412,7 +412,7 @@ function renderChart() {
   const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'none', role: 'img', 'aria-label': 'Daily relevant results by sentiment, last 30 days' });
   const y = (v) => H - bottom - (v / max) * (H - top - bottom);
   for (const v of [0, Math.round(max / 2), max]) {
-    svg.append(s('line', { x1: left, x2: W, y1: y(v), y2: y(v), stroke: '#E3E7EC', 'stroke-width': 1 }));
+    svg.append(s('line', { x1: left, x2: W, y1: y(v), y2: y(v), class: 'grid', 'stroke-width': 1 }));
     const t = s('text', { x: 0, y: y(v) + 3, class: 'axis' });
     t.textContent = v;
     svg.append(t);
