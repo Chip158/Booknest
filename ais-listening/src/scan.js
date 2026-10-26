@@ -1,11 +1,14 @@
 // Scan orchestration. A scan = one queue message per active topic, so each
 // topic runs in its own short Worker invocation (fits the free plan limits).
+// New results are stored as "pending", then checked a few at a time (full
+// article text + photos) by separate "check" messages.
 
-import { LOOKBACK_DAYS } from '../config/settings.js';
+import { LOOKBACK_DAYS, CHECK_BATCH } from '../config/settings.js';
 import { rowToTopic, now } from './db.js';
 import { runSources } from './sources/index.js';
 import { applyRules } from './filter.js';
-import { scoreCandidates } from './relevance.js';
+import { checkResult, ruleCheck, ruleScore } from './relevance.js';
+import { readResult } from './article.js';
 import { canonicalUrl, domainOf, jaccard, sha, titleKey, truncate } from './text.js';
 
 const CLUSTER_SIMILARITY = 0.55;
@@ -121,30 +124,76 @@ export async function runTopicScan(env, { scanId, topicId }) {
     pool.push({ key: c.titleKey, cluster: c.cluster_id });
   }
 
-  // 4) Relevance + sentiment on every new result.
+  // 4) Store new results as pending (with a provisional rules score), then
+  //    queue the full check: article text, names and photos.
   if (fresh.length) {
-    const feedback = await loadFeedback(env, topicId);
-    stats.scorer = await scoreCandidates(env, topic, fresh, feedback);
-
     const ts = now();
     const stmt = env.DB.prepare(
       `INSERT OR IGNORE INTO items (id, topic_id, opco, url, title, title_key, source, domain, platform, source_type, published_at, snippet,
-         sentiment, relevance, why, matched, scorer, cluster_id, scan_id, first_seen_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         sentiment, relevance, why, matched, scorer, cluster_id, scan_id, first_seen_at, images, exposure)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, 'pending')`
     );
     await env.DB.batch(
-      fresh.map((c) =>
-        stmt.bind(
+      fresh.map((c) => {
+        const est = ruleScore(topic, c, new Map());
+        return stmt.bind(
           c.id, topicId, topic.opco, c.url, truncate(c.title, 300), c.titleKey, truncate(c.source, 120), c.domain, c.platform, c.sourceType,
-          c.publishedAt, truncate(c.snippet, 600), c.sentiment, c.relevance, c.why,
+          c.publishedAt, truncate(c.snippet, 600), est.sentiment, est.relevance, est.why,
           JSON.stringify({ keywords: c._matched.keywords, context: c._matched.context, via: c._matched.via }),
-          c.scorer, c.cluster_id, scanId, ts
-        )
-      )
+          c.cluster_id, scanId, ts, JSON.stringify(c.images || [])
+        );
+      })
     );
+    const ids = fresh.map((c) => c.id);
+    const jobs = [];
+    for (let i = 0; i < ids.length; i += CHECK_BATCH) jobs.push({ body: { type: 'check', topicId, ids: ids.slice(i, i + CHECK_BATCH) } });
+    for (let i = 0; i < jobs.length; i += 100) await env.SCAN_QUEUE.sendBatch(jobs.slice(i, i + 100));
     stats.new_items = fresh.length;
+    stats.scorer = env.ANTHROPIC_API_KEY ? 'claude' : 'rules';
   }
 
   await finishTopic(env, scanId, topicId, stats);
   return stats;
+}
+
+async function saveCheck(env, id, r, read) {
+  await env.DB.prepare(
+    `UPDATE items SET relevance = ?, sentiment = ?, why = ?, scorer = ?, exposure = ?, names_found = ?, photo = ?, photo_note = ?,
+       images = ?, article_url = ?, text_checked = ?, updated_at = ? WHERE id = ?`
+  ).bind(
+    r.relevance, r.sentiment, r.why, r.scorer, r.exposure, JSON.stringify(r.names_found), r.photo, r.photo_note || null,
+    JSON.stringify(read.images), read.url, read.textChecked ? 1 : 0, now(), id
+  ).run();
+}
+
+// Reads each result's full article and photos, then runs the name/photo check.
+export async function runCheck(env, { topicId, ids }) {
+  const row = await env.DB.prepare('SELECT * FROM topics WHERE id = ?').bind(topicId).first();
+  const placeholders = ids.map(() => '?').join(',');
+  const { results } = await env.DB.prepare(`SELECT * FROM items WHERE id IN (${placeholders}) AND exposure = 'pending'`).bind(...ids).all();
+  if (!results.length) return;
+  const topic = row ? rowToTopic(row) : { name: 'Removed topic', opco: results[0].opco, type: 'project', keywords: [], context: [], exclude: [], confirm: [] };
+  const feedback = await loadFeedback(env, topicId);
+  for (const item of results) {
+    item.matched = JSON.parse(item.matched || '{}');
+    const read = await readResult(item);
+    const r = await checkResult(env, topic, item, read, feedback);
+    if (read.note && !read.textChecked) r.why += ` (Full article not checked: ${read.note}.)`;
+    await saveCheck(env, item.id, r, read);
+  }
+}
+
+// Safety net (hourly): anything still pending after 45 minutes gets the
+// rules check so nothing stays hidden if a check run failed.
+export async function finishStaleChecks(env) {
+  const { results } = await env.DB.prepare(
+    "SELECT * FROM items WHERE exposure = 'pending' AND first_seen_at < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-45 minutes') LIMIT 200"
+  ).all();
+  for (const item of results) {
+    item.matched = JSON.parse(item.matched || '{}');
+    const read = { url: item.url, text: '', images: JSON.parse(item.images || '[]'), textChecked: false };
+    const r = ruleCheck({ keywords: [], context: [] }, item, read);
+    r.why += ' (Automatic check did not finish; scored by rules.)';
+    await saveCheck(env, item.id, r, read);
+  }
 }

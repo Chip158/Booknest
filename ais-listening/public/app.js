@@ -21,7 +21,7 @@ const state = {
   prevSeen: 0,
   shown: PAGE,
   editing: null, // topic id being edited, or 'new'
-  f: { opco: 'ALL', topic: 'ALL', sentiment: 'ALL', range: '7', sort: 'priority', q: '', low: false, handled: false, starred: false, onlyNew: false },
+  f: { opco: 'ALL', topic: 'ALL', sentiment: 'ALL', range: '7', sort: 'priority', q: '', exp: 'ALL', low: false, handled: false, starred: false, onlyNew: false },
 };
 
 // ------------------------------------------------------------------ helpers
@@ -66,6 +66,9 @@ async function api(path, opts = {}) {
 
 const opcoOf = (code) => state.config.opcos.find((o) => o.code === code) || { code, name: code, color: '#A7B1BC' };
 const topicOf = (id) => state.topics.find((t) => t.id === id);
+// What the team watches for first: one of our companies named in the copy, or
+// our logo / branded equipment in a photo.
+const isUs = (it) => it.exposure === 'named' || it.exposure === 'pictured';
 // View-only sign-ins see everything but get no controls that change data.
 const canEdit = () => state.config?.role === 'editor';
 
@@ -122,7 +125,7 @@ function readHash() {
 }
 function writeHash() {
   const p = new URLSearchParams();
-  const d = { opco: 'ALL', topic: 'ALL', sentiment: 'ALL', range: '7', sort: 'priority', q: '' };
+  const d = { opco: 'ALL', topic: 'ALL', sentiment: 'ALL', range: '7', sort: 'priority', q: '', exp: 'ALL' };
   for (const [k, v] of Object.entries(state.f)) {
     if (typeof v === 'boolean') v && p.set(k, '1');
     else if (v !== d[k]) p.set(k, v);
@@ -142,7 +145,10 @@ function filtered(skip = []) {
   const since = Date.now() - Number(f.range) * 86400000;
   const q = f.q.trim().toLowerCase();
   return state.items.filter((it) => {
+    if (it.exposure === 'pending') return false; // still being checked
     if (new Date(it.published_at || it.first_seen_at).getTime() < since) return false;
+    if (!skip.includes('exp') && f.exp === 'us' && !isUs(it)) return false;
+    if (!skip.includes('exp') && f.exp === 'not' && isUs(it)) return false;
     if (!skip.includes('opco') && f.opco !== 'ALL' && it.opco !== f.opco) return false;
     if (!skip.includes('topic') && f.topic !== 'ALL' && String(it.topic_id) !== f.topic) return false;
     if (!skip.includes('sentiment') && f.sentiment !== 'ALL' && it.sentiment !== f.sentiment) return false;
@@ -174,9 +180,13 @@ function clusters(items) {
   }
   const date = (g) => g.lead.published_at || g.lead.first_seen_at;
   const sorters = {
-    // Relevance tier first, newest first within a tier, so a strong match from
-    // today isn't buried under a slightly higher score from weeks ago.
-    priority: (a, b) => tierOf(b.lead.relevance).rank - tierOf(a.lead.relevance).rank || date(b).localeCompare(date(a)),
+    // Stories that name or show us first; then relevance tier; newest first
+    // within a tier, so a strong match from today isn't buried under a
+    // slightly higher score from weeks ago.
+    priority: (a, b) =>
+      groupOf(b.lead).rank - groupOf(a.lead).rank ||
+      tierOf(b.lead.relevance).rank - tierOf(a.lead.relevance).rank ||
+      date(b).localeCompare(date(a)),
     newest: (a, b) => (b.lead.published_at || b.lead.first_seen_at).localeCompare(a.lead.published_at || a.lead.first_seen_at),
     oldest: (a, b) => (a.lead.published_at || a.lead.first_seen_at).localeCompare(b.lead.published_at || b.lead.first_seen_at),
     relevance: (a, b) => b.lead.relevance - a.lead.relevance || date(b).localeCompare(date(a)),
@@ -192,15 +202,21 @@ function tierOf(score) {
   return { rank: 0, label: `Low confidence · below ${t}` };
 }
 
-// Cards, with a tier heading wherever the relevance tier changes (priority sort only).
-function cardsWithTiers(groups) {
+function groupOf(it) {
+  if (it.relevance < state.config.threshold) return { rank: 0, label: `Low confidence · relevance below ${state.config.threshold}` };
+  if (isUs(it)) return { rank: 2, label: 'Names us or shows our logo' };
+  return { rank: 1, label: "Our topics in the news · we're not named or pictured" };
+}
+
+// Cards, with a heading wherever the group changes (priority sort only).
+function cardsWithGroups(groups) {
   if (state.f.sort !== 'priority') return groups.map(card);
   const out = [];
   let last = null;
   for (const g of groups) {
-    const tier = tierOf(g.lead.relevance);
-    if (tier.rank !== last) out.push(h('h3', { class: 'tier', text: tier.label }));
-    last = tier.rank;
+    const grp = groupOf(g.lead);
+    if (grp.rank !== last) out.push(h('h3', { class: `tier tier-${grp.rank}`, text: grp.label }));
+    last = grp.rank;
     out.push(card(g));
   }
   return out;
@@ -249,6 +265,10 @@ function renderStatus() {
     btn.disabled = true;
     btn.textContent = 'Scanning…';
     el.append(h('strong', { text: `Scanning: ${s.running.topics_done} of ${s.running.topics_total} topics done` }), ' · results appear automatically');
+  } else if (s.checking) {
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+    el.append(h('strong', { text: `Reading ${s.checking} new stor${s.checking === 1 ? 'y' : 'ies'} for our names and logos` }), ' · results appear as they finish');
   } else {
     btn.disabled = false;
     btn.textContent = 'Check now';
@@ -266,16 +286,16 @@ function renderTiles() {
   const base = filtered(['sentiment']).filter((it) => it.status !== 'dismissed');
   // Count stories, not outlet copies, so tiles match the lists below.
   const stories = (list) => new Set(list.map((it) => it.cluster_id)).size;
-  const neg = stories(base.filter((it) => it.sentiment === 'negative' && it.status === 'open'));
-  const pos = stories(base.filter((it) => it.sentiment === 'positive'));
-  const fresh = stories(base.filter(isNew));
-  const starred = stories(state.items.filter((it) => it.starred && (state.f.opco === 'ALL' || it.opco === state.f.opco)));
+  const us = stories(base.filter(isUs));
+  const neg = stories(base.filter((it) => isUs(it) && it.sentiment === 'negative' && it.status === 'open'));
+  const pos = stories(base.filter((it) => isUs(it) && it.sentiment === 'positive'));
+  const fresh = stories(base.filter((it) => isUs(it) && isNew(it)));
   const tile = (cls, num, lbl, onclick) => h('button', { class: `tile ${cls}`, type: 'button', onclick }, h('div', { class: 'num', text: num }), h('div', { class: 'lbl', text: lbl }));
   $('tiles').replaceChildren(
-    tile('neg', neg, 'Negative, not reviewed', () => { setFilter({ sentiment: 'negative' }); $('h-attention').scrollIntoView({ behavior: 'smooth' }); }),
-    tile('pos', pos, 'Positive — share-worthy', () => { setFilter({ sentiment: 'positive' }); $('h-results').scrollIntoView({ behavior: 'smooth' }); }),
-    tile('new', fresh, 'New since your last visit', () => { setFilter({ onlyNew: true }); $('h-results').scrollIntoView({ behavior: 'smooth' }); }),
-    tile('star', starred, 'Starred to share', () => { setFilter({ starred: true, handled: true }); $('h-results').scrollIntoView({ behavior: 'smooth' }); })
+    tile('us', us, 'Name us or show our logo', () => { setFilter({ exp: 'us', sentiment: 'ALL' }); $('h-results').scrollIntoView({ behavior: 'smooth' }); }),
+    tile('neg', neg, 'Negative about us, not reviewed', () => { $('h-attention').scrollIntoView({ behavior: 'smooth' }); }),
+    tile('pos', pos, 'Positive about us — share-worthy', () => { setFilter({ exp: 'us', sentiment: 'positive' }); $('h-results').scrollIntoView({ behavior: 'smooth' }); }),
+    tile('new', fresh, 'New about us since your last visit', () => { setFilter({ exp: 'us', onlyNew: true }); $('h-results').scrollIntoView({ behavior: 'smooth' }); })
   );
 }
 
@@ -291,6 +311,13 @@ function renderFilters() {
     ...state.config.opcos
       .filter((o) => state.topics.some((t) => t.opco === o.code) || state.items.some((i) => i.opco === o.code))
       .map((o) => chip(o.name, f.opco === o.code, () => setFilter({ opco: o.code, topic: 'ALL' }), o.color, countBase.filter((i) => i.opco === o.code).length))
+  );
+
+  const eBase = filtered(['exp']);
+  $('exp-chips').replaceChildren(
+    chip('All', f.exp === 'ALL', () => setFilter({ exp: 'ALL' }), null, eBase.length),
+    chip('Names or shows us', f.exp === 'us', () => setFilter({ exp: 'us' }), null, eBase.filter(isUs).length),
+    chip('Not named or pictured', f.exp === 'not', () => setFilter({ exp: 'not' }), null, eBase.filter((i) => !isUs(i)).length)
   );
 
   const sBase = filtered(['sentiment']);
@@ -342,7 +369,7 @@ function card(group) {
   const it = group.lead;
   const o = opcoOf(it.opco);
   const t = topicOf(it.topic_id);
-  const url = safeUrl(it.url);
+  const url = safeUrl(it.article_url || it.url);
   const low = it.relevance < state.config.threshold;
   const handled = it.status !== 'open';
   const sent = SENTIMENTS.find((s) => s.key === it.sentiment) || SENTIMENTS[1];
@@ -359,6 +386,8 @@ function card(group) {
       it.starred ? h('span', { class: 'badge-state', text: '★ Starred' }) : null),
     h('h3', {}, url ? h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', text: it.title }) : it.title),
     h('div', { class: 'src', text: [it.source, it.platform, `${when(date)}`].filter(Boolean).join(' · '), title: `Published ${fullTime(it.published_at) || 'unknown'} · found ${fullTime(it.first_seen_at)}` }),
+    exposureLine(it),
+    photoStrip(it, url),
     it.snippet ? h('p', { class: 'snippet', text: it.snippet }) : null,
     h('div', { class: 'scores' },
       h('span', { class: `pill ${sent.key}`, text: `${sent.icon} ${sent.label}` }),
@@ -382,6 +411,28 @@ function card(group) {
   );
 }
 
+// The most important line on a card: are we named, or in a photo?
+function exposureLine(it) {
+  const names = it.names_found || [];
+  const parts = [];
+  if (it.exposure === 'named') parts.push(h('span', { class: 'exp us', text: `Names us: ${names.join(', ') || 'yes'}` }));
+  if (it.photo === 'yes') parts.push(h('span', { class: 'exp us', text: 'Our logo in a photo' }));
+  if (it.photo === 'unclear') parts.push(h('span', { class: 'exp maybe', text: 'Photo may show us — please look' }));
+  if (!parts.length) parts.push(h('span', { class: 'exp safe', text: 'Not named or pictured' }));
+  if (it.photo === 'unchecked' && it.images?.length) parts.push(h('span', { class: 'exp note', text: 'Photos not checked' }));
+  if (it.source_type === 'news' && !it.text_checked) parts.push(h('span', { class: 'exp note', text: 'Headline only' }));
+  return h('div', { class: 'exposure' }, parts, it.photo_note ? h('p', { class: 'photo-note', text: it.photo_note }) : null);
+}
+
+// Lead photo, so a logo or our equipment can be spotted at a glance.
+function photoStrip(it, url) {
+  const src = (it.images || []).map(safeUrl).find(Boolean);
+  if (!src) return null;
+  const img = h('img', { src, alt: 'Photo from the article', loading: 'lazy', referrerpolicy: 'no-referrer', class: 'thumb' });
+  img.addEventListener('error', () => img.closest('.thumb-wrap')?.remove());
+  return h('a', { class: 'thumb-wrap', href: url || src, target: '_blank', rel: 'noopener noreferrer' }, img);
+}
+
 function setBarWidths(root) {
   // CSP forbids inline style attributes, so widths are set through the CSSOM.
   root.querySelectorAll('.rel-bar > span').forEach((el) => {
@@ -393,11 +444,12 @@ function setBarWidths(root) {
 function renderLists() {
   const items = filtered();
   const groups = clusters(items);
-  const attention = groups.filter((g) => g.lead.sentiment === 'negative' && g.lead.status === 'open');
+  // Needs attention = negative AND we're named or pictured.
+  const attention = groups.filter((g) => isUs(g.lead) && g.lead.sentiment === 'negative' && g.lead.status === 'open');
   const rest = groups.filter((g) => !attention.includes(g));
 
   $('attention-count').textContent = `· ${attention.length}`;
-  $('attention').replaceChildren(...(attention.length ? cardsWithTiers(attention) : [h('div', { class: 'empty', text: 'Nothing negative needs attention for these filters. 👍' })]));
+  $('attention').replaceChildren(...(attention.length ? cardsWithGroups(attention) : [h('div', { class: 'empty', text: 'Nothing negative needs attention for these filters. 👍' })]));
 
   $('results-count').textContent = `· ${rest.length} stories`;
   const lowCount = state.items.filter((it) => it.relevance < state.config.threshold && it.status === 'open').length;
@@ -406,7 +458,7 @@ function renderLists() {
     : `Hiding ${lowCount} low-confidence match${lowCount === 1 ? '' : 'es'} (relevance below ${state.config.threshold}). Turn on “Show low-confidence” to see them.`;
 
   const list = $('results');
-  list.replaceChildren(...(rest.length ? cardsWithTiers(rest.slice(0, state.shown)) : [h('div', { class: 'empty', text: state.items.length ? 'No results match these filters.' : 'No results yet. Press “Check now” to run the first scan.' })]));
+  list.replaceChildren(...(rest.length ? cardsWithGroups(rest.slice(0, state.shown)) : [h('div', { class: 'empty', text: state.items.length ? 'No results match these filters.' : 'No results yet. Press “Check now” to run the first scan.' })]));
   if (rest.length > state.shown) list.append(h('button', { class: 'btn more', type: 'button', onclick: () => { state.shown += PAGE; renderLists(); } }, `Show ${Math.min(PAGE, rest.length - state.shown)} more`));
   setBarWidths($('attention'));
   setBarWidths(list);
@@ -610,10 +662,10 @@ async function refreshStatus() {
     state.status = await api('/api/status');
     renderStatus();
     const lastId = state.status.last?.id ?? null;
-    const runningDone = state.status.running?.topics_done;
+    const runningDone = `${state.status.running?.topics_done}|${state.status.checking}`;
     // Refresh results whenever a scan finishes or makes progress.
     if (lastId !== state.lastScanId || runningDone !== state.runningDone) {
-      const first = state.lastScanId === null && state.runningDone === undefined;
+      const first = state.runningDone === undefined;
       state.lastScanId = lastId;
       state.runningDone = runningDone;
       if (!first) {
@@ -625,7 +677,7 @@ async function refreshStatus() {
   } catch (e) {
     console.error(e);
   }
-  pollTimer = setTimeout(refreshStatus, state.status?.running ? 5000 : 60000);
+  pollTimer = setTimeout(refreshStatus, state.status?.running || state.status?.checking ? 5000 : 60000);
 }
 
 async function init() {

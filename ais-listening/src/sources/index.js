@@ -134,6 +134,10 @@ async function reddit(topic, days, env) {
     platform: 'Reddit',
     sourceType: 'social',
     contextInQuery: false,
+    images: [
+      ...(p.preview?.images || []).map((i) => i.source?.url),
+      /\.(jpe?g|png|webp)$/i.test(p.url || '') ? p.url : null,
+    ].filter(Boolean),
   }));
 }
 
@@ -148,6 +152,9 @@ async function bluesky(topic, days) {
     for (const p of data.posts || []) {
       const rkey = p.uri.split('/').pop();
       const text = p.record?.text || '';
+      const e = p.embed || {};
+      const images = [...(e.images || []), ...(e.media?.images || [])].map((i) => i.fullsize || i.thumb).filter(Boolean);
+      if (e.external?.thumb) images.push(e.external.thumb);
       out.push({
         url: `https://bsky.app/profile/${p.author.handle}/post/${rkey}`,
         title: truncate(text.split('\n')[0], 140),
@@ -158,6 +165,7 @@ async function bluesky(topic, days) {
         platform: 'Bluesky',
         sourceType: 'social',
         contextInQuery: false,
+        images,
       });
     }
   }
@@ -183,6 +191,7 @@ async function brave(topic, days, env) {
         platform: site.includes('linkedin') ? 'LinkedIn' : site.includes('facebook') ? 'Facebook' : 'Web',
         sourceType: 'social',
         contextInQuery: false,
+        images: r.thumbnail?.original ? [r.thumbnail.original] : [],
       });
     }
   }

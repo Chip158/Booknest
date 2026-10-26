@@ -98,3 +98,17 @@ test('rules fallback scores negative coverage', () => {
   assert.equal(s.sentiment, 'negative');
   assert.ok(s.relevance >= 60);
 });
+
+test('names us: exact company names, case-aware for short names', async () => {
+  const { findNames, exposureOf, ruleCheck } = await import('../src/relevance.js');
+  assert.deepEqual(findNames('Crews from AIS Infrastructure began work'), ['AIS Infrastructure', 'AIS']);
+  assert.deepEqual(findNames('F.D. Thomas painters on the span'), ['F.D. Thomas']);
+  assert.deepEqual(findNames('rsi readings and ais data feeds'), []);
+  assert.equal(exposureOf({ named: false, photo: 'yes' }), 'pictured');
+  assert.equal(exposureOf({ named: true, photo: 'no' }), 'named');
+  assert.equal(exposureOf({ named: false, photo: 'unclear' }), 'not_named');
+  const t = topic('Cabeza Prieta');
+  const item = { title: 'Refuge wall work continues', snippet: '', domain: 'x.test', matched: { keywords: ['Cabeza Prieta'], context: ['wall'], via: 'text' } };
+  assert.equal(ruleCheck(t, item, { text: 'The contractor, NWDD, said…', images: [] }).exposure, 'named');
+  assert.equal(ruleCheck(t, item, { text: 'No company was named.', images: ['https://x/p.jpg'] }).photo, 'unchecked');
+});

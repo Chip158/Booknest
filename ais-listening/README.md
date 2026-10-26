@@ -14,6 +14,35 @@ a phone.
 | Starting topics (used only on the very first run) | `config/seed-topics.js` |
 | Turn a source off | `DISABLED_SOURCES` in `wrangler.toml` |
 
+## What the team sees first
+
+The team cares most about stories and posts that **name one of our companies**
+or **show our logo or branded equipment in a photo**. Those come first, and
+only negative stories of that kind go into "Needs attention". Coverage of a
+project or site that neither names nor shows us is listed after them as lower
+priority.
+
+For every new result the scanner opens the page and reads the full article.
+Google News links are first converted to the publisher's real address. It
+collects the lead photos (up to 3) and asks Claude:
+
+- Is one of our companies named in the text? Names per OpCo are in
+  `config/settings.js` (`names`).
+- Does a photo show our logo or branded equipment? What each logo looks like is
+  in `logo`. Optionally, drop a PNG of each logo in `public/logos/` and set
+  `logoFile`, which makes the photo check more reliable.
+
+Limits:
+- Some sites block automated readers (Reuters, Medium and others return
+  "403"). Those results are checked on the headline only and labeled
+  "Headline only".
+- The photo check needs `ANTHROPIC_API_KEY`. Without it, photos are shown on
+  the card but not checked.
+- The searches are text-based. A photo of our equipment in a post that never
+  mentions any of our topic keywords or project names won't be found. Finding
+  those needs a paid image-recognition listening tool (e.g. Brandwatch,
+  Talkwalker, Meltwater).
+
 ## How a result gets on the dashboard
 
 1. **Search.** Each topic is searched on every source. News engines get the

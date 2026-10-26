@@ -2,14 +2,14 @@ import { BRAND, OPCOS, RELEVANCE_THRESHOLD, SCAN_HOURS_PACIFIC, TIMEZONE, RELEVA
 import { handleLogin, handleLogout, sessionRole } from './auth.js';
 import { ensureSeeded, insertTopicStmt, now, rowToItem, rowToTopic, validateTopic } from './db.js';
 import { isScanSlot, nextScanTime } from './schedule.js';
-import { runningScan, runTopicScan, startScan } from './scan.js';
+import { finishStaleChecks, runCheck, runningScan, runTopicScan, startScan } from './scan.js';
 import { enabledSources } from './sources/index.js';
 
 const PUBLIC_PATHS = new Set(['/login.html', '/styles.css', '/favicon.svg', '/login.js', '/api/login']);
 
 const SECURITY_HEADERS = {
   'Content-Security-Policy':
-    "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+    "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'no-referrer',
@@ -68,7 +68,10 @@ async function api(request, env, path, role) {
 
   if (path === '/api/status' && method === 'GET') {
     const last = await env.DB.prepare('SELECT * FROM scans WHERE finished_at IS NOT NULL ORDER BY id DESC LIMIT 1').first();
-    return json({ running: await runningScan(env), last, next: nextScanTime(), serverTime: now() });
+    const { n: checking } = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM items WHERE exposure = 'pending' AND first_seen_at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-60 minutes')"
+    ).first();
+    return json({ running: await runningScan(env), checking, last, next: nextScanTime(), serverTime: now() });
   }
 
   if (path === '/api/items' && method === 'GET') {
@@ -155,7 +158,7 @@ async function api(request, env, path, role) {
     const { results } = await env.DB.prepare(
       `SELECT substr(COALESCE(published_at, first_seen_at), 1, 10) AS day, opco, sentiment, COUNT(*) AS n
          FROM items
-        WHERE COALESCE(published_at, first_seen_at) > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-90 days') AND status != 'dismissed' AND relevance >= ?
+        WHERE COALESCE(published_at, first_seen_at) > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-90 days') AND status != 'dismissed' AND exposure != 'pending' AND relevance >= ?
         GROUP BY day, opco, sentiment ORDER BY day`
     ).bind(RELEVANCE_THRESHOLD).all();
     return json({ rows: results });
@@ -197,20 +200,26 @@ export default {
 
   // Runs every hour (see wrangler.toml); only scans at the configured Pacific hours.
   async scheduled(event, env, ctx) {
+    ctx.waitUntil(finishStaleChecks(env));
     if (!isScanSlot(new Date(event.scheduledTime))) return;
     await ensureSeeded(env);
     ctx.waitUntil(startScan(env, 'scheduled'));
   },
 
-  // One message per topic per scan.
+  // Messages: one per topic per scan, then "check" messages for new results.
   async queue(batch, env) {
     for (const msg of batch.messages) {
       try {
-        await runTopicScan(env, msg.body);
+        if (msg.body.type === 'check') await runCheck(env, msg.body);
+        else await runTopicScan(env, msg.body);
         msg.ack();
       } catch (err) {
-        console.error('topic scan failed', msg.body, err);
-        if (msg.attempts >= 2) {
+        console.error('queue job failed', msg.body, err);
+        if (msg.body.type === 'check') {
+          // The hourly safety net scores anything left pending.
+          if (msg.attempts >= 2) msg.ack();
+          else msg.retry();
+        } else if (msg.attempts >= 2) {
           await env.DB.prepare(
             'UPDATE scans SET topics_done = topics_done + 1, finished_at = CASE WHEN topics_done + 1 >= topics_total THEN ? ELSE finished_at END WHERE id = ?'
           ).bind(now(), msg.body.scanId).run();

@@ -9,7 +9,13 @@ export function rowToTopic(r) {
 }
 
 export function rowToItem(r) {
-  return { ...r, starred: !!r.starred, matched: JSON.parse(r.matched || '{}') };
+  return {
+    ...r,
+    starred: !!r.starred,
+    matched: JSON.parse(r.matched || '{}'),
+    names_found: JSON.parse(r.names_found || '[]'),
+    images: JSON.parse(r.images || '[]'),
+  };
 }
 
 export const now = () => new Date().toISOString();
