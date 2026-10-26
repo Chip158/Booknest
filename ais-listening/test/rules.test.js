@@ -164,3 +164,11 @@ test('CSV export: clickable headline, formula-safe text, Monday week', async () 
   assert.match(csv, /,'=bad,/);
   assert.match(csv, /F\.D\. Thomas,Bay Bridge \(FDT\)/);
 });
+
+test('name-only search results pass the headline gate but need context in the full article', () => {
+  const t = topic('F.D. Thomas');
+  const r = applyRules(t, { title: 'SFPUC headworks facility', snippet: '', contextInQuery: 'full-article' });
+  assert.equal(r.ok, true);
+  assert.equal(r.matched.via, 'full article (checked when read)');
+  assert.equal(applyRules(t, { title: 'F.D. Thomas obituary', snippet: '', contextInQuery: 'full-article' }).ok, true);
+});

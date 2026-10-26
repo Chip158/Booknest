@@ -18,6 +18,10 @@ export function applyRules(topic, candidate) {
 
   const keywords = matchedTerms(text, topic.keywords);
   const context = matchedTerms(text, topic.context);
+  // Name-only search result: context is required in the full article instead.
+  if (candidate.contextInQuery === 'full-article') {
+    return { ok: true, matched: { keywords, context, via: context.length ? 'text' : 'full article (checked when read)' } };
+  }
   const engineChecked = candidate.contextInQuery === true;
 
   // Keyword must be visible locally, unless the engine matched on full text.

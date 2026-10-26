@@ -186,6 +186,8 @@ export async function runCheck(env, { topicId, ids }) {
     const excluded = read.textChecked ? excludedInArticle(topic, read.text) : [];
     if (excluded.length) {
       r = { ...ruleCheck(topic, item, read), relevance: 10, exposure: 'not_named', names_found: [], why: `Excluded: the article is about ${excluded.map((e) => `"${e}"`).join(', ')}.` };
+    } else if (item.matched.via === 'full article (checked when read)' && read.textChecked && !topic.context.some((t) => containsTerm(read.text, t))) {
+      r = { ...ruleCheck(topic, item, read), relevance: 20, why: `Names ${topic.keywords.filter((k) => containsTerm(`${item.title}\n${read.text}`, k)).join(', ') || 'the topic'} but the article has nothing about our kind of work.` };
     } else if (read.textChecked && !nameInArticle(topic, item, read)) {
       // Search engines match loosely ("AI infrastructure" for "AIS Infrastructure").
       // With the full article in hand, require the real name to be there.

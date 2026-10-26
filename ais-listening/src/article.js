@@ -86,9 +86,11 @@ export async function fetchArticle(url) {
     .on('meta[property="og:image"], meta[name="twitter:image"], meta[property="og:image:secure_url"]', {
       element(el) { const u = absolute(el.getAttribute('content') || '', finalUrl); if (u) lead.push(u); },
     })
-    .on('script, style, noscript, nav, footer, aside, header, form, svg', skipper)
-    .on('h1, h2, h3, p, li, figcaption, blockquote', block)
-    .on('h1, h2, h3, p, li, figcaption, blockquote', keepText)
+    .on('script, style, noscript, nav, footer, aside, header, form, svg, iframe, button', skipper)
+    // All body text, not just <p>: project credits and contractor lists often
+    // sit in <div>/<strong>/<td> blocks (e.g. ENR "Subcontractors: … FD Thomas").
+    .on('h1, h2, h3, h4, p, li, figcaption, blockquote, div, section, article, tr, dd, dt, br', block)
+    .on('body', keepText)
     .on('article img, figure img, main img', {
       element(el) {
         const src = el.getAttribute('src') || el.getAttribute('data-src') || (el.getAttribute('srcset') || '').split(/\s+/)[0];

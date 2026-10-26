@@ -30,16 +30,24 @@ function withinDays(iso, days) {
 async function googleNews(topic, days) {
   const items = [];
   const seen = new Set();
-  for (const [i, query] of buildQueries(topic).entries()) {
+  // Exclude terms are left out: with several "-term"s Google silently drops the
+  // date filter and returns only old stories. Excludes are applied by our own
+  // rules filter instead.
+  const queries = buildQueries(topic, { includeExclude: false }).map((q) => ({ q, nameOnly: false }));
+  // Company topics also search the name alone, since a story can name us
+  // without using any of our context words near it. Those results must show
+  // our kind of work in the full article (checked when the article is read).
+  if (topic.type === 'opco') queries.push({ q: buildQuery(topic, { includeContext: false, includeExclude: false }), nameOnly: true });
+  for (const [i, { q, nameOnly }] of queries.entries()) {
     if (i) await pause(1500); // space out searches; Google throttles bursts
-    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(`${query} when:${days}d`)}&hl=en-US&gl=US&ceid=US:en`;
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(`${q} when:${days}d`)}&hl=en-US&gl=US&ceid=US:en`;
     let found = parseRss(await (await get(url)).text(), MAX_PER_SOURCE);
     if (!found.length) {
       // Throttled responses come back as an empty feed: retry once.
-      await pause(4000);
+      await pause(6000);
       found = parseRss(await (await get(url)).text(), MAX_PER_SOURCE);
     }
-    for (const it of found) if (!seen.has(it.link)) { seen.add(it.link); items.push(it); }
+    for (const it of found) if (!seen.has(it.link)) { seen.add(it.link); items.push({ ...it, nameOnly }); }
   }
   return items.slice(0, MAX_PER_SOURCE * 2).map((it) => {
     const source = it.source || '';
@@ -56,7 +64,7 @@ async function googleNews(topic, days) {
       publishedAt: toIso(it.pubDate),
       platform: 'Google News',
       sourceType: 'news',
-      contextInQuery: true,
+      contextInQuery: it.nameOnly ? 'full-article' : true,
     };
   });
 }
