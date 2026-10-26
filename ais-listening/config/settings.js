@@ -28,7 +28,8 @@ export const OPCOS = [
   {
     code: 'AISI', name: 'AIS Infrastructure', color: '#F2B705', // gold/yellow — confirm exact hex
     names: ['AIS Infrastructure', 'AISI'],
-    logo: 'the letters "AIS" and/or "AIS Infrastructure", gold/yellow and blue', // CONFIRM
+    // Confirmed: equipment typically says "AIS Infrastructure" or carries the logo.
+    logo: 'equipment, trucks, signs or hard hats marked with the words "AIS Infrastructure" or the AIS Infrastructure logo (colors to confirm; add logoFile for the exact mark)',
     logoFile: null,
   },
   {
