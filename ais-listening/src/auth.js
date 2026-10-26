@@ -1,6 +1,9 @@
-// Shared-password login. The password lives only as an encrypted Worker secret
-// (DASHBOARD_PASSWORD). A successful login sets an HttpOnly, Secure,
-// SameSite=Strict cookie signed with SESSION_SECRET (HMAC-SHA256).
+// Shared-password login. Passwords live only as encrypted Worker secrets:
+//   DASHBOARD_PASSWORD  team password — full access ("editor")
+//   VIEWER_PASSWORD     optional view-only password ("viewer"): can see and
+//                       filter everything, can't change anything
+// A successful login sets an HttpOnly, Secure, SameSite=Strict cookie that
+// carries the role and is signed with SESSION_SECRET (HMAC-SHA256).
 
 const COOKIE = 'ais_session';
 const SESSION_DAYS = 30;
@@ -41,13 +44,16 @@ function assertConfigured(env) {
   }
 }
 
-export async function isAuthed(request, env) {
+const ROLES = ['editor', 'viewer'];
+
+// Returns the signed-in role ('editor' | 'viewer'), or null.
+export async function sessionRole(request, env) {
   assertConfigured(env);
   const token = readCookie(request, COOKIE);
-  if (!token) return false;
-  const [exp, sig] = token.split('.');
-  if (!exp || !sig || Number(exp) < Date.now()) return false;
-  return safeEqual(sig, await hmac(env.SESSION_SECRET, `v1.${exp}`));
+  if (!token) return null;
+  const [exp, role, sig] = token.split('.');
+  if (!exp || !sig || !ROLES.includes(role) || Number(exp) < Date.now()) return null;
+  return (await safeEqual(sig, await hmac(env.SESSION_SECRET, `v2.${exp}.${role}`))) ? role : null;
 }
 
 function cookieHeader(value, maxAge, secure) {
@@ -66,7 +72,13 @@ export async function handleLogin(request, env) {
     password = String((await request.json()).password || '');
   } catch {}
 
-  if (!(await safeEqual(password, env.DASHBOARD_PASSWORD))) {
+  // Always run both comparisons so timing doesn't reveal which password matched.
+  const [isEditor, isViewer] = await Promise.all([
+    safeEqual(password, env.DASHBOARD_PASSWORD),
+    env.VIEWER_PASSWORD ? safeEqual(password, env.VIEWER_PASSWORD) : false,
+  ]);
+  const role = isEditor ? 'editor' : isViewer ? 'viewer' : null;
+  if (!role) {
     await env.DB.batch([
       env.DB.prepare('INSERT INTO login_attempts (ip, at) VALUES (?, ?)').bind(ip, Date.now()),
       env.DB.prepare('DELETE FROM login_attempts WHERE at < ?').bind(since),
@@ -75,7 +87,7 @@ export async function handleLogin(request, env) {
   }
 
   const exp = Date.now() + SESSION_DAYS * 86400000;
-  const token = `${exp}.${await hmac(env.SESSION_SECRET, `v1.${exp}`)}`;
+  const token = `${exp}.${role}.${await hmac(env.SESSION_SECRET, `v2.${exp}.${role}`)}`;
   const secure = new URL(request.url).protocol === 'https:';
   return Response.json({ ok: true }, { headers: { 'Set-Cookie': cookieHeader(token, SESSION_DAYS * 86400, secure) } });
 }

@@ -1,5 +1,5 @@
 import { BRAND, OPCOS, RELEVANCE_THRESHOLD, SCAN_HOURS_PACIFIC, TIMEZONE, RELEVANCE_MODEL } from '../config/settings.js';
-import { handleLogin, handleLogout, isAuthed } from './auth.js';
+import { handleLogin, handleLogout, sessionRole } from './auth.js';
 import { ensureSeeded, insertTopicStmt, now, rowToItem, rowToTopic, validateTopic } from './db.js';
 import { isScanSlot, nextScanTime } from './schedule.js';
 import { runningScan, runTopicScan, startScan } from './scan.js';
@@ -42,7 +42,7 @@ async function body(request) {
 
 // ------------------------------------------------------------------ API
 
-async function api(request, env, path) {
+async function api(request, env, path, role) {
   const method = request.method;
 
   // Mutations must be same-origin JSON requests (CSRF protection on top of SameSite cookies).
@@ -50,6 +50,7 @@ async function api(request, env, path) {
     const origin = request.headers.get('Origin');
     if (origin && origin !== new URL(request.url).origin) throw new HttpError(403, 'Bad origin');
     if (!(request.headers.get('Content-Type') || '').includes('application/json')) throw new HttpError(415, 'JSON required');
+    if (role !== 'editor') throw new HttpError(403, 'View-only access: ask the team to make changes.');
   }
 
   if (path === '/api/config' && method === 'GET') {
@@ -58,6 +59,7 @@ async function api(request, env, path) {
       opcos: OPCOS,
       threshold: RELEVANCE_THRESHOLD,
       scanHours: SCAN_HOURS_PACIFIC,
+      role,
       timezone: TIMEZONE,
       scorer: env.ANTHROPIC_API_KEY ? `Claude (${RELEVANCE_MODEL})` : 'Rules only — add ANTHROPIC_API_KEY for Claude scoring',
       sources: enabledSources(env).map(([name]) => name),
@@ -173,13 +175,14 @@ export default {
       if (path === '/logout') return secure(handleLogout(request));
       if (PUBLIC_PATHS.has(path)) return secure(await env.ASSETS.fetch(request));
 
-      if (!(await isAuthed(request, env))) {
+      const role = await sessionRole(request, env);
+      if (!role) {
         if (path.startsWith('/api/')) return secure(json({ error: 'Not signed in' }, 401));
         return secure(Response.redirect(new URL('/login.html', url).toString(), 302));
       }
 
       await ensureSeeded(env);
-      if (path.startsWith('/api/')) return secure(await api(request, env, path));
+      if (path.startsWith('/api/')) return secure(await api(request, env, path, role));
       const assetUrl = new URL(path === '/' ? '/index.html' : path, url);
       const res = await env.ASSETS.fetch(new Request(assetUrl, request));
       const out = secure(res);

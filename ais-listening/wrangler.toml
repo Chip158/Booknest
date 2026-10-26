@@ -41,7 +41,8 @@ DISABLED_SOURCES = "Bing News"
 enabled = true
 
 # Secrets (never put these in this file) — set with `npx wrangler secret put NAME`:
-#   DASHBOARD_PASSWORD   shared login password
+#   DASHBOARD_PASSWORD   team password (full access)
+#   VIEWER_PASSWORD      optional view-only password (see README)
 #   SESSION_SECRET       long random string used to sign login cookies
 #   ANTHROPIC_API_KEY    Claude relevance + sentiment check
 #   BRAVE_API_KEY        optional, paid: LinkedIn/Facebook public pages via web search

@@ -58,8 +58,18 @@ All of it runs on Cloudflare: a Worker for the dashboard, API and scanner, D1
 (SQLite) for topics, results and history, a Queue that runs one topic per
 invocation, and an hourly Cron Trigger. Nothing depends on a laptop being on.
 
-- Everything except the login page requires the shared password. The password
-  and API keys are stored as encrypted Cloudflare secrets, never in code.
+- Everything except the login page requires a password. There are no user
+  accounts. Anyone with the web address and a password can sign in on any
+  device. Passwords and API keys are stored as encrypted Cloudflare secrets,
+  never in code.
+- Two passwords:
+  - **Team password** (`DASHBOARD_PASSWORD`): full access.
+  - **View-only password** (`VIEWER_PASSWORD`, optional): for people who should
+    look but not change anything, such as leadership. They see every result,
+    filter and the trend chart, but get no Check now, Reviewed, Not relevant,
+    Star or topic-editing controls. The server also refuses any change from a
+    view-only sign-in. Leave it unset to turn view-only access off; change it
+    to revoke access.
 - Sign-in cookies are HttpOnly, Secure, SameSite=Strict and HMAC-signed. They
   last 30 days. Changing `SESSION_SECRET` signs everyone out.
 - After 8 wrong passwords, an IP address is locked out for 15 minutes.
@@ -84,6 +94,7 @@ npm run db:remote                                # creates the tables
 
 npx wrangler secret put DASHBOARD_PASSWORD       # the shared team password
 npx wrangler secret put SESSION_SECRET           # paste a long random string (e.g. `openssl rand -hex 32`)
+npx wrangler secret put VIEWER_PASSWORD          # optional: view-only password for leadership
 npx wrangler secret put ANTHROPIC_API_KEY        # from console.anthropic.com
 # optional:
 # npx wrangler secret put BRAVE_API_KEY

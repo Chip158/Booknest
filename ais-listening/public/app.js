@@ -66,6 +66,8 @@ async function api(path, opts = {}) {
 
 const opcoOf = (code) => state.config.opcos.find((o) => o.code === code) || { code, name: code, color: '#A7B1BC' };
 const topicOf = (id) => state.topics.find((t) => t.id === id);
+// View-only sign-ins see everything but get no controls that change data.
+const canEdit = () => state.config?.role === 'editor';
 
 // Readable text on any brand color.
 function onColor(hex) {
@@ -347,7 +349,7 @@ function card(group) {
           ...others.slice(0, 8).map((x) => h('a', { href: safeUrl(x.url), target: '_blank', rel: 'noopener noreferrer', text: x.source || x.domain || x.platform })),
           others.length > 8 ? `+${others.length - 8}` : '')
       : null,
-    h('div', { class: 'actions' },
+    canEdit() && h('div', { class: 'actions' },
       h('button', { class: 'btn', type: 'button', 'aria-pressed': String(it.status === 'reviewed'), onclick: () => act(it, it.status === 'reviewed' ? 'reopen' : 'reviewed') }, '✓ Reviewed'),
       h('button', { class: 'btn', type: 'button', 'aria-pressed': String(it.status === 'dismissed'), onclick: () => act(it, it.status === 'dismissed' ? 'reopen' : 'dismissed'), title: 'Not about us — teaches the filter' }, it.status === 'dismissed' ? '↺ Restore' : '✕ Not relevant'),
       h('button', { class: 'btn', type: 'button', 'aria-pressed': String(it.starred), onclick: () => act(it, it.starred ? 'unstar' : 'star') }, it.starred ? '★ Starred' : '☆ Star'))
@@ -527,7 +529,7 @@ function renderTopics() {
       termList('Context terms (need one)', t.context),
       termList('Exclude', t.exclude, 'ex'),
       t.confirm.length ? h('div', { class: 'confirm' }, h('strong', { text: 'Confirm with leadership' }), h('ul', {}, t.confirm.map((c) => h('li', { text: c })))) : null,
-      h('div', { class: 'topic-actions' },
+      canEdit() && h('div', { class: 'topic-actions' },
         h('button', { class: 'btn btn-small', type: 'button', onclick: () => { state.editing = t.id; renderTopics(); } }, 'Edit'),
         h('button', { class: 'btn btn-small', type: 'button', onclick: () => update({ paused: !t.paused }) }, t.paused ? 'Resume' : 'Pause'),
         t.confirm.length ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => confirm('Mark all open questions on this topic as confirmed?') && update({ confirm: [] }) }, 'Mark confirmed') : null,
@@ -606,6 +608,11 @@ async function init() {
   const [config] = await Promise.all([api('/api/config'), loadTopics(), loadItems()]);
   state.config = config;
   $('footer').textContent = `Relevance: ${config.scorer} · Sources: ${config.sources.join(', ')} · Scans at ${config.scanHours.map((h) => `${((h + 11) % 12) + 1} ${h < 12 ? 'AM' : 'PM'}`).join(' & ')} Pacific`;
+  if (!canEdit()) {
+    $('check-now').hidden = true;
+    $('add-topic').hidden = true;
+    $('view-only').hidden = false;
+  }
   render();
   renderScans();
   await refreshStatus();
