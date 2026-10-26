@@ -12,6 +12,8 @@ const SENT_COLORS = { negative: '#C62828', neutral: '#8A96A3', positive: '#2E7D3
 const PAGE = 40;
 
 const state = {
+  view: 'overview',
+  ovDays: '7',
   config: null,
   items: [],
   topics: [],
@@ -119,6 +121,7 @@ const isNew = (it) => new Date(it.first_seen_at).getTime() > state.prevSeen;
 
 function readHash() {
   const p = new URLSearchParams(location.hash.slice(1));
+  if (['overview', 'stories', 'reports', 'topics'].includes(p.get('view'))) state.view = p.get('view');
   for (const k of Object.keys(state.f)) {
     if (!p.has(k)) continue;
     const v = p.get(k);
@@ -127,6 +130,7 @@ function readHash() {
 }
 function writeHash() {
   const p = new URLSearchParams();
+  if (state.view !== 'overview') p.set('view', state.view);
   const d = { opco: 'ALL', topic: 'ALL', sentiment: 'ALL', range: '7', sort: 'priority', q: '', exp: 'ALL' };
   for (const [k, v] of Object.entries(state.f)) {
     if (typeof v === 'boolean') v && p.set(k, '1');
@@ -302,49 +306,112 @@ function renderStatus() {
   }
 }
 
+// ------------------------------------------------------------------ views
+
+const VIEWS = ['overview', 'stories', 'reports', 'topics'];
+function setView(v, { scroll = true } = {}) {
+  if (!VIEWS.includes(v)) v = 'overview';
+  state.view = v;
+  document.querySelectorAll('[data-view]').forEach((el) => (el.hidden = el.dataset.view !== v));
+  document.querySelectorAll('[data-tab]').forEach((b) => (b.dataset.tab === v ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
+  writeHash();
+  if (scroll) window.scrollTo({ top: 0 });
+}
+// Open the Stories section with a fresh set of filters.
+function openStories(patch = {}) {
+  Object.assign(state.f, { opco: 'ALL', topic: 'ALL', sentiment: 'ALL', exp: 'ALL', onlyNew: false, starred: false, q: '' }, patch);
+  state.shown = PAGE;
+  setView('stories');
+  render();
+}
+
+// Overview numbers use their own period (not the Stories filters).
+function overviewItems(days) {
+  const since = Date.now() - Number(days) * 86400000;
+  return state.items.filter((it) => it.exposure !== 'pending' && it.status !== 'dismissed' && it.relevance >= state.config.threshold &&
+    new Date(it.published_at || it.first_seen_at).getTime() >= since);
+}
+const countStories = (list) => new Set(list.map(storyOf)).size;
+
 function renderTiles() {
-  const base = filtered(['sentiment']).filter((it) => it.status !== 'dismissed');
-  // Count stories, not outlet copies, so tiles match the lists below.
-  const stories = (list) => new Set(list.map(storyOf)).size;
-  const us = stories(base.filter(isUs));
-  const neg = stories(base.filter((it) => isUs(it) && it.sentiment === 'negative' && it.status === 'open'));
-  const pos = stories(base.filter((it) => isUs(it) && it.sentiment === 'positive'));
-  const fresh = stories(base.filter((it) => isUs(it) && isNew(it)));
+  const days = state.ovDays;
+  $('ov-range').replaceChildren(...[['7', 'Last 7 days'], ['30', 'Last 30 days']].map(([v, l]) =>
+    h('button', { class: 'chip', type: 'button', 'aria-pressed': String(days === v), onclick: () => { state.ovDays = v; render(); } }, l)));
+  const base = overviewItems(days);
+  const us = countStories(base.filter(isUs));
+  const neg = countStories(base.filter((it) => mayBeUs(it) && it.sentiment === 'negative' && it.status === 'open'));
+  const pos = countStories(base.filter((it) => isUs(it) && it.sentiment === 'positive'));
+  const fresh = countStories(base.filter((it) => mayBeUs(it) && isNew(it)));
   const tile = (cls, num, lbl, onclick) => h('button', { class: `tile ${cls}`, type: 'button', onclick }, h('div', { class: 'num', text: num }), h('div', { class: 'lbl', text: lbl }));
   $('tiles').replaceChildren(
-    tile('us', us, 'Name us or show our logo', () => { setFilter({ exp: 'us', sentiment: 'ALL' }); $('h-results').scrollIntoView({ behavior: 'smooth' }); }),
-    tile('neg', neg, 'Negative about us, not reviewed', () => { $('h-attention').scrollIntoView({ behavior: 'smooth' }); }),
-    tile('pos', pos, 'Positive about us — share-worthy', () => { setFilter({ exp: 'us', sentiment: 'positive' }); $('h-results').scrollIntoView({ behavior: 'smooth' }); }),
-    tile('new', fresh, 'New about us since your last visit', () => { setFilter({ exp: 'us', onlyNew: true }); $('h-results').scrollIntoView({ behavior: 'smooth' }); })
+    tile('us', us, 'Name us or show our logo', () => openStories({ exp: 'us', range: days })),
+    tile('neg', neg, 'Negative about us', () => openStories({ exp: 'us', sentiment: 'negative', range: days })),
+    tile('pos', pos, 'Positive about us', () => openStories({ exp: 'us', sentiment: 'positive', range: days })),
+    tile('new', fresh, 'New since your last visit', () => openStories({ onlyNew: true, range: days }))
   );
+}
+
+function renderOverview() {
+  // Needs attention: unreviewed negative stories about us from the last 30 days, top 3.
+  const recent = clusters(overviewItems(30));
+  const attention = recent.filter((g) => mayBeUs(g.lead) && g.lead.sentiment === 'negative' && g.lead.status === 'open')
+    .sort((a, b) => b.lead.relevance - a.lead.relevance || (b.lead.published_at || '').localeCompare(a.lead.published_at || ''));
+  $('attention-count').textContent = attention.length ? `· ${attention.length}` : '';
+  $('see-attention').hidden = attention.length <= 3;
+  $('attention').replaceChildren(...(attention.length ? attention.slice(0, 3).map(card) : [h('div', { class: 'empty calm', text: 'Nothing negative about us needs attention. 👍' })]));
+  setBarWidths($('attention'));
+
+  // Latest about us: newest stories that name us or may show us.
+  const latest = clusters(overviewItems(state.ovDays)).filter((g) => mayBeUs(g.lead))
+    .sort((a, b) => (b.lead.published_at || b.lead.first_seen_at).localeCompare(a.lead.published_at || a.lead.first_seen_at));
+  $('see-latest').hidden = latest.length <= 5;
+  $('latest').replaceChildren(...(latest.length ? latest.slice(0, 5).map(({ lead: it }) => {
+    const o = opcoOf(it.opco);
+    const url = safeUrl(it.article_url || it.url);
+    const sent = SENTIMENTS.find((x) => x.key === it.sentiment) || SENTIMENTS[1];
+    return h('a', { class: 'row', href: url || '#', target: '_blank', rel: 'noopener noreferrer' },
+      h('span', { class: 'row-dot', '--c': o.color }),
+      h('span', { class: 'row-main' },
+        h('span', { class: 'row-title', text: it.title }),
+        h('span', { class: 'row-sub', text: `${o.name} · ${it.source || it.platform} · ${when(it.published_at || it.first_seen_at)}` })),
+      h('span', { class: `pill ${sent.key}`, text: sent.label }));
+  }) : [h('div', { class: 'row muted', text: `No stories naming us in the last ${state.ovDays} days.` })]));
+  $('latest').querySelectorAll('.row-dot').forEach((el) => (el.style.background = el.style.getPropertyValue('--c')));
+
+  // Companies with coverage in the period; quiet ones summarized in one line.
+  const base = overviewItems(state.ovDays);
+  const withNews = state.config.opcos.map((o) => {
+    const its = base.filter((it) => it.opco === o.code);
+    return { o, total: countStories(its), us: countStories(its.filter(mayBeUs)), neg: countStories(its.filter((it) => it.sentiment === 'negative')) };
+  }).filter((x) => x.total).sort((a, b) => b.us - a.us || b.total - a.total);
+  const quiet = state.config.opcos.length - withNews.length;
+  $('companies-hint').textContent = `${withNews.length} with coverage in the last ${state.ovDays} days · ${quiet} quiet. All are searched every scan.`;
+  $('companies').replaceChildren(...(withNews.length ? withNews.map(({ o, total, us, neg }) =>
+    h('button', { class: 'row', type: 'button', onclick: () => openStories({ opco: o.code, range: state.ovDays }) },
+      h('span', { class: 'row-dot', '--c': o.color }),
+      h('span', { class: 'row-main' },
+        h('span', { class: 'row-title', text: o.name }),
+        h('span', { class: 'row-sub', text: `${total} stor${total === 1 ? 'y' : 'ies'}${us ? ` · ${us} about us` : ''}${neg ? ` · ${neg} negative` : ''}` })),
+      h('span', { class: 'chev', 'aria-hidden': 'true', text: '›' }))) : [h('div', { class: 'row muted', text: 'No coverage in this period.' })]));
+  $('companies').querySelectorAll('.row-dot').forEach((el) => (el.style.background = el.style.getPropertyValue('--c')));
 }
 
 function renderFilters() {
   const f = state.f;
+  const show = f.exp === 'us' && f.sentiment === 'ALL' ? 'us' : f.sentiment === 'negative' ? 'neg' : f.sentiment === 'positive' ? 'pos' : 'all';
+  const seg = (key, label, patch) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(show === key), onclick: () => setFilter(patch) }, label);
+  $('show-seg').replaceChildren(
+    seg('all', 'All', { exp: 'ALL', sentiment: 'ALL' }),
+    seg('us', 'About us', { exp: 'us', sentiment: 'ALL' }),
+    seg('neg', 'Negative', { sentiment: 'negative' }),
+    seg('pos', 'Positive', { sentiment: 'positive' }));
+
   const countBase = filtered(['opco', 'topic']);
-  const chip = (label, pressed, onclick, color, n) =>
-    h('button', { class: 'chip', type: 'button', 'aria-pressed': String(pressed), onclick, '--c': color },
-      color ? h('span', { class: 'dot' }) : null, label, n != null ? h('span', { class: 'n', text: n }) : null);
-
-  $('opco-chips').replaceChildren(
-    chip('All', f.opco === 'ALL', () => setFilter({ opco: 'ALL', topic: 'ALL' }), null, countBase.length),
-    ...state.config.opcos
-      .filter((o) => state.topics.some((t) => t.opco === o.code) || state.items.some((i) => i.opco === o.code))
-      .map((o) => chip(o.name, f.opco === o.code, () => setFilter({ opco: o.code, topic: 'ALL' }), o.color, countBase.filter((i) => i.opco === o.code).length))
-  );
-
-  const eBase = filtered(['exp']);
-  $('exp-chips').replaceChildren(
-    chip('All', f.exp === 'ALL', () => setFilter({ exp: 'ALL' }), null, eBase.length),
-    chip('Names or shows us', f.exp === 'us', () => setFilter({ exp: 'us' }), null, eBase.filter(isUs).length),
-    chip('Not named or pictured', f.exp === 'not', () => setFilter({ exp: 'not' }), null, eBase.filter((i) => !isUs(i)).length)
-  );
-
-  const sBase = filtered(['sentiment']);
-  $('sentiment-chips').replaceChildren(
-    chip('All', f.sentiment === 'ALL', () => setFilter({ sentiment: 'ALL' })),
-    ...SENTIMENTS.map((s) => chip(`${s.icon} ${s.label}`, f.sentiment === s.key, () => setFilter({ sentiment: s.key }), null, sBase.filter((i) => i.sentiment === s.key).length))
-  );
+  const opcoSel = $('f-opco');
+  opcoSel.replaceChildren(h('option', { value: 'ALL', text: `All companies (${countBase.length})` }),
+    ...state.config.opcos.filter((o) => state.topics.some((t) => t.opco === o.code))
+      .map((o) => h('option', { value: o.code, text: `${o.name} (${countBase.filter((i) => i.opco === o.code).length})` })));
+  opcoSel.value = f.opco;
 
   const sel = $('f-topic');
   const topics = state.topics.filter((t) => f.opco === 'ALL' || t.opco === f.opco);
@@ -508,25 +575,16 @@ function setBarWidths(root) {
 }
 
 function renderLists() {
-  const items = filtered();
-  const groups = clusters(items);
-  // Needs attention = negative AND we're named, pictured, or possibly pictured.
-  const attention = groups.filter((g) => mayBeUs(g.lead) && g.lead.sentiment === 'negative' && g.lead.status === 'open');
-  const rest = groups.filter((g) => !attention.includes(g));
-
-  $('attention-count').textContent = `· ${attention.length}`;
-  $('attention').replaceChildren(...(attention.length ? cardsWithGroups(attention) : [h('div', { class: 'empty', text: 'Nothing negative needs attention for these filters. 👍' })]));
-
-  $('results-count').textContent = `· ${rest.length} stories`;
+  const groups = clusters(filtered());
+  $('results-count').textContent = `${groups.length} stor${groups.length === 1 ? 'y' : 'ies'} · ${$('f-range').selectedOptions[0]?.textContent.toLowerCase() || ''}`;
   const lowCount = state.items.filter((it) => it.relevance < state.config.threshold && it.status === 'open').length;
   $('results-hint').textContent = state.f.low
-    ? `Showing low-confidence matches too (below ${state.config.threshold}).`
-    : `Hiding ${lowCount} low-confidence match${lowCount === 1 ? '' : 'es'} (relevance below ${state.config.threshold}). Turn on “Show low-confidence” to see them.`;
+    ? `Including low-confidence matches (relevance below ${state.config.threshold}).`
+    : `${lowCount} low-confidence match${lowCount === 1 ? '' : 'es'} hidden. Turn on “Low-confidence” to see them.`;
 
   const list = $('results');
-  list.replaceChildren(...(rest.length ? cardsWithGroups(rest.slice(0, state.shown)) : [h('div', { class: 'empty', text: state.items.length ? 'No results match these filters.' : 'No results yet. Press “Check now” to run the first scan.' })]));
-  if (rest.length > state.shown) list.append(h('button', { class: 'btn more', type: 'button', onclick: () => { state.shown += PAGE; renderLists(); } }, `Show ${Math.min(PAGE, rest.length - state.shown)} more`));
-  setBarWidths($('attention'));
+  list.replaceChildren(...(groups.length ? cardsWithGroups(groups.slice(0, state.shown)) : [h('div', { class: 'empty', text: state.items.length ? 'No stories match these filters.' : 'No results yet. Press “Check now” to run the first scan.' })]));
+  if (groups.length > state.shown) list.append(h('button', { class: 'btn more', type: 'button', onclick: () => { state.shown += PAGE; renderLists(); } }, `Show ${Math.min(PAGE, groups.length - state.shown)} more`));
   setBarWidths(list);
 }
 
@@ -661,7 +719,7 @@ function linkedLine(t) {
 }
 
 function renderTopics() {
-  $('topics-count').textContent = `· ${state.topics.filter((t) => !t.paused).length} active, ${state.topics.filter((t) => t.paused).length} paused`;
+  $('topics-count').textContent = `${state.topics.filter((t) => !t.paused).length} active · ${state.topics.filter((t) => t.paused).length} paused`;
   $('new-topic').replaceChildren(state.editing === 'new' ? h('div', { class: 'list mt12' }, topicForm(null)) : '');
   const list = state.topics.filter((t) => state.f.opco === 'ALL' || t.opco === state.f.opco);
   $('topics').replaceChildren(...list.map((t) => {
@@ -817,10 +875,13 @@ function renderReportBuilder() {
       h('div', { class: 'chips' },
         chip('All companies', !report.opcos.size, () => { report.opcos.clear(); rerender(); }),
         opcos.map((o) => chip(o.name, report.opcos.has(o.code), () => toggle(report.opcos, o.code), o.color)))),
-    h('div', {}, h('div', { class: 'filter-label', text: `Topics · ${[...report.topics].filter((id) => topics.some((t) => t.id === id)).length || 'all'} of ${topics.length}` }),
-      h('div', { class: 'chips' },
-        chip('All topics', ![...report.topics].some((id) => topics.some((t) => t.id === id)), () => { report.topics.clear(); rerender(); }),
-        topics.map((t) => chip(t.name, report.topics.has(t.id), () => toggle(report.topics, t.id), opcoOf(t.opco).color)))),
+    // Topic choices appear once companies are chosen, so the list stays short.
+    report.opcos.size
+      ? h('div', {}, h('div', { class: 'filter-label', text: `Topics · ${[...report.topics].filter((id) => topics.some((t) => t.id === id)).length || 'all'} of ${topics.length}` }),
+          h('div', { class: 'chips' },
+            chip('All topics', ![...report.topics].some((id) => topics.some((t) => t.id === id)), () => { report.topics.clear(); rerender(); }),
+            topics.map((t) => chip(t.name, report.topics.has(t.id), () => toggle(report.topics, t.id), opcoOf(t.opco).color))))
+      : h('p', { class: 'hint tight', text: `All ${topics.length} topics are included. Choose companies to pick specific topics.` }),
     h('div', {}, h('div', { class: 'filter-label', text: 'Include' }), scope,
       h('label', { class: 'toggle' }, h('input', { type: 'checkbox', checked: report.low, onchange: (e) => { report.low = e.target.checked; } }), 'Include low-confidence matches')),
     h('div', { class: 'report-actions' },
@@ -931,6 +992,7 @@ function renderReportView() {
 
 function render() {
   renderTiles();
+  renderOverview();
   renderFilters();
   renderOpcoView();
   renderLists();
@@ -977,11 +1039,16 @@ async function init() {
     $('add-topic').hidden = true;
     $('view-only').hidden = false;
   }
+  setView(state.view, { scroll: false });
   render();
   renderScans();
   await refreshStatus();
 
   $('check-now').addEventListener('click', checkNow);
+  document.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.tab)));
+  $('see-attention').addEventListener('click', () => openStories({ exp: 'us', sentiment: 'negative', range: '30' }));
+  $('see-latest').addEventListener('click', () => openStories({ exp: 'us', range: state.ovDays }));
+  $('f-opco').addEventListener('change', (e) => setFilter({ opco: e.target.value, topic: 'ALL' }));
   $('f-topic').addEventListener('change', (e) => {
     const t = topicOf(Number(e.target.value));
     setFilter({ topic: e.target.value, ...(t && state.f.opco !== 'ALL' && t.opco !== state.f.opco ? { opco: t.opco } : {}) });
@@ -994,7 +1061,7 @@ async function init() {
   $('f-starred').addEventListener('change', (e) => setFilter({ starred: e.target.checked }));
   $('f-new').addEventListener('change', (e) => setFilter({ onlyNew: e.target.checked }));
   $('add-topic').addEventListener('click', () => { state.editing = 'new'; renderTopics(); });
-  window.addEventListener('hashchange', () => { readHash(); render(); });
+  window.addEventListener('hashchange', () => { readHash(); setView(state.view, { scroll: false }); render(); });
   // Remember when this person last looked, for the NEW badges next time.
   document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && saveSeen());
   window.addEventListener('pagehide', saveSeen);

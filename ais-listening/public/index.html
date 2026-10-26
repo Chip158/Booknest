@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
-  <meta name="theme-color" content="#004C9D">
+  <meta name="theme-color" content="#f7f9fc">
+  <meta name="color-scheme" content="light">
   <title>AIS Social Listening</title>
   <link rel="icon" href="/favicon.svg">
   <link rel="stylesheet" href="/styles.css">
@@ -14,54 +15,80 @@
     <div class="topbar-inner">
       <div class="brand">
         <span class="brand-mark">AIS</span>
-        <h1>Social Listening</h1>
+        <span class="brand-name">Social Listening</span>
       </div>
       <button class="btn btn-primary" id="check-now" type="button">Check now</button>
-      <div class="scan-status"><span class="view-only" id="view-only" hidden>View only</span><span id="scan-status" aria-live="polite">Loading…</span> · <a class="signout" href="/logout">Sign out</a></div>
     </div>
   </header>
 
+  <nav class="tabbar" aria-label="Sections">
+    <button type="button" data-tab="overview" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+      <span>Overview</span>
+    </button>
+    <button type="button" data-tab="stories">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm2 4v2h10V8zm0 4v2h10v-2zm0 4v2h6v-2z"/></svg>
+      <span>Stories</span>
+    </button>
+    <button type="button" data-tab="reports">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10h3v10zm6.5 0V4h3v16zM17 20v-7h3v7z"/></svg>
+      <span>Reports</span>
+    </button>
+    <button type="button" data-tab="topics">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8.4 4.6-.1-2.2 2-1.6-2-3.4-2.4.9a8 8 0 0 0-1.9-1.1L15.6 3h-3.9l-.4 2.6a8 8 0 0 0-1.9 1.1L7 5.8 5 9.2l2 1.6a8 8 0 0 0 0 2.2l-2 1.6 2 3.4 2.4-.9a8 8 0 0 0 1.9 1.1l.4 2.6h3.9l.4-2.6a8 8 0 0 0 1.9-1.1l2.4.9 2-3.4z"/></svg>
+      <span>Topics</span>
+    </button>
+  </nav>
+
   <main>
-    <section aria-labelledby="h-summary">
-      <h2 id="h-summary" class="sr-only">Summary</h2>
-      <div class="tiles" id="tiles"></div>
-    </section>
+    <!-- ==================================================== OVERVIEW -->
+    <div class="view" data-view="overview">
+      <div class="large-title">
+        <h1>Overview</h1>
+        <p class="scan-status"><span class="view-only" id="view-only" hidden>View only</span><span id="scan-status" aria-live="polite">Loading…</span></p>
+      </div>
 
-    <section aria-labelledby="h-view">
-      <h2 id="h-view">Operating company</h2>
-      <div class="chips" id="opco-chips"></div>
-    </section>
+      <section aria-label="Summary">
+        <div class="segmented ov-range" id="ov-range" role="group" aria-label="Period"></div>
+        <div class="tiles" id="tiles"></div>
+      </section>
 
-    <section id="opco-section" hidden>
-      <div class="opco-view" id="opco-view"></div>
-    </section>
-
-    <section aria-labelledby="h-attention">
-      <h2 id="h-attention">Needs attention <span class="count" id="attention-count"></span></h2>
-      <p class="hint">Negative stories that name us, show our logo, or have a photo that might show our equipment. Not yet reviewed; most relevant first.</p>
-      <div class="list" id="attention"></div>
-    </section>
-
-    <section id="report-section" aria-labelledby="h-report">
-      <h2 id="h-report">Build a report</h2>
-      <p class="hint">Pick the dates, companies and topics. “Check now for these” runs a fresh search for just those; then view the report here, download it as CSV, or save it as a PDF.</p>
-      <div class="filters" id="report-builder"></div>
-      <p class="report-status" id="report-status" aria-live="polite"></p>
-      <div id="report-view"></div>
-    </section>
-
-    <section aria-labelledby="h-filters">
-      <h2 id="h-filters">Filter results</h2>
-      <div class="filters">
-        <div>
-          <div class="filter-label">Who's in it</div>
-          <div class="chips" id="exp-chips"></div>
+      <section aria-labelledby="h-attention">
+        <div class="section-head">
+          <h2 id="h-attention">Needs attention <span class="count" id="attention-count"></span></h2>
+          <button class="link-btn" type="button" id="see-attention">See all</button>
         </div>
-        <div>
-          <div class="filter-label">Sentiment</div>
-          <div class="chips" id="sentiment-chips"></div>
+        <p class="hint">Negative stories that name us, show our logo, or have a photo that might show our equipment.</p>
+        <div class="list" id="attention"></div>
+      </section>
+
+      <section aria-labelledby="h-latest">
+        <div class="section-head">
+          <h2 id="h-latest">Latest about us</h2>
+          <button class="link-btn" type="button" id="see-latest">See all</button>
         </div>
+        <div class="grouped" id="latest"></div>
+      </section>
+
+      <section aria-labelledby="h-companies">
+        <h2 id="h-companies">Companies</h2>
+        <p class="hint" id="companies-hint"></p>
+        <div class="grouped" id="companies"></div>
+      </section>
+    </div>
+
+    <!-- ===================================================== STORIES -->
+    <div class="view" data-view="stories" hidden>
+      <div class="large-title">
+        <h1>Stories</h1>
+        <p class="sub" id="results-count"></p>
+      </div>
+
+      <section class="panel filters-panel" aria-label="Filters">
+        <input type="search" id="f-q" placeholder="Search headlines and sources" aria-label="Search">
+        <div class="segmented" id="show-seg" role="group" aria-label="Show"></div>
         <div class="filter-row">
+          <label><span class="filter-label">Company</span><select id="f-opco"></select></label>
           <label><span class="filter-label">Project / topic</span><select id="f-topic"></select></label>
           <label><span class="filter-label">Date</span>
             <select id="f-range">
@@ -80,55 +107,78 @@
               <option value="oldest">Oldest first</option>
             </select>
           </label>
-          <label><span class="filter-label">Search</span><input type="search" id="f-q" placeholder="Headline, source…"></label>
         </div>
         <div class="toggles">
-          <label class="toggle"><input type="checkbox" id="f-low"> Show low-confidence</label>
-          <label class="toggle"><input type="checkbox" id="f-handled"> Show reviewed &amp; dismissed</label>
-          <label class="toggle"><input type="checkbox" id="f-starred"> Starred only</label>
           <label class="toggle"><input type="checkbox" id="f-new"> New only</label>
+          <label class="toggle"><input type="checkbox" id="f-starred"> Starred</label>
+          <label class="toggle"><input type="checkbox" id="f-handled"> Reviewed &amp; dismissed</label>
+          <label class="toggle"><input type="checkbox" id="f-low"> Low-confidence</label>
         </div>
+      </section>
+
+      <section id="opco-section" hidden>
+        <div class="panel opco-view" id="opco-view"></div>
+      </section>
+
+      <section aria-label="Stories">
+        <p class="hint" id="results-hint"></p>
+        <div class="list" id="results"></div>
+      </section>
+    </div>
+
+    <!-- ===================================================== REPORTS -->
+    <div class="view" data-view="reports" hidden>
+      <div class="large-title">
+        <h1>Reports</h1>
+        <p class="sub">Pick dates, companies and topics, then view, download as CSV, or save as PDF.</p>
       </div>
-    </section>
 
-    <section aria-labelledby="h-results">
-      <h2 id="h-results">All results <span class="count" id="results-count"></span></h2>
-      <p class="hint" id="results-hint"></p>
-      <div class="list" id="results"></div>
-    </section>
+      <section id="report-section" aria-label="Build a report">
+        <div class="panel filters" id="report-builder"></div>
+        <p class="report-status" id="report-status" aria-live="polite"></p>
+        <div id="report-view"></div>
+      </section>
 
-    <section aria-labelledby="h-weekly">
-      <h2 id="h-weekly">Week by week <span class="count" id="weekly-scope"></span></h2>
-      <p class="hint">Counts are stories (the same story from several outlets counts once). Each CSV opens in Excel with clickable headlines.</p>
-      <div id="weekly"></div>
-      <a class="btn mt12" id="export-month" href="/api/export.csv?days=30">Download past month (CSV)</a>
-    </section>
+      <section aria-labelledby="h-weekly">
+        <h2 id="h-weekly">Week by week <span class="count" id="weekly-scope"></span></h2>
+        <p class="hint">Stories per week; the same story from several outlets counts once.</p>
+        <div id="weekly"></div>
+        <a class="btn mt12" id="export-month" href="/api/export.csv?days=30">Download past month (CSV)</a>
+      </section>
 
-    <section aria-labelledby="h-trend">
-      <h2 id="h-trend">Trend <span class="count">· last 30 days, relevant items</span></h2>
-      <div class="chart-card">
-        <div class="legend" id="legend"></div>
-        <div class="chart" id="chart"></div>
-        <div class="chart-caption" id="chart-caption">Tap a day to see its counts.</div>
+      <section aria-labelledby="h-trend">
+        <h2 id="h-trend">Trend <span class="count">· last 30 days</span></h2>
+        <div class="panel chart-card">
+          <div class="legend" id="legend"></div>
+          <div class="chart" id="chart"></div>
+          <div class="chart-caption" id="chart-caption">Tap a day to see its counts.</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ====================================================== TOPICS -->
+    <div class="view" data-view="topics" hidden>
+      <div class="large-title">
+        <h1>Topics</h1>
+        <p class="sub" id="topics-count"></p>
       </div>
-    </section>
 
-    <section aria-labelledby="h-topics">
-      <h2 id="h-topics">Topics <span class="count" id="topics-count"></span></h2>
-      <p class="hint">A result counts only if it mentions a keyword <b>and</b> a context term, and none of the exclude terms. Yellow boxes are open questions to confirm.</p>
-      <button class="btn btn-primary" id="add-topic" type="button">+ Add topic</button>
-      <div id="new-topic"></div>
-      <div class="list mt12" id="topics"></div>
-    </section>
+      <section aria-label="Topics">
+        <p class="hint">A result counts only if it mentions a keyword <b>and</b> a context term, and none of the exclude terms. Yellow boxes are open questions to confirm.</p>
+        <button class="btn btn-primary" id="add-topic" type="button">+ Add topic</button>
+        <div id="new-topic"></div>
+        <div class="list mt12" id="topics"></div>
+      </section>
 
-    <section aria-labelledby="h-scans">
-      <h2 id="h-scans">Scan history</h2>
-      <div class="scan-list" id="scans"></div>
-      <h2 class="subhead">Latest scan by topic &amp; source</h2>
-      <div class="scan-list" id="runs"></div>
-    </section>
+      <section aria-labelledby="h-scans">
+        <h2 id="h-scans">Scan history</h2>
+        <div class="panel scan-list" id="scans"></div>
+        <h2 class="subhead">Latest scan by topic &amp; source</h2>
+        <div class="panel scan-list" id="runs"></div>
+      </section>
 
-    <p class="footer" id="footer"></p>
+      <p class="footer"><span id="footer"></span><br><a class="signout" href="/logout">Sign out</a></p>
+    </div>
   </main>
   <script src="/app.js"></script>
 </body>
