@@ -7,7 +7,7 @@ import { LOOKBACK_DAYS, CHECK_BATCH } from '../config/settings.js';
 import { rowToTopic, now } from './db.js';
 import { runSources } from './sources/index.js';
 import { applyRules } from './filter.js';
-import { checkResult, ruleCheck, ruleScore } from './relevance.js';
+import { checkResult, mentionLocation, ruleCheck, ruleScore } from './relevance.js';
 import { readResult } from './article.js';
 import { linkTopic } from './context.js';
 import { containsTerm } from './text.js';
@@ -158,13 +158,15 @@ export async function runTopicScan(env, { scanId, topicId }) {
   return stats;
 }
 
-async function saveCheck(env, id, r, read) {
+async function saveCheck(env, id, r, read, item) {
+  const m = item ? mentionLocation(item, read, r.names_found || []) : { where: null, quote: null };
+  if (!m.where && r.photo === 'yes') m.where = 'Photo';
   await env.DB.prepare(
     `UPDATE items SET relevance = ?, sentiment = ?, why = ?, scorer = ?, exposure = ?, names_found = ?, photo = ?, photo_note = ?,
-       images = ?, article_url = ?, text_checked = ?, updated_at = ? WHERE id = ?`
+       images = ?, article_url = ?, text_checked = ?, mention_where = ?, mention_quote = ?, updated_at = ? WHERE id = ?`
   ).bind(
     r.relevance, r.sentiment, r.why, r.scorer, r.exposure, JSON.stringify(r.names_found), r.photo, r.photo_note || null,
-    JSON.stringify(read.images), read.url, read.textChecked ? 1 : 0, now(), id
+    JSON.stringify(read.images), read.url, read.textChecked ? 1 : 0, m.where, m.quote, now(), id
   ).run();
 }
 
@@ -192,7 +194,7 @@ export async function runCheck(env, { topicId, ids }) {
       r = await checkResult(env, topic, item, read, feedback);
     }
     if (read.note && !read.textChecked) r.why += ` (Full article not checked: ${read.note}.)`;
-    await saveCheck(env, item.id, r, read);
+    await saveCheck(env, item.id, r, read, item);
   }
 }
 
@@ -207,7 +209,7 @@ export async function finishStaleChecks(env) {
     const read = { url: item.url, text: '', images: JSON.parse(item.images || '[]'), textChecked: false };
     const r = ruleCheck({ keywords: [], context: [] }, item, read);
     r.why += ' (Automatic check did not finish; scored by rules.)';
-    await saveCheck(env, item.id, r, read);
+    await saveCheck(env, item.id, r, read, item);
   }
 }
 

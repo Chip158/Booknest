@@ -4,6 +4,7 @@ import { ensureSeeded, insertTopicStmt, now, rowToItem, rowToTopic, validateTopi
 import { isScanSlot, nextScanTime } from './schedule.js';
 import { finishStaleChecks, runCheck, runningScan, runTopicScan, startScan } from './scan.js';
 import { enabledSources } from './sources/index.js';
+import { exportRow, selectForExport, toCsv, weekOf } from './export.js';
 
 const PUBLIC_PATHS = new Set(['/login.html', '/styles.css', '/favicon.svg', '/login.js', '/api/login']);
 
@@ -102,6 +103,24 @@ async function api(request, env, path, role) {
     } else throw new HttpError(400, 'Unknown action');
     await env.DB.batch(stmts);
     return json({ ok: true });
+  }
+
+  // CSV for Excel / SharePoint: ?days=30 (default) or ?week=YYYY-MM-DD (a Monday); &all=1 adds low-confidence rows.
+  if (path === '/api/export.csv' && method === 'GET') {
+    const q = new URL(request.url).searchParams;
+    const week = /^\d{4}-\d{2}-\d{2}$/.test(q.get('week') || '') ? q.get('week') : null;
+    const days = week ? 45 : Math.min(365, Math.max(1, Number(q.get('days')) || 30));
+    const { results } = await env.DB.prepare(
+      `SELECT i.*, t.name AS topic_name FROM items i LEFT JOIN topics t ON t.id = i.topic_id
+        WHERE COALESCE(i.published_at, i.first_seen_at) > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', ?)`
+    ).bind(`-${days} days`).all();
+    let items = selectForExport(results.map(rowToItem), { all: q.get('all') === '1' });
+    if (week) items = items.filter((it) => weekOf(it.published_at || it.first_seen_at) === week);
+    const csv = toCsv(items.map((it) => exportRow(it, it.topic_name)));
+    const name = `ais-listening-${week ? `week-of-${week}` : `last-${days}-days`}.csv`;
+    return new Response(csv, {
+      headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${name}"`, 'Cache-Control': 'no-store' },
+    });
   }
 
   if (path === '/api/topics' && method === 'GET') {

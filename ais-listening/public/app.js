@@ -421,7 +421,53 @@ function exposureLine(it) {
   if (!parts.length) parts.push(h('span', { class: 'exp safe', text: 'Not named or pictured' }));
   if (it.photo === 'unchecked' && it.images?.length) parts.push(h('span', { class: 'exp note', text: 'Photos not checked' }));
   if (it.source_type === 'news' && !it.text_checked) parts.push(h('span', { class: 'exp note', text: 'Headline only' }));
-  return h('div', { class: 'exposure' }, parts, it.photo_note ? h('p', { class: 'photo-note', text: it.photo_note }) : null);
+  return h('div', { class: 'exposure' }, parts,
+    it.mention_where ? h('p', { class: 'mention' }, h('b', { text: `Where: ${it.mention_where}` }), it.mention_quote && it.mention_where !== 'Headline' ? ` · “${it.mention_quote}”` : '') : null,
+    it.photo_note ? h('p', { class: 'photo-note', text: it.photo_note }) : null);
+}
+
+// ------------------------------------------------------------------ weekly
+
+// Monday (Pacific) of the week a story was published, as YYYY-MM-DD.
+function weekOf(iso) {
+  const local = new Date(new Date(iso).toLocaleString('en-US', { timeZone: state.config.timezone }));
+  local.setDate(local.getDate() - ((local.getDay() + 6) % 7));
+  return `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, '0')}-${String(local.getDate()).padStart(2, '0')}`;
+}
+
+// Week-by-week summary of the current filters (OpCo, project, who's in it…),
+// with a CSV per week and for the month.
+function renderWeekly() {
+  const items = filtered(['sentiment']).filter((it) => it.status !== 'dismissed');
+  const weeks = new Map();
+  for (const it of items) {
+    const w = weekOf(it.published_at || it.first_seen_at);
+    if (!weeks.has(w)) weeks.set(w, []);
+    weeks.get(w).push(it);
+  }
+  const stories = (list) => new Set(list.map((it) => it.cluster_id)).size;
+  const label = (w) => `Week of ${new Date(`${w}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+  const scope = state.f.opco === 'ALL' ? 'all companies' : opcoOf(state.f.opco).name;
+  const rows = [...weeks.keys()].sort().reverse().map((w) => {
+    const list = weeks.get(w);
+    const n = (fn) => stories(list.filter(fn));
+    const opcos = [...new Set(list.filter(isUs).map((it) => opcoOf(it.opco).code))];
+    return h('tr', {},
+      h('th', { scope: 'row', text: label(w) }),
+      h('td', { text: stories(list) }),
+      h('td', { text: n(isUs) }),
+      h('td', { class: 'neg-n', text: n((it) => it.sentiment === 'negative') }),
+      h('td', { class: 'pos-n', text: n((it) => it.sentiment === 'positive') }),
+      h('td', { class: 'opcos', text: opcos.join(', ') || '—' }),
+      h('td', {}, h('a', { href: `/api/export.csv?week=${w}`, class: 'csv' }, 'CSV')));
+  });
+  $('weekly-scope').textContent = `· ${scope}, last ${state.f.range} days`;
+  $('weekly').replaceChildren(rows.length
+    ? h('div', { class: 'table-wrap' }, h('table', { class: 'weekly' },
+        h('thead', {}, h('tr', {}, ['Week', 'Stories', 'Name/show us', 'Negative', 'Positive', 'OpCos named', 'Export'].map((c) => h('th', { scope: 'col', text: c })))),
+        h('tbody', {}, rows)))
+    : h('div', { class: 'empty', text: 'No stories for these filters yet.' }));
+  $('export-month').href = `/api/export.csv?days=${Math.max(30, Number(state.f.range))}`;
 }
 
 // Lead photo, so a logo or our equipment can be spotted at a glance.
@@ -664,6 +710,7 @@ function render() {
   renderOpcoView();
   renderLists();
   renderChart();
+  renderWeekly();
   renderTopics();
 }
 

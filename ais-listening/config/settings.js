@@ -28,10 +28,11 @@ export const BRAND = {
 // knows what to look for. Optional `logoFile`: a PNG of the logo placed in
 // public/logos/ (e.g. 'aisi.png'); when present it is shown to the photo check.
 export const OPCOS = [
+  // ---- Companies confirmed with the team (colors partly confirmed)
   {
     code: 'AISI', name: 'AIS Infrastructure', color: '#F2B705', // gold/yellow — confirm exact hex
-    about: 'Heavy civil construction contractor (Chattanooga, Tennessee; Blairsville, Georgia). Builds U.S. border wall / barrier segments in Arizona and California, including as part of the BCCG joint venture.', // CONFIRM
-    names: ['AIS Infrastructure', 'AISI'],
+    about: 'Heavy civil construction and sitework contractor (Chattanooga, Tennessee; Blairsville, Georgia), working across the Southeast. Builds U.S. border wall / tactical infrastructure in Arizona and California, including in the BCCG joint venture. Divisions: AIS BCSS (site development, heavy civil), AIS Cerrudo (civil construction, tactical infrastructure, environmental services, material supply), AIS FDTWI (infrastructure maintenance and repair, waterline rehabilitation).',
+    names: ['AIS Infrastructure', 'AISI', 'AIS BCSS', 'AIS Cerrudo', 'AIS FDTWI'],
     // Confirmed: equipment typically says "AIS Infrastructure" or carries the logo.
     logo: 'equipment, trucks, signs or hard hats marked with the words "AIS Infrastructure" or the AIS Infrastructure logo (colors to confirm; add logoFile for the exact mark)',
     logoFile: null,
@@ -45,21 +46,38 @@ export const OPCOS = [
   },
   {
     code: 'FDT', name: 'F.D. Thomas', color: '#6C4BB6', // PLACEHOLDER — need brand hex
-    about: 'Industrial painting and coatings contractor (Central Point, Oregon), including bridges.', // CONFIRM
-    names: ['F.D. Thomas', 'FD Thomas', 'F. D. Thomas', 'FDThomas'],
+    about: 'Industrial painting, coatings and structural specialties contractor (Central Point, Oregon; offices in Washington, California, Maryland, Alaska, Tennessee), including bridges. Includes F.D. Thomas Structural Specialties and D. Zelinsky & Sons.',
+    names: ['F.D. Thomas', 'FD Thomas', 'F. D. Thomas', 'FDThomas', 'F.D. Thomas Structural Specialties', 'D. Zelinsky & Sons', 'D. Zelinsky'],
     logo: '"F.D. Thomas" or "FDT"', // CONFIRM
     logoFile: null,
   },
   {
     code: 'RSI', name: 'RSI', color: '#2E8B3E', // green — confirm exact hex
-    about: 'Environmental remediation contractor, including Navy shipyard cleanup.', // CONFIRM (full name: RSI EnTech?)
-    names: ['RSI'],
+    about: 'Group of environmental remediation and waste management companies (Oak Ridge, Tennessee), including Navy shipyard cleanup; acquired Sigma Science, Inc.', // CONFIRM full name
+    names: ['RSI', 'RSI EnTech', 'Sigma Science'],
     logo: '"RSI", green', // CONFIRM
     logoFile: null,
   },
+  // ---- Other operating companies (from asrcindustrial.com/our-companies).
+  // Colors are PLACEHOLDERS until the team supplies brand hex codes.
+  { code: 'API', name: 'Arctic Pipe Inspection', color: '#1F6F8B', about: 'Pipe inspection services for the oil and gas industry (Houston, Texas).', names: ['Arctic Pipe Inspection'], logo: '"Arctic Pipe Inspection"', logoFile: null },
+  { code: 'ATI', name: 'Arctic Testing & Inspection', color: '#3E8EC4', about: 'Asset integrity testing and inspection (La Porte, Texas).', names: ['Arctic Testing & Inspection', 'Arctic Testing and Inspection', 'Arctic Testing'], logo: '"Arctic Testing"', logoFile: null },
+  { code: 'PITCO', name: 'Pitco', color: '#5B6770', about: 'MFL inspection systems for OCTG tubing and casing, serving the oil and gas industry (Houston, Texas).', names: ['Pitco LLC'], logo: '"Pitco"', logoFile: null },
+  { code: 'D2', name: 'D2 Industrial Services', color: '#8C5E3C', about: 'Industrial services contractor (California: Rancho Cucamonga, Vallejo).', names: ['D2 Industrial Services', 'D2 Industrial'], logo: '"D2 Industrial"', logoFile: null },
+  { code: 'EQM', name: 'Environmental Quality Management', color: '#4E9A6B', about: 'Environmental engineering, consulting and remediation services (Cincinnati, Ohio). Includes EQM Services.', names: ['Environmental Quality Management', 'EQM Services', 'EQM'], logo: '"EQM"', logoFile: null },
+  { code: 'GCI', name: 'Gulf Coast Industrial', color: '#C0702A', about: 'Industrial services (Gulf Coast: Richwood, Texas; Pensacola, Florida; Augusta, Georgia).', names: ['AIS Gulf Coast Industrial', 'Gulf Coast Industrial'], logo: '"Gulf Coast Industrial"', logoFile: null },
+  { code: 'HUD', name: 'Hudspeth & Associates', color: '#7A4E9C', about: 'Remediation and industrial services (Centennial, Colorado).', names: ['Hudspeth & Associates', 'Hudspeth and Associates'], logo: '"Hudspeth"', logoFile: null },
+  { code: 'K2', name: 'K2 Industrial Services', color: '#2C4F7C', about: 'Industrial cleaning services (also known as KM Plant Services).', names: ['K2 Industrial Services', 'K2 Industrial', 'KM Plant Services'], logo: '"K2 Industrial"', logoFile: null },
+  { code: 'MAVO', name: 'Mavo Systems', color: '#B5452F', about: 'Abatement, demolition and concrete sawing (White Bear Lake, Minnesota; Wisconsin). Includes Mavo Concrete Sawing.', names: ['Mavo Systems', 'Mavo Concrete Sawing', 'Mavo'], logo: '"Mavo"', logoFile: null },
+  { code: 'NEG', name: 'National Environmental Group', color: '#5C8A2E', about: 'Environmental remediation and waste management (Flint Township, Michigan).', names: ['National Environmental Group'], logo: '"National Environmental Group" or "NEG"', logoFile: null },
+  { code: 'NILES', name: 'Niles Construction Services', color: '#8A6D1C', about: 'Painting and coatings services to industrial, manufacturing, automation and utility customers.', names: ['Niles Construction Services', 'Niles Construction'], logo: '"Niles Construction"', logoFile: null },
+  { code: 'PETRO', name: 'Petrochem', color: '#A23B72', about: 'Insulation, scaffolding, metal structures, and painting & coatings (Vancouver, Washington; White City, Oregon; Indiana; Pennsylvania).', names: ['Petrochem Insulation', 'Petrochem Inc', 'Petrochem'], logo: '"Petrochem"', logoFile: null },
+  { code: 'REDWOOD', name: 'Redwood Painting', color: '#9E2A2B', about: 'Industrial painting and specialty trade services since 1947 (Pittsburg, California).', names: ['Redwood Painting'], logo: '"Redwood Painting"', logoFile: null },
+  { code: 'USC', name: 'US Coatings', color: '#386FA4', about: 'Industrial painting and coatings contractor.', names: ['US Coatings LLC', 'U.S. Coatings LLC'], logo: '"US Coatings"', logoFile: null },
+  { code: 'USCF', name: 'US Coatings Federal', color: '#2A5D8F', about: 'SBA 8(a) industrial painting contractor serving the federal government and marine markets.', names: ['US Coatings Federal', 'U.S. Coatings Federal', 'USCF'], logo: '"US Coatings Federal" or "USCF"', logoFile: null },
   {
     code: 'AIS', name: 'AIS (corporate / shared)', color: '#004C9D',
-    about: 'AIS (ASRC Industrial) is the parent company of the OpCos above.',
+    about: 'AIS (ASRC Industrial Services, LLC; Tempe, Arizona) is the parent company of the OpCos above and a subsidiary of Arctic Slope Regional Corporation (ASRC).',
     names: ['AIS', 'ASRC Industrial', 'ASRC Industrial Services', 'BCCG'],
     logo: 'the letters "AIS" in blue (#004C9D)', // CONFIRM
     logoFile: null,

@@ -89,6 +89,13 @@
       <div class="list" id="results"></div>
     </section>
 
+    <section aria-labelledby="h-weekly">
+      <h2 id="h-weekly">Week by week <span class="count" id="weekly-scope"></span></h2>
+      <p class="hint">Counts are stories (the same story from several outlets counts once). Each CSV opens in Excel with clickable headlines.</p>
+      <div id="weekly"></div>
+      <a class="btn mt12" id="export-month" href="/api/export.csv?days=30">Download past month (CSV)</a>
+    </section>
+
     <section aria-labelledby="h-trend">
       <h2 id="h-trend">Trend <span class="count">· last 30 days, relevant items</span></h2>
       <div class="chart-card">

@@ -144,3 +144,23 @@ test('full-article excludes use specific phrases only; named + context ranks up'
   const plain = ruleCheck(t, { ...item, title: 'RSI agents' }, { text: 'Recursive RSI loops in AI.', images: [] });
   assert.ok(named.relevance >= 60 && plain.relevance < 60, `${named.relevance} / ${plain.relevance}`);
 });
+
+test('where we are mentioned: headline, lead or numbered paragraph with the quote', async () => {
+  const { mentionLocation } = await import('../src/relevance.js');
+  const item = { title: 'Crews close lanes for repainting', snippet: '', source_type: 'news', platform: 'Google News' };
+  const text = 'Caltrans announced closures this week for maintenance work on the span.\nThe repainting is being done by F.D. Thomas, a contractor from Oregon. Work runs nightly.';
+  assert.deepEqual(mentionLocation(item, { text }, ['F.D. Thomas']), { where: 'Paragraph 2 of 2', quote: 'The repainting is being done by F.D. Thomas, a contractor from Oregon.' });
+  assert.equal(mentionLocation({ ...item, title: 'F.D. Thomas wins award' }, { text }, ['F.D. Thomas']).where, 'Headline');
+  assert.equal(mentionLocation(item, { text }, []).where, null);
+});
+
+test('CSV export: clickable headline, formula-safe text, Monday week', async () => {
+  const { toCsv, exportRow, weekOf, safeCell } = await import('../src/export.js');
+  assert.equal(weekOf('2026-10-22T18:00:00Z'), '2026-10-19'); // Thursday → Monday
+  assert.equal(safeCell('=cmd|calc'), "'=cmd|calc");
+  const it = { title: 'Crews "finish" repaint', url: 'https://news.example/a', opco: 'FDT', exposure: 'named', photo: 'none', sentiment: 'positive', relevance: 88, why: '=bad', status: 'open', starred: false, platform: 'Google News', published_at: '2026-10-22T18:00:00Z', first_seen_at: '2026-10-23T00:00:00Z', mention_where: 'Headline' };
+  const csv = toCsv([exportRow(it, 'Bay Bridge (FDT)')]);
+  assert.match(csv, /"=HYPERLINK\(""https:\/\/news\.example\/a"",""Crews """"finish"""" repaint""\)"/);
+  assert.match(csv, /,'=bad,/);
+  assert.match(csv, /F\.D\. Thomas,Bay Bridge \(FDT\)/);
+});

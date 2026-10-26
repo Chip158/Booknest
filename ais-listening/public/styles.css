@@ -271,3 +271,16 @@ h2.subhead { margin-top: 16px; font-size: 16px; }
 .thumb { display: block; width: 100%; max-height: 200px; object-fit: cover; }
 .tier-2 { color: var(--ais-blue-dark); }
 .linked { font-size: 13px; color: var(--ais-blue-dark); background: var(--ais-blue-tint); border-radius: 6px; padding: 6px 10px; margin: 6px 0; }
+
+/* Where mentioned + weekly table */
+.mention { width: 100%; margin: 4px 0 0; font-size: 14px; color: var(--ink-2); }
+.mention b { color: var(--ink); font-weight: 500; }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+table.weekly { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+table.weekly th, table.weekly td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--silver-light); white-space: nowrap; }
+table.weekly thead th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--ink-3); font-weight: 500; }
+table.weekly td.opcos { white-space: normal; min-width: 120px; color: var(--ink-2); }
+table.weekly .neg-n { color: var(--neg); font-weight: 500; }
+table.weekly .pos-n { color: var(--pos); font-weight: 500; }
+table.weekly a.csv { font-weight: 500; }
+a.btn { text-decoration: none; color: var(--ink); }

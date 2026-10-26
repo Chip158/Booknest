@@ -205,3 +205,23 @@ export function ruleScore(topic, c, penalties) {
   ].filter(Boolean).join('; ');
   return { relevance, sentiment, why: `Rules only: ${why}.` };
 }
+
+// Where in the piece one of our names appears, plus the sentence that names us.
+export function mentionLocation(item, read, names) {
+  if (!names.length) return { where: null, quote: null };
+  const hit = (text) => names.find((n) => containsTerm(text, n));
+  if (hit(item.title)) return { where: 'Headline', quote: item.title };
+  const social = item.source_type === 'social' && item.platform !== 'LinkedIn' && item.platform !== 'Facebook';
+  const paragraphs = (read.text || item.snippet || '').split(/\n+/).map((p) => p.trim()).filter((p) => p.length > 30);
+  for (let i = 0; i < paragraphs.length; i++) {
+    const name = hit(paragraphs[i]);
+    if (!name) continue;
+    // Shield initials and common abbreviations ("F.D.", "U.S.", "Inc.") from the sentence split.
+    const shielded = paragraphs[i].replace(/\b([A-Z]|Inc|Co|Corp|Ltd|St|Mr|Ms|Dr|No)\./g, '$1\u2024');
+    const sentences = (shielded.match(/[^.!?]+[.!?]+["”’]?|[^.!?]+$/g) || [shielded]).map((x) => x.replace(/\u2024/g, '.'));
+    const quote = (sentences.find((x) => containsTerm(x, name)) || paragraphs[i]).trim();
+    const where = social ? 'Post text' : i === 0 ? 'Lead paragraph' : `Paragraph ${i + 1} of ${paragraphs.length}`;
+    return { where, quote: truncate(quote, 280) };
+  }
+  return { where: 'Article text', quote: null };
+}
