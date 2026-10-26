@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#004C9D">
+  <title>AIS Social Listening</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark">AIS</span>
+        <h1>Social Listening</h1>
+      </div>
+      <button class="btn btn-primary" id="check-now" type="button">Check now</button>
+      <div class="scan-status"><span id="scan-status" aria-live="polite">Loading…</span> · <a class="signout" href="/logout">Sign out</a></div>
+    </div>
+  </header>
+
+  <main>
+    <section aria-labelledby="h-summary">
+      <h2 id="h-summary" class="sr-only">Summary</h2>
+      <div class="tiles" id="tiles"></div>
+    </section>
+
+    <section aria-labelledby="h-view">
+      <h2 id="h-view">Operating company</h2>
+      <div class="chips" id="opco-chips"></div>
+    </section>
+
+    <section id="opco-section" hidden>
+      <div class="opco-view" id="opco-view"></div>
+    </section>
+
+    <section aria-labelledby="h-attention">
+      <h2 id="h-attention">Needs attention <span class="count" id="attention-count"></span></h2>
+      <p class="hint">Negative coverage that hasn't been reviewed yet.</p>
+      <div class="list" id="attention"></div>
+    </section>
+
+    <section aria-labelledby="h-filters">
+      <h2 id="h-filters">Filter results</h2>
+      <div class="filters">
+        <div>
+          <div class="filter-label">Sentiment</div>
+          <div class="chips" id="sentiment-chips"></div>
+        </div>
+        <div class="filter-row">
+          <label><span class="filter-label">Project / topic</span><select id="f-topic"></select></label>
+          <label><span class="filter-label">Date</span>
+            <select id="f-range">
+              <option value="1">Last 24 hours</option>
+              <option value="3">Last 3 days</option>
+              <option value="7" selected>Last 7 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+            </select>
+          </label>
+          <label><span class="filter-label">Sort</span>
+            <select id="f-sort">
+              <option value="newest">Newest first</option>
+              <option value="relevance">Most relevant</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </label>
+          <label><span class="filter-label">Search</span><input type="search" id="f-q" placeholder="Headline, source…"></label>
+        </div>
+        <div class="toggles">
+          <label class="toggle"><input type="checkbox" id="f-low"> Show low-confidence</label>
+          <label class="toggle"><input type="checkbox" id="f-handled"> Show reviewed &amp; dismissed</label>
+          <label class="toggle"><input type="checkbox" id="f-starred"> Starred only</label>
+          <label class="toggle"><input type="checkbox" id="f-new"> New only</label>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-results">
+      <h2 id="h-results">All results <span class="count" id="results-count"></span></h2>
+      <p class="hint" id="results-hint"></p>
+      <div class="list" id="results"></div>
+    </section>
+
+    <section aria-labelledby="h-trend">
+      <h2 id="h-trend">Trend <span class="count">· last 30 days, relevant items</span></h2>
+      <div class="chart-card">
+        <div class="legend" id="legend"></div>
+        <div class="chart" id="chart"></div>
+        <div class="chart-caption" id="chart-caption">Tap a day to see its counts.</div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-topics">
+      <h2 id="h-topics">Topics <span class="count" id="topics-count"></span></h2>
+      <p class="hint">A result counts only if it mentions a keyword <b>and</b> a context term, and none of the exclude terms. Yellow boxes are open questions to confirm.</p>
+      <button class="btn btn-primary" id="add-topic" type="button">+ Add topic</button>
+      <div id="new-topic"></div>
+      <div class="list mt12" id="topics"></div>
+    </section>
+
+    <section aria-labelledby="h-scans">
+      <h2 id="h-scans">Scan history</h2>
+      <div class="scan-list" id="scans"></div>
+      <h2 class="subhead">Latest scan by topic &amp; source</h2>
+      <div class="scan-list" id="runs"></div>
+    </section>
+
+    <p class="footer" id="footer"></p>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

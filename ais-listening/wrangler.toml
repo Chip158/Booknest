@@ -1,0 +1,48 @@
+name = "ais-listening"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+
+# Dashboard files. The Worker runs first so every page except the login page
+# requires the shared password.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+html_handling = "none"
+not_found_handling = "none"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ais-listening"
+database_id = "REPLACE_WITH_ID_FROM_wrangler_d1_create"
+migrations_dir = "migrations"
+
+[[queues.producers]]
+queue = "ais-listening-scan"
+binding = "SCAN_QUEUE"
+
+[[queues.consumers]]
+queue = "ais-listening-scan"
+max_batch_size = 1
+max_concurrency = 1   # one topic at a time keeps GDELT's 1-request-per-5s limit happy
+max_retries = 1
+
+# Hourly tick; the code only scans at SCAN_HOURS_PACIFIC (config/settings.js),
+# which keeps 7 AM / 7 PM correct through daylight-saving changes.
+[triggers]
+crons = ["0 * * * *"]
+
+[vars]
+# Comma-separated source names to turn off. Bing's RSS terms allow only
+# "personal, non-commercial use", so it is off until AIS decides it's OK.
+DISABLED_SOURCES = "Bing News"
+
+[observability]
+enabled = true
+
+# Secrets (never put these in this file) — set with `npx wrangler secret put NAME`:
+#   DASHBOARD_PASSWORD   shared login password
+#   SESSION_SECRET       long random string used to sign login cookies
+#   ANTHROPIC_API_KEY    Claude relevance + sentiment check
+#   BRAVE_API_KEY        optional, paid: LinkedIn/Facebook public pages via web search
+#   REDDIT_CLIENT_ID / REDDIT_CLIENT_SECRET   optional, free: more reliable Reddit access

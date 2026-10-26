@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>AIS Social Listening — Sign in</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="login-wrap">
+    <form class="login-card" id="login" method="post" action="/api/login">
+      <span class="brand-mark">AIS</span>
+      <h1>Social Listening</h1>
+      <label for="pw" class="sr-only">Password</label>
+      <input id="pw" name="password" type="password" placeholder="Team password" autocomplete="current-password" required>
+      <button class="btn btn-primary" type="submit">Sign in</button>
+      <p class="error" id="err" role="alert"></p>
+    </form>
+  </div>
+  <script src="/login.js"></script>
+</body>
+</html>
