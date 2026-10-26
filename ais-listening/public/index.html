@@ -38,7 +38,7 @@
 
     <section aria-labelledby="h-attention">
       <h2 id="h-attention">Needs attention <span class="count" id="attention-count"></span></h2>
-      <p class="hint">Negative coverage that hasn't been reviewed yet.</p>
+      <p class="hint">Negative coverage that hasn't been reviewed yet, most relevant first.</p>
       <div class="list" id="attention"></div>
     </section>
 
@@ -62,8 +62,9 @@
           </label>
           <label><span class="filter-label">Sort</span>
             <select id="f-sort">
+              <option value="priority">Most relevant, then newest</option>
               <option value="newest">Newest first</option>
-              <option value="relevance">Most relevant</option>
+              <option value="relevance">Highest score</option>
               <option value="oldest">Oldest first</option>
             </select>
           </label>

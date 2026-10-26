@@ -21,7 +21,7 @@ const state = {
   prevSeen: 0,
   shown: PAGE,
   editing: null, // topic id being edited, or 'new'
-  f: { opco: 'ALL', topic: 'ALL', sentiment: 'ALL', range: '7', sort: 'newest', q: '', low: false, handled: false, starred: false, onlyNew: false },
+  f: { opco: 'ALL', topic: 'ALL', sentiment: 'ALL', range: '7', sort: 'priority', q: '', low: false, handled: false, starred: false, onlyNew: false },
 };
 
 // ------------------------------------------------------------------ helpers
@@ -122,7 +122,7 @@ function readHash() {
 }
 function writeHash() {
   const p = new URLSearchParams();
-  const d = { opco: 'ALL', topic: 'ALL', sentiment: 'ALL', range: '7', sort: 'newest', q: '' };
+  const d = { opco: 'ALL', topic: 'ALL', sentiment: 'ALL', range: '7', sort: 'priority', q: '' };
   for (const [k, v] of Object.entries(state.f)) {
     if (typeof v === 'boolean') v && p.set(k, '1');
     else if (v !== d[k]) p.set(k, v);
@@ -172,12 +172,38 @@ function clusters(items) {
     const lead = visible.sort((a, b) => b.relevance - a.relevance || a.first_seen_at.localeCompare(b.first_seen_at))[0];
     out.push({ lead, others: group.filter((x) => x.id !== lead.id) });
   }
+  const date = (g) => g.lead.published_at || g.lead.first_seen_at;
   const sorters = {
+    // Relevance tier first, newest first within a tier, so a strong match from
+    // today isn't buried under a slightly higher score from weeks ago.
+    priority: (a, b) => tierOf(b.lead.relevance).rank - tierOf(a.lead.relevance).rank || date(b).localeCompare(date(a)),
     newest: (a, b) => (b.lead.published_at || b.lead.first_seen_at).localeCompare(a.lead.published_at || a.lead.first_seen_at),
     oldest: (a, b) => (a.lead.published_at || a.lead.first_seen_at).localeCompare(b.lead.published_at || b.lead.first_seen_at),
-    relevance: (a, b) => b.lead.relevance - a.lead.relevance,
+    relevance: (a, b) => b.lead.relevance - a.lead.relevance || date(b).localeCompare(date(a)),
   };
-  return out.sort(sorters[state.f.sort] || sorters.newest);
+  return out.sort(sorters[state.f.sort] || sorters.priority);
+}
+
+function tierOf(score) {
+  const t = state.config.threshold;
+  if (score >= 90) return { rank: 3, label: 'Highly relevant · 90+' };
+  if (score >= 75) return { rank: 2, label: 'Likely relevant · 75–89' };
+  if (score >= t) return { rank: 1, label: `Possibly relevant · ${t}–74` };
+  return { rank: 0, label: `Low confidence · below ${t}` };
+}
+
+// Cards, with a tier heading wherever the relevance tier changes (priority sort only).
+function cardsWithTiers(groups) {
+  if (state.f.sort !== 'priority') return groups.map(card);
+  const out = [];
+  let last = null;
+  for (const g of groups) {
+    const tier = tierOf(g.lead.relevance);
+    if (tier.rank !== last) out.push(h('h3', { class: 'tier', text: tier.label }));
+    last = tier.rank;
+    out.push(card(g));
+  }
+  return out;
 }
 
 // ------------------------------------------------------------------ actions
@@ -371,7 +397,7 @@ function renderLists() {
   const rest = groups.filter((g) => !attention.includes(g));
 
   $('attention-count').textContent = `· ${attention.length}`;
-  $('attention').replaceChildren(...(attention.length ? attention.map(card) : [h('div', { class: 'empty', text: 'Nothing negative needs attention for these filters. 👍' })]));
+  $('attention').replaceChildren(...(attention.length ? cardsWithTiers(attention) : [h('div', { class: 'empty', text: 'Nothing negative needs attention for these filters. 👍' })]));
 
   $('results-count').textContent = `· ${rest.length} stories`;
   const lowCount = state.items.filter((it) => it.relevance < state.config.threshold && it.status === 'open').length;
@@ -380,7 +406,7 @@ function renderLists() {
     : `Hiding ${lowCount} low-confidence match${lowCount === 1 ? '' : 'es'} (relevance below ${state.config.threshold}). Turn on “Show low-confidence” to see them.`;
 
   const list = $('results');
-  list.replaceChildren(...(rest.length ? rest.slice(0, state.shown).map(card) : [h('div', { class: 'empty', text: state.items.length ? 'No results match these filters.' : 'No results yet. Press “Check now” to run the first scan.' })]));
+  list.replaceChildren(...(rest.length ? cardsWithTiers(rest.slice(0, state.shown)) : [h('div', { class: 'empty', text: state.items.length ? 'No results match these filters.' : 'No results yet. Press “Check now” to run the first scan.' })]));
   if (rest.length > state.shown) list.append(h('button', { class: 'btn more', type: 'button', onclick: () => { state.shown += PAGE; renderLists(); } }, `Show ${Math.min(PAGE, rest.length - state.shown)} more`));
   setBarWidths($('attention'));
   setBarWidths(list);
