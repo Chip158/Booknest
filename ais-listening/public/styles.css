@@ -270,3 +270,4 @@ h2.subhead { margin-top: 16px; font-size: 16px; }
 .thumb-wrap { display: block; margin: 8px 0; border-radius: 8px; overflow: hidden; background: var(--silver-light); max-width: 420px; }
 .thumb { display: block; width: 100%; max-height: 200px; object-fit: cover; }
 .tier-2 { color: var(--ais-blue-dark); }
+.linked { font-size: 13px; color: var(--ais-blue-dark); background: var(--ais-blue-tint); border-radius: 6px; padding: 6px 10px; margin: 6px 0; }

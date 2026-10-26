@@ -35,12 +35,19 @@ export function applyRules(topic, candidate) {
 }
 
 // Builds a boolean query: ("kw1" OR "kw2") ("ctx1" OR ctx2) -"ex1"
-export function buildQuery(topic, { includeContext = true, includeExclude = true, maxContext = 12, minTermLength = 1 } = {}) {
+export function buildQuery(topic, { includeContext = true, includeExclude = true, maxContext = 7, contextFrom = 0, minTermLength = 1 } = {}) {
   const q = (t) => (/\s|[^\w]/.test(t) ? `"${t.replace(/"/g, '')}"` : t);
   const kws = topic.keywords.filter((t) => t.length >= minTermLength).map(q);
   const parts = [kws.length > 1 ? `(${kws.join(' OR ')})` : kws[0] || ''];
-  const ctx = topic.context.filter((t) => t.length >= minTermLength).slice(0, maxContext).map(q);
+  const ctx = topic.context.filter((t) => t.length >= minTermLength).slice(contextFrom, contextFrom + maxContext).map(q);
   if (includeContext && ctx.length) parts.push(ctx.length > 1 ? `(${ctx.join(' OR ')})` : ctx[0]);
   if (includeExclude) for (const ex of topic.exclude) parts.push(`-${q(ex)}`);
   return parts.filter(Boolean).join(' ');
+}
+
+// Search engines silently return nothing for long queries, so a long context
+// list is split into several short searches whose results are merged.
+export function buildQueries(topic, { chunk = 7, maxChunks = 4, ...opts } = {}) {
+  const n = Math.max(1, Math.min(maxChunks, Math.ceil(topic.context.length / chunk)));
+  return Array.from({ length: n }, (_, i) => buildQuery(topic, { ...opts, maxContext: chunk, contextFrom: i * chunk }));
 }

@@ -7,6 +7,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { RELEVANCE_MODEL, OPCOS, MAX_PHOTOS } from '../config/settings.js';
 import { containsTerm, truncate } from './text.js';
+import { profileText } from './context.js';
 
 const SYSTEM = `You screen media-monitoring results for the marketing team at AIS (ASRC Industrial), a US industrial services and construction company with several operating companies (OpCos). Always write the company name as "AIS".
 
@@ -44,7 +45,9 @@ const SCHEMA = {
 
 function topicBrief(topic, dismissed) {
   const opco = OPCOS.find((o) => o.code === topic.opco);
+  const profile = profileText(topic);
   const lines = [
+    ...(profile ? [profile, ''] : []),
     `TOPIC: ${topic.name}`,
     `Type: ${topic.type}; OpCo: ${opco ? `${opco.name} (${opco.code})` : topic.opco}`,
     `Keywords: ${topic.keywords.join('; ')}`,
@@ -161,7 +164,10 @@ export function findNames(text) {
 export function ruleCheck(topic, item, read, penalties = new Map()) {
   const c = { title: item.title, snippet: read.text || item.snippet, domain: item.domain, _matched: item.matched };
   const base = ruleScore(topic, c, penalties);
-  const names = findNames(`${item.title}\n${read.text || item.snippet || ''}`);
+  const fullText = `${item.title}\n${read.text || item.snippet || ''}`;
+  const names = findNames(fullText);
+  // Named in the article AND about our kind of work: rank it up.
+  if (names.length && topic.context.some((t) => containsTerm(fullText, t))) base.relevance = Math.min(95, base.relevance + 20);
   return {
     ...base,
     why: base.why + (names.length ? ` Names us: ${names.join(', ')}.` : ''),

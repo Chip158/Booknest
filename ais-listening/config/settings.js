@@ -21,12 +21,16 @@ export const BRAND = {
 // `names`: how the company appears in print. A story that contains one of these
 // "names us". Short ALL-CAPS names (AIS, RSI) only count as exact, capitalized
 // words, and the relevance check still confirms it's really us.
+// `about`: one or two sentences on what the company does and where. Its current
+// jobs don't go here: every project/location topic tagged with the OpCo in the
+// dashboard is added automatically.
 // `logo`: what the logo / equipment branding looks like, so the photo check
 // knows what to look for. Optional `logoFile`: a PNG of the logo placed in
 // public/logos/ (e.g. 'aisi.png'); when present it is shown to the photo check.
 export const OPCOS = [
   {
     code: 'AISI', name: 'AIS Infrastructure', color: '#F2B705', // gold/yellow — confirm exact hex
+    about: 'Heavy civil construction contractor (Chattanooga, Tennessee; Blairsville, Georgia). Builds U.S. border wall / barrier segments in Arizona and California, including as part of the BCCG joint venture.', // CONFIRM
     names: ['AIS Infrastructure', 'AISI'],
     // Confirmed: equipment typically says "AIS Infrastructure" or carries the logo.
     logo: 'equipment, trucks, signs or hard hats marked with the words "AIS Infrastructure" or the AIS Infrastructure logo (colors to confirm; add logoFile for the exact mark)',
@@ -34,24 +38,28 @@ export const OPCOS = [
   },
   {
     code: 'NWDD', name: 'Northwest Demolition', color: '#C8102E', // red — confirm exact hex
+    about: 'Demolition and dismantling contractor (Pacific Northwest), including large structures such as stadiums.', // CONFIRM
     names: ['Northwest Demolition', 'NWDD', 'Northwest Demolition and Dismantling', 'Northwest Demolition & Dismantling'],
     logo: '"NWDD" or "Northwest Demolition", red', // CONFIRM
     logoFile: null,
   },
   {
     code: 'FDT', name: 'F.D. Thomas', color: '#6C4BB6', // PLACEHOLDER — need brand hex
+    about: 'Industrial painting and coatings contractor (Central Point, Oregon), including bridges.', // CONFIRM
     names: ['F.D. Thomas', 'FD Thomas', 'F. D. Thomas', 'FDThomas'],
     logo: '"F.D. Thomas" or "FDT"', // CONFIRM
     logoFile: null,
   },
   {
     code: 'RSI', name: 'RSI', color: '#2E8B3E', // green — confirm exact hex
+    about: 'Environmental remediation contractor, including Navy shipyard cleanup.', // CONFIRM (full name: RSI EnTech?)
     names: ['RSI'],
     logo: '"RSI", green', // CONFIRM
     logoFile: null,
   },
   {
     code: 'AIS', name: 'AIS (corporate / shared)', color: '#004C9D',
+    about: 'AIS (ASRC Industrial) is the parent company of the OpCos above.',
     names: ['AIS', 'ASRC Industrial', 'ASRC Industrial Services', 'BCCG'],
     logo: 'the letters "AIS" in blue (#004C9D)', // CONFIRM
     logoFile: null,

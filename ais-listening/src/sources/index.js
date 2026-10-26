@@ -2,7 +2,7 @@
 // { url, title, snippet, source, publishedAt, platform, sourceType, contextInQuery }
 // Sources never throw past `runSources`; failures are reported per source.
 
-import { buildQuery } from '../filter.js';
+import { buildQuery, buildQueries } from '../filter.js';
 import { parseRss } from './rss.js';
 import { stripHtml, toIso, domainOf, truncate } from '../text.js';
 import { BRAVE_SITES, MAX_PER_SOURCE } from '../../config/settings.js';
@@ -19,6 +19,8 @@ async function get(url, init = {}) {
   return res;
 }
 
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+
 function withinDays(iso, days) {
   if (!iso) return true;
   return Date.now() - new Date(iso).getTime() <= days * 86400000 + 3600000;
@@ -26,10 +28,20 @@ function withinDays(iso, days) {
 
 // --- Google News RSS (free, no key) ---------------------------------------
 async function googleNews(topic, days) {
-  const q = `${buildQuery(topic)} when:${days}d`;
-  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`;
-  const xml = await (await get(url)).text();
-  return parseRss(xml, MAX_PER_SOURCE).map((it) => {
+  const items = [];
+  const seen = new Set();
+  for (const [i, query] of buildQueries(topic).entries()) {
+    if (i) await pause(1500); // space out searches; Google throttles bursts
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(`${query} when:${days}d`)}&hl=en-US&gl=US&ceid=US:en`;
+    let found = parseRss(await (await get(url)).text(), MAX_PER_SOURCE);
+    if (!found.length) {
+      // Throttled responses come back as an empty feed: retry once.
+      await pause(4000);
+      found = parseRss(await (await get(url)).text(), MAX_PER_SOURCE);
+    }
+    for (const it of found) if (!seen.has(it.link)) { seen.add(it.link); items.push(it); }
+  }
+  return items.slice(0, MAX_PER_SOURCE * 2).map((it) => {
     const source = it.source || '';
     const title = source && it.title.endsWith(` - ${source}`) ? it.title.slice(0, -(source.length + 3)) : it.title;
     // Google's description is usually just the headline again; keep it only if it adds something.
@@ -51,7 +63,7 @@ async function googleNews(topic, days) {
 
 // --- Bing News RSS (free, no key) -----------------------------------------
 async function bingNews(topic, days) {
-  const url = `https://www.bing.com/news/search?q=${encodeURIComponent(buildQuery(topic))}&format=rss&count=50&setlang=en-us&cc=US`;
+  const url = `https://www.bing.com/news/search?q=${encodeURIComponent(buildQueries(topic)[0])}&format=rss&count=50&setlang=en-us&cc=US`;
   const xml = await (await get(url)).text();
   return parseRss(xml, MAX_PER_SOURCE)
     .map((it) => {

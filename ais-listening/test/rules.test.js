@@ -112,3 +112,35 @@ test('names us: exact company names, case-aware for short names', async () => {
   assert.equal(ruleCheck(t, item, { text: 'The contractor, NWDD, said…', images: [] }).exposure, 'named');
   assert.equal(ruleCheck(t, item, { text: 'No company was named.', images: ['https://x/p.jpg'] }).photo, 'unchecked');
 });
+
+test('OpCo topics pick up their projects; projects pick up OpCo names', async () => {
+  const { linkTopic, profileText } = await import('../src/context.js');
+  const all = SEED_TOPICS.map((t, i) => ({ ...t, id: i + 1, paused: false }));
+  const aisi = linkTopic(all.find((t) => t.name.startsWith('AIS Infrastructure')), all);
+  assert.ok(aisi.context.includes('Cabeza Prieta') && aisi.context.includes('Lukeville'));
+  // A border-wall story naming AIS Infrastructure passes; "AI infrastructure" does not.
+  assert.equal(applyRules(aisi, social('AIS Infrastructure crews resume Lukeville wall work')).ok, true);
+  assert.equal(applyRules(aisi, social('AI infrastructure spending soars')).ok, false);
+  const wall = linkTopic(all.find((t) => t.name.startsWith('Border Wall')), all);
+  assert.ok(wall.context.includes('AIS Infrastructure'));
+  assert.match(profileText(aisi), /Cabeza Prieta/);
+  // New jobs are picked up automatically.
+  const plus = [...all, { id: 99, name: 'New Job', opco: 'AISI', type: 'project', keywords: ['Nogales'], context: [], exclude: [], confirm: [], paused: false }];
+  assert.ok(linkTopic(all[0], plus).context.includes('Nogales'));
+});
+
+test('long context lists become several short queries', async () => {
+  const { buildQueries } = await import('../src/filter.js');
+  const qs = buildQueries({ keywords: ['X'], context: Array.from({ length: 16 }, (_, i) => `t${i}`), exclude: [] });
+  assert.equal(qs.length, 3);
+  assert.equal(qs[2], 'X (t14 OR t15)');
+});
+
+test('full-article excludes use specific phrases only; named + context ranks up', async () => {
+  const { ruleCheck } = await import('../src/relevance.js');
+  const t = topic('RSI');
+  const item = { title: 'Air Force awards cleanup contracts', snippet: '', domain: 'x.test', matched: { keywords: [], context: [], via: 'search engine (full article)' } };
+  const named = ruleCheck(t, item, { text: 'Awardees include RSI for remediation work.', images: [] });
+  const plain = ruleCheck(t, { ...item, title: 'RSI agents' }, { text: 'Recursive RSI loops in AI.', images: [] });
+  assert.ok(named.relevance >= 60 && plain.relevance < 60, `${named.relevance} / ${plain.relevance}`);
+});

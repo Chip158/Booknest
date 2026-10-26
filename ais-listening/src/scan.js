@@ -9,6 +9,8 @@ import { runSources } from './sources/index.js';
 import { applyRules } from './filter.js';
 import { checkResult, ruleCheck, ruleScore } from './relevance.js';
 import { readResult } from './article.js';
+import { linkTopic } from './context.js';
+import { containsTerm } from './text.js';
 import { canonicalUrl, domainOf, jaccard, sha, titleKey, truncate } from './text.js';
 
 const CLUSTER_SIMILARITY = 0.55;
@@ -66,7 +68,7 @@ async function loadFeedback(env, topicId) {
 export async function runTopicScan(env, { scanId, topicId }) {
   const row = await env.DB.prepare('SELECT * FROM topics WHERE id = ?').bind(topicId).first();
   if (!row || row.paused) return finishTopic(env, scanId, topicId, { sources: { skipped: 'paused or deleted' } });
-  const topic = rowToTopic(row);
+  const topic = linkTopic(rowToTopic(row), await allTopics(env));
 
   const { n: existing } = await env.DB.prepare('SELECT COUNT(*) AS n FROM items WHERE topic_id = ?').bind(topicId).first();
   const days = existing ? LOOKBACK_DAYS.regular : LOOKBACK_DAYS.firstScan;
@@ -172,12 +174,23 @@ export async function runCheck(env, { topicId, ids }) {
   const placeholders = ids.map(() => '?').join(',');
   const { results } = await env.DB.prepare(`SELECT * FROM items WHERE id IN (${placeholders}) AND exposure = 'pending'`).bind(...ids).all();
   if (!results.length) return;
-  const topic = row ? rowToTopic(row) : { name: 'Removed topic', opco: results[0].opco, type: 'project', keywords: [], context: [], exclude: [], confirm: [] };
+  const base = row ? rowToTopic(row) : { name: 'Removed topic', opco: results[0].opco, type: 'project', keywords: [], context: [], exclude: [], confirm: [] };
+  const topic = linkTopic(base, await allTopics(env));
   const feedback = await loadFeedback(env, topicId);
   for (const item of results) {
     item.matched = JSON.parse(item.matched || '{}');
     const read = await readResult(item);
-    const r = await checkResult(env, topic, item, read, feedback);
+    let r;
+    const excluded = read.textChecked ? excludedInArticle(topic, read.text) : [];
+    if (excluded.length) {
+      r = { ...ruleCheck(topic, item, read), relevance: 10, exposure: 'not_named', names_found: [], why: `Excluded: the article is about ${excluded.map((e) => `"${e}"`).join(', ')}.` };
+    } else if (read.textChecked && !nameInArticle(topic, item, read)) {
+      // Search engines match loosely ("AI infrastructure" for "AIS Infrastructure").
+      // With the full article in hand, require the real name to be there.
+      r = { ...ruleCheck(topic, item, read), relevance: 15, why: `Name collision: none of ${topic.keywords.map((k) => `"${k}"`).join(', ')} appears in the article.` };
+    } else {
+      r = await checkResult(env, topic, item, read, feedback);
+    }
     if (read.note && !read.textChecked) r.why += ` (Full article not checked: ${read.note}.)`;
     await saveCheck(env, item.id, r, read);
   }
@@ -196,4 +209,21 @@ export async function finishStaleChecks(env) {
     r.why += ' (Automatic check did not finish; scored by rules.)';
     await saveCheck(env, item.id, r, read);
   }
+}
+
+async function allTopics(env) {
+  const { results } = await env.DB.prepare('SELECT * FROM topics').all();
+  return results.map(rowToTopic);
+}
+
+// Specific multi-word exclude phrases ("American Iron and Steel Institute")
+// are also checked in the full article. Short ones ("AI") stay headline-only,
+// since a real story about us can mention them in passing.
+function excludedInArticle(topic, text) {
+  return topic.exclude.filter((e) => e.trim().split(/\s+/).length >= 2 && containsTerm(text, e));
+}
+
+function nameInArticle(topic, item, read) {
+  const text = `${item.title}\n${item.snippet || ''}\n${read.text}`;
+  return topic.keywords.some((k) => containsTerm(text, k));
 }

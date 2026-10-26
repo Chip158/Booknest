@@ -583,6 +583,17 @@ function topicForm(t, onDone) {
   );
 }
 
+// Shows the automatic OpCo ↔ project linking (see src/context.js).
+function linkedLine(t) {
+  if (t.type === 'opco') {
+    const jobs = state.topics.filter((j) => j.opco === t.opco && j.type !== 'opco' && !j.paused);
+    if (!jobs.length) return null;
+    return h('p', { class: 'linked', text: `Also counts its projects as context: ${jobs.map((j) => j.name).join(', ')}` });
+  }
+  const o = opcoOf(t.opco);
+  return o.names?.length ? h('p', { class: 'linked', text: `Also counts ${o.name} names as context: ${o.names.join(', ')}` }) : null;
+}
+
 function renderTopics() {
   $('topics-count').textContent = `· ${state.topics.filter((t) => !t.paused).length} active, ${state.topics.filter((t) => t.paused).length} paused`;
   $('new-topic').replaceChildren(state.editing === 'new' ? h('div', { class: 'list mt12' }, topicForm(null)) : '');
@@ -606,6 +617,7 @@ function renderTopics() {
       termList('Keywords', t.keywords),
       termList('Context terms (need one)', t.context),
       termList('Exclude', t.exclude, 'ex'),
+      linkedLine(t),
       t.confirm.length ? h('div', { class: 'confirm' }, h('strong', { text: 'Confirm with leadership' }), h('ul', {}, t.confirm.map((c) => h('li', { text: c })))) : null,
       canEdit() && h('div', { class: 'topic-actions' },
         h('button', { class: 'btn btn-small', type: 'button', onclick: () => { state.editing = t.id; renderTopics(); } }, 'Edit'),
