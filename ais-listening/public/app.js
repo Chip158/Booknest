@@ -725,6 +725,210 @@ async function loadItems() {
   buildStories();
 }
 
+
+// ------------------------------------------------------------------ reports
+
+// Report builder: dates + companies + topics → fresh check → report (view, CSV, PDF).
+const REPORT_PRESETS = [
+  ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['this-week', 'This week'], ['last-week', 'Last week'],
+  ['this-month', 'This month'], ['last-month', 'Last month'], ['custom', 'Custom dates'],
+];
+const report = { preset: '30', from: '', to: '', opcos: new Set(), topics: new Set(), scope: 'all', low: false, data: null, waitingFor: null };
+
+const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const dayStart = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+// Local-time date range for the chosen preset, as [start of first day, end of last day].
+function reportRange() {
+  const today = dayStart(new Date());
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  let from = today;
+  let to = today;
+  switch (report.preset) {
+    case '7': from = new Date(today); from.setDate(today.getDate() - 6); break;
+    case '30': from = new Date(today); from.setDate(today.getDate() - 29); break;
+    case 'this-week': from = monday; break;
+    case 'last-week': from = new Date(monday); from.setDate(monday.getDate() - 7); to = new Date(monday); to.setDate(monday.getDate() - 1); break;
+    case 'this-month': from = new Date(today.getFullYear(), today.getMonth(), 1); break;
+    case 'last-month': from = new Date(today.getFullYear(), today.getMonth() - 1, 1); to = new Date(today.getFullYear(), today.getMonth(), 0); break;
+    case 'custom':
+      from = report.from ? new Date(`${report.from}T00:00:00`) : today;
+      to = report.to ? new Date(`${report.to}T00:00:00`) : today;
+      if (to < from) [from, to] = [to, from];
+      break;
+  }
+  const end = new Date(to);
+  end.setHours(23, 59, 59, 999);
+  return { from, to: end };
+}
+
+// Topics offered: those of the chosen companies (all companies when none chosen).
+const reportTopics = () => state.topics.filter((t) => !report.opcos.size || report.opcos.has(t.opco));
+
+function reportParams(format) {
+  const { from, to } = reportRange();
+  const p = new URLSearchParams({ from: from.toISOString(), to: to.toISOString(), scope: report.scope });
+  if (report.opcos.size) p.set('opcos', [...report.opcos].join(','));
+  const topics = [...report.topics].filter((id) => reportTopics().some((t) => t.id === id));
+  if (topics.length) p.set('topics', topics.join(','));
+  if (report.low) p.set('low', '1');
+  if (format) p.set('format', format);
+  return p;
+}
+
+function describeReport() {
+  const { from, to } = reportRange();
+  const fmt = (d) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  const companies = report.opcos.size ? [...report.opcos].map((c) => opcoOf(c).name).join(', ') : 'All companies';
+  const chosen = [...report.topics].map(topicOf).filter((t) => t && reportTopics().includes(t));
+  const topics = chosen.length ? chosen.map((t) => t.name).join(', ') : 'all topics';
+  return { dates: `${fmt(from)} – ${fmt(to)}`, scope: `${companies} · ${topics}${report.scope === 'us' ? ' · only stories that name or may show us' : ''}${report.low ? ' · incl. low-confidence' : ''}` };
+}
+
+function renderReportBuilder() {
+  const box = $('report-builder');
+  const chip = (label, pressed, onclick, color) =>
+    h('button', { class: 'chip', type: 'button', 'aria-pressed': String(pressed), onclick, '--c': color }, color ? h('span', { class: 'dot' }) : null, label);
+  const rerender = () => { renderReportBuilder(); };
+
+  const preset = h('select', { id: 'r-preset', onchange: (e) => { report.preset = e.target.value; rerender(); } },
+    REPORT_PRESETS.map(([v, l]) => h('option', { value: v, text: l })));
+  preset.value = report.preset;
+  const { from, to } = reportRange();
+  const dateFrom = h('input', { type: 'date', id: 'r-from', value: ymd(from), onchange: (e) => { report.preset = 'custom'; report.from = e.target.value; report.to = report.to || ymd(to); rerender(); } });
+  const dateTo = h('input', { type: 'date', id: 'r-to', value: ymd(to), max: ymd(new Date()), onchange: (e) => { report.preset = 'custom'; report.to = e.target.value; report.from = report.from || ymd(from); rerender(); } });
+
+  const opcos = state.config.opcos.filter((o) => state.topics.some((t) => t.opco === o.code));
+  const toggle = (set, key) => { set.has(key) ? set.delete(key) : set.add(key); rerender(); };
+  const topics = reportTopics();
+
+  const scope = h('div', { class: 'segmented', role: 'group', 'aria-label': 'What to include' },
+    chip('All relevant stories', report.scope === 'all', () => { report.scope = 'all'; rerender(); }),
+    chip('Only stories that name or may show us', report.scope === 'us', () => { report.scope = 'us'; rerender(); }));
+
+  const busy = !!report.waitingFor;
+  box.replaceChildren(
+    h('div', { class: 'filter-row report-dates' },
+      h('label', {}, h('span', { class: 'filter-label', text: 'Dates' }), preset),
+      h('label', {}, h('span', { class: 'filter-label', text: 'From' }), dateFrom),
+      h('label', {}, h('span', { class: 'filter-label', text: 'To' }), dateTo)),
+    h('div', {}, h('div', { class: 'filter-label', text: `Companies · ${report.opcos.size ? `${report.opcos.size} selected` : 'all'}` }),
+      h('div', { class: 'chips' },
+        chip('All companies', !report.opcos.size, () => { report.opcos.clear(); rerender(); }),
+        opcos.map((o) => chip(o.name, report.opcos.has(o.code), () => toggle(report.opcos, o.code), o.color)))),
+    h('div', {}, h('div', { class: 'filter-label', text: `Topics · ${[...report.topics].filter((id) => topics.some((t) => t.id === id)).length || 'all'} of ${topics.length}` }),
+      h('div', { class: 'chips' },
+        chip('All topics', ![...report.topics].some((id) => topics.some((t) => t.id === id)), () => { report.topics.clear(); rerender(); }),
+        topics.map((t) => chip(t.name, report.topics.has(t.id), () => toggle(report.topics, t.id), opcoOf(t.opco).color)))),
+    h('div', {}, h('div', { class: 'filter-label', text: 'Include' }), scope,
+      h('label', { class: 'toggle' }, h('input', { type: 'checkbox', checked: report.low, onchange: (e) => { report.low = e.target.checked; } }), 'Include low-confidence matches')),
+    h('div', { class: 'report-actions' },
+      canEdit() ? h('button', { class: 'btn', type: 'button', disabled: busy || !!state.status?.running, onclick: checkForReport }, busy ? 'Checking…' : 'Check now for these') : null,
+      h('button', { class: 'btn btn-primary', type: 'button', onclick: () => viewReport() }, 'View report'),
+      h('a', { class: 'btn', href: `/api/report?${reportParams('csv')}`, id: 'r-csv' }, 'Download CSV'),
+      h('button', { class: 'btn', type: 'button', onclick: savePdf }, 'Save as PDF')),
+  );
+}
+
+async function checkForReport() {
+  const { from } = reportRange();
+  const days = Math.ceil((Date.now() - from.getTime()) / 86400000) + 1;
+  const chosen = [...report.topics].filter((id) => reportTopics().some((t) => t.id === id));
+  const topicIds = (chosen.length ? chosen : reportTopics().map((t) => t.id)).filter((id) => !topicOf(id)?.paused);
+  try {
+    const { scan, alreadyRunning } = await api('/api/scan', { method: 'POST', body: { topicIds, days } });
+    report.waitingFor = scan.id;
+    $('report-status').textContent = alreadyRunning
+      ? 'A scan is already running; the report will refresh when it finishes.'
+      : `Checking ${topicIds.length} topic${topicIds.length === 1 ? '' : 's'} over the last ${Math.min(days, 90)} days… the report opens when it's done.`;
+    renderReportBuilder();
+    refreshStatus();
+  } catch (e) {
+    $('report-status').textContent = e.message;
+  }
+}
+
+// Called by refreshStatus: open the report once the requested check finishes.
+function reportCheckProgress() {
+  if (!report.waitingFor) return;
+  const s = state.status;
+  if (s.running || s.checking) {
+    $('report-status').textContent = s.running
+      ? `Checking: ${s.running.topics_done} of ${s.running.topics_total} topics searched…`
+      : `Reading ${s.checking} new stor${s.checking === 1 ? 'y' : 'ies'} for our names and logos…`;
+    return;
+  }
+  if ((s.last?.id ?? 0) >= report.waitingFor) {
+    report.waitingFor = null;
+    $('report-status').textContent = `Check finished ${new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}. Report updated.`;
+    renderReportBuilder();
+    viewReport();
+  }
+}
+
+async function viewReport({ scroll = true } = {}) {
+  try {
+    report.data = await api(`/api/report?${reportParams()}`);
+    renderReportView();
+    if (scroll) $('report-view').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    $('report-status').textContent = e.message;
+  }
+}
+
+async function savePdf() {
+  await viewReport({ scroll: false });
+  // The print stylesheet prints only the report; choose "Save as PDF".
+  document.body.classList.add('printing-report');
+  const done = () => { document.body.classList.remove('printing-report'); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  window.print();
+  setTimeout(done, 1000);
+}
+
+function renderReportView() {
+  const { rows, summary } = report.data;
+  const d = describeReport();
+  const t = summary.totals;
+  const stat = (n, label, cls = '') => h('div', { class: `stat ${cls}` }, h('div', { class: 'num', text: n }), h('div', { class: 'lbl', text: label }));
+  const link = (r) => (safeUrl(r.Link) ? h('a', { href: safeUrl(r.Link), target: '_blank', rel: 'noopener noreferrer', text: r.Headline }) : r.Headline);
+  const table = (head, body) => h('div', { class: 'table-wrap' }, h('table', { class: 'weekly' },
+    h('thead', {}, h('tr', {}, head.map((c) => h('th', { scope: 'col', text: c })))), h('tbody', {}, body)));
+  const tallyRow = (x, label) => h('tr', {}, h('th', { scope: 'row', text: label }),
+    [x.stories, x.named, x.photo].map((n) => h('td', { text: n })),
+    h('td', { class: 'neg-n', text: x.negative }), h('td', { text: x.neutral }), h('td', { class: 'pos-n', text: x.positive }));
+  const tallyHead = ['', 'Stories', 'Named', 'In photo', 'Negative', 'Neutral', 'Positive'];
+  const us = rows.filter((r) => r.Association !== 'Not named or pictured');
+  const sentimentPill = (s) => h('span', { class: `pill ${s}`, text: s[0].toUpperCase() + s.slice(1) });
+
+  $('report-view').replaceChildren(h('article', { class: 'report' },
+    h('header', { class: 'report-head' },
+      h('div', { class: 'eyebrow', text: 'AIS media report' }),
+      h('h3', { text: d.dates }),
+      h('p', { class: 'report-scope', text: d.scope }),
+      h('p', { class: 'report-meta', text: `Generated ${new Date().toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}` })),
+    rows.length ? null : h('div', { class: 'empty', text: 'No stories match these choices. Try a wider date range, more companies, or “Check now for these”.' }),
+    rows.length ? h('div', { class: 'stats' },
+      stat(t.stories, 'Stories'), stat(t.named, 'Name us', 'us'), stat(t.photo, 'May show us in a photo', 'us'),
+      stat(t.negative, 'Negative', 'neg'), stat(t.positive, 'Positive', 'pos')) : null,
+    us.length ? h('section', {}, h('h4', { text: 'Stories that name us or may show us' }),
+      h('ol', { class: 'report-list' }, us.map((r) => h('li', {},
+        h('div', { class: 'report-line' }, sentimentPill(r.Sentiment), h('span', { class: 'meta', text: `${r.Published} · ${r['Operating company']} · ${r['Project / topic']}` })),
+        h('div', { class: 'report-title' }, link(r)),
+        h('div', { class: 'meta', text: `${r.Association}${r['Where mentioned'] ? ` · ${r['Where mentioned']}` : ''} · ${r.Source}` }),
+        r.Quote && r['Where mentioned'] !== 'Headline' ? h('blockquote', { text: r.Quote }) : null,
+        r['Photo check'] && r.Association !== 'Named in text' ? h('div', { class: 'meta', text: r['Photo check'] }) : null)))) : null,
+    rows.length ? h('section', {}, h('h4', { text: 'By company' }), table(tallyHead, summary.byOpco.map((x) => tallyRow(x, x.key)))) : null,
+    rows.length > 0 && summary.byWeek.length > 1 ? h('section', {}, h('h4', { text: 'By week (weeks start Monday)' }),
+      table(tallyHead, summary.byWeek.map((x) => tallyRow(x, `Week of ${new Date(`${x.key}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`)))) : null,
+    rows.length ? h('section', {}, h('h4', { text: `All stories · ${rows.length}` }),
+      table(['Date', 'Company', 'Project / topic', 'Headline', 'Association', 'Sentiment', 'Relevance'],
+        rows.map((r) => h('tr', {}, h('td', { text: r.Published }), h('td', { text: r['Operating company'] }), h('td', { class: 'wrap', text: r['Project / topic'] }),
+          h('td', { class: 'wrap headline' }, link(r)), h('td', { text: r.Association }), h('td', {}, sentimentPill(r.Sentiment)), h('td', { text: r.Relevance }))))) : null,
+  ));
+}
+
 function render() {
   renderTiles();
   renderFilters();
@@ -733,6 +937,7 @@ function render() {
   renderChart();
   renderWeekly();
   renderTopics();
+  renderReportBuilder();
 }
 
 let pollTimer;
@@ -741,6 +946,7 @@ async function refreshStatus() {
   try {
     state.status = await api('/api/status');
     renderStatus();
+    reportCheckProgress();
     const lastId = state.status.last?.id ?? null;
     const runningDone = `${state.status.running?.topics_done}|${state.status.checking}`;
     // Refresh results whenever a scan finishes or makes progress.

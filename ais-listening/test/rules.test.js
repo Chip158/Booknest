@@ -182,3 +182,22 @@ test('CSV export lists an article once, with every project it relates to', async
   assert.equal(out[0]['Project / topic'], 'Cabeza Prieta; Las Playas Intaglio');
   assert.equal(out[0].Relevance, 75);
 });
+
+test('report: date range, OpCo/topic filters, "about us" scope and summary', async () => {
+  const { buildReport } = await import('../src/export.js');
+  const base = { status: 'open', starred: false, platform: 'Google News', photo: 'none', relevance: 80, first_seen_at: '2026-10-20T00:00:00Z' };
+  const items = [
+    { ...base, id: 'a', url: 'https://x/a', title: 'A', opco: 'FDT', topic_id: 1, topic_name: 'Bay Bridge', exposure: 'named', sentiment: 'positive', published_at: '2026-10-20T12:00:00Z' },
+    { ...base, id: 'b', url: 'https://x/b', title: 'B', opco: 'AISI', topic_id: 2, topic_name: 'Cabeza Prieta', exposure: 'not_named', photo: 'unclear', sentiment: 'negative', published_at: '2026-10-21T12:00:00Z' },
+    { ...base, id: 'c', url: 'https://x/c', title: 'C', opco: 'AISI', topic_id: 3, topic_name: 'Tecate Peak', exposure: 'not_named', sentiment: 'neutral', published_at: '2026-09-01T12:00:00Z' },
+    { ...base, id: 'd', url: 'https://x/d', title: 'D', opco: 'RSI', topic_id: 4, topic_name: 'RSI', exposure: 'not_named', sentiment: 'neutral', relevance: 20, published_at: '2026-10-21T12:00:00Z' },
+  ];
+  const range = { from: '2026-10-01T00:00:00Z', to: '2026-10-31T00:00:00Z' };
+  assert.equal(buildReport(items, range).rows.length, 2); // c out of range, d low-confidence
+  assert.equal(buildReport(items, { ...range, low: true }).rows.length, 3);
+  assert.deepEqual(buildReport(items, { ...range, opcos: ['AISI'] }).rows.map((r) => r.Headline), ['B']);
+  assert.deepEqual(buildReport(items, { ...range, topics: [1] }).rows.map((r) => r.Headline), ['A']);
+  const us = buildReport(items, { ...range, scope: 'us' });
+  assert.equal(us.rows.length, 2);
+  assert.deepEqual([us.summary.totals.named, us.summary.totals.photo, us.summary.totals.negative], [1, 1, 1]);
+});

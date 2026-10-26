@@ -43,6 +43,25 @@ Limits:
   those needs a paid image-recognition listening tool (e.g. Brandwatch,
   Talkwalker, Meltwater).
 
+## Reports
+
+The **Build a report** section on the dashboard:
+
+1. Pick dates: last 7 or 30 days, this or last week, this or last month, or
+   custom from/to dates.
+2. Pick companies (all or any mix) and topics (all, or any of the chosen
+   companies' topics).
+3. Choose "All relevant stories" or "Only stories that name or may show us".
+   Optionally include low-confidence matches.
+4. **Check now for these** runs a fresh search of only those topics over that
+   date range (up to 90 days back). The report refreshes when it finishes.
+5. **View report** shows it on the page. **Download CSV** opens in Excel with
+   clickable headlines. **Save as PDF** opens the print dialog, which prints
+   only the report.
+
+The same report is available directly at
+`/api/report?from=…&to=…&opcos=AISI,FDT&topics=1,2&scope=all|us&format=csv`.
+
 ## How a result gets on the dashboard
 
 1. **Search.** Each topic is searched on every source. News engines get the

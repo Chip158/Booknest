@@ -111,3 +111,51 @@ export function selectForExport(items, { all = false } = {}) {
     .filter((it) => it.exposure !== 'pending' && it.status !== 'dismissed' && (all || it.relevance >= RELEVANCE_THRESHOLD))
     .sort((a, b) => rank(a) - rank(b) || (b.published_at || b.first_seen_at).localeCompare(a.published_at || a.first_seen_at));
 }
+
+// ---------------------------------------------------------------- reports
+
+const isUsRow = (r) => r.Association !== 'Not named or pictured';
+
+// Report for the dashboard's report builder (also used for its CSV).
+// filters: { from, to } ISO datetimes; opcos: codes; topics: ids;
+// scope: 'all' | 'us' (named, logo, or possibly in a photo); low: include low-confidence.
+export function buildReport(items, { from, to, opcos = [], topics = [], scope = 'all', low = false } = {}) {
+  const wantOpco = new Set(opcos);
+  const wantTopic = new Set(topics.map(Number));
+  const picked = selectForExport(items, { all: low }).filter((it) => {
+    const when = it.published_at || it.first_seen_at;
+    if (from && when < from) return false;
+    if (to && when > to) return false;
+    if (wantOpco.size && !wantOpco.has(it.opco)) return false;
+    if (wantTopic.size && !wantTopic.has(it.topic_id)) return false;
+    return true;
+  });
+  let rows = mergeDuplicates(picked.map((it) => exportRow(it, it.topic_name)));
+  if (scope === 'us') rows = rows.filter(isUsRow);
+  return { rows, summary: summarize(rows) };
+}
+
+export function summarize(rows) {
+  const tally = (list) => ({
+    stories: list.length,
+    named: list.filter((r) => r.Association === 'Named in text').length,
+    photo: list.filter((r) => r.Association === 'Logo / equipment in photo' || r.Association === 'Possibly in photo').length,
+    negative: list.filter((r) => r.Sentiment === 'negative').length,
+    neutral: list.filter((r) => r.Sentiment === 'neutral').length,
+    positive: list.filter((r) => r.Sentiment === 'positive').length,
+  });
+  const group = (key) => {
+    const m = new Map();
+    for (const r of rows) {
+      if (!m.has(r[key])) m.set(r[key], []);
+      m.get(r[key]).push(r);
+    }
+    return [...m].map(([k, list]) => ({ key: k, ...tally(list) }));
+  };
+  return {
+    totals: tally(rows),
+    byOpco: group('Operating company').sort((a, b) => b.named + b.photo - (a.named + a.photo) || b.stories - a.stories),
+    byWeek: group('Week of').sort((a, b) => b.key.localeCompare(a.key)),
+    aboutUs: rows.filter(isUsRow).length,
+  };
+}

@@ -21,11 +21,21 @@ export async function runningScan(env) {
   ).first();
 }
 
-export async function startScan(env, trigger) {
+// Search engines only reliably go back about this far.
+export const MAX_SCAN_DAYS = 90;
+
+// Options (from the report builder): topicIds limits the scan to those topics;
+// days sets how far back to search instead of the usual lookback.
+export async function startScan(env, trigger, { topicIds = null, days = null } = {}) {
   const active = await runningScan(env);
   if (active) return { scan: active, alreadyRunning: true };
 
-  const { results: topics } = await env.DB.prepare('SELECT id FROM topics WHERE paused = 0').all();
+  let { results: topics } = await env.DB.prepare('SELECT id FROM topics WHERE paused = 0').all();
+  if (Array.isArray(topicIds) && topicIds.length) {
+    const wanted = new Set(topicIds.map(Number));
+    topics = topics.filter((t) => wanted.has(t.id));
+  }
+  const lookback = days ? Math.max(1, Math.min(MAX_SCAN_DAYS, Math.ceil(Number(days)))) : null;
   const scan = await env.DB.prepare('INSERT INTO scans (trigger, started_at, topics_total) VALUES (?, ?, ?) RETURNING *')
     .bind(trigger, now(), topics.length)
     .first();
@@ -33,7 +43,9 @@ export async function startScan(env, trigger) {
     await env.DB.prepare('UPDATE scans SET finished_at = ? WHERE id = ?').bind(now(), scan.id).run();
     return { scan };
   }
-  await env.SCAN_QUEUE.sendBatch(topics.map((t) => ({ body: { scanId: scan.id, topicId: t.id } })));
+  for (let i = 0; i < topics.length; i += 100) {
+    await env.SCAN_QUEUE.sendBatch(topics.slice(i, i + 100).map((t) => ({ body: { scanId: scan.id, topicId: t.id, days: lookback } })));
+  }
   return { scan };
 }
 
@@ -65,13 +77,13 @@ async function loadFeedback(env, topicId) {
   return { dismissed, penalties };
 }
 
-export async function runTopicScan(env, { scanId, topicId }) {
+export async function runTopicScan(env, { scanId, topicId, days: requestedDays = null }) {
   const row = await env.DB.prepare('SELECT * FROM topics WHERE id = ?').bind(topicId).first();
   if (!row || row.paused) return finishTopic(env, scanId, topicId, { sources: { skipped: 'paused or deleted' } });
   const topic = linkTopic(rowToTopic(row), await allTopics(env));
 
   const { n: existing } = await env.DB.prepare('SELECT COUNT(*) AS n FROM items WHERE topic_id = ?').bind(topicId).first();
-  const days = existing ? LOOKBACK_DAYS.regular : LOOKBACK_DAYS.firstScan;
+  const days = requestedDays || (existing ? LOOKBACK_DAYS.regular : LOOKBACK_DAYS.firstScan);
 
   const { candidates, report } = await runSources(topic, days, env);
   const stats = { fetched: candidates.length, excluded: 0, no_context: 0, duplicates: 0, new_items: 0, sources: report };

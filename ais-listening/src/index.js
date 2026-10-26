@@ -4,7 +4,7 @@ import { ensureSeeded, insertTopicStmt, now, rowToItem, rowToTopic, validateTopi
 import { isScanSlot, nextScanTime } from './schedule.js';
 import { finishStaleChecks, runCheck, runningScan, runTopicScan, startScan } from './scan.js';
 import { enabledSources } from './sources/index.js';
-import { exportRow, mergeDuplicates, selectForExport, toCsv, weekOf } from './export.js';
+import { buildReport, exportRow, mergeDuplicates, selectForExport, toCsv, weekOf } from './export.js';
 
 const PUBLIC_PATHS = new Set(['/login.html', '/styles.css', '/favicon.svg', '/login.js', '/api/login']);
 
@@ -123,6 +123,32 @@ async function api(request, env, path, role) {
     });
   }
 
+  // Report builder: ?from=ISO&to=ISO&opcos=AISI,FDT&topics=1,2&scope=all|us&low=1&format=json|csv
+  if (path === '/api/report' && method === 'GET') {
+    const q = new URL(request.url).searchParams;
+    const iso = (v) => (v && !Number.isNaN(Date.parse(v)) ? new Date(v).toISOString() : null);
+    const filters = {
+      from: iso(q.get('from')) || new Date(Date.now() - 30 * 86400000).toISOString(),
+      to: iso(q.get('to')) || new Date().toISOString(),
+      opcos: (q.get('opcos') || '').split(',').map((s) => s.trim()).filter(Boolean),
+      topics: (q.get('topics') || '').split(',').filter(Boolean).map(Number).filter(Number.isInteger),
+      scope: q.get('scope') === 'us' ? 'us' : 'all',
+      low: q.get('low') === '1',
+    };
+    const { results } = await env.DB.prepare(
+      `SELECT i.*, t.name AS topic_name FROM items i LEFT JOIN topics t ON t.id = i.topic_id
+        WHERE COALESCE(i.published_at, i.first_seen_at) BETWEEN ? AND ? LIMIT 10000`
+    ).bind(filters.from, filters.to).all();
+    const report = buildReport(results.map(rowToItem), filters);
+    if (q.get('format') === 'csv') {
+      const name = `ais-report-${filters.from.slice(0, 10)}-to-${filters.to.slice(0, 10)}.csv`;
+      return new Response(toCsv(report.rows), {
+        headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${name}"`, 'Cache-Control': 'no-store' },
+      });
+    }
+    return json({ filters, ...report });
+  }
+
   if (path === '/api/topics' && method === 'GET') {
     const { results } = await env.DB.prepare("SELECT * FROM topics ORDER BY opco, CASE type WHEN 'opco' THEN 0 WHEN 'project' THEN 1 ELSE 2 END, name").all();
     return json({ topics: results.map(rowToTopic) });
@@ -160,7 +186,11 @@ async function api(request, env, path, role) {
   }
 
   if (path === '/api/scan' && method === 'POST') {
-    const { scan, alreadyRunning } = await startScan(env, 'manual');
+    const opts = await body(request);
+    const { scan, alreadyRunning } = await startScan(env, 'manual', {
+      topicIds: Array.isArray(opts.topicIds) ? opts.topicIds.filter((n) => Number.isInteger(n)).slice(0, 500) : null,
+      days: Number(opts.days) || null,
+    });
     return json({ scan, alreadyRunning: !!alreadyRunning });
   }
 
