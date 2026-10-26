@@ -65,12 +65,31 @@ export function exportRow(it, topicName) {
     Association: association(it),
     'Where mentioned': it.mention_where || '',
     Quote: it.mention_quote || '',
-    'Photo check': [photoCheck(it), it.photo_note].filter(Boolean).join(': '),
+    'Photo check': [photoCheck(it), it.photo_note].filter(Boolean).join(' — '),
     Sentiment: it.sentiment,
     Relevance: it.relevance,
     Why: it.why || '',
     Status: it.status + (it.starred ? ', starred' : ''),
   };
+}
+
+// The same article can match several topics (e.g. Cabeza Prieta and Las Playas
+// Intaglio): list it once, with every project it relates to.
+export function mergeDuplicates(rows) {
+  const byLink = new Map();
+  for (const r of rows) {
+    const key = r.Link;
+    const prev = byLink.get(key);
+    if (!prev) {
+      byLink.set(key, { ...r });
+      continue;
+    }
+    const topics = new Set(`${prev['Project / topic']}; ${r['Project / topic']}`.split('; ').filter(Boolean));
+    const keep = r.Relevance > prev.Relevance ? { ...r } : prev;
+    keep['Project / topic'] = [...topics].join('; ');
+    byLink.set(key, keep);
+  }
+  return [...byLink.values()];
 }
 
 export function toCsv(rows) {

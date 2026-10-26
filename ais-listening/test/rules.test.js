@@ -172,3 +172,13 @@ test('name-only search results pass the headline gate but need context in the fu
   assert.equal(r.matched.via, 'full article (checked when read)');
   assert.equal(applyRules(t, { title: 'F.D. Thomas obituary', snippet: '', contextInQuery: 'full-article' }).ok, true);
 });
+
+test('CSV export lists an article once, with every project it relates to', async () => {
+  const { mergeDuplicates } = await import('../src/export.js');
+  const a = { Link: 'https://x/1', 'Project / topic': 'Cabeza Prieta', Relevance: 70 };
+  const b = { Link: 'https://x/1', 'Project / topic': 'Las Playas Intaglio', Relevance: 75 };
+  const out = mergeDuplicates([a, b, { Link: 'https://x/2', 'Project / topic': 'Tecate Peak', Relevance: 60 }]);
+  assert.equal(out.length, 2);
+  assert.equal(out[0]['Project / topic'], 'Cabeza Prieta; Las Playas Intaglio');
+  assert.equal(out[0].Relevance, 75);
+});

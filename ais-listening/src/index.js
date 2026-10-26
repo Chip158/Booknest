@@ -4,7 +4,7 @@ import { ensureSeeded, insertTopicStmt, now, rowToItem, rowToTopic, validateTopi
 import { isScanSlot, nextScanTime } from './schedule.js';
 import { finishStaleChecks, runCheck, runningScan, runTopicScan, startScan } from './scan.js';
 import { enabledSources } from './sources/index.js';
-import { exportRow, selectForExport, toCsv, weekOf } from './export.js';
+import { exportRow, mergeDuplicates, selectForExport, toCsv, weekOf } from './export.js';
 
 const PUBLIC_PATHS = new Set(['/login.html', '/styles.css', '/favicon.svg', '/login.js', '/api/login']);
 
@@ -116,7 +116,7 @@ async function api(request, env, path, role) {
     ).bind(`-${days} days`).all();
     let items = selectForExport(results.map(rowToItem), { all: q.get('all') === '1' });
     if (week) items = items.filter((it) => weekOf(it.published_at || it.first_seen_at) === week);
-    const csv = toCsv(items.map((it) => exportRow(it, it.topic_name)));
+    const csv = toCsv(mergeDuplicates(items.map((it) => exportRow(it, it.topic_name))));
     const name = `ais-listening-${week ? `week-of-${week}` : `last-${days}-days`}.csv`;
     return new Response(csv, {
       headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${name}"`, 'Cache-Control': 'no-store' },

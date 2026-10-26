@@ -69,6 +69,8 @@ const topicOf = (id) => state.topics.find((t) => t.id === id);
 // What the team watches for first: one of our companies named in the copy, or
 // our logo / branded equipment in a photo.
 const isUs = (it) => it.exposure === 'named' || it.exposure === 'pictured';
+// …plus a photo that might show our logo/equipment: a person should look.
+const mayBeUs = (it) => isUs(it) || it.photo === 'unclear';
 // View-only sign-ins see everything but get no controls that change data.
 const canEdit = () => state.config?.role === 'editor';
 
@@ -161,20 +163,38 @@ function filtered(skip = []) {
   });
 }
 
+// A story = one cluster (same headline across outlets), also joined across
+// topics when the same article matched two projects (e.g. Cabeza Prieta and
+// Las Playas Intaglio). Rebuilt whenever items load.
+let storyMap = new Map();
+function buildStories() {
+  storyMap = new Map();
+  const byUrl = new Map();
+  const alias = new Map();
+  for (const it of state.items) {
+    const url = it.article_url || it.url;
+    const root = alias.get(it.cluster_id) || byUrl.get(url) || it.cluster_id;
+    alias.set(it.cluster_id, root);
+    if (!byUrl.has(url)) byUrl.set(url, root);
+  }
+  for (const it of state.items) storyMap.set(it.id, alias.get(it.cluster_id));
+}
+const storyOf = (it) => storyMap.get(it.id) || it.cluster_id;
+
 // One card per story: copies of the same story from other outlets are grouped.
 function clusters(items) {
   const all = new Map();
   for (const it of state.items) {
-    if (!all.has(it.cluster_id)) all.set(it.cluster_id, []);
-    all.get(it.cluster_id).push(it);
+    if (!all.has(storyOf(it))) all.set(storyOf(it), []);
+    all.get(storyOf(it)).push(it);
   }
   const seen = new Set();
   const out = [];
   for (const it of items) {
-    if (seen.has(it.cluster_id)) continue;
-    seen.add(it.cluster_id);
-    const group = all.get(it.cluster_id).filter((x) => x.status !== 'dismissed' || it.status === 'dismissed');
-    const visible = items.filter((x) => x.cluster_id === it.cluster_id);
+    if (seen.has(storyOf(it))) continue;
+    seen.add(storyOf(it));
+    const group = all.get(storyOf(it)).filter((x) => x.status !== 'dismissed' || it.status === 'dismissed');
+    const visible = items.filter((x) => storyOf(x) === storyOf(it));
     const lead = visible.sort((a, b) => b.relevance - a.relevance || a.first_seen_at.localeCompare(b.first_seen_at))[0];
     out.push({ lead, others: group.filter((x) => x.id !== lead.id) });
   }
@@ -204,7 +224,7 @@ function tierOf(score) {
 
 function groupOf(it) {
   if (it.relevance < state.config.threshold) return { rank: 0, label: `Low confidence · relevance below ${state.config.threshold}` };
-  if (isUs(it)) return { rank: 2, label: 'Names us or shows our logo' };
+  if (mayBeUs(it)) return { rank: 2, label: 'Names us or may show us in a photo' };
   return { rank: 1, label: "Our topics in the news · we're not named or pictured" };
 }
 
@@ -285,7 +305,7 @@ function renderStatus() {
 function renderTiles() {
   const base = filtered(['sentiment']).filter((it) => it.status !== 'dismissed');
   // Count stories, not outlet copies, so tiles match the lists below.
-  const stories = (list) => new Set(list.map((it) => it.cluster_id)).size;
+  const stories = (list) => new Set(list.map(storyOf)).size;
   const us = stories(base.filter(isUs));
   const neg = stories(base.filter((it) => isUs(it) && it.sentiment === 'negative' && it.status === 'open'));
   const pos = stories(base.filter((it) => isUs(it) && it.sentiment === 'positive'));
@@ -445,7 +465,7 @@ function renderWeekly() {
     if (!weeks.has(w)) weeks.set(w, []);
     weeks.get(w).push(it);
   }
-  const stories = (list) => new Set(list.map((it) => it.cluster_id)).size;
+  const stories = (list) => new Set(list.map(storyOf)).size;
   const label = (w) => `Week of ${new Date(`${w}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
   const scope = state.f.opco === 'ALL' ? 'all companies' : opcoOf(state.f.opco).name;
   const rows = [...weeks.keys()].sort().reverse().map((w) => {
@@ -490,8 +510,8 @@ function setBarWidths(root) {
 function renderLists() {
   const items = filtered();
   const groups = clusters(items);
-  // Needs attention = negative AND we're named or pictured.
-  const attention = groups.filter((g) => isUs(g.lead) && g.lead.sentiment === 'negative' && g.lead.status === 'open');
+  // Needs attention = negative AND we're named, pictured, or possibly pictured.
+  const attention = groups.filter((g) => mayBeUs(g.lead) && g.lead.sentiment === 'negative' && g.lead.status === 'open');
   const rest = groups.filter((g) => !attention.includes(g));
 
   $('attention-count').textContent = `· ${attention.length}`;
@@ -702,6 +722,7 @@ async function loadItems() {
   const [{ items }, { rows }] = await Promise.all([api('/api/items?days=90'), api('/api/trends')]);
   state.items = items;
   state.trends = rows;
+  buildStories();
 }
 
 function render() {
