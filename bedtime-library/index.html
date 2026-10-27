@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>The Bedtime Library</title>
+  <meta name="description" content="My bedtime podcast shelf, queue and fresh drops.">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0a1326">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Bedtime">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" type="image/png" href="icon-180.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="sky" aria-hidden="true"></div>
+
+  <header class="top">
+    <div class="wrap top-inner">
+      <div class="brand">
+        <span class="moon" aria-hidden="true">🌙</span>
+        <div>
+          <h1>The Bedtime Library</h1>
+          <p class="summary" id="summary"></p>
+        </div>
+      </div>
+      <button class="glass-btn add-btn" id="addBtn" type="button" aria-haspopup="dialog">
+        <span aria-hidden="true">＋</span> Add
+      </button>
+    </div>
+    <nav class="wrap jump" aria-label="Sections">
+      <a href="#shows">My Shows</a>
+      <a href="#upnext">Up Next</a>
+      <a href="#fresh">Fresh Drops</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section id="shows" class="section" aria-labelledby="shows-h">
+      <h2 id="shows-h" class="section-title">My Shows</h2>
+      <div id="shelves"></div>
+    </section>
+
+    <section id="upnext" class="section" aria-labelledby="upnext-h">
+      <h2 id="upnext-h" class="section-title">Up Next <span class="count" id="upnextCount"></span></h2>
+      <div class="chips" id="chips" role="toolbar" aria-label="Filter Up Next by show"></div>
+      <div id="queue"></div>
+      <button class="glass-btn finished-toggle" id="finishedToggle" type="button" hidden></button>
+    </section>
+
+    <section id="fresh" class="section" aria-labelledby="fresh-h">
+      <h2 id="fresh-h" class="section-title">Fresh Drops</h2>
+      <div class="grid" id="freshGrid"></div>
+    </section>
+
+    <footer class="foot">Tap a card to open it in Spotify. Tap a status to change it. Sweet dreams.</footer>
+  </main>
+
+  <dialog id="addDialog" class="sheet" aria-labelledby="add-h">
+    <form id="addForm" method="dialog" novalidate>
+      <div class="sheet-head">
+        <h2 id="add-h">Add to the library</h2>
+        <button type="button" class="icon-btn" id="closeAdd" aria-label="Close">✕</button>
+      </div>
+
+      <div class="segmented" role="radiogroup" aria-label="What are you adding?">
+        <label><input type="radio" name="kind" value="episode" checked><span>Episode</span></label>
+        <label><input type="radio" name="kind" value="show"><span>Show</span></label>
+      </div>
+
+      <div class="fields" data-kind="episode">
+        <label class="field">Title
+          <input name="title" type="text" autocomplete="off" placeholder="E504 · Something Spooky">
+        </label>
+        <label class="field">Show
+          <select name="show" id="showSelect"></select>
+        </label>
+        <label class="field">Length <span class="opt">(optional)</span>
+          <input name="length" type="text" autocomplete="off" placeholder="90m">
+        </label>
+        <fieldset class="field">
+          <legend>Add to</legend>
+          <div class="segmented small">
+            <label><input type="radio" name="list" value="upnext" checked><span>Up Next</span></label>
+            <label><input type="radio" name="list" value="fresh"><span>Fresh Drops</span></label>
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="fields" data-kind="show" hidden>
+        <label class="field">Show name
+          <input name="name" type="text" autocomplete="off" placeholder="The Lovecraft Investigations">
+        </label>
+        <label class="field">Shelf
+          <select name="shelf" id="shelfSelect"></select>
+        </label>
+        <label class="field">Icon <span class="opt">(optional emoji)</span>
+          <input name="icon" type="text" autocomplete="off" placeholder="🎧" maxlength="4">
+        </label>
+        <label class="field">Color
+          <select name="color">
+            <option value="#3fa66a">Forest green</option>
+            <option value="#a78bfa">Purple</option>
+            <option value="#f472b6">Pink</option>
+            <option value="#f87171">Red</option>
+            <option value="#d6a35c">Amber</option>
+            <option value="#60a5fa">Blue</option>
+            <option value="#fb923c">Orange</option>
+            <option value="#4ade80">Green</option>
+            <option value="#2dd4bf">Teal</option>
+          </select>
+        </label>
+        <label class="field">Vibe <span class="opt">(optional)</span>
+          <input name="vibe" type="text" autocomplete="off" placeholder="One line about it">
+        </label>
+      </div>
+
+      <label class="field">Spotify link
+        <input name="link" type="url" inputmode="url" autocomplete="off" placeholder="https://open.spotify.com/…">
+      </label>
+      <label class="field">Image URL <span class="opt" id="imgHint">(optional, uses the show's art)</span>
+        <input name="art" type="url" inputmode="url" autocomplete="off" placeholder="https://…">
+      </label>
+
+      <p class="form-error" id="formError" role="alert"></p>
+      <button class="primary-btn" type="submit">Add it</button>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
