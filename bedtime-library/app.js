@@ -389,15 +389,13 @@
   function removeItem(kind, id) {
     if (kind === "episode") {
       const ep = state.added.episodes.find(e => e.id === id);
-      if (!ep || !confirm(`Remove "${ep.title}"?`)) return;
+      if (!ep) return;
       state.added.episodes = state.added.episodes.filter(e => e.id !== id);
       delete state.statuses[id];
       save(KEYS.status, state.statuses);
     } else {
       const show = state.added.shows.find(s => s.key === id);
       if (!show) return;
-      const n = state.added.episodes.filter(e => e.show === id).length;
-      if (!confirm(`Remove ${show.name}${n ? ` and its ${n} episode${n > 1 ? "s" : ""} you added` : ""}?`)) return;
       state.added.shows = state.added.shows.filter(s => s.key !== id);
       state.added.episodes = state.added.episodes.filter(e => e.show !== id);
     }
@@ -412,7 +410,16 @@
     if (status) { ev.preventDefault(); cycleStatus(status); return; }
 
     const rm = ev.target.closest("[data-remove]");
-    if (rm) { ev.preventDefault(); removeItem(rm.dataset.remove, rm.dataset.id); return; }
+    if (rm) {
+      ev.preventDefault();
+      // Two taps to remove: the first arms the button, the second removes.
+      if (rm.classList.contains("armed")) { removeItem(rm.dataset.remove, rm.dataset.id); return; }
+      document.querySelectorAll(".remove.armed").forEach(b => { b.classList.remove("armed"); b.textContent = "✕"; });
+      rm.classList.add("armed");
+      rm.textContent = "Remove";
+      setTimeout(() => { rm.classList.remove("armed"); rm.textContent = "✕"; }, 3000);
+      return;
+    }
 
     const chip = ev.target.closest("[data-filter]");
     if (chip) {

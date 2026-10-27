@@ -224,11 +224,13 @@ button { font: inherit; color: inherit; }
   gap: var(--gap);
   align-items: stretch;
 }
-@media (min-width: 700px) {
+/* 2 across on a regular iPhone and the iPhone Duo's cover screen,
+   3 on the Duo unfolded (portrait), 4 unfolded sideways and on desktop. */
+@media (min-width: 560px) {
   :root { --gap: 16px; }
   .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
-@media (min-width: 1000px) {
+@media (min-width: 840px) {
   .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
@@ -444,6 +446,7 @@ button { font: inherit; color: inherit; }
   cursor: pointer;
 }
 .remove::after { content: ""; position: absolute; inset: -4px; } /* larger tap area */
+.remove.armed { width: auto; padding: 0 14px; border-radius: 999px; background: #b4383f; border-color: #ff8a8a; font-weight: 700; }
 
 /* ---------- Filter chips ---------- */
 
