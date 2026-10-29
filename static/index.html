@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TV Remote">
+<meta name="theme-color" content="#0b0d12">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+<title>TV Remote</title>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v8"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9v11h14V9"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></symbol>
+    <symbol id="i-assist" viewBox="0 0 24 24"><circle cx="7" cy="12" r="2.2"/><circle cx="13" cy="12" r="2.2"/><circle cx="18.5" cy="9" r="1.6"/><circle cx="18.5" cy="15" r="1.6"/></symbol>
+    <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+    <symbol id="i-playpause" viewBox="0 0 24 24"><path d="M4 5l9 7-9 7z" fill="currentColor"/><path d="M16 5v14M20 5v14"/></symbol>
+    <symbol id="i-rew" viewBox="0 0 24 24"><path d="M11 6l-7 6 7 6z M20 6l-7 6 7 6z" fill="currentColor"/></symbol>
+    <symbol id="i-ff" viewBox="0 0 24 24"><path d="M13 6l7 6-7 6z M4 6l7 6-7 6z" fill="currentColor"/></symbol>
+    <symbol id="i-volup" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9a4 4 0 0 1 0 6M19.5 6.5a8 8 0 0 1 0 11"/></symbol>
+    <symbol id="i-voldown" viewBox="0 0 24 24"><path d="M5 9h4l5-4v14l-5-4H5z" fill="currentColor"/><path d="M18 9.5a3.5 3.5 0 0 1 0 5"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></symbol>
+    <symbol id="i-input" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M10 9l3 2-3 2"/></symbol>
+    <symbol id="i-cc" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10.5 10.2a2.3 2.3 0 1 0 0 3.6M17 10.2a2.3 2.3 0 1 0 0 3.6"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-del" viewBox="0 0 24 24"><path d="M21 5H9l-6 7 6 7h12z"/><path d="M17 9l-5 6M12 9l5 6"/></symbol>
+  </defs>
+</svg>
+
+<div class="app" id="app">
+  <header class="top">
+    <button class="tv-name" id="tvName" type="button" aria-label="TV connection settings">
+      <span class="dot" id="dot"></span>
+      <span class="tv-text">
+        <strong>Living Room TV</strong>
+        <small id="nowPlaying">Connecting…</small>
+      </span>
+    </button>
+    <button class="icon-btn power" data-key="power" type="button" aria-label="Power"><svg><use href="#i-power"/></svg></button>
+  </header>
+
+  <section class="remote" aria-label="Remote">
+    <div class="apps-strip" id="appsStrip" role="list" aria-label="Apps"></div>
+
+    <div class="dpad" id="dpad" aria-label="Directional pad — tap or swipe">
+      <button class="dir up" data-key="up" data-repeat type="button" aria-label="Up"><svg><use href="#i-up"/></svg></button>
+      <button class="dir right" data-key="right" data-repeat type="button" aria-label="Right"><svg><use href="#i-up"/></svg></button>
+      <button class="dir down" data-key="down" data-repeat type="button" aria-label="Down"><svg><use href="#i-up"/></svg></button>
+      <button class="dir left" data-key="left" data-repeat type="button" aria-label="Left"><svg><use href="#i-up"/></svg></button>
+      <button class="ok" data-key="select" type="button" aria-label="OK">OK</button>
+    </div>
+
+    <div class="row nav">
+      <button class="pill" data-key="back" type="button" aria-label="Back"><svg><use href="#i-back"/></svg><span>Back</span></button>
+      <button class="pill" data-key="home" type="button" aria-label="Home"><svg><use href="#i-home"/></svg><span>Home</span></button>
+      <button class="pill" data-key="assistant" type="button" aria-label="Google Assistant on TV"><svg><use href="#i-assist"/></svg><span>Assistant</span></button>
+      <button class="pill" id="kbBtn" type="button" aria-label="Keyboard"><svg><use href="#i-keyboard"/></svg><span>Type</span></button>
+    </div>
+
+    <div class="row media">
+      <button class="round" data-key="rew" type="button" aria-label="Rewind"><svg><use href="#i-rew"/></svg></button>
+      <button class="round big" data-key="play_pause" type="button" aria-label="Play or pause"><svg><use href="#i-playpause"/></svg></button>
+      <button class="round" data-key="ff" type="button" aria-label="Fast forward"><svg><use href="#i-ff"/></svg></button>
+    </div>
+
+    <div class="row volume">
+      <div class="rocker">
+        <button data-key="vol_down" data-repeat type="button" aria-label="Volume down"><svg><use href="#i-voldown"/></svg></button>
+        <div class="vol-meter" aria-hidden="true"><span id="volFill"></span></div>
+        <button data-key="vol_up" data-repeat type="button" aria-label="Volume up"><svg><use href="#i-volup"/></svg></button>
+      </div>
+      <button class="round sm" data-key="mute" type="button" aria-label="Mute"><svg><use href="#i-mute"/></svg></button>
+      <button class="round sm wide-only" data-key="captions" type="button" aria-label="Captions"><svg><use href="#i-cc"/></svg></button>
+      <button class="round sm wide-only" data-key="input" type="button" aria-label="Input"><svg><use href="#i-input"/></svg></button>
+      <button class="round sm compact-only" id="appsBtn" type="button" aria-label="All apps"><svg><use href="#i-grid"/></svg></button>
+    </div>
+  </section>
+
+  <form class="cmd" id="cmdForm" autocomplete="off">
+    <div class="cmd-field">
+      <input id="cmdInput" type="text" enterkeyhint="go" placeholder="Tell the TV what to do…" aria-label="Command">
+      <button class="send" type="submit" aria-label="Send"><svg><use href="#i-send"/></svg></button>
+    </div>
+    <button class="mic" id="micBtn" type="button" aria-label="Speak a command"><svg><use href="#i-mic"/></svg></button>
+  </form>
+
+  <section class="side" aria-label="Apps and activity">
+    <div class="chips" id="chips"></div>
+    <div class="log" id="log" aria-live="polite"></div>
+    <h2>Apps</h2>
+    <div class="apps-grid" id="appsGrid" role="list"></div>
+    <div class="preview">
+      <button class="pill" id="previewBtn" type="button"><svg><use href="#i-eye"/></svg><span>Show what's on the TV</span></button>
+      <img id="previewImg" alt="Current TV screen" hidden>
+    </div>
+  </section>
+</div>
+
+<!-- Sheets -->
+<div class="sheet" id="appsSheet" hidden>
+  <div class="sheet-card">
+    <div class="sheet-head"><h2>All apps</h2><button class="link" data-close type="button">Done</button></div>
+    <div class="apps-grid" id="appsSheetGrid" role="list"></div>
+  </div>
+</div>
+
+<div class="sheet" id="kbSheet" hidden>
+  <form class="sheet-card" id="kbForm" autocomplete="off">
+    <div class="sheet-head"><h2>Type on TV</h2><button class="link" data-close type="button">Done</button></div>
+    <p class="hint">Select a search box on the TV first, then type here.</p>
+    <div class="cmd-field">
+      <input id="kbInput" type="text" enterkeyhint="send" placeholder="Text to send" aria-label="Text to type on the TV">
+      <button class="send" type="submit" aria-label="Send text"><svg><use href="#i-send"/></svg></button>
+    </div>
+    <div class="row">
+      <button class="pill" data-key="delete" data-repeat type="button"><svg><use href="#i-del"/></svg><span>Delete</span></button>
+      <button class="pill" data-key="enter" type="button"><span>Enter ⏎</span></button>
+    </div>
+  </form>
+</div>
+
+<div class="sheet" id="setupSheet" hidden>
+  <form class="sheet-card" id="setupForm" autocomplete="off">
+    <div class="sheet-head"><h2>Connect your TV</h2><button class="link" data-close type="button">Close</button></div>
+    <ol class="steps">
+      <li>On the TV: <b>Settings → System → About</b>. Click <b>Android TV OS build</b> 7 times.</li>
+      <li><b>Settings → System → Developer options</b> → turn on <b>Network debugging</b> (or USB debugging).</li>
+      <li>Find the TV's IP in <b>Settings → Network &amp; Internet</b> → your Wi‑Fi.</li>
+    </ol>
+    <div class="cmd-field">
+      <input id="ipInput" type="text" inputmode="decimal" placeholder="192.168.1.50" aria-label="TV IP address">
+      <button class="send" type="submit" aria-label="Connect"><svg><use href="#i-send"/></svg></button>
+    </div>
+    <p class="hint" id="setupMsg">When the TV asks “Allow network debugging?”, choose <b>Always allow</b>.</p>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
