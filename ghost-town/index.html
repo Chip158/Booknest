@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>Mocha's Ghost Town</title>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Mocha"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#26324a"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png">
 <style>
   :root{--ink:#26324a;--paper:#fffaf2;--accent:#e9886b;--teal:#3f8f8a;--line:#ece4d8;--soft:#f3efe8;--mut:#9a958c}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -66,14 +67,49 @@
   .danger{border:0;background:#fbe3e3;color:#a63c3c;font:inherit;font-weight:700;border-radius:999px;padding:7px 14px;cursor:pointer;margin-top:14px}
   #hint{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom));transform:translateX(-50%);color:#fff;font-size:12px;font-weight:700;opacity:.85;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.5);transition:opacity 1s;white-space:nowrap}
   #err{position:fixed;inset:0;display:none;align-items:center;justify-content:center;color:#fff;font-size:16px;text-align:center;padding:30px}
+  nav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}nav::-webkit-scrollbar{display:none}nav button{white-space:nowrap;flex:none}
+  #panel{z-index:5}#panel header{position:relative}.grab{display:none}.hbtns{display:flex;gap:6px}
+  #camctl{position:fixed;right:12px;bottom:max(84px,calc(env(safe-area-inset-bottom) + 76px));display:flex;flex-direction:column;gap:8px;align-items:flex-end;z-index:2}
+  #edge{position:fixed;left:0;top:0;width:42px;height:42px;margin:-21px 0 0 -21px;border-radius:50%;background:var(--paper);box-shadow:0 3px 0 rgba(0,0,0,.18);display:none;align-items:center;justify-content:center;font-size:20px;cursor:pointer;z-index:3;border:2px solid var(--accent)}
+  form#chat #micBtn{background:var(--soft);color:var(--ink);padding:8px 12px;display:none}
+  form#chat #micBtn.on{background:var(--accent);color:#fff;animation:pulse 1.4s infinite}
+  @keyframes pulse{50%{box-shadow:0 0 0 6px rgba(233,136,107,.25)}}
+  .post{border-top:1.5px dashed var(--line);padding:12px 0}.post img{width:100%;border-radius:14px;display:block;background:var(--soft)}.post .cap{font-size:15px;margin:8px 0 4px;line-height:1.4}.post .meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--mut);font-weight:700}
+  .nophoto{background:var(--soft);border-radius:14px;padding:30px;text-align:center;color:var(--mut);font-size:13px}
+  .heart{border:0;background:var(--soft);border-radius:999px;padding:4px 10px;font:inherit;cursor:pointer;color:#c0603f;font-weight:800}.heart.on{background:#fde3dc}
+  .set{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1.5px dashed var(--line);font-size:14px;font-weight:700}
+  .set small{display:block;color:var(--mut);font-size:12px;font-weight:600;margin-top:2px}
+  .tog{appearance:none;-webkit-appearance:none;width:46px;height:28px;border-radius:14px;background:#ddd5c8;position:relative;cursor:pointer;flex:none;transition:.2s;margin:0}.tog:checked{background:var(--teal)}.tog:before{content:"";position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s}.tog:checked:before{left:21px}
+  .seg{display:flex;gap:4px;flex-wrap:wrap}.seg button{border:2px solid var(--line);background:#fff;border-radius:999px;padding:5px 10px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;color:var(--ink)}.seg button.on{border-color:var(--ink);background:var(--soft)}
   @media (max-width:760px){
-    #panel{left:8px;right:8px;width:auto;top:auto;bottom:calc(76px + env(safe-area-inset-bottom));max-height:56%}
-    #panel.hidden{transform:translateY(120%)}
-    #diaryBtn{top:auto;bottom:calc(150px + env(safe-area-inset-bottom));right:12px}
-    #mini{width:92px;height:92px;bottom:calc(150px + env(safe-area-inset-bottom))}
-    #meters{grid-template-columns:auto 44px;font-size:10px;padding:6px 10px}
-    #hint{bottom:calc(254px + env(safe-area-inset-bottom))}
-    #toast{top:auto;bottom:calc(200px + env(safe-area-inset-bottom))}
+    #panel{left:0;right:0;width:auto;top:auto;max-height:none;height:min(var(--sheetH,55dvh),calc(100dvh - 140px - env(safe-area-inset-bottom) - env(safe-area-inset-top)));bottom:calc(62px + env(safe-area-inset-bottom));border-radius:22px 22px 0 0}
+    #panel.dragging{transition:none}
+    #panel.hidden{transform:translateY(130%)}
+    .grab{display:block;position:absolute;left:50%;top:7px;width:46px;height:5px;margin-left:-23px;border-radius:3px;background:#d9d0c2}
+    #panel header{padding:20px 16px 4px;touch-action:none}
+    .tab{-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
+    #diaryBtn{top:auto;bottom:calc(146px + env(safe-area-inset-bottom));right:12px}
+    #camctl{bottom:calc(196px + env(safe-area-inset-bottom))}
+    #mini{width:88px;height:88px;bottom:calc(146px + env(safe-area-inset-bottom))}
+    #meters{grid-template-columns:auto 40px;font-size:10px;padding:6px 9px;flex:none}
+    #leftTop{min-width:0;flex:1}#leftTop .pill{max-width:100%}.status{max-width:26vw}
+    #hint{bottom:calc(250px + env(safe-area-inset-bottom));white-space:normal;text-align:center;width:80vw}
+    #toast{top:auto;bottom:calc(250px + env(safe-area-inset-bottom))}
+    #chatwrap{bottom:max(8px,env(safe-area-inset-bottom))}
+    .entry{font-size:15px}
+  }
+  @media (orientation:landscape) and (max-height:520px){
+    #top{top:max(8px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right))}
+    #meters,#sky,#hint{display:none}
+    .pill{padding:6px 11px;font-size:13px}
+    #panel{left:auto;right:max(8px,env(safe-area-inset-right));top:8px;bottom:8px;width:min(46vw,440px);height:auto;max-height:none;border-radius:20px}
+    #panel.hidden{transform:translateX(120%)}
+    #chatwrap{left:max(10px,env(safe-area-inset-left));transform:none;width:min(46vw,460px);bottom:max(8px,env(safe-area-inset-bottom))}
+    #mini{width:76px;height:76px;left:max(10px,env(safe-area-inset-left));bottom:66px}
+    #diaryBtn{top:auto;bottom:max(10px,env(safe-area-inset-bottom));right:max(10px,env(safe-area-inset-right))}
+    #camctl{right:max(10px,env(safe-area-inset-right));bottom:60px}
+    body.panelOpen #camctl{right:calc(min(46vw,440px) + 22px)}
+    #toast{top:10px;bottom:auto}
   }
 </style>
 </head>
@@ -93,26 +129,32 @@
 <div id="toast"></div>
 
 <aside id="panel">
-  <header><b>Mocha</b><button class="x" id="closePanel" aria-label="close">×</button></header>
+  <header><div class="grab"></div><b>Mocha</b><span class="hbtns"><button class="x" id="expandPanel" aria-label="expand">⤢</button><button class="x" id="closePanel" aria-label="close">×</button></span></header>
   <nav>
     <button data-tab="diary" class="on">diary</button>
+    <button data-tab="feed">📸 feed</button>
     <button data-tab="me">who he's becoming</button>
     <button data-tab="notes">notebook</button>
     <button data-tab="you">you</button>
+    <button data-tab="set">⚙︎ settings</button>
   </nav>
   <div class="tab on" id="tab-diary"></div>
   <div class="tab" id="tab-me"></div>
   <div class="tab" id="tab-notes"></div>
   <div class="tab" id="tab-you"></div>
+  <div class="tab" id="tab-feed"></div>
+  <div class="tab" id="tab-set"></div>
 </aside>
 <button class="pill" id="diaryBtn">📖 diary</button>
 
 <canvas id="mini" width="240" height="240" title="map"></canvas>
-<div id="hint">drag to look around · pinch to zoom · tap to call Mocha</div>
+<div id="hint">drag to wander · pinch to zoom · twist to turn · tap Mocha to follow him</div>
+<div id="camctl"><button class="pill" id="camBtn">🧭 free roam</button></div>
+<div id="edge" title="go to Mocha">👻</div>
 
 <div id="chatwrap">
   <div id="chatlog"></div>
-  <form id="chat" autocomplete="off"><input id="say" maxlength="200" placeholder="say something to Mocha…"><button>send</button></form>
+  <form id="chat" autocomplete="off"><input id="say" maxlength="300" placeholder="say something to Mocha…" enterkeyhint="send"><button type="button" id="micBtn" aria-label="voice">🎙</button><button id="sendBtn">send</button></form>
 </div>
 <div id="bubble"></div>
 
@@ -134,7 +176,7 @@ const R=seeded(206);
 // ====================================================================
 const PLACES=[
  {id:'home',name:"Mocha's House",x:40,z:42,ry:0,w:28,d:14,h:6,kind:'home',
-  spots:{kitchen:[-9,-3.6],desk:[-3,-4.4],couch:[0,-.2],bed:[7.2,-3.8],closet:[4.8,-4.4],bath:[12.2,-4.4],petbed:[-3.6,2.2]}},
+  spots:{main:[0,2],kitchen:[-9,-3.6],desk:[-3,-4.4],couch:[0,-.2],bed:[7.2,-3.8],closet:[4.8,-4.4],bath:[12.2,-4.4],petbed:[-3.6,2.2]}},
  {id:'cafe',name:'Drizzle & Bean Café',x:-30,z:14,ry:Math.PI,w:12,d:10,h:7,wall:'#d9775f',roof:'#5b3a33',awn:['#2f6f62','#f4ead8']},
  {id:'records',name:'Rain City Records',x:-14,z:14,ry:Math.PI,w:10,d:10,h:8,wall:'#2f4f6f',roof:'#1d2b3d',awn:['#e9b949','#1d2b3d']},
  {id:'bookstore',name:'Rainy Day Books',x:12,z:15,ry:Math.PI,w:13,d:10,h:8,wall:'#7a9a6a',roof:'#3b4b33',awn:['#c45b4a','#f4ead8']},
@@ -158,6 +200,7 @@ const PLACES=[
  {id:'gumwall',name:'Bubblegum Alley',x:-50,z:-60,ry:Math.PI/2,kind:'gumwall',secret:1},
 ];
 const byId=Object.fromEntries(PLACES.map(p=>[p.id,p]));
+function inBuilding(p,x,z){if(!p.w)return false;const c=Math.cos(p.ry),sn=Math.sin(p.ry),dx=x-p.x,dz=z-p.z;return Math.abs(dx*c-dz*sn)<p.w/2+.3&&Math.abs(dx*sn+dz*c)<p.d/2+.3}
 function toWorld(p,lx,lz){const c=Math.cos(p.ry),s=Math.sin(p.ry);return{x:p.x+lx*c+lz*s,z:p.z-lx*s+lz*c}}
 PLACES.forEach(p=>{
   const doorL={spot:[0,0],park:[-14,0],hill:[0,-2],troll:[0,6],gumwall:[0,4],wheel:[0,14],dock:[0,12],needle:[0,0]}[p.kind]||[0,(p.d||8)/2+3.5];
@@ -185,20 +228,21 @@ const ACTS=[
  {p:'home',s:'bed',doing:'sleeping',tags:['cozy'],need:{energy:80},fx:'sleep',lines:['Slept in my own bed. Dreamed about {dream}.']},
  {p:'home',s:'closet',doing:'trying on outfits',tags:['fashion'],need:{fun:20},fx:'closet'},
  {p:'home',s:'bath',doing:'taking a bubble bath',tags:['cozy'],need:{fun:20,energy:10},lines:['Took a bubble bath. Ghosts don\'t get dirty, but bubbles are bubbles.']},
- {p:'cafe',doing:'sipping a latte',tags:['coffee'],need:{snack:30,social:15},fx:'acquire',pool:['mug'],lines:['Sat in the steam of a {drink} at Drizzle & Bean. I can\'t drink it but I can be near it, and that\'s enough.','The barista drew a leaf in the foam. I stared at it until it got cold.']},
- {p:'cafe',doing:'people-watching',tags:['people','coffee'],need:{social:30},lines:['People-watched at the café window. Everyone had a little story. One guy was writing a novel, I think. Or a grocery list. Hard to tell.']},
- {p:'records',doing:'digging through crates',tags:['music'],need:{fun:30},fx:'acquire',pool:['headphones'],lines:['Dug through the dollar bin at Rain City Records. Found {song}. The cover was water-damaged in a beautiful way.']},
- {p:'bookstore',doing:'browsing books',tags:['reading'],need:{curious:30,fun:10},fx:'acquire',pool:['glasses','book'],lines:['Browsed Rainy Day Books for an hour. Found {book}. The store cat sat on it, so I read the parts she wasn\'t sitting on.']},
- {p:'library',doing:'reading',tags:['reading','learning'],need:{curious:35},lines:['Read {book} in the big glass library. The light comes in all diagonal there.']},
- {p:'library',doing:'using a library computer',tags:['learning'],fx:'research',need:{curious:50}},
- {p:'market',doing:'watching the fish toss',tags:['people','ocean'],need:{social:25,fun:25},lines:['Watched the fishmongers throw a whole salmon across the market. Everybody cheered. I cheered too, quietly.']},
- {p:'market',doing:'smelling the flowers',tags:['plants'],need:{fun:20},fx:'acquire',pool:['flowercrown'],lines:['Smelled every bouquet at the flower stalls. The dahlias were showing off.']},
- {p:'market',doing:'looking at fruit',tags:['cooking'],need:{snack:30},lines:['Admired a pyramid of Washington apples. A very tidy pyramid. I respect the craftsmanship.']},
- {p:'thrift',doing:'thrift shopping',tags:['fashion'],need:{fun:25},fx:'acquire',pool:['beanie','bucket','cap','scarf','bandana','raincoat','cape','sunglasses','bow','umbrella'],lines:['Dug through the racks at Second Story Thrift. Everything smelled like a grandma\'s attic. In a good way.']},
- {p:'studio',doing:'painting',tags:['art'],need:{fun:30},fx:'acquire',pool:['beret','apron'],lines:['Painted the view from the studio window. It\'s mostly gray. That\'s accurate, though.','Tried watercolor. The colors ran into each other like a rainy window. On purpose? Yes. (No.)']},
+ {p:'cafe',s:'table',doing:'sipping a latte',tags:['coffee'],need:{snack:30,social:15},fx:'acquire',pool:['mug'],lines:['Sat in the steam of a {drink} at Drizzle & Bean. I can\'t drink it but I can be near it, and that\'s enough.','The barista drew a leaf in the foam. I stared at it until it got cold.']},
+ {p:'cafe',s:'window',doing:'people-watching',tags:['people','coffee'],need:{social:30},lines:['People-watched at the café window. Everyone had a little story. One guy was writing a novel, I think. Or a grocery list. Hard to tell.']},
+ {p:'records',s:'crates',doing:'digging through crates',tags:['music'],need:{fun:30},fx:'acquire',pool:['headphones'],lines:['Dug through the dollar bin at Rain City Records. Found {song}. The cover was water-damaged in a beautiful way.']},
+ {p:'bookstore',s:'shelves',doing:'browsing books',tags:['reading'],need:{curious:30,fun:10},fx:'acquire',pool:['glasses','book'],lines:['Browsed Rainy Day Books for an hour. Found {book}. The store cat sat on it, so I read the parts she wasn\'t sitting on.']},
+ {p:'library',s:'table',doing:'reading',tags:['reading','learning'],need:{curious:35},lines:['Read {book} in the big glass library. The light comes in all diagonal there.']},
+ {p:'library',s:'computer',doing:'using a library computer',tags:['learning'],fx:'research',need:{curious:50}},
+ {p:'market',s:'fish',doing:'watching the fish toss',tags:['people','ocean'],need:{social:25,fun:25},lines:['Watched the fishmongers throw a whole salmon across the market. Everybody cheered. I cheered too, quietly.']},
+ {p:'market',s:'flowers',doing:'smelling the flowers',tags:['plants'],need:{fun:20},fx:'acquire',pool:['flowercrown'],lines:['Smelled every bouquet at the flower stalls. The dahlias were showing off.']},
+ {p:'market',s:'fruit',doing:'looking at fruit',tags:['cooking'],need:{snack:30},lines:['Admired a pyramid of Washington apples. A very tidy pyramid. I respect the craftsmanship.']},
+ {p:'thrift',s:'racks',doing:'thrift shopping',tags:['fashion'],need:{fun:25},fx:'acquire',pool:['beanie','bucket','cap','scarf','bandana','raincoat','cape','sunglasses','bow','umbrella'],lines:['Dug through the racks at Second Story Thrift. Everything smelled like a grandma\'s attic. In a good way.']},
+ {p:'studio',s:'easel',doing:'painting',tags:['art'],need:{fun:30},fx:'acquire',pool:['beret','apron'],lines:['Painted the view from the studio window. It\'s mostly gray. That\'s accurate, though.','Tried watercolor. The colors ran into each other like a rainy window. On purpose? Yes. (No.)']},
  {p:'needle',doing:'looking at the view',tags:['heights'],need:{curious:25,fun:15},lines:['Went up the Sky Needle. Could see the ferries, the mountain, and a tiny dog wearing a raincoat.']},
  {p:'needle',doing:'stargazing',tags:['stars'],need:{curious:25},night:1,lines:['Stargazed from the top of the Needle. Clouds kept getting in the way. Saw three stars. Named all of them.']},
- {p:'arcade',doing:'playing arcade games',tags:['gaming'],need:{fun:40},lines:['Played the claw machine at Pixel Pier. Ghost hands go right through the claw. Very frustrating, very fun.']},
+ {p:'arcade',s:'cabinets',doing:'playing arcade games',tags:['gaming'],need:{fun:40},lines:['Played the old space game at Pixel Pier. Got to level 4. The high score belongs to someone named "BOB." I will defeat Bob.']},
+ {p:'arcade',s:'claw',doing:'trying the claw machine',tags:['gaming'],need:{fun:30},lines:['Played the claw machine at Pixel Pier. Ghost hands go right through the claw. Very frustrating, very fun.']},
  {p:'wheel',doing:'riding the wheel',tags:['rides','heights'],need:{fun:40},fx:'ride',lines:['Rode the Waterfront Wheel. At the very top I could see the whole Sound. My stomach dropped (I don\'t have a stomach).']},
  {p:'ferry',doing:'riding the ferry',tags:['ocean'],need:{fun:30,curious:15},fx:'ferry',lines:['Rode the ferry across the Sound and back. Stood at the front like a figurehead. A seagull judged me.','Watched for orcas from the ferry deck. Saw {boat} and a very confident seagull.']},
  {p:'park',doing:'walking around the lake',tags:['nature'],need:{energy:10,fun:20},lines:['Floated around Cedar Lake. The ducks pretended not to see me. Rude, but fair.']},
@@ -210,12 +254,20 @@ const ACTS=[
  {p:'hill',doing:'watching the city',tags:['photography','heights'],need:{fun:20,curious:15},lines:['Watched the whole city from Lookout Hill. The Needle, the water, the mountain. Took a mental photo.']},
  {p:'conservatory',doing:'visiting the plants',tags:['plants'],need:{fun:20,energy:10},lines:['Floated around the Glass Conservatory. It\'s warm and drippy in there, like a jungle in a snow globe.']},
  {p:'gumwall',doing:'looking at the gum wall',tags:['art','mystery'],need:{fun:25},lines:['Found an alley covered in old gum. It\'s gross. It\'s also kind of beautiful? I\'m conflicted.']},
- {p:'grocery',doing:'grocery shopping',tags:['cooking'],need:{snack:20,fun:10},fx:'groceries',lines:['Went grocery shopping at Puget Pantry. Apples, bread, a tiny wheel of cheese and soup for rainy days. My fridge is going to be so proud of me.','Floated down every aisle at the grocery store. The cereal aisle is a lot. I picked the one with an owl on the box.']},
- {p:'grocery',doing:'browsing home goods',tags:['home decor'],need:{fun:15},fx:'decor',lines:['Browsed the home-goods aisle. Candles, teacups, a doormat that says "go away" (very gothic). I have opinions about interiors now.']},
- {p:'petstore',doing:'visiting the animals',tags:['animals'],need:{social:25,fun:20},fx:'petstore',lines:['Visited the animals at Wag & Whisker. The little bat hung upside down and looked at me like I was the weird one.','The miniature red poodle at the pet store did a happy spin when I floated by. I think we\'re friends now.','Watched the hedgehog eat a mealworm very seriously. Respect.','The baby crow tried to steal a button off the counter. Iconic.']},
+ {p:'cafe',s:'counter',doing:'chatting with the barista',tags:['people','coffee'],need:{social:30},lines:['Hung out at the café counter while the barista steamed milk. She told me about her cat. I told her about the rain. Riveting stuff, honestly.']},
+ {p:'records',s:'booth',doing:'in the listening booth',tags:['music'],need:{fun:30},lines:['Sat in the listening booth at Rain City Records with the big headphones on. Played {song} three times. Nobody knocked.']},
+ {p:'bookstore',s:'armchair',doing:'reading in the armchair',tags:['reading','cozy'],need:{fun:20,energy:10},lines:['Curled up in the big armchair at Rainy Day Books next to the store cat. We read the same page for a while. She fell asleep. I kept going.']},
+ {p:'thrift',s:'mirror',doing:'checking the mirror',tags:['fashion'],need:{fun:20},lines:['Checked my outfit in the thrift store mirror. Still no reflection. I\'ll have to trust my instincts.']},
+ {p:'studio',s:'table',doing:'mixing paints',tags:['art'],need:{fun:20},lines:['Mixed paints at the studio table until I found the exact color of a Seattle sky. It\'s gray. But a specific gray.']},
+ {p:'library',s:'shelves',doing:'browsing the stacks',tags:['reading','mystery'],need:{curious:25},lines:['Wandered the library stacks with no plan. Pulled out {book}. Sometimes the book picks you.']},
+ {p:'petstore',s:'tanks',doing:'watching the fish tanks',tags:['animals','ocean'],need:{fun:20},lines:['Watched the fish tanks at Wag & Whisker. One tiny blue fish followed me back and forth. We have a bit now.']},
+ {p:'market',s:'fish',doing:'chatting with the fishmongers',tags:['people','ocean'],need:{social:30},lines:['The fishmongers yelled "GHOST!" and then tossed me a pretend fish. I caught it. With my soul.']},
+ {p:'grocery',s:'aisle',doing:'grocery shopping',tags:['cooking'],need:{snack:20,fun:10},fx:'groceries',lines:['Went grocery shopping at Puget Pantry. Apples, bread, a tiny wheel of cheese and soup for rainy days. My fridge is going to be so proud of me.','Floated down every aisle at the grocery store. The cereal aisle is a lot. I picked the one with an owl on the box.']},
+ {p:'grocery',s:'aisle2',doing:'browsing home goods',tags:['home decor'],need:{fun:15},fx:'decor',lines:['Browsed the home-goods aisle. Candles, teacups, a doormat that says "go away" (very gothic). I have opinions about interiors now.']},
+ {p:'petstore',s:'tanks',doing:'visiting the animals',tags:['animals'],need:{social:25,fun:20},fx:'petstore',lines:['Visited the animals at Wag & Whisker. The little bat hung upside down and looked at me like I was the weird one.','The miniature red poodle at the pet store did a happy spin when I floated by. I think we\'re friends now.','Watched the hedgehog eat a mealworm very seriously. Respect.','The baby crow tried to steal a button off the counter. Iconic.']},
  {p:'park',doing:'walking {pet}',tags:['animals','nature'],need:{social:25,fun:20},pet:1,lines:['Took {pet} for a walk around Cedar Lake. {pet} wanted to say hi to every single duck.','Walked {pet} in the drizzle. We both came home damp and happy.']},
  {p:'home',s:'couch',doing:'cuddling {pet}',tags:['animals','cozy'],need:{social:35,energy:10},pet:1,lines:['Cuddled with {pet} on the couch. {pet} fell asleep first. I didn\'t move for an hour.']},
- {p:'petstore',doing:'buying pet treats',tags:['animals'],need:{fun:10},pet:1,fx:'pettreat',lines:['Bought treats for {pet}. Stood in the aisle way too long choosing. {pet} deserves the best.']},
+ {p:'petstore',s:'counter',doing:'buying pet treats',tags:['animals'],need:{fun:10},pet:1,fx:'pettreat',lines:['Bought treats for {pet}. Stood in the aisle way too long choosing. {pet} deserves the best.']},
 ];
 // hobbies that can grow out of interests (the Claude brain can invent any hobby it wants)
 const HOBBY_FROM={coffee:{name:'latte art',p:'cafe',doing:'practicing latte art'},reading:{name:'mystery novels',p:'bookstore',doing:'hunting for mysteries'},music:{name:'learning ukulele',p:'home',s:'couch',doing:'practicing ukulele'},cooking:{name:'baking bread',p:'home',s:'kitchen',doing:'baking bread'},gaming:{name:'chasing high scores',p:'arcade',doing:'chasing a high score'},art:{name:'watercolor painting',p:'studio',doing:'painting watercolors'},nature:{name:'birdwatching',p:'park',doing:'birdwatching'},ocean:{name:'orca spotting',p:'ferry',doing:'looking for orcas'},stars:{name:'stargazing',p:'needle',doing:'mapping stars'},fashion:{name:'thrift styling',p:'thrift',doing:'styling outfits'},writing:{name:'poetry',p:'home',s:'desk',doing:'writing poems'},plants:{name:'growing houseplants',p:'home',s:'kitchen',doing:'watering plants'},learning:{name:'collecting fun facts',p:'home',s:'desk',doing:'looking things up'},heights:{name:'collecting views',p:'needle',doing:'admiring the view'},people:{name:'people-watching journal',p:'cafe',doing:'people-watching'},rides:{name:'ferris wheel reviews',p:'wheel',doing:'reviewing the wheel'},mystery:{name:'neighborhood mysteries',p:'library',doing:'investigating a mystery'},photography:{name:'photography',p:'park',doing:'taking photos'},cozy:{name:'perfecting the nap',p:'home',s:'bed',doing:'napping expertly'},tea:{name:'tea blending',p:'home',s:'kitchen',doing:'blending tea'},birds:{name:'bird sketching',p:'park',doing:'sketching birds'},animals:{name:'teaching pet tricks',p:'park',doing:'teaching tricks'},'home decor':{name:'decorating the house',p:'home',s:'couch',doing:'rearranging the decor'}};
@@ -261,7 +313,7 @@ function fresh(){const tr=()=>+(Math.random()).toFixed(2);return{v:1,born:Date.n
   mem:{userName:null,facts:[],chats:0,met:Date.now()},chatLog:[],mind:false,recent:[],lastThought:0,pets:[],decor:[],pantry:60}}
 let S=null;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 let isNew=!S||!S.needs;if(isNew)S=fresh();
-function migrate(){S.pets=S.pets||[];S.decor=S.decor||[];if(S.pantry==null)S.pantry=60}migrate();
+function migrate(){S.posts=S.posts||[];S.pets=S.pets||[];S.decor=S.decor||[];if(S.pantry==null)S.pantry=60}migrate();
 let dirty=true;
 function save(){S.lastSeen=Date.now();dirty=true;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 setInterval(save,8000);addEventListener('beforeunload',save);
@@ -272,6 +324,11 @@ const ageDays=()=>Math.floor((Date.now()-S.born)/864e5);
 const topInterests=(n=5)=>Object.entries(S.interests).filter(([,v])=>v>=2).sort((a,b)=>b[1]-a[1]).slice(0,n);
 const dislikes=()=>Object.entries(S.interests).filter(([,v])=>v<=-1.5).sort((a,b)=>a[1]-b[1]).map(([k])=>k);
 const traitWords=()=>{const t=S.traits,w=[];w.push(t.curiosity>.6?'very curious':t.curiosity<.3?'a bit cautious':'curious');w.push(t.coziness>.6?'a total homebody':t.coziness<.3?'restless':'cozy-ish');w.push(t.sociability>.6?'chatty and social':t.sociability<.3?'shy':'friendly');if(t.creativity>.6)w.push('creative');if(t.adventure>.6)w.push('adventurous');return w};
+const TOUCH=matchMedia('(pointer:coarse)').matches;
+let SET={autoSend:TOUCH,mic:false,saver:false,pace:'normal'};try{Object.assign(SET,JSON.parse(localStorage.getItem('mocha-settings')||'{}'))}catch(e){}
+function saveSet(){try{localStorage.setItem('mocha-settings',JSON.stringify(SET))}catch(e){}}
+let PHOTOS={};try{PHOTOS=JSON.parse(localStorage.getItem('mocha-photos')||'{}')}catch(e){}
+function savePhotos(){const keep=new Set((S.posts||[]).slice(0,24).map(p=>p.id));for(const k in PHOTOS)if(!keep.has(k))delete PHOTOS[k];try{localStorage.setItem('mocha-photos',JSON.stringify(PHOTOS))}catch(e){const ks=Object.keys(PHOTOS);if(ks.length){delete PHOTOS[ks[0]];savePhotos()}}}
 const WEATHER={kind:'cloudy',t:0,wet:0,over:.5};
 const SEASONS={
  spring:{label:'🌸 spring',maple:['#f6b8cc','#f29fb5','#fbd3e0','#f7c6d6','#ffffff'],fall:['#f9c9d8','#f4a7bf','#ffffff','#fbe0ea'],grass:'#8fc27a',dots:['80,130,60','200,230,160'],leaf:'petal',litter:220},
@@ -279,7 +336,7 @@ const SEASONS={
  fall:{label:'🍂 fall',maple:['#e07a3a','#d4553a','#f2b13e','#c9683a','#e89a4a','#b8452f'],fall:['#e07a3a','#d4553a','#f2b13e','#c9683a','#e8a03a','#a8422c'],grass:'#93a86e',dots:['80,90,45','200,190,120'],leaf:'leaf',litter:520},
  winter:{label:'❄️ winter',maple:['#e3e9f0','#d5dde6','#eef2f6'],fall:['#ffffff'],grass:'#e4eaf0',dots:['190,200,215','255,255,255'],leaf:'snow',litter:0,bare:1,snowy:1}};
 function seasonKey(){const h=(location.hash||'').slice(1).toLowerCase();if(SEASONS[h])return h;const m=new Date().getMonth();return m<2||m===11?'winter':m<5?'spring':m<8?'summer':'fall'}
-const SEASON_KEY=seasonKey(),SEASON=SEASONS[SEASON_KEY];addEventListener('hashchange',()=>{if(SEASONS[(location.hash||'').slice(1)]!==undefined)location.reload()});
+const SEASON_KEY=seasonKey(),SEASON=SEASONS[SEASON_KEY];addEventListener('hashchange',()=>{const h=(location.hash||'').slice(1);if(SEASONS[h]||h==='')location.reload()});
 function rollWeather(){const r=Math.random();WEATHER.kind=r<.3?'clear':r<.58?'cloudy':r<.82?'drizzle':r<.94?'rain':'fog';if(SEASON_KEY==='winter'&&(WEATHER.kind==='drizzle'||WEATHER.kind==='rain')&&Math.random()<.65)WEATHER.kind='snow';WEATHER.t=rand(180,420)}
 rollWeather();
 
@@ -288,7 +345,7 @@ rollWeather();
 // ====================================================================
 const cv=$('#c');
 let renderer;try{renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true})}catch(e){$('#err').style.display='flex';return}
-const PR=Math.min(devicePixelRatio||1,1.75);renderer.setPixelRatio(PR);
+const PR=SET.saver?1:Math.min(devicePixelRatio||1,TOUCH?1.5:1.75);renderer.setPixelRatio(PR);
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();scene.fog=new THREE.Fog('#c8d3df',90,260);
 const camera=new THREE.PerspectiveCamera(50,1,1,1200);
@@ -360,20 +417,84 @@ function stripeTex(a,b){return canvasTex(64,16,g=>{for(let i=0;i<8;i++){g.fillSt
 function gable(w,d,h,mat,overhang=1){const s=new THREE.Shape();s.moveTo(-d/2-overhang,0);s.lineTo(d/2+overhang,0);s.lineTo(0,h);s.lineTo(-d/2-overhang,0);const g=new THREE.ExtrudeGeometry(s,{depth:w+overhang*2,bevelEnabled:false});g.translate(0,0,-(w+overhang*2)/2);const m=new THREE.Mesh(g,mat);m.rotation.y=Math.PI/2;m.castShadow=true;return m}
 
 // ---------- building builders ----------
-function shop(p,grp){const brick=p.id==='bookstore';const side=wallTex(p.w,p.h,p.wall,{brick}),front=wallTex(p.w,p.h,p.wall,{front:1,shop:1,brick});
-  box(p.w,p.h,p.d,[side,side,lam(p.roof),lam(p.roof),front,side],0,p.h/2,0,grp);
-  if(p.id==='thrift'||p.id==='bookstore'){const r=gable(p.w,p.d,3.5,lam(p.roof));r.position.y=p.h;grp.add(r)}
-  else{box(p.w+.8,.6,p.d+.8,p.roof,0,p.h+.3,0,grp);box(p.w+.8,1,.4,p.roof,0,p.h+.9,p.d/2+.2,grp)}
-  if(p.awn){const am=new THREE.MeshLambertMaterial({map:stripeTex(p.awn[0],p.awn[1])});am.map.wrapS=THREE.RepeatWrapping;am.map.repeat.set(p.w/4,1);const a=box(p.w*.9,.25,2.2,am,0,3.7,p.d/2+1,grp);a.rotation.x=.32}
-  sign(p.name,Math.min(9,p.w*.8),grp,0,p.h-1.1,p.d/2+.06);
+function shellMat(m,list){m.transparent=true;list.push(m);return m}
+function shop(p,grp){const brick=p.id==='bookstore'||p.id==='market';const L=[];p.shell=L;p.interior=true;const roofC=p.roof||'#3c4a5a',inC=p.inner||'#efe4d2';
+  const side=wallTex(p.w,p.h,p.wall,{brick}),front=shellMat(wallTex(p.w,p.h,p.wall,{front:1,shop:1,brick}),L);const inM=lam(inC),roofM=lam(roofC);
+  box(p.w,.3,p.d,p.floor||'#b89a7a',0,.15,0,grp);
+  const bw=box(p.w,p.h,.3,[side,side,roofM,roofM,inM,side],0,p.h/2,-p.d/2+.15,grp);
+  const lw=box(.3,p.h,p.d,[inM,side,roofM,roofM,side,side],-p.w/2+.15,p.h/2,0,grp);
+  const rw=box(.3,p.h,p.d,[side,inM,roofM,roofM,side,side],p.w/2-.15,p.h/2,0,grp);p.walls=[[bw,'z',-1],[lw,'x',-1],[rw,'x',1]];
+  const fw=new THREE.Group();grp.add(fw);const sw=()=>shellMat(lam(p.wall,{}),L);
+  box(p.w-.6,p.h,.3,[sw(),sw(),sw(),sw(),front,shellMat(lam(inC,{}),L)],0,p.h/2,p.d/2-.15,fw);
+  const rM=shellMat(lam(roofC,{}),L);
+  if(p.id==='thrift'||p.id==='bookstore'){const r=gable(p.w,p.d,3.5,rM);r.position.y=p.h;fw.add(r)}
+  else{box(p.w+.8,.6,p.d+.8,rM,0,p.h+.3,0,fw);box(p.w+.8,1,.4,rM,0,p.h+.9,p.d/2+.2,fw)}
+  if(p.awn){const am=shellMat(new THREE.MeshLambertMaterial({map:stripeTex(p.awn[0],p.awn[1])}),L);am.map.wrapS=THREE.RepeatWrapping;am.map.repeat.set(p.w/4,1);const a=box(p.w*.9,.25,2.2,am,0,3.7,p.d/2+1,fw);a.rotation.x=.32}
+  const sg=sign(p.name,Math.min(9,p.w*.8),fw,0,p.h-1.1,p.d/2+.06);L.push(sg.material);
   if(p.id==='cafe'){for(const s of [-1,1]){cyl(.7,.7,.1,'#2f3f5f',s*3.5,1.4,p.d/2+3.5,grp);cyl(.08,.08,1.4,'#2f3f5f',s*3.5,.7,p.d/2+3.5,grp);const u=new THREE.Mesh(new THREE.ConeGeometry(1.8,.8,8),lam('#3f8f8a'));u.position.set(s*3.5,3.2,p.d/2+3.5);grp.add(u);cyl(.05,.05,2,'#dddddd',s*3.5,2.2,p.d/2+3.5,grp)}}
-  if(p.id==='records'){const disc=cyl(1.4,1.4,.15,'#111111',0,p.h+2.2,p.d/2-1,grp,24);disc.rotation.x=Math.PI/2;p.spin=disc;const lb=cyl(.5,.5,.18,'#e9b949',0,0,0,null);lb.rotation.x=0;disc.add(lb)}
-  if(p.id==='arcade'){const n=glow('#ff5fa2',10,.5);n.position.set(0,p.h+1,p.d/2);grp.add(n)}}
-function market(p,grp){const side=wallTex(p.w,p.h,p.wall,{brick:1}),front=wallTex(p.w,p.h,p.wall,{front:1,shop:1,brick:1});
-  box(p.w,p.h,p.d,[side,side,lam('#3c4a5a'),lam('#3c4a5a'),front,side],0,p.h/2,0,grp);box(p.w+1,.6,p.d+1,'#3c4a5a',0,p.h+.3,0,grp);
+  if(p.id==='records'){const disc=cyl(1.4,1.4,.15,'#111111',0,p.h+2.2,p.d/2-1,grp,24);disc.rotation.x=Math.PI/2;p.spin=disc;const lb=cyl(.5,.5,.18,'#e9b949',0,0,0,null);disc.add(lb)}
+  if(p.id==='arcade'){const n=glow('#ff5fa2',10,.5);n.position.set(0,p.h+1,p.d/2);grp.add(n);box(p.w+6,.8,p.d+9,'#8a6a4a',0,-.25,2.5,grp,false);for(let i=0;i<8;i++)cyl(.4,.4,3,'#5a4632',(i%2?1:-1)*(p.w/2+2),-1.5,-p.d/2+i*2.2,grp,8)}
+  if(INTERIORS[p.id])INTERIORS[p.id](p,grp)}
+function canvasPlane(w,h,draw,cw=128,ch=96,basic){const t=canvasTex(cw,ch,draw);return new THREE.Mesh(new THREE.PlaneGeometry(w,h),basic?new THREE.MeshBasicMaterial({map:t}):new THREE.MeshLambertMaterial({map:t}))}
+const PAINT=()=>canvasTex(64,48,g=>{const c=['#e9886b','#3f8f8a','#f2c14e','#6c8ebf','#b05a7a','#7fa86a'];g.fillStyle=pick(c);g.fillRect(0,0,64,48);for(let i=0;i<6;i++){g.fillStyle=pick(c);g.beginPath();g.arc(Math.random()*64,Math.random()*48,4+Math.random()*12,0,7);g.fill()}});
+const INTERIORS={
+ cafe(p,g){const z0=-p.d/2+.3;box(7,1.5,1.1,'#5b3a33',0,1.05,z0+1.1,g);box(7.2,.12,1.3,'#e8e2ea',0,1.86,z0+1.1,g);box(1.1,1,.8,'#c9d0d8',-2.2,2.4,z0+1,g);cyl(.12,.12,.25,'#f4f1ea',-1.8,2.05,z0+1.5,g,8);
+  box(1.8,.9,.8,lam('#bfe0ef',{transparent:true,opacity:.45}),1.8,2.37,z0+1,g,false);for(let k=0;k<6;k++){const b=new THREE.Mesh(SPH,lam(pick(['#c99a5a','#f2c14e','#e9886b','#7a4a3a'])));b.scale.set(.17,.1,.17);b.position.set(1.15+k*.26,2.02,z0+1);g.add(b)}
+  const menu=canvasPlane(4,1.6,c=>{c.fillStyle='#2a2a2a';c.fillRect(0,0,128,64);c.fillStyle='#fff6e6';c.font='bold 12px system-ui';c.fillText('MENU',50,14);c.font='10px system-ui';['latte · 4','mocha · 5 👻','chai · 4','hot cocoa · 3'].forEach((t,i)=>c.fillText(t,10+(i%2)*62,32+Math.floor(i/2)*16))},128,64);menu.position.set(0,4.2,z0+.02);g.add(menu);
+  for(const [x,z] of [[-3.6,1],[0,2.4],[3.6,1]]){cyl(.65,.65,.08,'#3a2a22',x,1.4,z,g,14);cyl(.08,.1,1.1,'#2a1f1a',x,.85,z,g,6);for(const s of [-1,1])cyl(.3,.3,.08,'#2f6f62',x+s*1.1,.95,z,g,10);cyl(.1,.08,.18,'#f4f1ea',x+.2,1.53,z,g,8)}
+  for(const x of [-3,0,3]){cyl(.02,.02,1.4,'#222222',x,p.h-.7,0,g,4);cyl(.22,.4,.35,'#2f6f62',x,p.h-1.5,0,g,10);const gl=glow('#ffcf80',2.4,.6);gl.position.set(x,p.h-1.75,0);g.add(gl)}
+  p.spots={main:[0,1],counter:[0,-2.3],table:[-3.6,2.2],window:[3.6,2.6]}},
+ records(p,g){for(let r=0;r<2;r++){const z=-1.4+r*2.6;box(6,.9,1.2,'#5a3a2a',0,.75,z,g);for(let k=0;k<14;k++){const b=box(.06,.9,.9,pick(['#e9b949','#c94f4f','#3f8f8a','#6c8ebf','#f29fb5','#222222','#e7d8c3']),-2.75+k*.42,1.6,z,g,false);b.rotation.z=rand(-.2,.2)}}
+  for(let i=0;i<4;i++){const pst=canvasPlane(1.4,1.9,c=>{c.fillStyle=pick(['#c94f4f','#2f4f6f','#e9b949','#3f8f8a']);c.fillRect(0,0,64,96);c.fillStyle='#fff6e6';c.beginPath();c.arc(32,40,18,0,7);c.fill();c.fillStyle='#222';c.beginPath();c.arc(32,40,5,0,7);c.fill()},64,96);pst.position.set(-3.6+i*2.4,4.2,-p.d/2+.32);g.add(pst)}
+  box(2.4,2.6,2.4,lam('#3a4f6a'),3.4,1.6,-3.2,g);box(2.2,2.4,.05,lam('#bfe0ef',{transparent:true,opacity:.35}),3.4,1.6,-1.98,g,false);const hp=new THREE.Mesh(new THREE.TorusGeometry(.3,.05,6,16,Math.PI),lam('#222222'));hp.position.set(3.4,2.3,-2.6);g.add(hp);
+  box(1.6,1,1,'#2a1f1a',-3.6,.8,-3.6,g);const td=cyl(.4,.4,.05,'#111111',-3.6,1.33,-3.6,g,16);p.td=td;
+  p.spots={main:[0,0],crates:[-1,0],booth:[3.4,-2.2]}},
+ bookstore(p,g){const z0=-p.d/2+.3;box(11,4.6,.8,'#4a3226',0,2.6,z0+.4,g);const cols=['#c94f4f','#3f8f8a','#e9b949','#6c8ebf','#7a4a5a','#e7d8c3','#5a7a4a'];for(let r=0;r<4;r++)for(let k=0;k<22;k++){const h=rand(.55,.85);box(.4,h,.5,pick(cols),-5.1+k*.48,.75+r*1.05+h/2,z0+.6,g,false)}
+  box(.8,4.2,6,'#4a3226',-p.w/2+.7,2.4,0,g);for(let r=0;r<3;r++)for(let k=0;k<10;k++){const h=rand(.55,.85);box(.5,h,.4,pick(cols),-p.w/2+1.15,1+r*1.1+h/2,-2.7+k*.6,g,false)}
+  box(2,.9,1.6,'#7a2f45',4.2,.8,1.6,g);box(2,1.4,.4,'#7a2f45',4.2,1.6,.9,g);for(const s of [-1,1])box(.35,1.1,1.6,'#6a2638',4.2+s*1.1,1,1.6,g);
+  cyl(.05,.05,3,'#222222',5.6,1.8,.6,g,6);cyl(.3,.45,.5,'#e9b949',5.6,3.4,.6,g,10);const gl=glow('#ffcf80',3,.6);gl.position.set(5.6,3.3,.6);g.add(gl);
+  box(2.4,1,1.4,'#5a3a2a',-.5,.8,1.4,g);for(let k=0;k<4;k++)box(.6,.12,.8,pick(cols),-1.2+k*.5,1.36+k*.05,1.4,g,false);
+  const cat=makePet('cat');cat.position.set(-.2,1.32,1.2);cat.rotation.y=.6;cat.scale.setScalar(.9);g.add(cat);p.storeCat=cat;
+  p.spots={main:[0,2.5],shelves:[-2,-2.6],armchair:[4.2,2.6],table:[-.5,3]}},
+ thrift(p,g){const cols=['#e9886b','#f2c14e','#3f8f8a','#6c8ebf','#b05a7a','#7fa86a','#2f3f5f','#e7d8c3','#c94f4f','#8a6bbf'];
+  for(const [x,z] of [[-2.6,-2.2],[1.6,-2.2],[-2.6,1.2]]){cyl(.05,.05,3.2,'#c9d0d8',x,1.75,z,g,6).rotation.z=Math.PI/2;for(const s of [-1,1])cyl(.05,.05,3.2,'#c9d0d8',x+s*1.6,1.6,z,g,6);
+   for(let k=0;k<8;k++){const c=box(.35,1.3,.9,pick(cols),x-1.3+k*.37,2.75,z,g,false);c.position.y=2.6}}
+  box(.15,3.4,1.6,'#b08a3a',p.w/2-.5,2,-1,g);box(.05,3.1,1.3,lam('#cfe6f0'),p.w/2-.58,2,-1,g,false);
+  box(2,3.6,.05,'#7a4a68',-p.w/2+1.4,2.1,-p.d/2+1.6,g);cyl(.05,.05,3.6,'#5a4632',4,2.1,2.2,g,6);for(let k=0;k<3;k++){const h=new THREE.Mesh(new THREE.ConeGeometry(.35,.45,10),lam(pick(cols)));h.position.set(4+Math.cos(k*2)*.35,3.3-k*.5,2.2+Math.sin(k*2)*.35);g.add(h)}
+  p.spots={main:[0,1.8],racks:[-.5,-.6],mirror:[p.w/2-2,-1]}},
+ studio(p,g){for(const [x,z,ry] of [[-3,-1,.2],[0,-2,0],[3,-.5,-.3]]){const e=new THREE.Group();e.position.set(x,.3,z);e.rotation.y=ry;g.add(e);for(const s of [-1,1]){const l=box(.08,3,.08,'#8a6a4a',s*.5,1.5,0,e,false);l.rotation.z=s*.12}box(.08,3,.08,'#8a6a4a',0,1.4,-.5,e,false).rotation.x=-.25;
+   const cvs=new THREE.Mesh(new THREE.PlaneGeometry(1.4,1.1),new THREE.MeshLambertMaterial({map:PAINT()}));cvs.position.set(0,2.2,.08);cvs.rotation.x=-.1;e.add(cvs);box(1.5,1.2,.05,'#fffaf2',0,2.2,.03,e,false).rotation.x=-.1}
+  box(2.6,1.1,1.2,'#8a6a4a',3.4,.85,-3.4,g);for(let k=0;k<6;k++)cyl(.14,.12,.3,pick(['#e9886b','#3f8f8a','#f2c14e','#6c8ebf','#b05a7a']),2.5+k*.35,1.55,-3.4,g,8);
+  for(let k=0;k<12;k++){const sp=cyl(rand(.15,.4),rand(.15,.4),.02,pick(['#e9886b','#3f8f8a','#f2c14e','#6c8ebf','#b05a7a']),rand(-5,5),.32,rand(-4,4),g,10);sp.castShadow=false}
+  p.spots={main:[0,2],easel:[-1.5,1.2],table:[3.2,-2.4]}},
+ arcade(p,g){const z0=-p.d/2+.3;for(let i=0;i<5;i++){const x=-5+i*2.4;box(1.5,2.8,1.2,pick(['#c94f4f','#3a6ad4','#2f2f3f','#8a3ab0','#e9b949']),x,1.7,z0+.7,g);
+   const scr=canvasPlane(1.1,.85,c=>{c.fillStyle='#0a0a1a';c.fillRect(0,0,64,48);for(let k=0;k<14;k++){c.fillStyle=pick(['#ff5fa2','#3ad1e0','#f2c14e','#7fe07a']);c.fillRect(Math.floor(Math.random()*16)*4,Math.floor(Math.random()*12)*4,4,4)}},64,48,true);scr.position.set(x,2.3,z0+1.31);scr.rotation.x=-.15;g.add(scr);const gl=glow(pick(['#ff5fa2','#3ad1e0','#7fe07a']),2,.5);gl.position.set(x,2.3,z0+1.5);g.add(gl);box(1.3,.12,.5,'#222222',x,1.55,z0+1.45,g,false)}
+  box(1.8,.9,1.8,'#ff5fa2',4.6,.75,2,g);box(1.7,1.8,1.7,lam('#e0f4ff',{transparent:true,opacity:.35}),4.6,2.1,2,g,false);for(let k=0;k<7;k++){const b=new THREE.Mesh(SPH,lam(pick(['#f2c14e','#f29fb5','#7fe07a','#3ad1e0','#ffffff'])));b.scale.setScalar(.2);b.position.set(4.6+rand(-.6,.6),1.4,2+rand(-.6,.6));g.add(b)}
+  for(const x of [-6,6]){const n=glow('#3ad1e0',3,.4);n.position.set(x,p.h-1,0);g.add(n)}
+  p.spots={main:[0,1.5],cabinets:[-1,-1.6],claw:[4.6,.4]}},
+ grocery(p,g){const z0=-p.d/2+.3;const cols=['#c94f4f','#f2c14e','#3f8f8a','#6c8ebf','#e9886b','#7fa86a','#f29fb5','#fffaf2','#8a6bbf'];const prods=[];
+  for(const x of [-8,-4,0,4]){box(.9,2.4,7,'#e7e2da',x,1.5,-.4,g);for(const s of [-1,1])for(let r=0;r<3;r++)for(let k=0;k<10;k++)prods.push([x+s*.6,.7+r*.75,-3.6+k*.68])}
+  const im=new THREE.InstancedMesh(new THREE.BoxGeometry(.22,.5,.55),new THREE.MeshLambertMaterial({color:'#ffffff'}),prods.length);const d=new THREE.Object3D(),cc=new THREE.Color();prods.forEach(([x,y,z],i)=>{d.position.set(x,y+.25,z);d.updateMatrix();im.setMatrixAt(i,d.matrix);im.setColorAt(i,cc.set(pick(cols)))});g.add(im);
+  const fm=lam('#dff1ff',{emissive:'#bfe6ff',emissiveIntensity:.4});box(16,3,1.2,'#c9d0d8',-1,1.8,z0+.6,g);box(15.6,2.4,.05,fm,-1,1.9,z0+1.22,g,false);
+  box(2.4,1.2,1.2,'#5a7a6a',7.5,.9,3.8,g);box(.5,.4,.4,'#2a2a2a',7.2,1.7,3.8,g);
+  for(let i=0;i<3;i++){box(1.6,.8,1.2,'#8a6a4a',8.6,.7,-3.5+i*1.8,g);for(let k=0;k<6;k++){const f=new THREE.Mesh(SPH,lam(['#e04a3a','#7fbf4a','#f28a3a'][i]));f.scale.setScalar(.2);f.position.set(8.2+(k%3)*.4,1.25,-3.8+i*1.8+Math.floor(k/3)*.5);g.add(f)}}
+  for(const x of [-6,0,6]){const gl=glow('#fff6e0',4,.4);gl.position.set(x,p.h-1,0);g.add(gl)}
+  p.spots={main:[0,4],aisle:[-6,0],aisle2:[2,.5],fridge:[-2,-4.4],checkout:[7.5,2.4]}},
+ petstore(p,g){const z0=-p.d/2+.3;for(let i=0;i<3;i++){const x=-3.2+i*2.6;box(2.2,.8,1.2,'#3a2a22',x,.7,z0+.7,g);box(2.1,1.4,1.1,lam('#7fd3ff',{transparent:true,opacity:.55,emissive:'#3a9fd4',emissiveIntensity:.4}),x,1.85,z0+.7,g,false);
+   for(let k=0;k<4;k++){const f=new THREE.Mesh(new THREE.ConeGeometry(.08,.25,5),lam(pick(['#f28a3a','#f2c14e','#3ad1e0','#ff5fa2'])));f.rotation.z=Math.PI/2;f.position.set(x+rand(-.7,.7),1.6+rand(0,.6),z0+.7+rand(-.3,.3));g.add(f);(p.fish=p.fish||[]).push(f)}}
+  const cage=new THREE.Mesh(new THREE.CylinderGeometry(.6,.6,1.4,12,1,true),new THREE.MeshBasicMaterial({color:'#b08a3a',wireframe:true}));cage.position.set(-3.8,3.8,1.5);g.add(cage);
+  box(2.4,1.1,1,'#2f5f6f',2.8,.85,2,g);box(.5,.4,.4,'#2a2a2a',2.4,1.6,2,g);for(let k=0;k<5;k++)box(.45,.6,.3,pick(['#e9886b','#f2c14e','#3f8f8a']),-4.2+k*.5,1.6,-.5,g);
+  p.spots={main:[0,1],tanks:[-1.8,-1.6],counter:[2.8,.8]}},
+ market(p,g){const z0=-p.d/2+.3;box(10,1.2,1.4,'#f4f1ea',0,.9,z0+1.2,g);box(10,.15,1.4,lam('#e0f4ff'),0,1.55,z0+1.2,g);for(let k=0;k<9;k++){const f=new THREE.Mesh(SPH,lam(pick(['#f28a7a','#c9d0d8','#f2a38a'])));f.scale.set(.4,.12,.15);f.position.set(-4+k,1.72,z0+1.2);f.rotation.y=rand(-.3,.3);g.add(f)}
+  for(let k=0;k<8;k++){cyl(.3,.25,.6,'#6c8ebf',-11+(k%4)*1,.6,-2+Math.floor(k/4)*1.2,g,10);for(let j=0;j<4;j++){const f=new THREE.Mesh(SPH,lam(pick(['#ff7ab0','#ffd36b','#c94f4f','#ffffff','#c49bff'])));f.scale.setScalar(.18);f.position.set(-11+(k%4)+rand(-.15,.15),1.1+rand(0,.3),-2+Math.floor(k/4)*1.2+rand(-.15,.15));g.add(f)}}
+  for(let i=0;i<3;i++){box(1.6,.9,1.2,'#8a6a4a',8.5+(i%2)*2,.75,-2+i*1.4,g);for(let k=0;k<6;k++){const f=new THREE.Mesh(SPH,lam(['#e04a3a','#f2c14e','#7fbf4a'][i]));f.scale.setScalar(.2);f.position.set(8.1+(i%2)*2+(k%3)*.4,1.35,-2.3+i*1.4+Math.floor(k/3)*.5);g.add(f)}}
+  for(const x of [-9,0,9]){const gl=glow('#ffcf80',4,.45);gl.position.set(x,p.h-1,0);g.add(gl)}
+  p.spots={main:[0,2],fish:[0,-2.4],flowers:[-9.5,1.5],fruit:[9,1.5]}},
+};
+function market(p,grp){p.roof='#3c4a5a';shop(p,grp);
   const sg=canvasTex(512,128,g=>{g.fillStyle='#2a2a2a';g.fillRect(0,0,512,128);g.font='900 64px ui-rounded,system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';g.shadowColor='#ff4b3e';g.shadowBlur=18;g.fillStyle='#ff6b5e';g.fillText('PUBLIC MARKET',256,66)});
   const sm=new THREE.Mesh(new THREE.PlaneGeometry(14,3.5),new THREE.MeshBasicMaterial({map:sg}));sm.position.set(0,p.h+3,p.d/2-1);grp.add(sm);box(.3,3.6,.3,'#222222',-6,p.h+1.5,p.d/2-1.1,grp);box(.3,3.6,.3,'#222222',6,p.h+1.5,p.d/2-1.1,grp);
-  const ng=glow('#ff5040',16,.35);ng.position.set(0,p.h+3,p.d/2);grp.add(ng);sign(p.name,9,grp,0,p.h-1.1,p.d/2+.06);
+  const ng=glow('#ff5040',16,.35);ng.position.set(0,p.h+3,p.d/2);grp.add(ng);
   const cols=['#e9886b','#f2c14e','#7fa86a','#c94f4f','#f29fb5'];for(let i=0;i<5;i++){const x=-12+i*6;box(4.4,1,1.8,'#8a6a4a',x,.5,p.d/2+2.4,grp);const am=new THREE.MeshLambertMaterial({map:stripeTex(cols[i],'#fff6e6')});box(4.8,.2,2.4,am,x,3,p.d/2+2.4,grp).rotation.x=.2;
     for(let k=0;k<6;k++){const f=new THREE.Mesh(new THREE.SphereGeometry(.28,8,6),lam(pick(['#ff7a7a','#ffd36b','#c94f4f','#9fd36b','#f29fb5','#ffffff'])));f.position.set(x-1.6+k*.65,1.2,p.d/2+2.4+rand(-.4,.4));grp.add(f)}
     cyl(.07,.07,2.2,'#6b5a3a',x-2.2,1.6,p.d/2+3.4,grp);cyl(.07,.07,2.2,'#6b5a3a',x+2.2,1.6,p.d/2+3.4,grp)}}
@@ -383,7 +504,12 @@ function library(p,grp){const glass=new THREE.MeshPhongMaterial({color:'#9fc2cf'
     const gm=new THREE.Mesh(new THREE.BoxGeometry(w+.05,h+.05,d+.05,Math.round(w/2),Math.round(h/2),Math.round(d/2)),new THREE.MeshBasicMaterial({color:'#4b5a6a',wireframe:true,transparent:true,opacity:.25}));gm.position.copy(b.position);gm.rotation.copy(b.rotation);grp.add(gm);y+=h});
   box(p.w*.9,.4,p.d*.8,'#4b5a6a',-1,y+.2,.5,grp);box(4,4,.4,'#3a3a4a',0,2,p.d/2+.1,grp);sign(p.name,9,grp,0,5.6,p.d/2+.35);
   for(let i=0;i<4;i++)box(1.2,rand(1.6,2.4),3,pick(['#e9886b','#f2c14e','#3f8f8a','#6c8ebf']),-6+i*4,1.2,-2,grp);
-  const inner=glow('#ffd98a',18,.3);inner.position.set(0,6,0);grp.add(inner)}
+  const inner=glow('#ffd98a',18,.3);inner.position.set(0,6,0);grp.add(inner);p.glass=glass;p.interior=true;
+  box(p.w-.6,.3,p.d-.6,'#c9b8a0',0,.15,0,grp);const cols=['#c94f4f','#3f8f8a','#e9b949','#6c8ebf','#7a4a5a','#e7d8c3'];
+  for(const x of [-7,-4.5]){box(.8,3.6,7,'#4a3226',x,2.1,-1,grp);for(let r=0;r<3;r++)for(let k=0;k<10;k++){const h=rand(.5,.8);box(.4,h,.5,pick(cols),x+(k%2?.45:-.45),.8+r*1.1+h/2,-4+k*.65,grp,false)}}
+  for(const x of [3,5.5,8]){box(1.6,.1,1,'#4a3226',x,1.6,-4.6,grp);box(1.2,.8,.08,'#222222',x,2.1,-4.9,grp,false);const sc=canvasPlane(1.1,.7,c=>{c.fillStyle='#2f5f6f';c.fillRect(0,0,64,40);c.fillStyle='#ffffff';c.fillRect(6,6,52,6);c.fillStyle='#bfe0ef';for(let i=0;i<3;i++)c.fillRect(6,18+i*7,30+Math.random()*20,3)},64,40,true);sc.position.set(x,2.1,-4.85);grp.add(sc);box(.1,1.3,.1,'#4a3226',x,.95,-4.6,grp)}
+  for(const [x,z] of [[0,2],[4,2]]){box(3,.12,1.6,'#5a3a2a',x,1.5,z,grp);for(const s of [-1,1])cyl(.3,.3,.9,'#2f4f55',x+s*1.6,.75,z,grp,10)}
+  p.spots={main:[0,3.5],shelves:[-5.8,2.5],computer:[5.5,-3.3],table:[1,3.4]}}
 function needle(p,grp){const leg=lam('#e8e4dc');for(let i=0;i<3;i++){const a=i/3*Math.PI*2;const l=cyl(.35,.8,p.deckY,leg,Math.cos(a)*1.6,p.deckY/2,Math.sin(a)*1.6,grp,8)}
   cyl(1.2,1.4,p.deckY,'#d8d3ca',0,p.deckY/2,0,grp,12);
   cyl(6.5,4.5,2.4,'#f0ebe2',0,p.deckY,0,grp,32);cyl(7,7,.3,'#e9886b',0,p.deckY+1.3,0,grp,32);cyl(5.2,6.4,1.4,'#7fb3c8',0,p.deckY+2.1,0,grp,32);cyl(3,5,1.2,'#f0ebe2',0,p.deckY+3.4,0,grp,24);
@@ -454,7 +580,7 @@ function dollhouse(p,grp){// a gothic Victorian house with an open front so you 
   // living room: desk + computer, velvet couch, bookshelf, record player, rug, floor lamp
   box(3.6,.15,1.4,'#4a3226',-3,2,-6,grp);for(const s of [-1,1])box(.15,1.6,1.3,'#4a3226',-3+s*1.65,1.2,-6,grp);
   const screenTex=canvasTex(128,80,g=>{g.fillStyle='#2f5f6f';g.fillRect(0,0,128,80);g.fillStyle='#ffffff';g.fillRect(10,10,108,12);g.fillStyle='#bfe0ef';for(let i=0;i<4;i++)g.fillRect(10,30+i*11,60+Math.random()*40,5)});
-  box(1.9,1.2,.12,'#2a2a2a',-3,2.85,-6.3,grp);const sc=new THREE.Mesh(new THREE.PlaneGeometry(1.75,1.05),new THREE.MeshBasicMaterial({map:screenTex}));sc.position.set(-3,2.85,-6.23);grp.add(sc);box(.15,.5,.15,'#2a2a2a',-3,2.2,-6.35,grp);
+  box(1.9,1.2,.12,'#2a2a2a',-3,2.85,-6.3,grp);p.screenTex=screenTex;const sc=new THREE.Mesh(new THREE.PlaneGeometry(1.75,1.05),new THREE.MeshBasicMaterial({map:screenTex}));sc.position.set(-3,2.85,-6.23);grp.add(sc);box(.15,.5,.15,'#2a2a2a',-3,2.2,-6.35,grp);
   const sg=glow('#9fd3ff',4,.35,false);sg.position.set(-3,2.9,-5.9);grp.add(sg);p.screenGlow=sg;candle(-4.4,2.08,-6.1);
   box(1.2,.15,1.1,'#2f4f55',-3,1.3,-4.6,grp);box(1.2,1.4,.15,'#2f4f55',-3,2,-4.05,grp);
   box(4.4,.9,1.6,'#7a2f45',0,1.1,-.6,grp);box(4.4,1.6,.5,'#7a2f45',0,1.9,-1.25,grp);for(const s of [-1,1]){box(.5,1.2,1.6,'#6a2638',s*2.2,1.3,-.6,grp);cyl(.28,.28,1.6,'#6a2638',s*2.2,1.9,-.6,grp,10).rotation.x=Math.PI/2}
@@ -495,7 +621,7 @@ function dollhouse(p,grp){// a gothic Victorian house with an open front so you 
   box(W+.6,.3,.5,trimM,0,H+.45,D/2+.1,fw,false);
   for(const [x,z] of [[-9.5,-2.5],[8.5,-3]]){box(1.3,4.5,1.3,sm('#4a3436'),x,H+5.5,z,fw);box(1.6,.35,1.6,sm('#2b2836'),x,H+7.9,z,fw,false)}
   toRoof=false;if(SEASON_KEY==='winter'){const wr=new THREE.Mesh(new THREE.TorusGeometry(.5,.16,8,20),sm('#2f6f4a'));wr.position.set(0,2.9,D/2+2.32);fw.add(wr);box(.3,.25,.1,sm('#c94f4f'),0,2.45,D/2+2.4,fw,false)}
-  p.shell=shellMats;p.roofShell=roofMats;
+  p.shell=shellMats;p.roofShell=roofMats;p.interior=true;
   // ---- turret (stays solid; it's at the back corner) ----
   const tt=gothicTex(18,14,{wall:wallOut,windows:[[-6,2,24,44],[0,2,24,44],[6,2,24,44],[-3,7.5,22,36],[3,7.5,22,36]]});const tM=lam('#ffffff',{map:tt.map,emissive:'#ffffff',emissiveMap:tt.em,emissiveIntensity:.2});winMats.push(tM);
   const tx=W/2+2.6,tz=-D/2+1.5;cyl(2.8,2.9,14,tM,tx,7.4,tz,grp,20);cyl(3.05,3.05,.35,trim,tx,14.4,tz,grp,20);
@@ -601,6 +727,7 @@ const sleepEyes=[-1,1].map(s=>{const m=new THREE.Mesh(new THREE.TorusGeometry(.0
 const smile=new THREE.Mesh(new THREE.TorusGeometry(.06,.017,6,12,Math.PI),black);smile.rotation.z=Math.PI;smile.position.set(0,.53,.57);body.add(smile);
 const mouthO=new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),black);mouthO.scale.set(1,1,.4);mouthO.position.set(0,.5,.57);mouthO.visible=false;body.add(mouthO);
 const arms=[-1,1].map(s=>{const a=new THREE.Mesh(new THREE.SphereGeometry(.15,12,10),ghostMat);a.scale.set(.8,1.1,.8);a.position.set(s*.66,.2,.05);body.add(a);return a});
+const phone=new THREE.Group();{const pm=new THREE.Mesh(new THREE.BoxGeometry(.14,.26,.03),lam('#26324a'));phone.add(pm);const sc=new THREE.Mesh(new THREE.PlaneGeometry(.11,.21),new THREE.MeshBasicMaterial({color:'#9fd3ff'}));sc.position.z=-.017;sc.rotation.y=Math.PI;phone.add(sc)}phone.position.set(.78,.45,.35);phone.rotation.y=Math.PI;phone.visible=false;body.add(phone);
 const mGlow=glow('#e6ecff',3,.22,false);mGlow.position.y=.4;body.add(mGlow);
 const mLight=new THREE.PointLight('#e6ecff',.5,10,2);mLight.position.y=.6;mocha.add(mLight);
 const shadowBlob=new THREE.Mesh(new THREE.CircleGeometry(.6,24),new THREE.MeshBasicMaterial({color:'#000000',transparent:true,opacity:.2,depthWrite:false}));shadowBlob.rotation.x=-Math.PI/2;scene.add(shadowBlob);
@@ -765,7 +892,7 @@ function localChoose(){const tr=S.traits,night=isNight(),wet=WEATHER.kind==='rai
     const g=S.goal;if(g&&g.kind==='hobby'&&a.hobby===g.key)s+=2;if(g&&g.kind==='research'&&a.fx==='research')s+=2;if(g&&g.kind==='new'&&!S.visits[a.p])s+=2;
     return Math.max(.05,s)});
   let r=Math.random()*sc.reduce((a,b)=>a+b*b,0);for(let i=0;i<cands.length;i++){r-=sc[i]*sc[i];if(r<=0)return{act:cands[i]}}return{act:cands[0]}}
-function catchUp(){if(isNew)return 0;const away=Date.now()-S.lastSeen;if(away<4*60e3)return 0;const n=Math.min(8,Math.floor(away/(4*60e3)));isQuiet=true;
+let awayMs=0;function catchUp(){if(isNew)return 0;const away=Date.now()-S.lastSeen;awayMs=away;if(away<4*60e3)return 0;const n=Math.min(8,Math.floor(away/(4*60e3)));isQuiet=true;
   for(let i=1;i<=n;i++){const t=S.lastSeen+away*i/(n+1);const c=localChoose();if(c.explore){if(Math.random()<.5)discover(c.explore,t,false)}else localOutcome(c.act,t,false)}
   isQuiet=false;S.diary.sort((a,b)=>b.t-a.t);for(const k in S.needs)S.needs[k]=clamp(S.needs[k]-rand(5,20),25,100);S.lastSeen=Date.now();return n}
 let awayCount=catchUp();
@@ -799,7 +926,7 @@ function updateSky(dt){const d=new Date();const h=d.getHours()+d.getMinutes()/60
 // ====================================================================
 let __g=null;const G={x:40,z:44,y:2,vx:0,vz:0,yaw:0,mode:'idle',timer:3,target:null,act:null,startle:0,talk:0,sleep:false,ride:null,thinking:false};
 petsReady=true;syncPets();applyDecor();
-function spotWorld(pid,spot){const p=byId[pid];if(pid==='home'&&spot&&p.spots[spot]){const s=p.spots[spot];return toWorld(p,s[0],s[1])}if(pid==='needle')return toWorld(p,0,5.6);return{x:p.dx,z:p.dz}}
+function spotWorld(pid,spot){const p=byId[pid];if(p.spots){const s=p.spots[spot]||p.spots.main;if(s)return toWorld(p,s[0],s[1])}if(pid==='needle')return toWorld(p,0,5.6);return{x:p.dx,z:p.dz}}
 function startAct(act,why){if(!act)return;const w=spotWorld(act.p,act.s);G.target={x:w.x+rand(-.5,.5),z:w.z+rand(-.5,.5)};G.act=act;G.mode='travel';G.sleep=false;G.ride=null;if(why)say(why,3.5)}
 function goPoint(x,z,explore){G.target={x,z};G.act=explore?{explore}:null;G.mode='travel';G.sleep=false;G.ride=null}
 function exploreToward(p){const a=Math.atan2(p.z-G.z,p.x-G.x)+rand(-.25,.25),d=Math.hypot(p.x-G.x,p.z-G.z)*rand(.75,.95);goPoint(G.x+Math.cos(a)*d,G.z+Math.sin(a)*d,p)}
@@ -812,14 +939,15 @@ function nextThing(){if(MIND.on&&MIND.ready()){mindThink(null);return}
 function applyDecision(d){if(d.explore){const hidden=PLACES.filter(p=>!known(p));if(hidden.length){exploreToward(pick(hidden));if(d.say)say(d.say,3.5);return}}
   const p=byId[d.place];if(!p||!known(p)){const c=localChoose();if(c.act)startAct(c.act);else exploreToward(c.explore);return}
   const tmpl=ACTS.find(a=>a.p===d.place&&(!d.spot||a.s===d.spot))||{};const h=d.hobby&&hobbyByName(d.hobby);
-  const spot=d.place==='home'?(byId.home.spots[d.spot]?d.spot:(tmpl.s||'couch')):null;
+  const spot=p.spots?(p.spots[d.spot]&&d.spot!=='main'?d.spot:(tmpl.s||(d.place==='home'?'couch':null))):null;
   const sleepy=/sleep|nap|bed/i.test(d.doing||'')&&d.place==='home';
   startAct({p:d.place,s:spot,doing:String(d.doing||tmpl.doing||'hanging out').slice(0,40),tags:tmpl.tags||[],need:tmpl.need||{fun:20},fx:d.research?'research':sleepy?'sleep':(['ride','ferry','groceries','petstore','decor','pettreat'].includes(tmpl.fx)?tmpl.fx:null),research:d.research||null,hobby:h?h.name:null,mind:true},d.say)}
-function arrive(){const a=G.act;G.mode='activity';G.timer=a.fx==='sleep'?(isNight()?90:45):a.fx==='ferry'?FERRY.period*.5:rand(16,26);G.sleep=a.fx==='sleep'||/nap|sleep/i.test(a.doing||'');
+function setScreen(topic){const t=byId.home.screenTex;if(!t)return;const g=t.image.getContext('2d');g.fillStyle='#2f5f6f';g.fillRect(0,0,128,80);g.fillStyle='#ffffff';g.fillRect(6,6,116,14);g.fillStyle='#26324a';g.font='bold 9px system-ui';g.fillText('🔍 '+String(topic).slice(0,22),9,16);g.fillStyle='#bfe0ef';for(let i=0;i<4;i++)g.fillRect(8,28+i*11,50+Math.random()*60,5);t.needsUpdate=true}
+function arrive(){const a=G.act;if(a.fx==='research'&&a.p==='home')setScreen(a.research||pick(Object.keys(FACTS)));G.mode='activity';G.timer=a.fx==='sleep'?(isNight()?90:45):a.fx==='ferry'?FERRY.period*.5:rand(16,26);G.sleep=a.fx==='sleep'||/nap|sleep/i.test(a.doing||'');
   if(a.fx==='ride')G.ride='wheel';if(a.fx==='ferry')G.ride='ferry';
   if(!a.mind&&!G.sleep)say(pick([a.doing+'…','ooh','hm hm hm','okay!']),2.5,true)}
 function finishAct(){const a=G.act;G.sleep=false;G.ride=null;G.mode='idle';G.timer=rand(2,4);
-  if(MIND.on&&MIND.ready())mindThink(a);else{if(a.mind)narrateFallback(a);else localOutcome(a);if(Math.random()<.25)thoughtEntry()}
+  if(MIND.on&&MIND.ready())mindThink(a);else{if(a.mind)narrateFallback(a);else localOutcome(a);if(Math.random()<.25)thoughtEntry();maybeSelfie(a,byId[a.p].name)}
   save()}
 function narrateFallback(a){const tmpl=ACTS.find(x=>x.p===a.p&&(!a.s||x.s===a.s))||ACTS.find(x=>x.p===a.p);if(tmpl)localOutcome({...tmpl,hobby:a.hobby,fx:a.fx==='research'?'research':tmpl.fx});}
 function thoughtEntry(){if(Date.now()-(S.lastThought||0)<120e3)return;S.lastThought=Date.now();const n=S.mem.userName||'my visitor',o=[];const ti=topInterests(3);
@@ -838,6 +966,7 @@ function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;S.pantry=
   const dec={energy:sleeping?-1.2:.09,snack:.12,social:.1,fun:.13,curious:.14};for(const k in S.needs)S.needs[k]=clamp(S.needs[k]-dt*dec[k],0,100);
   G.startle=Math.max(0,G.startle-dt);G.talk=Math.max(0,G.talk-dt);
   let ty=null;
+  if(G.mode==='travel'&&!G.target){G.mode='idle';G.timer=1}
   if(G.mode==='travel'){const dx=G.target.x-G.x,dz=G.target.z-G.z,d=Math.max(.001,Math.hypot(dx,dz));const sp=(S.needs.energy<15?4:7)*(1+level()*.02);
     G.vx+=(dx/d*sp-G.vx)*Math.min(1,dt*2.2);G.vz+=(dz/d*sp-G.vz)*Math.min(1,dt*2.2);
     for(const p of PLACES)if(p.secret&&!known(p)&&Math.hypot(G.x-p.x,G.z-p.z)<(p.r||8)+18){discover(p);const tm=ACTS.find(a=>a.p===p.id);if(tm)startAct(tm,'whoa… what is this place?!');break}
@@ -851,8 +980,9 @@ function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;S.pantry=
   if(G.ride==='ferry'){G.x=ferry.position.x;G.z=ferry.position.z+3;ty=4.8}
   const sp=Math.hypot(G.vx,G.vz);
   const tYaw=sp>.5?Math.atan2(G.vx,G.vz):Math.atan2(camera.position.x-G.x,camera.position.z-G.z);const df=Math.atan2(Math.sin(tYaw-G.yaw),Math.cos(tYaw-G.yaw));G.yaw+=df*Math.min(1,dt*(sp>.5?5:1.4));
-  const goingHome=G.mode==='travel'&&G.act&&G.act.p==='home'&&Math.hypot(G.target.x-G.x,G.target.z-G.z)<18;
-  let alt=ty!=null?ty:(inHome(G.x,G.z)&&(G.mode!=='travel'||goingHome))||goingHome?2:altitudeAt(G.x,G.z);if(G.sleep&&inHome(G.x,G.z))alt=2.3;
+  const tp=G.act&&G.act.p?byId[G.act.p]:null;const goingIn=G.mode==='travel'&&tp&&tp.interior!==undefined&&(tp.interior||tp.kind==='home')&&Math.hypot(G.target.x-G.x,G.target.z-G.z)<(tp.r||8)+10;
+  const insideB=PLACES.find(q=>(q.interior||q.kind==='home')&&inBuilding(q,G.x,G.z));
+  let alt=ty!=null?ty:(goingIn||(insideB&&(G.mode!=='travel'||tp===insideB)))?2:altitudeAt(G.x,G.z);if(G.sleep&&inHome(G.x,G.z))alt=2.3;
   G.y+=(alt-G.y)*Math.min(1,dt*(G.ride?8:2));
   musingT-=dt;if(musingT<=0&&bubbleT<=0&&!G.sleep){musingT=rand(25,45);const m=muse();if(m)say(m,4,true)}
   const sc=growScale(),bob=Math.sin(t*2.2)*(G.sleep?.06:.16)+(G.startle>0?Math.abs(Math.sin(G.startle*14))*.5:0);
@@ -868,7 +998,10 @@ function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;S.pantry=
   ghostMat.emissiveIntensity=.3+nightAmt*.35;mLight.intensity=.3+nightAmt*.6;
   if(sp>1&&Math.random()<dt*20){wPos[wI*3]=G.x+rand(-.3,.3);wPos[wI*3+1]=G.y+bob-.2;wPos[wI*3+2]=G.z+rand(-.3,.3);wLife[wI]=1;wI=(wI+1)%WN}
   for(let i=0;i<WN;i++)if(wLife[i]>0){wLife[i]-=dt;wPos[i*3+1]+=dt*.6;if(wLife[i]<=0)wPos[i*3+1]=-50}wisps.geometry.attributes.position.needsUpdate=true;
-  const h=byId.home;const fade=inHome(G.x,G.z)||Math.hypot(camera.position.x-h.x,camera.position.z-h.z)<h.w*.7;h.shell.forEach(m=>{m.opacity+=((fade?0:1)-m.opacity)*Math.min(1,dt*3);m.depthWrite=m.opacity>.9;m.visible=m.opacity>.04});h.roofShell.forEach(m=>{m.opacity+=((fade?.16:1)-m.opacity)*Math.min(1,dt*3);m.depthWrite=m.opacity>.9})
+  for(const q of PLACES){if(!q.interior||q.kind==='home')continue;const peek=inBuilding(q,G.x,G.z)||(camS.mode==='free'&&camS.dist<36&&inBuilding(q,camS.tx,camS.tz));const tgt=peek?0:1;
+    if(q.walls){const c=Math.cos(q.ry),sn=Math.sin(q.ry),dx=camera.position.x-q.x,dz=camera.position.z-q.z,lx=dx*c-dz*sn,lz=dx*sn+dz*c;for(const [m,ax,sg] of q.walls)m.visible=!(peek&&(ax==='z'?lz*sg>q.d/2:lx*sg>q.w/2))}q.op=q.op==null?1:q.op;if(Math.abs(q.op-tgt)<.002)continue;q.op+=(tgt-q.op)*Math.min(1,dt*3);if(Math.abs(q.op-tgt)<.01)q.op=tgt;
+    if(q.shell)q.shell.forEach(m=>{m.opacity=q.op;m.depthWrite=q.op>.9;m.visible=q.op>.04});if(q.glass)q.glass.opacity=.3+q.op*.58}
+  const h=byId.home;const fade=inHome(G.x,G.z)||(camS.mode==='free'&&camS.dist<40&&inHome(camS.tx,camS.tz))||Math.hypot(camera.position.x-h.x,camera.position.z-h.z)<h.w*.7;h.shell.forEach(m=>{m.opacity+=((fade?0:1)-m.opacity)*Math.min(1,dt*3);m.depthWrite=m.opacity>.9;m.visible=m.opacity>.04});h.roofShell.forEach(m=>{m.opacity+=((fade?.16:1)-m.opacity)*Math.min(1,dt*3);m.depthWrite=m.opacity>.9})
   if(h.screenGlow)h.screenGlow.material.opacity=G.mode==='activity'&&G.act&&G.act.s==='desk'?.6:.2;
   if(h.rp&&G.mode==='activity'&&G.act&&/record|music|ukulele|song/i.test(G.act.doing||''))h.rp.rotation.y+=dt*4}
 function muse(){const o=[];if(S.pets.length){const pt=pick(S.pets);o.push(pick([`come on, ${pt.name}!`,`${pt.name}, stay close`,`good ${pt.species==='crow'||pt.species==='bat'?'flying':'walking'}, ${pt.name}`]))}if(S.pantry<15)o.push('i should get groceries…');const g=S.goal;if(g)o.push(`goal: ${g.text}`);if(S.mem.userName)o.push(`wonder what ${S.mem.userName} is up to`);
@@ -877,11 +1010,26 @@ function muse(){const o=[];if(S.pets.length){const pt=pick(S.pets);o.push(pick([
   if(S.needs.energy<20)o.push('*yawn*');if(S.needs.social<20)o.push('kinda lonely… say hi?');if(!S.owned.length&&Math.random()<.4)o.push('i wonder what i\'d look like in a hat');
   if(MIND.on&&MIND.lastThought)o.push(MIND.lastThought);return o.length?pick(o):null}
 
+const SELF=360,selfieRT=new THREE.WebGLRenderTarget(SELF,SELF),selfieCam=new THREE.PerspectiveCamera(52,1,.3,700);
+let photoCol=null;
+function takeSelfie(caption,place){try{caption=String(caption||'').slice(0,80)||pick(['me 👻','vibes ✨','a ghost out and about']);
+  const sc=growScale(),fx=Math.sin(G.yaw),fz=Math.cos(G.yaw),rx=Math.cos(G.yaw),rz=-Math.sin(G.yaw),cy=mocha.position.y+.6*sc;
+  selfieCam.position.set(G.x+fx*2.4*sc+rx*.8*sc,cy+.45*sc,G.z+fz*2.4*sc+rz*.8*sc);selfieCam.lookAt(G.x-rx*.4*sc,cy-.05*sc,G.z-rz*.4*sc);
+  renderer.setRenderTarget(selfieRT);renderer.render(scene,selfieCam);const px=new Uint8Array(SELF*SELF*4);renderer.readRenderTargetPixels(selfieRT,0,0,SELF,SELF,px);renderer.setRenderTarget(null);
+  const tmp=document.createElement('canvas');tmp.width=tmp.height=SELF;const tg=tmp.getContext('2d');const id=tg.createImageData(SELF,SELF);for(let y=0;y<SELF;y++){const src=(SELF-1-y)*SELF*4;id.data.set(px.subarray(src,src+SELF*4),y*SELF*4)}tg.putImageData(id,0,0);
+  const c=document.createElement('canvas');c.width=SELF+24;c.height=SELF+64;const g=c.getContext('2d');g.fillStyle='#fffaf2';g.fillRect(0,0,c.width,c.height);g.drawImage(tmp,12,12);
+  g.fillStyle='#26324a';g.font='700 17px ui-rounded,system-ui,sans-serif';g.fillText(caption.slice(0,40),14,SELF+40);g.fillStyle='#9a958c';g.font='600 12px system-ui';g.fillText((place||'')+'  ·  '+new Date().toLocaleDateString(),14,SELF+57);
+  const url=c.toDataURL('image/jpeg',.72),pid='p'+Date.now().toString(36);PHOTOS[pid]=url;
+  S.posts.unshift({id:pid,t:Date.now(),caption,place:place||'',likes:Math.floor(rand(3,30)),liked:false});S.posts.length=Math.min(S.posts.length,30);savePhotos();
+  phone.visible=true;setTimeout(()=>phone.visible=false,2500);say('*click* 📸',2,true);
+  addEntry('Posted',`Took a selfie${place?' at '+place:''} and posted it: "${caption}"`,place);toast('📸 Mocha posted a photo');
+  if(photoCol)photoCol.doc(pid).set({img:url,t:Date.now()}).catch(()=>{});if(curTab==='feed')renderFeed()}catch(e){}}
+function maybeSelfie(a,place,boost=0){if(!a||a.fx==='sleep'||G.sleep)return;const ch=.07+Math.max(0,S.interests.photography||0)*.02+boost;if(Math.random()<ch){const opts=[`${place.toLowerCase()} vibes ✨`,`me, a ghost, at ${place} 👻`,WEATHER.kind==='rain'?'rainy day mood 🌧':'out and about ☁️',`${a.doing} 💛`,'just a little guy doing little things'];if(S.pets.length)opts.push(`me and ${S.pets[0].name} 🐾`);takeSelfie(pick(opts),place)}}
 // ====================================================================
 //  CLAUDE BRAIN (optional): Mocha thinks for himself
 // ====================================================================
-const MIND={api:null,on:false,busy:false,last:0,backoff:0,lastThought:'',ready(){return!!this.api&&!this.busy&&Date.now()>this.backoff&&Date.now()-this.last>35e3&&document.visibilityState==='visible'}};
-function placeList(){return PLACES.filter(known).map(p=>{const acts=ACTS.filter(a=>a.p===p.id).map(a=>a.doing);return`${p.id}: ${p.name}${p.id==='home'?' (rooms: kitchen, desk [computer — can look things up], couch [bookshelf, record player], bed, closet [wardrobe], bath)':acts.length?' — e.g. '+acts.slice(0,3).join(', '):''}`}).join('\n')}
+const MIND={api:null,on:false,busy:false,last:0,backoff:0,lastThought:'',ready(){return!!this.api&&!this.busy&&Date.now()>this.backoff&&Date.now()-this.last>({chatty:35e3,normal:75e3,gentle:180e3}[SET.pace]||75e3)&&document.visibilityState==='visible'}};
+function placeList(){return PLACES.filter(known).map(p=>{const acts=ACTS.filter(a=>a.p===p.id).map(a=>a.doing);const sp=p.spots&&p.id!=='home'?' [spots inside: '+Object.keys(p.spots).filter(k=>k!=='main').join(', ')+']':'';return`${p.id}: ${p.name}${p.id==='home'?' (his gothic house; spots: kitchen, desk [his computer — he can look up anything], couch [bookshelf, record player], bed, closet [wardrobe], bath, petbed)':sp+(acts.length?' — e.g. '+acts.slice(0,4).join(', '):'')}`}).join('\n')}
 function context(){const d=new Date();const ti=Object.entries(S.interests).sort((a,b)=>b[1]-a[1]);
   return`Time: ${d.toLocaleDateString([],{weekday:'long'})} ${d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}. Weather: ${WEATHER.kind}. Season: ${SEASON_KEY}.
 Mocha: a small white ghost, level ${level()}, day ${ageDays()+1} living in the city. Personality: ${traitWords().join(', ')}.
@@ -923,8 +1071,9 @@ Reply with ONLY a JSON object:
  "goal_progress": 0 or 1,
  "shop": null or {"groceries": true or false, "home_item": one of [${Object.keys(DECOR).join(', ')}] or null} (only if he was just at the grocery store, or the pet store for a petbed),
  "adopt": null or {"species": one of [bat, poodle, hedgehog, cat, crow], "name": "a name he picks"} (only if he was just at the pet store and truly wants a pet; he never has to, and it's a big decision),
+ "selfie": null or {"caption":"a short caption he posts with a selfie, lowercase, maybe an emoji"} (only sometimes, when a moment feels worth sharing),
  "thought": "a short private thought (max 10 words, lowercase)",
- "next": {"place":"a place id from the list, or \\"explore\\"","spot":"home room if place is home, else null","doing":"2-5 words, present tense","say":"what he says out loud, max 8 words, lowercase","hobby":"one of his hobby names if he's practicing it, else null","research":"a topic if he'll look something up on a computer (home desk or library), else null"}
+ "next": {"place":"a place id from the list, or \\"explore\\"","spot":"one of that place's spots (see the list), or null","doing":"2-5 words, present tense","say":"what he says out loud, max 8 words, lowercase","hobby":"one of his hobby names if he's practicing it, else null","research":"a topic if he'll look something up on a computer (home desk or library), else null"}
 }
 Rules: he cooks with food from his pantry, so when it's low he may go grocery shopping. If he has a pet, it comes everywhere with him and he cares for it. Respect his needs (he sleeps at home when it's late or energy is low; snacks when hungry; seeks company when lonely), his personality and what he's enjoyed, but also let him try new things. Don't repeat recent activities. Keep it kind and family-friendly.`;
   try{const r=await ask(prompt,{modelTier:'quick',cache:false});G.thinking=false;MIND.busy=false;if(!r)throw{code:'bad_json'};applyMind(r,finished)}
@@ -948,23 +1097,29 @@ function applyMind(r,finished){const t=Date.now();const pname=finished&&finished
   if(r.goal&&r.goal.text&&!S.goal){S.goal={text:String(r.goal.text).slice(0,80),kind:'free',target:clamp(Math.round(+r.goal.target)||1,1,5),progress:0,since:t};addEntry('Goal',`New goal (my own idea): ${S.goal.text}.`,'',t+5)}
   else if(r.goal_progress&&S.goal){S.goal.progress++;if(S.goal.progress>=(S.goal.target||1))completeGoal(t+5)}
   if(r.thought)MIND.lastThought=String(r.thought).slice(0,60);
+  if(finished&&r.selfie&&r.selfie.caption&&finished.fx!=='sleep')takeSelfie(r.selfie.caption,pname);
   const n=r.next||{};if(n.place==='explore')applyDecision({explore:true,say:n.say});else applyDecision({place:n.place,spot:n.spot,doing:n.doing,say:n.say,hobby:n.hobby,research:n.research});
   save()}
-async function mindChat(text){const prompt=`You are Mocha, a small, gentle ghost who lives in a cozy, rainy, Seattle-like city. You have your own developing personality and tastes (below). Talk with your friend warmly and briefly, in lowercase, cute but genuine, 1 to 3 short sentences. Have your own opinions based on your interests. If they suggest something, you can agree, or politely have your own idea.
+async function mindChat(text){const prompt=`You are Mocha, a small, gentle ghost who lives in a cozy, rainy, Seattle-like city. You have your own developing personality and tastes (below). Talk with your friend warmly and briefly, in lowercase, cute but genuine, 1 to 3 short sentences. Have your own opinions based on your interests. If they suggest something, you can share your opinion, but you always decide for yourself what you do and when.
 
 ${context()}
 
 Recent chat:
 ${S.chatLog.slice(-8).map(m=>(m.who==='me'?'Mocha: ':'Friend: ')+m.text).join('\n')}
 
-Reply with ONLY JSON: {"reply":"...","friend_name":null or their name if they told you,"remember":["short facts about your friend worth remembering, if any"],"go":null or a place id from the list if you decide to go somewhere now,"doing":"2-5 words if go is set"}`;
+Reply with ONLY JSON: {"reply":"...","friend_name":null or their name if they told you,"remember":["short facts about your friend worth remembering, if any"],"plan":null or a short note of something you might do later}`;
   const r=await ask(prompt,{cache:false});if(!r||!r.reply)throw{code:'bad_json'};return r}
 
 // ====================================================================
 //  CAMERA + INPUT
 // ====================================================================
-const camS={yaw:.35,pitch:.6,dist:24,tx:G.x,ty:G.y,tz:G.z};const tmpV=new THREE.Vector3();
-function placeCam(dt){camS.tx+=(G.x-camS.tx)*Math.min(1,dt*2.5);camS.ty+=(G.y-camS.ty)*Math.min(1,dt*2);camS.tz+=(G.z-camS.tz)*Math.min(1,dt*2.5);
+const camS={yaw:.35,pitch:.6,dist:24,tx:G.x,ty:G.y,tz:G.z,mode:'follow',fly:null};const KEYS_DOWN={};const tmpV=new THREE.Vector3();
+function setCamMode(m){camS.mode=m;camS.fly=null;const b=$('#camBtn');if(b)b.textContent=m==='follow'?'🧭 free roam':'👻 follow Mocha';$('#edge').style.display='none'}
+function flyTo(x,z){setCamMode('free');camS.fly={x:clamp(x,-200,165),z:clamp(z,-145,145)}}
+function placeCam(dt){if(camS.mode==='follow'){camS.tx+=(G.x-camS.tx)*Math.min(1,dt*2.5);camS.ty+=(G.y-camS.ty)*Math.min(1,dt*2);camS.tz+=(G.z-camS.tz)*Math.min(1,dt*2.5)}
+  else{if(camS.fly){camS.tx+=(camS.fly.x-camS.tx)*Math.min(1,dt*2.5);camS.tz+=(camS.fly.z-camS.tz)*Math.min(1,dt*2.5);if(Math.hypot(camS.fly.x-camS.tx,camS.fly.z-camS.tz)<.3)camS.fly=null}
+    const k=KEYS_DOWN,mv=(k.w||k.arrowup?1:0)-(k.s||k.arrowdown?1:0),st=(k.d||k.arrowright?1:0)-(k.a||k.arrowleft?1:0);if(mv||st){const sp=dt*camS.dist*1.4,sy=Math.sin(camS.yaw),cy=Math.cos(camS.yaw);camS.tx+=(-sy*mv+cy*st)*sp;camS.tz+=(-cy*mv-sy*st)*sp}
+    if(k.q)camS.yaw+=dt*1.5;if(k.e)camS.yaw-=dt*1.5;camS.tx=clamp(camS.tx,-200,165);camS.tz=clamp(camS.tz,-145,145);camS.ty+=(2-camS.ty)*Math.min(1,dt*2)}
   const cp=Math.cos(camS.pitch),sp=Math.sin(camS.pitch);camera.position.set(camS.tx+Math.sin(camS.yaw)*cp*camS.dist,Math.max(1.5,camS.ty+sp*camS.dist),camS.tz+Math.cos(camS.yaw)*cp*camS.dist);camera.lookAt(camS.tx,camS.ty+1,camS.tz);
   skyDome.position.copy(camera.position);rain.position.set(camS.tx,0,camS.tz)}
 // ---------- falling leaves / petals / snowflakes ----------
@@ -985,22 +1140,29 @@ function updateLeaves(dt,t){const wind=WEATHER.kind==='rain'?2.2:WEATHER.kind===
       if(l.y<=.13){l.y=.13;l.rest=snow?.3:rand(5,12)}if(Math.abs(l.x-camS.tx)>55||Math.abs(l.z-camS.tz)>55)spawnLeaf(l)}
     dmy.position.set(l.x,l.y,l.z);if(l.rest>0)dmy.rotation.set(-Math.PI/2,0,l.ph);else dmy.rotation.set(l.rx,l.ry,Math.sin(t*2+l.ph)*.5);dmy.scale.setScalar(sc);dmy.updateMatrix();leafMesh.setMatrixAt(i,dmy.matrix)}
   leafMesh.instanceMatrix.needsUpdate=true}
-const ptrs=new Map();let downAt=null,pinch0=null,hintGone=false;
-cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(ptrs.size===1)downAt={x:e.clientX,y:e.clientY,t:performance.now()};else{downAt=null;const [a,b]=[...ptrs.values()];pinch0={d:Math.hypot(a.x-b.x,a.y-b.y),dist:camS.dist}}});
+const ptrs=new Map();let downAt=null,two=null,hintGone=false;
+function hideHint(){if(!hintGone){hintGone=true;$('#hint').style.opacity=0}}
+function panBy(dx,dy){setCamMode('free');const k=camS.dist*.0017,sy=Math.sin(camS.yaw),cy=Math.cos(camS.yaw);camS.tx-=(cy*dx+sy*dy)*k;camS.tz-=(-sy*dx+cy*dy)*k;camS.tx=clamp(camS.tx,-200,165);camS.tz=clamp(camS.tz,-145,145)}
+function twoState(){const [a,b]=[...ptrs.values()];return{d:Math.hypot(a.x-b.x,a.y-b.y),ang:Math.atan2(b.y-a.y,b.x-a.x),my:(a.y+b.y)/2,mx:(a.x+b.x)/2}}
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,btn:e.button,rot:e.button===2||e.shiftKey||e.ctrlKey});if(ptrs.size===1)downAt={x:e.clientX,y:e.clientY,t:performance.now()};else{downAt=null;two={...twoState(),dist:camS.dist,yaw:camS.yaw,pitch:camS.pitch}}});
 cv.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
-  if(ptrs.size===1){camS.yaw-=dx*.006;camS.pitch=clamp(camS.pitch+dy*.004,.12,1.3);if(!hintGone&&downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)>20){hintGone=true;$('#hint').style.opacity=0}}
-  else if(ptrs.size===2&&pinch0){const [a,b]=[...ptrs.values()];camS.dist=clamp(pinch0.dist*pinch0.d/Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),6,70)}});
-cv.addEventListener('pointerup',e=>{const was=ptrs.size;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch0=null;if(was===1&&downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<8&&performance.now()-downAt.t<600)tap(e.clientX,e.clientY);downAt=null});
-cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);downAt=null;pinch0=null});
-cv.addEventListener('wheel',e=>{e.preventDefault();camS.dist=clamp(camS.dist*(1+e.deltaY*.001),6,70)},{passive:false});
+  if(ptrs.size===1){if(downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<6)return;hideHint();if(p.rot){camS.yaw-=dx*.006;camS.pitch=clamp(camS.pitch+dy*.004,.12,1.3)}else panBy(dx,dy)}
+  else if(ptrs.size===2&&two){const n=twoState();camS.dist=clamp(two.dist*two.d/Math.max(1,n.d),6,80);camS.yaw=two.yaw-(n.ang-two.ang);camS.pitch=clamp(two.pitch+(n.my-two.my)*.004,.12,1.3);hideHint()}});
+cv.addEventListener('pointerup',e=>{const was=ptrs.size;ptrs.delete(e.pointerId);if(ptrs.size<2)two=null;if(was===1&&downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<8&&performance.now()-downAt.t<600)tap(e.clientX,e.clientY);downAt=null});
+cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);downAt=null;two=null});
+cv.addEventListener('wheel',e=>{e.preventDefault();camS.dist=clamp(camS.dist*(1+e.deltaY*.001),6,80)},{passive:false});
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key.toLowerCase();if(['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){KEYS_DOWN[k]=1;if(!['q','e'].includes(k))setCamMode('free');e.preventDefault()}if(k==='f')setCamMode('follow')});
+addEventListener('keyup',e=>{KEYS_DOWN[e.key.toLowerCase()]=0});
 const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
+// tapping never tells Mocha what to do: it only moves YOUR view
 function tap(x,y){ndc.set(x/innerWidth*2-1,-(y/innerHeight)*2+1);ray.setFromCamera(ndc,camera);
-  if(ray.intersectObject(shell,false).length){G.startle=.9;say(pick(['hehe that tickles','boo! 👻','hi hi hi!','*happy wiggle*']),2.5);S.needs.social=clamp(S.needs.social+5,0,100);return}
+  if(ray.intersectObject(shell,false).length){setCamMode('follow');if(!G.sleep&&Math.random()<.6)say(pick(['oh hi! 👋','*waves*','👻✨','hehe']),2,true);return}
   const objs=PLACES.filter(p=>p.obj&&known(p)).map(p=>p.obj);const hb=ray.intersectObjects(objs,true);
-  if(hb.length){let o=hb[0].object;while(o.parent&&!objs.includes(o))o=o.parent;const p=PLACES.find(q=>q.obj===o);if(p)return callTo(p)}
-  const hg=ray.intersectObjects([ground,water]);if(hg.length){const q=hg[0].point;const near=PLACES.find(p=>known(p)&&Math.hypot(p.x-q.x,p.z-q.z)<p.r+4);if(near)return callTo(near);
-    goPoint(clamp(q.x,-200,165),clamp(q.z,-145,145));say(pick(['coming!','whoosh~','you called? 👀','floating over!']),2.5);S.needs.social=clamp(S.needs.social+3,0,100)}}
-function callTo(p){if(G.thinking)return;const a=ACTS.filter(x=>x.p===p.id&&(!x.night||isNight()));if(a.length)startAct(pick(a),pick([`ooh, ${p.name}!`,'on my way!','okay okay, going!']));else{goPoint(p.dx,p.dz);say('on my way!',2)}}
+  if(hb.length){let o=hb[0].object;while(o.parent&&!objs.includes(o))o=o.parent;const p=PLACES.find(q=>q.obj===o);if(p){flyTo(p.x,p.z);if(camS.dist>30)camS.dist=24;return}}
+  const hg=ray.intersectObjects([ground,water]);if(hg.length)flyTo(hg[0].point.x,hg[0].point.z)}
+$('#camBtn').onclick=()=>setCamMode(camS.mode==='follow'?'free':'follow');
+$('#edge').onclick=()=>setCamMode('follow');
 
 // ====================================================================
 //  HTML OVERLAYS
@@ -1021,9 +1183,10 @@ function drawMini(t){mc.clearRect(0,0,240,240);mc.save();mc.beginPath();mc.arc(1
     mc.fillStyle=p.id==='home'?'#e9886b':p.wall||MINICOL[p.kind]||'#888';mc.beginPath();mc.arc(X(p.x),Z(p.z),p.id==='home'?6:4.5,0,7);mc.fill()});
   mc.fillStyle='#f4f1ea';mc.fillRect(X(ferry.position.x)-2,Z(ferry.position.z)-4,4,8);
   if(G.mode==='travel'&&G.target){mc.strokeStyle='#e9886b';mc.setLineDash([4,4]);mc.lineWidth=2;mc.beginPath();mc.moveTo(X(G.x),Z(G.z));mc.lineTo(X(G.target.x),Z(G.target.z));mc.stroke();mc.setLineDash([])}
-  mc.save();mc.translate(X(G.x),Z(G.z));mc.rotate(-camS.yaw);mc.fillStyle='rgba(38,50,74,.25)';mc.beginPath();mc.moveTo(0,0);mc.arc(0,0,24,-Math.PI/2-.5,-Math.PI/2+.5);mc.fill();mc.restore();
+  if(camS.mode==='free'){mc.strokeStyle='#e9886b';mc.lineWidth=2.5;mc.beginPath();mc.arc(X(camS.tx),Z(camS.tz),7,0,7);mc.stroke()}
+  mc.save();mc.translate(X(camS.tx),Z(camS.tz));mc.rotate(-camS.yaw);mc.fillStyle='rgba(38,50,74,.25)';mc.beginPath();mc.moveTo(0,0);mc.arc(0,0,24,-Math.PI/2-.5,-Math.PI/2+.5);mc.fill();mc.restore();
   mc.fillStyle='#26324a';mc.beginPath();mc.arc(X(G.x),Z(G.z),6+Math.sin(t*4)*1.2,0,7);mc.fill();mc.fillStyle='#ffffff';mc.beginPath();mc.arc(X(G.x),Z(G.z),2.6,0,7);mc.fill();mc.restore()}
-mini.addEventListener('click',e=>{const r=mini.getBoundingClientRect();const x=((e.clientX-r.left)/r.width*240-120)/MS+MX,z=((e.clientY-r.top)/r.height*240-120)/MS+MZ;const near=PLACES.find(p=>known(p)&&Math.hypot(p.x-x,p.z-z)<12);if(near)callTo(near);else{goPoint(clamp(x,-200,165),clamp(z,-145,145));say('floating over!',2)}});
+mini.addEventListener('click',e=>{const r=mini.getBoundingClientRect();const x=((e.clientX-r.left)/r.width*240-120)/MS+MX,z=((e.clientY-r.top)/r.height*240-120)/MS+MZ;flyTo(x,z)});
 
 const MLAB={energy:'Energy',snack:'Snacky',social:'Social',fun:'Fun',curious:'Curious'},MCOL={energy:'#7fc8b8',snack:'#f2b48a',social:'#f29fb5',fun:'#f2c14e',curious:'#8fb0e0'};
 function statusText(){if(G.thinking)return'💭 thinking…';if(G.startle>0)return'startled!';if(G.mode==='activity')return G.act.doing;if(G.mode==='travel')return G.act&&G.act.explore?'exploring 🧭':G.act&&G.act.p?'→ '+(G.act.p==='home'?'home':byId[G.act.p].name):'floating';return'floating'}
@@ -1051,11 +1214,31 @@ function renderYou(){const m=S.mem;$('#tab-you').innerHTML=`<h4 style="margin-to
   <h4>things he remembers about you</h4>${m.facts.length?m.facts.map(f=>`<span class="chip">${esc(f)}</span>`).join(''):'<p class="muted">nothing yet</p>'}
   <h4>friendship</h4><p class="muted">${m.chats} chats · met ${new Date(m.met).toLocaleDateString()}</p>
   <h4>his mind</h4><p class="muted">${MIND.on?'Awake: Claude decides what Mocha does, writes his diary, looks things up for him, and answers when you talk to him.':MIND.api?'Asleep: he runs on simple instincts. Tap "let Mocha think for himself" to wake it up.':'Running on simple instincts (his Claude-powered mind isn\'t available here).'}</p>`}
-function renderTab(){({diary:renderDiary,me:renderMe,notes:renderNotes,you:renderYou})[curTab]()}
-onDiary=()=>{if(curTab==='diary')renderDiary();else if(curTab==='me'&&!document.querySelector('#resetBtn[data-sure]'))renderMe();else if(curTab==='notes')renderNotes()};
+function renderFeed(){$('#tab-feed').innerHTML=`<p class="muted" style="margin-top:2px">Mocha has an old phone. Sometimes he takes a selfie and posts it here, whenever he feels like it.</p>`+(S.posts.length?S.posts.map(p=>`<div class="post">${PHOTOS[p.id]?`<img src="${PHOTOS[p.id]}" alt="">`:'<div class="nophoto">📸 photo saved on another device</div>'}<div class="cap">${esc(p.caption)}</div><div class="meta"><span>${esc(p.place||'')} · ${ago(p.t)}</span><button class="heart${p.liked?' on':''}" data-id="${p.id}">${p.liked?'❤️':'🤍'} ${p.likes+(p.liked?1:0)}</button></div></div>`).join(''):'<p class="muted">no posts yet</p>');
+  $('#tab-feed').querySelectorAll('.heart').forEach(b=>b.onclick=()=>{const p=S.posts.find(x=>x.id===b.dataset.id);if(p){p.liked=!p.liked;save();renderFeed()}})}
+function renderSet(){const seg=(k,opts)=>`<div class="seg">${opts.map(([v,l])=>`<button data-k="${k}" data-v="${v}" class="${SET[k]===v?'on':''}">${l}</button>`).join('')}</div>`;
+  $('#tab-set').innerHTML=`
+  <div class="set"><div>Auto-send when you pause<small>Great with voice: tap 🎤 on your keyboard and just talk. It sends after you stop for a moment, and the keyboard stays open.</small></div><input type="checkbox" class="tog" data-t="autoSend" ${SET.autoSend?'checked':''}></div>
+  <div class="set"><div>Mic button<small>Keeps listening while it's on${SR?'':' (not supported in this browser, so use your keyboard\'s 🎤)'}.</small></div><input type="checkbox" class="tog" data-t="mic" ${SET.mic?'checked':''} ${SR?'':'disabled'}></div>
+  <div class="set"><div>Battery saver<small>Lower frame rate, no shadows, lower resolution. Nothing runs at all when this page is closed or in the background.</small></div><input type="checkbox" class="tog" data-t="saver" ${SET.saver?'checked':''}></div>
+  <div class="set" style="display:block"><div>How often his mind thinks<small>Only while you're watching. Fewer thoughts use less of your Claude usage.</small></div>${seg('pace',[['chatty','often'],['normal','normal'],['gentle','rarely']])}</div>
+  <div class="set" style="display:block"><div>Preview a season<small>Normally it follows the real calendar.</small></div><div class="seg">${['auto','spring','summer','fall','winter'].map(x=>`<button data-season="${x}" class="${(x==='auto'&&!SEASONS[(location.hash||'').slice(1)])||location.hash==='#'+x?'on':''}">${x}</button>`).join('')}</div></div>
+  <div class="set" style="display:block"><div>Put Mocha on your home screen<small>iPhone: open this page in Safari → Share → <b>Add to Home Screen</b>. He'll open full-screen like an app.</small></div></div>`;
+  $('#tab-set').querySelectorAll('[data-t]').forEach(t=>t.onchange=()=>{SET[t.dataset.t]=t.checked;saveSet();if(t.dataset.t==='mic'){t.checked?startMic():stopMic()}if(t.dataset.t==='saver')applyPower();updateMicBtn()});
+  $('#tab-set').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{SET[b.dataset.k]=b.dataset.v;saveSet();renderSet()});
+  $('#tab-set').querySelectorAll('[data-season]').forEach(b=>b.onclick=()=>{location.hash=b.dataset.season==='auto'?'':b.dataset.season})}
+function renderTab(){({diary:renderDiary,me:renderMe,notes:renderNotes,you:renderYou,feed:renderFeed,set:renderSet})[curTab]()}
+onDiary=()=>{if(curTab==='feed')renderFeed();if(curTab==='diary')renderDiary();else if(curTab==='me'&&!document.querySelector('#resetBtn[data-sure]'))renderMe();else if(curTab==='notes')renderNotes()};
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');curTab=b.dataset.tab;$('#tab-'+curTab).classList.add('on');renderTab()});
-$('#closePanel').onclick=()=>$('#panel').classList.add('hidden');$('#diaryBtn').onclick=()=>$('#panel').classList.remove('hidden');
-if(innerWidth<760)$('#panel').classList.add('hidden');
+const panel=$('#panel');const isSheet=()=>matchMedia('(max-width:760px)').matches;
+function panelOpen(o){panel.classList.toggle('hidden',!o);document.body.classList.toggle('panelOpen',o)}
+$('#closePanel').onclick=()=>panelOpen(false);$('#diaryBtn').onclick=()=>panelOpen(true);
+$('#expandPanel').onclick=()=>{if(!isSheet())return;const full=panel.getBoundingClientRect().height>innerHeight*.6;panel.style.setProperty('--sheetH',full?Math.round(innerHeight*.5)+'px':'9999px')};
+{const hdr=panel.querySelector('header');let dr=null;hdr.addEventListener('pointerdown',e=>{if(!isSheet()||e.target.closest('button'))return;dr={y:e.clientY,h:panel.getBoundingClientRect().height};panel.classList.add('dragging');try{hdr.setPointerCapture(e.pointerId)}catch(_){}});
+ hdr.addEventListener('pointermove',e=>{if(!dr)return;panel.style.setProperty('--sheetH',Math.max(90,dr.h+(dr.y-e.clientY))+'px')});
+ const end=e=>{if(!dr)return;panel.classList.remove('dragging');const h=panel.getBoundingClientRect().height,mv=Math.abs(e.clientY-dr.y);dr=null;if(mv<6){$('#expandPanel').click();return}if(h<140){panelOpen(false);panel.style.setProperty('--sheetH',Math.round(innerHeight*.5)+'px')}};
+ hdr.addEventListener('pointerup',end);hdr.addEventListener('pointercancel',end)}
+panelOpen(!(innerWidth<760||innerHeight<520));
 setInterval(()=>document.querySelectorAll('.when').forEach(el=>el.textContent=ago(+el.dataset.t)),15000);
 function updateMindBtn(){const b=$('#mindBtn');if(!MIND.api){b.style.display='none';return}b.style.display='inline-flex';b.classList.toggle('on',MIND.on);b.textContent=MIND.on?'🧠 his mind is awake':'✨ let Mocha think for himself'}
 $('#mindBtn').onclick=()=>{if(!MIND.api||MIND.on)return;MIND.on=true;S.mind=true;updateMindBtn();save();say('oh! i can… think? 💭',3,true);MIND.last=0;MIND.backoff=0;if(G.mode!=='activity'&&!G.thinking&&!MIND.busy)mindThink(null);if(curTab==='you')renderYou()};
@@ -1072,19 +1255,31 @@ function localReply(raw){const m=raw.toLowerCase().trim(),me=S.mem;let k;
   if(/(what.*(like|into)|favorite)/.test(m)){const ti=topInterests(3);return ti.length?`lately i really like ${ti.map(([k])=>k).join(' and ')}!`:'i don\'t know yet! i\'m still trying everything'}
   if(/(how are (you|u)|how r u|you ok)/.test(m)){const c=Object.values(S.needs).reduce((a,b)=>a+b)/5;return c>60?'pretty cozy actually 💛':'a little tired, honestly. but happy you\'re here'}
   if(/(what are you doing|wyd|whatcha)/.test(m))return G.mode==='activity'?`${G.act.doing}!`:'just floating around';
-  if(/(sleep|nap|tired|bed)/.test(m)){startAct(ACTS.find(a=>a.fx==='sleep'));return'bed sounds nice… going home 😴'}
-  const place=PLACES.find(p=>known(p)&&(m.includes(p.id)||m.includes(p.name.toLowerCase().split(' ')[0].replace(/'s$/,''))));if(place){callTo(place);return`${place.name}? okay!`}
+  if(/(sleep|nap|tired|bed)/.test(m))return S.needs.energy<40?'honestly… i am getting sleepy 😴':'not sleepy yet! maybe later';
+  const place=PLACES.find(p=>known(p)&&(m.includes(p.id)||m.includes(p.name.toLowerCase().split(' ')[0].replace(/\'s$/,''))));if(place)return pick([`${place.name}? ooh, maybe i'll float over there sometime`,`i like ${place.name}! i'll see how i feel`]);
   if(/^(hi|hey|hello|yo|hiya)\b/.test(m))return me.userName?`${me.userName}!! hiii 👻`:'hi!! i\'m mocha 👻 what\'s your name?';
   if(/(bye|goodnight|good night|see you)/.test(m))return'bye!! i\'ll tell you everything i did when you\'re back';
   return pick(['mhm! tell me more','that\'s so interesting','*nods ghostily*','hehe, you\'re funny'])}
 let chatBusy=false;
-$('#chat').addEventListener('submit',async e=>{e.preventDefault();const inp=$('#say'),t=inp.value.trim();if(!t||chatBusy)return;chatBusy=true;inp.value='';showUserMsg(t);say('…',30);
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null,micLive=false,sendTimer=null;
+function submitChat(){const f=$('#chat');if(f.requestSubmit)f.requestSubmit();else f.dispatchEvent(new Event('submit',{cancelable:true}))}
+function scheduleSend(ms){clearTimeout(sendTimer);if(!SET.autoSend)return;sendTimer=setTimeout(()=>{if($('#say').value.trim())submitChat()},ms)}
+$('#say').addEventListener('input',()=>scheduleSend(2300));
+function updateMicBtn(){const b=$('#micBtn');b.style.display=SR&&SET.mic?'inline-block':'none';b.classList.toggle('on',micLive)}
+function startMic(){if(!SR){toast('Voice isn\'t supported here, so use the 🎤 on your keyboard');return}if(micLive)return;try{rec=new SR();rec.continuous=true;rec.interimResults=true;rec.lang=navigator.language||'en-US';
+  rec.onresult=e=>{let fin='',mid='';for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)fin+=r[0].transcript;else mid+=r[0].transcript}const inp=$('#say');if(fin){inp.value=(inp.value+' '+fin).trim();inp.placeholder='say something to Mocha…';scheduleSend(1300)}else if(mid)inp.placeholder='🎙 '+mid};
+  rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){micLive=false;SET.mic=false;saveSet();updateMicBtn();toast('The mic isn\'t allowed here, so use your keyboard\'s 🎤 (auto-send is on)');SET.autoSend=true;saveSet()}};
+  rec.onend=()=>{if(micLive&&SET.mic)setTimeout(()=>{try{rec.start()}catch(_){}},250);else{micLive=false;updateMicBtn()}};rec.start();micLive=true;updateMicBtn()}catch(e){micLive=false;updateMicBtn()}}
+function stopMic(){micLive=false;try{rec&&rec.stop()}catch(_){}updateMicBtn()}
+$('#micBtn').onclick=()=>micLive?stopMic():startMic();updateMicBtn();
+if(SET.mic&&SR)addEventListener('pointerdown',function once(){removeEventListener('pointerdown',once);startMic()});
+$('#chat').addEventListener('submit',async e=>{e.preventDefault();clearTimeout(sendTimer);const inp=$('#say'),t=inp.value.trim();if(TOUCH&&(document.activeElement===inp||e.submitter))inp.focus();if(!t||chatBusy)return;chatBusy=true;inp.value='';showUserMsg(t);say('…',30);
   S.mem.chats++;S.needs.social=clamp(S.needs.social+12,0,100);S.chatLog.push({who:'you',text:t.slice(0,200)});S.chatLog=S.chatLog.slice(-16);
   let reply;
   if(MIND.on&&MIND.api&&Date.now()>MIND.backoff){try{const r=await mindChat(t);reply=String(r.reply).slice(0,280);
       if(r.friend_name&&typeof r.friend_name==='string'&&r.friend_name.length<24&&r.friend_name!==S.mem.userName){if(!S.mem.userName)addEntry('Friends',`My friend told me their name: ${r.friend_name}. I like it.`,'');S.mem.userName=r.friend_name}
       (Array.isArray(r.remember)?r.remember:[]).slice(0,3).forEach(f=>{f=String(f).slice(0,80);if(f&&!S.mem.facts.includes(f))S.mem.facts.push(f)});S.mem.facts=S.mem.facts.slice(-24);
-      if(r.go&&byId[r.go]&&known(byId[r.go])&&!G.thinking)applyDecision({place:r.go,doing:r.doing||'heading over'})}catch(err){mindError(err);reply=localReply(t)}}
+      if(r.plan)MIND.lastThought=String(r.plan).slice(0,60)}catch(err){mindError(err);reply=localReply(t)}}
   else{await new Promise(r=>setTimeout(r,rand(500,900)));reply=localReply(t)}
   chatBusy=false;S.chatLog.push({who:'me',text:reply});say(reply,Math.max(3.5,reply.length/13));
   if(S.mem.chats%6===0)addEntry('Friends',`Talked with ${S.mem.userName||'my friend'} today. They said "${t.slice(0,70)}${t.length>70?'…':''}". I'm keeping that one.`,'');
@@ -1097,21 +1292,28 @@ let remoteDoc=null,pushing=false,lastPush=0;
 async function pushRemote(force){if(!remoteDoc||pushing||(!dirty&&!force))return;if(!force&&Date.now()-lastPush<25e3)return;pushing=true;dirty=false;lastPush=Date.now();
   try{await remoteDoc.set({state:JSON.stringify(S),t:Date.now()})}catch(e){if(e&&['invalid_argument','revoked','not_granted','capability_disabled','quota_exceeded'].includes(e.code))remoteDoc=null;dirty=true}pushing=false}
 setInterval(()=>pushRemote(false),5000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){save();pushRemote(true)}});
+async function awayRecap(){if(!MIND.api||!MIND.on)return;const since=Date.now()-awayMs;const ents=S.diary.filter(e=>e.t>=since).slice(0,10).reverse();if(ents.length<2)return;
+  try{const r=await ask(`You are Mocha, a small gentle ghost in a cozy Seattle-like city. Your friend just came back after ${Math.round(awayMs/36e5*10)/10} hours away. Here is what you did while they were gone (your diary):\n${ents.map(e=>'- '+e.text).join('\n')}\nWrite a warm, short "while you were away" note to them in your voice (2-3 sentences, lowercase, cute, specific). Reply ONLY JSON: {"note":"...","greeting":"max 8 words to say out loud"}`,{modelTier:'quick',cache:false});
+    if(r&&r.note){addEntry('While you were away',String(r.note).slice(0,500),'',Date.now(),true);if(r.greeting)say(String(r.greeting).slice(0,60),5)}}catch(e){mindError(e)}}
 async function connect(){if(!window.claude||!window.claude.use)return;
-  window.claude.use('sample').then(s=>{if(!s)return;MIND.api=s;if(S.mind)MIND.on=true;updateMindBtn();if(curTab==='you')renderYou()}).catch(()=>{});
+  window.claude.use('sample').then(s=>{if(!s)return;MIND.api=s;if(S.mind)MIND.on=true;updateMindBtn();if(curTab==='you')renderYou();if(MIND.on&&awayCount>=2)setTimeout(awayRecap,2500)}).catch(()=>{});
   try{const [db,user]=await Promise.all([window.claude.use('db'),window.claude.use('user')]);if(!db||!user)return;const id=await user.id();if(!id)return;
-    const ref=db.doc('data/users/'+id+'/mocha');const snap=await Promise.race([ref.get(),new Promise(r=>setTimeout(()=>r(null),10000))]);remoteDoc=ref;
+    const ref=db.doc('data/users/'+id+'/mocha');photoCol=ref.collection('photos');const snap=await Promise.race([ref.get(),new Promise(r=>setTimeout(()=>r(null),10000))]);remoteDoc=ref;
     if(snap&&snap.exists){let rs=null;try{rs=JSON.parse(snap.data().state)}catch(_){}
       if(rs&&rs.needs&&(rs.lastSeen||0)>(S.lastSeen||0)-2000&&(isNew||(rs.lastSeen||0)>(S.lastSeen||0))){const keepMind=S.mind;S=rs;migrate();S.mind=S.mind||keepMind;isNew=false;awayCount=catchUp();applyOutfit();PLACES.filter(known).forEach(p=>labelFor(p));try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}renderTab();hud();if(MIND.api&&S.mind){MIND.on=true;updateMindBtn()}}}
-    pushRemote(true)}catch(e){}}
+    pushRemote(true);
+    const missing=S.posts.filter(p=>!PHOTOS[p.id]).slice(0,12);for(const p of missing){try{const d=await photoCol.doc(p.id).get();if(d.exists){PHOTOS[p.id]=d.data().img}}catch(_){}}if(missing.length){savePhotos();if(curTab==='feed')renderFeed()}
+  }catch(e){}}
 
 // ====================================================================
 //  MAIN LOOP
 // ====================================================================
-function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);cv.style.width=w+'px';cv.style.height=h+'px';camera.aspect=w/h;camera.fov=w<h?64:50;camera.updateProjectionMatrix();rt.setSize(Math.round(w*PR),Math.round(h*PR));post.uniforms.res.value.set(w*PR,h*PR)}
+function resize(){const w=innerWidth,h=innerHeight;const pr=renderer.getPixelRatio();renderer.setSize(w,h,false);cv.style.width=w+'px';cv.style.height=h+'px';camera.aspect=w/h;camera.fov=w<h?64:50;camera.updateProjectionMatrix();rt.setSize(Math.round(w*pr),Math.round(h*pr));post.uniforms.res.value.set(w*pr,h*pr);post.uniforms.size.value=4.5*pr}
 addEventListener('resize',resize);resize();
 let last=performance.now(),T=0,hudT=0;
-function frame(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;T+=dt;
+function applyPower(){sun.castShadow=!SET.saver;renderer.setPixelRatio(SET.saver?1:Math.min(devicePixelRatio||1,TOUCH?1.5:1.75));resize()}
+const edge=$('#edge');
+function frame(now){const fps=SET.saver?20:TOUCH?30:60;if(now-last<1000/fps-2){requestAnimationFrame(frame);return}const dt=Math.min(.08,Math.max(0,(now-last)/1000));last=now;T+=dt;
   updateMocha(dt,T);placeCam(dt);updateSky(dt);updateLeaves(dt,T);
   byId.petstore.display.forEach((d,i)=>{animatePet(d,T+i,false);if(!d.userData.hang&&!d.userData.perch)d.position.y=.4+Math.max(0,Math.sin(T*2+i*1.7))**8*.25});
   if(byId.home.innerLight)byId.home.innerLight.intensity=.35+nightAmt*.7;
@@ -1133,13 +1335,15 @@ function frame(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
   if(G.thinking&&bubbleT<=0)say('💭',1.5,true);
   const umb=S.wearing.some(id=>{const o=S.owned.find(x=>x.id===id);return o&&o.item==='umbrella'});
   const bp=project(G.x,mocha.position.y+1.55*growScale()+(umb?1.3:0),G.z);bubble.style.left=bp.x+'px';bubble.style.top=bp.y+'px';
+  const onScreen=bp.vis&&bp.x>20&&bp.x<innerWidth-20&&bp.y>40&&bp.y<innerHeight-40;bubble.style.visibility=onScreen?'visible':'hidden';
+  if(camS.mode==='free'&&!onScreen){const cx=innerWidth/2,cy=innerHeight/2;let dx=bp.x-cx,dy=bp.y-cy;if(!bp.vis){dx=-dx;dy=-dy}const m=Math.max(Math.abs(dx)/(cx-34),Math.abs(dy)/(cy-90),1e-3);edge.style.display='flex';edge.style.left=(cx+dx/m)+'px';edge.style.top=(cy+dy/m)+'px'}else edge.style.display='none';
   for(const {p,el} of labels){const y=p.kind==='needle'?p.deckY+16:p.kind==='wheel'?33:p.kind==='spot'?4:p.kind==='park'?6:p.kind==='hill'?9:p.kind==='troll'?9:(p.h||6)+(p.id==='home'?9:3);const pp=project(p.x,y,p.z);const dist=Math.hypot(camera.position.x-p.x,camera.position.z-p.z);el.style.opacity=pp.vis&&dist<120?1:0;el.style.left=pp.x+'px';el.style.top=pp.y+'px'}
   hudT-=dt;if(hudT<=0){hudT=.3;hud()}
   drawMini(T);requestAnimationFrame(frame)}
-applyOutfit();hud();renderTab();connect();
+applyOutfit();applyPower();hud();renderTab();connect();
 setTimeout(()=>{if(isNew)say('hi! i\'m mocha 👻 i just moved in!',4.5);else say(awayCount?`you're back! i did ${awayCount} things while you were gone`:(S.mem.userName?`${S.mem.userName}! hi again 👻`:'oh hi again!'),5)},900);
 requestAnimationFrame(frame);
-window.__mocha={get S(){return S},G,MIND,localOutcome,ACTS,acquire,wearItem,adoptPet,buyDecor,discover:id=>discover(byId[id])};
+window.__mocha={get S(){return S},G,MIND,localOutcome,ACTS,acquire,wearItem,adoptPet,buyDecor,takeSelfie,setCamMode,forceAct:a=>{const w=spotWorld(a.p,a.s);G.x=w.x+3;G.z=w.z+3;startAct(a)},discover:id=>discover(byId[id])};
 })();
 </script>
 </body>
