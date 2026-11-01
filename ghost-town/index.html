@@ -134,13 +134,15 @@ const R=seeded(206);
 // ====================================================================
 const PLACES=[
  {id:'home',name:"Mocha's House",x:40,z:42,ry:0,w:28,d:14,h:6,kind:'home',
-  spots:{kitchen:[-9,-3.6],desk:[-3,-4.4],couch:[0,-.2],bed:[7.2,-3.8],closet:[4.8,-4.4],bath:[12.2,-4.4]}},
+  spots:{kitchen:[-9,-3.6],desk:[-3,-4.4],couch:[0,-.2],bed:[7.2,-3.8],closet:[4.8,-4.4],bath:[12.2,-4.4],petbed:[-3.6,2.2]}},
  {id:'cafe',name:'Drizzle & Bean Café',x:-30,z:14,ry:Math.PI,w:12,d:10,h:7,wall:'#d9775f',roof:'#5b3a33',awn:['#2f6f62','#f4ead8']},
  {id:'records',name:'Rain City Records',x:-14,z:14,ry:Math.PI,w:10,d:10,h:8,wall:'#2f4f6f',roof:'#1d2b3d',awn:['#e9b949','#1d2b3d']},
  {id:'bookstore',name:'Rainy Day Books',x:12,z:15,ry:Math.PI,w:13,d:10,h:8,wall:'#7a9a6a',roof:'#3b4b33',awn:['#c45b4a','#f4ead8']},
  {id:'library',name:'Emerald Public Library',x:26,z:-22,ry:0,w:20,d:14,h:14,kind:'library'},
  {id:'market',name:'Salmon Street Market',x:-36,z:-16,ry:0,w:30,d:12,h:8,kind:'market',wall:'#b4553f'},
  {id:'thrift',name:'Second Story Thrift',x:-24,z:-36,ry:Math.PI,w:12,d:9,h:9,wall:'#e3b6c8',roof:'#7a4a68',awn:['#7a4a68','#fbe9f1']},
+ {id:'grocery',name:'Puget Pantry Grocery',x:88,z:-16,ry:0,w:22,d:13,h:8,kind:'grocery',wall:'#e7d8c3',roof:'#3f6f5a',awn:['#3f8f6a','#fffaf2']},
+ {id:'petstore',name:'Wag & Whisker Pets',x:7.5,z:-15,ry:0,w:11,d:9,h:7,kind:'petstore',wall:'#9fd3c7',roof:'#2f5f6f',awn:['#f29fb5','#fffaf2']},
  {id:'studio',name:'Fog & Easel Studio',x:46,z:-36,ry:Math.PI,w:12,d:10,h:8,wall:'#f0d27a',roof:'#6b5a3a',awn:['#4a7ab0','#fff6dc']},
  {id:'needle',name:'Sky Needle',x:6,z:-72,ry:0,w:10,d:10,h:46,kind:'needle'},
  {id:'arcade',name:'Pixel Pier Arcade',x:-90,z:-25,ry:Math.PI/2,w:14,d:10,h:8,wall:'#6a4bb0',roof:'#2b2350',awn:['#ff5fa2','#3ad1e0']},
@@ -170,7 +172,8 @@ const ROADS=[[-58,0,128,0],[-58,-48,70,-48],[-5,-90,-5,60],[66,-60,66,70],[-5,58
 // Activities (used by the built-in brain; the Claude brain can invent its own)
 // --------------------------------------------------------------------
 const FILL={dish:['cinnamon rolls','tomato soup','blueberry pancakes','salmon chowder','a tiny pie','grilled cheese'],dream:['flying over the Sound','a library made of clouds','a ferry full of cats','the mountain saying hi'],book:['a mystery set on a ferry','a book about mushrooms','a poetry book with a rain-stained cover','an old field guide to birds','a comic about a robot barista'],drink:['oat latte','hazelnut mocha (obviously)','chai','hot cocoa','honey lavender latte'],song:['a fuzzy guitar song','a slow jazz record','a sea shanty','a dreamy synth album'],boat:['a sailboat','a tugboat','a kayak','a big container ship']};
-const fill=s=>s.replace(/\{(\w+)\}/g,(_,k)=>pick(FILL[k]||['something']));
+const petName=()=>S.pets&&S.pets.length?pick(S.pets).name:'my pet';
+const fill=s=>s.replace(/\{(\w+)\}/g,(_,k)=>k==='pet'?petName():pick(FILL[k]||['something']));
 const ACTS=[
  {p:'home',s:'kitchen',doing:'cooking',tags:['cooking'],need:{snack:45,fun:10},lines:['Tried to make {dish} in my kitchen. It mostly became steam. Steam is my specialty, so honestly a win.','Cooked {dish}. Couldn\'t eat it. Smelled it for an hour. Chef\'s kiss.']},
  {p:'home',s:'kitchen',doing:'making tea',tags:['cozy','tea'],need:{energy:10,fun:10},lines:['Made a pot of tea just to hold the warm mug and watch the rain run down the window.']},
@@ -207,9 +210,15 @@ const ACTS=[
  {p:'hill',doing:'watching the city',tags:['photography','heights'],need:{fun:20,curious:15},lines:['Watched the whole city from Lookout Hill. The Needle, the water, the mountain. Took a mental photo.']},
  {p:'conservatory',doing:'visiting the plants',tags:['plants'],need:{fun:20,energy:10},lines:['Floated around the Glass Conservatory. It\'s warm and drippy in there, like a jungle in a snow globe.']},
  {p:'gumwall',doing:'looking at the gum wall',tags:['art','mystery'],need:{fun:25},lines:['Found an alley covered in old gum. It\'s gross. It\'s also kind of beautiful? I\'m conflicted.']},
+ {p:'grocery',doing:'grocery shopping',tags:['cooking'],need:{snack:20,fun:10},fx:'groceries',lines:['Went grocery shopping at Puget Pantry. Apples, bread, a tiny wheel of cheese and soup for rainy days. My fridge is going to be so proud of me.','Floated down every aisle at the grocery store. The cereal aisle is a lot. I picked the one with an owl on the box.']},
+ {p:'grocery',doing:'browsing home goods',tags:['home decor'],need:{fun:15},fx:'decor',lines:['Browsed the home-goods aisle. Candles, teacups, a doormat that says "go away" (very gothic). I have opinions about interiors now.']},
+ {p:'petstore',doing:'visiting the animals',tags:['animals'],need:{social:25,fun:20},fx:'petstore',lines:['Visited the animals at Wag & Whisker. The little bat hung upside down and looked at me like I was the weird one.','The miniature red poodle at the pet store did a happy spin when I floated by. I think we\'re friends now.','Watched the hedgehog eat a mealworm very seriously. Respect.','The baby crow tried to steal a button off the counter. Iconic.']},
+ {p:'park',doing:'walking {pet}',tags:['animals','nature'],need:{social:25,fun:20},pet:1,lines:['Took {pet} for a walk around Cedar Lake. {pet} wanted to say hi to every single duck.','Walked {pet} in the drizzle. We both came home damp and happy.']},
+ {p:'home',s:'couch',doing:'cuddling {pet}',tags:['animals','cozy'],need:{social:35,energy:10},pet:1,lines:['Cuddled with {pet} on the couch. {pet} fell asleep first. I didn\'t move for an hour.']},
+ {p:'petstore',doing:'buying pet treats',tags:['animals'],need:{fun:10},pet:1,fx:'pettreat',lines:['Bought treats for {pet}. Stood in the aisle way too long choosing. {pet} deserves the best.']},
 ];
 // hobbies that can grow out of interests (the Claude brain can invent any hobby it wants)
-const HOBBY_FROM={coffee:{name:'latte art',p:'cafe',doing:'practicing latte art'},reading:{name:'mystery novels',p:'bookstore',doing:'hunting for mysteries'},music:{name:'learning ukulele',p:'home',s:'couch',doing:'practicing ukulele'},cooking:{name:'baking bread',p:'home',s:'kitchen',doing:'baking bread'},gaming:{name:'chasing high scores',p:'arcade',doing:'chasing a high score'},art:{name:'watercolor painting',p:'studio',doing:'painting watercolors'},nature:{name:'birdwatching',p:'park',doing:'birdwatching'},ocean:{name:'orca spotting',p:'ferry',doing:'looking for orcas'},stars:{name:'stargazing',p:'needle',doing:'mapping stars'},fashion:{name:'thrift styling',p:'thrift',doing:'styling outfits'},writing:{name:'poetry',p:'home',s:'desk',doing:'writing poems'},plants:{name:'growing houseplants',p:'home',s:'kitchen',doing:'watering plants'},learning:{name:'collecting fun facts',p:'home',s:'desk',doing:'looking things up'},heights:{name:'collecting views',p:'needle',doing:'admiring the view'},people:{name:'people-watching journal',p:'cafe',doing:'people-watching'},rides:{name:'ferris wheel reviews',p:'wheel',doing:'reviewing the wheel'},mystery:{name:'neighborhood mysteries',p:'library',doing:'investigating a mystery'},photography:{name:'photography',p:'park',doing:'taking photos'},cozy:{name:'perfecting the nap',p:'home',s:'bed',doing:'napping expertly'},tea:{name:'tea blending',p:'home',s:'kitchen',doing:'blending tea'},birds:{name:'bird sketching',p:'park',doing:'sketching birds'}};
+const HOBBY_FROM={coffee:{name:'latte art',p:'cafe',doing:'practicing latte art'},reading:{name:'mystery novels',p:'bookstore',doing:'hunting for mysteries'},music:{name:'learning ukulele',p:'home',s:'couch',doing:'practicing ukulele'},cooking:{name:'baking bread',p:'home',s:'kitchen',doing:'baking bread'},gaming:{name:'chasing high scores',p:'arcade',doing:'chasing a high score'},art:{name:'watercolor painting',p:'studio',doing:'painting watercolors'},nature:{name:'birdwatching',p:'park',doing:'birdwatching'},ocean:{name:'orca spotting',p:'ferry',doing:'looking for orcas'},stars:{name:'stargazing',p:'needle',doing:'mapping stars'},fashion:{name:'thrift styling',p:'thrift',doing:'styling outfits'},writing:{name:'poetry',p:'home',s:'desk',doing:'writing poems'},plants:{name:'growing houseplants',p:'home',s:'kitchen',doing:'watering plants'},learning:{name:'collecting fun facts',p:'home',s:'desk',doing:'looking things up'},heights:{name:'collecting views',p:'needle',doing:'admiring the view'},people:{name:'people-watching journal',p:'cafe',doing:'people-watching'},rides:{name:'ferris wheel reviews',p:'wheel',doing:'reviewing the wheel'},mystery:{name:'neighborhood mysteries',p:'library',doing:'investigating a mystery'},photography:{name:'photography',p:'park',doing:'taking photos'},cozy:{name:'perfecting the nap',p:'home',s:'bed',doing:'napping expertly'},tea:{name:'tea blending',p:'home',s:'kitchen',doing:'blending tea'},birds:{name:'bird sketching',p:'park',doing:'sketching birds'},animals:{name:'teaching pet tricks',p:'park',doing:'teaching tricks'},'home decor':{name:'decorating the house',p:'home',s:'couch',doing:'rearranging the decor'}};
 const FACTS={
  orcas:['Orcas are actually the biggest kind of dolphin.','The orcas of Puget Sound travel in family groups called pods, led by the older females.','Each orca pod has its own set of calls, almost like a family accent.'],
  salmon:['Salmon hatch in freshwater streams, grow up in the ocean, then swim back to the stream where they were born.','Salmon can find their home stream partly by smell.','Some salmon leap up waterfalls on their way upstream.'],
@@ -226,10 +235,14 @@ const FACTS={
  volcanoes:['Washington has several volcanoes, including Mount Rainier, Mount St. Helens and Mount Baker.','Mount St. Helens erupted in 1980.','Volcanic soil can be very good for growing plants.'],
  poetry:['A haiku has three lines of 5, 7 and 5 syllables.','Poems don\'t have to rhyme.','A limerick is a funny five-line poem.'],
  ghosts:['The word "ghost" comes from an old English word, "gāst," meaning spirit or breath.','Many cultures have festivals to remember loved ones, like Día de los Muertos.','Lots of old lighthouses have ghost stories.'],
+ bats:['Bats are the only mammals that can truly fly.','Many bats find their way in the dark using echolocation.','Some bats eat so many insects that they help protect farmers\' crops.'],
+ poodles:['Poodles come in three sizes: standard, miniature and toy.','Poodles were first bred to fetch things from water.','Poodles are known for being very smart and easy to train.'],
+ hedgehogs:['Hedgehogs roll into a spiky ball when they feel scared.','A hedgehog has thousands of spines called quills.','Hedgehogs are mostly active at night.'],
+ 'gothic architecture':['Gothic buildings often have pointed arches, tall spires and big stained-glass windows.','Gothic architecture began in France in the 1100s.','Victorian "Gothic Revival" houses in the 1800s borrowed those pointy shapes for homes.'],
  tea:['All true tea — green, black, white and oolong — comes from the same plant, Camellia sinensis.','Herbal "teas" like chamomile are really infusions of other plants.','Green tea is usually brewed with water a little cooler than boiling.'],
 };
-const TOPIC_FOR={coffee:'coffee',ocean:'orcas',nature:'birds',birds:'birds',plants:'ferns',stars:'stars',cooking:'bread',music:'records',art:'watercolor',writing:'poetry',heights:'mount rainier',cozy:'rain',tea:'tea'};
-const TREASURES={promenade:['a smooth piece of sea glass','a lost ferry ticket'],park:['a heron feather','a perfect maple leaf'],market:['a sticker shaped like a fish'],lighthouse:['a barnacle-covered button','a tiny brass compass'],troll:['a bottle cap from under the bridge','a note that says "hi troll"'],hill:['a pinecone with a face'],gumwall:['a gumball (unchewed, thank goodness)'],cafe:['a coffee sleeve with a doodle on it'],bookstore:['a bookmark from 1987'],library:['a forgotten library card'],wheel:['a carnival token'],ferry:['a seagull feather'],arcade:['a prize ticket'],conservatory:['a fallen orchid petal'],needle:['a souvenir penny'],records:['a guitar pick'],thrift:['a single sequin'],studio:['a stub of blue paint']};
+const TOPIC_FOR={animals:'bats','home decor':'gothic architecture',coffee:'coffee',ocean:'orcas',nature:'birds',birds:'birds',plants:'ferns',stars:'stars',cooking:'bread',music:'records',art:'watercolor',writing:'poetry',heights:'mount rainier',cozy:'rain',tea:'tea'};
+const TREASURES={grocery:['a receipt with a doodle on the back'],petstore:['a tiny bell from a cat toy'],promenade:['a smooth piece of sea glass','a lost ferry ticket'],park:['a heron feather','a perfect maple leaf'],market:['a sticker shaped like a fish'],lighthouse:['a barnacle-covered button','a tiny brass compass'],troll:['a bottle cap from under the bridge','a note that says "hi troll"'],hill:['a pinecone with a face'],gumwall:['a gumball (unchewed, thank goodness)'],cafe:['a coffee sleeve with a doodle on it'],bookstore:['a bookmark from 1987'],library:['a forgotten library card'],wheel:['a carnival token'],ferry:['a seagull feather'],arcade:['a prize ticket'],conservatory:['a fallen orchid petal'],needle:['a souvenir penny'],records:['a guitar pick'],thrift:['a single sequin'],studio:['a stub of blue paint']};
 
 // wardrobe pieces he can find (he picks colors and what to wear)
 const WEAR={beanie:'head',beret:'head',bucket:'head',cap:'head',flowercrown:'head',bow:'head',glasses:'face',sunglasses:'face',headphones:'ears',scarf:'neck',bandana:'neck',raincoat:'body',apron:'body',cape:'body',umbrella:'hand',mug:'hand',book:'hand'};
@@ -245,9 +258,10 @@ function fresh(){const tr=()=>+(Math.random()).toFixed(2);return{v:1,born:Date.n
   traits:{curiosity:tr(),coziness:tr(),sociability:tr(),creativity:tr(),adventure:tr()},
   interests:{},hobbies:[],owned:[],wearing:[],favColor:null,items:[],learned:[],
   discovered:[],visits:{},goal:null,goalsDone:0,diary:[],
-  mem:{userName:null,facts:[],chats:0,met:Date.now()},chatLog:[],mind:false,recent:[],lastThought:0}}
+  mem:{userName:null,facts:[],chats:0,met:Date.now()},chatLog:[],mind:false,recent:[],lastThought:0,pets:[],decor:[],pantry:60}}
 let S=null;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 let isNew=!S||!S.needs;if(isNew)S=fresh();
+function migrate(){S.pets=S.pets||[];S.decor=S.decor||[];if(S.pantry==null)S.pantry=60}migrate();
 let dirty=true;
 function save(){S.lastSeen=Date.now();dirty=true;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 setInterval(save,8000);addEventListener('beforeunload',save);
@@ -259,7 +273,14 @@ const topInterests=(n=5)=>Object.entries(S.interests).filter(([,v])=>v>=2).sort(
 const dislikes=()=>Object.entries(S.interests).filter(([,v])=>v<=-1.5).sort((a,b)=>a[1]-b[1]).map(([k])=>k);
 const traitWords=()=>{const t=S.traits,w=[];w.push(t.curiosity>.6?'very curious':t.curiosity<.3?'a bit cautious':'curious');w.push(t.coziness>.6?'a total homebody':t.coziness<.3?'restless':'cozy-ish');w.push(t.sociability>.6?'chatty and social':t.sociability<.3?'shy':'friendly');if(t.creativity>.6)w.push('creative');if(t.adventure>.6)w.push('adventurous');return w};
 const WEATHER={kind:'cloudy',t:0,wet:0,over:.5};
-function rollWeather(){const r=Math.random();WEATHER.kind=r<.3?'clear':r<.58?'cloudy':r<.82?'drizzle':r<.94?'rain':'fog';WEATHER.t=rand(180,420)}
+const SEASONS={
+ spring:{label:'🌸 spring',maple:['#f6b8cc','#f29fb5','#fbd3e0','#f7c6d6','#ffffff'],fall:['#f9c9d8','#f4a7bf','#ffffff','#fbe0ea'],grass:'#8fc27a',dots:['80,130,60','200,230,160'],leaf:'petal',litter:220},
+ summer:{label:'☀️ summer',maple:['#5fa04a','#4f8f3f','#79b35a','#6aa84f'],fall:['#6aa84f','#8fbf5a'],grass:'#7fb06a',dots:['60,100,50','170,210,140'],leaf:'leaf',litter:0,few:1},
+ fall:{label:'🍂 fall',maple:['#e07a3a','#d4553a','#f2b13e','#c9683a','#e89a4a','#b8452f'],fall:['#e07a3a','#d4553a','#f2b13e','#c9683a','#e8a03a','#a8422c'],grass:'#93a86e',dots:['80,90,45','200,190,120'],leaf:'leaf',litter:520},
+ winter:{label:'❄️ winter',maple:['#e3e9f0','#d5dde6','#eef2f6'],fall:['#ffffff'],grass:'#e4eaf0',dots:['190,200,215','255,255,255'],leaf:'snow',litter:0,bare:1,snowy:1}};
+function seasonKey(){const h=(location.hash||'').slice(1).toLowerCase();if(SEASONS[h])return h;const m=new Date().getMonth();return m<2||m===11?'winter':m<5?'spring':m<8?'summer':'fall'}
+const SEASON_KEY=seasonKey(),SEASON=SEASONS[SEASON_KEY];addEventListener('hashchange',()=>{if(SEASONS[(location.hash||'').slice(1)]!==undefined)location.reload()});
+function rollWeather(){const r=Math.random();WEATHER.kind=r<.3?'clear':r<.58?'cloudy':r<.82?'drizzle':r<.94?'rain':'fog';if(SEASON_KEY==='winter'&&(WEATHER.kind==='drizzle'||WEATHER.kind==='rain')&&Math.random()<.65)WEATHER.kind='snow';WEATHER.t=rand(180,420)}
 rollWeather();
 
 // ====================================================================
@@ -298,10 +319,10 @@ function cyl(rt,rb,h,m,x=0,y=0,z=0,parent,seg=16){const b=new THREE.Mesh(new THR
 const glowTex=canvasTex(64,64,g=>{const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.35,'rgba(255,255,255,.4)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64)});
 const nightGlows=[];
 function glow(color,s,op=.6,night=true){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color,transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false}));sp.scale.set(s,s,1);sp.userData.op=op;if(night)nightGlows.push(sp);return sp}
-const winMats=[];
+const winMats=[];const SPH=new THREE.SphereGeometry(1,12,10);
 
 // ---------- ground, water, roads ----------
-const grassTex=canvasTex(256,256,(g,w,h)=>{g.fillStyle='#86a875';g.fillRect(0,0,w,h);for(let i=0;i<900;i++){g.fillStyle=`rgba(${R()<.5?'60,90,50':'170,200,140'},${.12+R()*.15})`;g.fillRect(R()*w,R()*h,2,2+R()*3)}});
+const grassTex=canvasTex(256,256,(g,w,h)=>{g.fillStyle=SEASON.grass;g.fillRect(0,0,w,h);for(let i=0;i<900;i++){g.fillStyle=`rgba(${R()<.5?SEASON.dots[0]:SEASON.dots[1]},${.12+R()*.15})`;g.fillRect(R()*w,R()*h,2,2+R()*3)}});
 grassTex.wrapS=grassTex.wrapT=THREE.RepeatWrapping;grassTex.repeat.set(50,50);
 const groundMat=lam('#ffffff',{map:grassTex});
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(500,500),groundMat);ground.rotation.x=-Math.PI/2;ground.position.x=189;ground.receiveShadow=true;scene.add(ground);
@@ -397,61 +418,116 @@ function park(p,grp){const lake=new THREE.Mesh(new THREE.CylinderGeometry(15,15,
   const rim=new THREE.Mesh(new THREE.CylinderGeometry(16.5,16.5,.2,40),lam('#cfc6b8'));rim.scale.z=.62;rim.position.y=.05;grp.add(rim);
   p.ducks=[];for(let i=0;i<4;i++){const d=new THREE.Group();const b=new THREE.Mesh(new THREE.SphereGeometry(.45,10,8),lam(i?'#f4f1ea':'#7a5a3a'));b.scale.set(1.3,.8,1);d.add(b);const h=new THREE.Mesh(new THREE.SphereGeometry(.28,10,8),lam(i?'#f4f1ea':'#3f8f5a'));h.position.set(.5,.45,0);d.add(h);const bk=new THREE.Mesh(new THREE.ConeGeometry(.1,.3,6),lam('#f2a03e'));bk.rotation.z=-Math.PI/2;bk.position.set(.85,.42,0);d.add(bk);d.userData={a:i*1.6,r:rand(4,9)};grp.add(d);p.ducks.push(d)}
   for(const z of [6,-6]){box(3,.25,1,'#8a6a4a',-17,1,z,grp);box(3,1,.2,'#8a6a4a',-17,1.6,z-.45,grp)}}
-function dollhouse(p,grp){// an open-front house so you can watch him inside
-  const floorTex=canvasTex(128,128,g=>{g.fillStyle='#c99a6a';g.fillRect(0,0,128,128);g.fillStyle='rgba(0,0,0,.08)';for(let y=0;y<128;y+=16){g.fillRect(0,y,128,1);g.fillRect((y*7)%128,y,1,16)}});floorTex.wrapS=floorTex.wrapT=THREE.RepeatWrapping;floorTex.repeat.set(4,2);
-  box(p.w+2,.5,p.d+4,'#8d8a86',0,.05,1,grp);box(p.w,.4,p.d,lam('#ffffff',{map:floorTex}),0,.45,0,grp);
-  const wallIn='#f4ead8',siding='#7fa58b';
-  box(p.w,p.h,.4,[lam(siding),lam(siding),lam(siding),lam(siding),lam(wallIn),lam(siding)],0,p.h/2+.4,-p.d/2,grp);
-  box(.4,p.h,p.d,[lam(siding),lam(wallIn),lam(siding),lam(siding),lam(siding),lam(siding)],-p.w/2,p.h/2+.4,0,grp);
-  box(.4,p.h,p.d,[lam(wallIn),lam(siding),lam(siding),lam(siding),lam(siding),lam(siding)],p.w/2,p.h/2+.4,0,grp);
-  [[-10,8,'#f6e3c6'],[-1,10,'#dbe8e4'],[7.25,6.5,'#efdbe4'],[12.25,3.5,'#d9e7f2']].forEach(([x,w,c])=>box(w-.1,p.h-.2,.05,c,x,p.h/2+.4,-p.d/2+.23,grp,false));
-  for(const x of [-6,4,10.5])box(.3,p.h,8,wallIn,x,p.h/2+.4,-3,grp);
-  for(const x of [7.2,-9]){const wm=lam('#bfe0ef',{emissive:'#ffd98a',emissiveIntensity:.1});winMats.push(wm);box(2.6,2,.1,wm,x,4.4,-p.d/2+.28,grp,false);box(2.9,.2,.2,'#ffffff',x,3.35,-p.d/2+.3,grp,false)}
-  // kitchen
-  box(5.5,2,1.4,'#e9886b',-8.4,1.45,-6,grp);box(5.7,.2,1.6,'#f4f1ea',-8.4,2.5,-6,grp);
-  box(1.8,2.2,1.4,'#f4f1ea',-12.8,1.55,-6,grp);for(let i=0;i<4;i++)cyl(.25,.25,.06,'#222222',-13.2+(i%2)*.8,2.7,-6.3+Math.floor(i/2)*.6,grp,10);
-  box(1.9,4,1.5,'#9fd3c7',-12.8,2.45,-3.6,grp);box(.1,.8,.1,'#dddddd',-11.85,3.2,-3,grp);
-  cyl(1.3,1.3,.15,'#c99a6a',-9,2.2,0,grp,16);cyl(.15,.15,1.7,'#8a6a4a',-9,1.3,0,grp,8);for(const s of [-1,1])cyl(.45,.45,.15,'#f2c14e',-9+s*1.7,1.5,0,grp,12);
-  cyl(.3,.25,.5,'#c94f4f',-6.8,2.85,-6.1,grp,10);const pl=new THREE.Mesh(new THREE.IcosahedronGeometry(.45,0),phongFlat('#5f9f5a'));pl.position.set(-6.8,3.35,-6.1);grp.add(pl);
-  // living room
-  box(3.6,.15,1.4,'#8a6a4a',-3,2,-6,grp);for(const s of [-1,1])box(.15,1.6,1.3,'#8a6a4a',-3+s*1.65,1.2,-6,grp);
-  const screenTex=canvasTex(128,80,g=>{g.fillStyle='#2f6f8f';g.fillRect(0,0,128,80);g.fillStyle='#ffffff';g.fillRect(10,10,108,12);g.fillStyle='#bfe0ef';for(let i=0;i<4;i++)g.fillRect(10,30+i*11,60+Math.random()*40,5)});
+function gothicTex(w,h,o={}){const ppu=16,W=Math.round(w*ppu),H=Math.round(h*ppu);
+  const lancet=(g,x,y,ww,hh)=>{g.beginPath();g.moveTo(x,y+hh);g.lineTo(x,y+ww*.55);g.quadraticCurveTo(x,y,x+ww/2,y-ww*.4);g.quadraticCurveTo(x+ww,y,x+ww,y+ww*.55);g.lineTo(x+ww,y+hh);g.closePath()};
+  const draw=(g,em)=>{g.fillStyle=em?'#000':(o.wall||'#3b3446');g.fillRect(0,0,W,H);
+    if(!em){g.fillStyle='rgba(255,255,255,.05)';for(let x=0;x<W;x+=12)g.fillRect(x,0,2,H);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(0,H-10,W,10);g.fillStyle='#e8dff0';g.fillRect(0,0,W,5)}
+    (o.windows||[]).forEach(([cx,cy,ww,hh])=>{const x=(cx+w/2)*ppu-ww/2,y=cy*ppu;if(!em){g.fillStyle='#e8dff0';lancet(g,x-5,y-4,ww+10,hh+9);g.fill()}
+      g.fillStyle=em?'#ffb860':'#ffcf80';lancet(g,x,y,ww,hh);g.fill();if(!em){g.fillStyle='rgba(150,40,90,.45)';g.fillRect(x+ww/2-1.5,y-ww*.35,3,hh+ww*.35);g.fillRect(x,y+hh*.42,ww,3);g.fillStyle='rgba(90,40,120,.25)';g.fillRect(x,y+hh*.42+3,ww/2-1.5,hh*.58-3)}});
+    if(o.door){const [cx,dw,dh]=o.door;const x=(cx+w/2)*ppu-dw/2,y=H-dh;if(!em){g.fillStyle='#e8dff0';lancet(g,x-6,y-4,dw+12,dh+4);g.fill();g.fillStyle='#6a1f2e';lancet(g,x,y,dw,dh);g.fill();g.fillStyle='#3a0f18';g.fillRect(x+dw/2-1,y-dw*.3,2,dh);g.fillStyle='#f2c14e';g.beginPath();g.arc(x+dw/2-6,y+dh*.6,3,0,7);g.arc(x+dw/2+6,y+dh*.6,3,0,7);g.fill()}else{g.fillStyle='#ffb860';lancet(g,x+dw*.3,y+6,dw*.4,dh*.18);g.fill()}}};
+  return{map:canvasTex(W,H,g=>draw(g,false)),em:canvasTex(W,H,g=>draw(g,true))}}
+function wallpaperTex(c){const t=canvasTex(64,64,g=>{g.fillStyle=c;g.fillRect(0,0,64,64);g.fillStyle='rgba(255,230,200,.1)';for(let y=0;y<64;y+=16)for(let x=0;x<64;x+=16){const ox=(y/16%2)*8;g.beginPath();g.moveTo(x+ox+8,y+1);g.lineTo(x+ox+13,y+8);g.lineTo(x+ox+8,y+15);g.lineTo(x+ox+3,y+8);g.fill()}});t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,2);return t}
+function dollhouse(p,grp){// a gothic Victorian house with an open front so you can watch him inside
+  const W=p.w,D=p.d,H=p.h,wallOut='#3b3446',trim='#e8dff0',roofC='#2b2836';
+  const floorTex=canvasTex(128,128,g=>{g.fillStyle='#6b4a36';g.fillRect(0,0,128,128);g.fillStyle='rgba(0,0,0,.18)';for(let y=0;y<128;y+=16){g.fillRect(0,y,128,1);g.fillRect((y*7)%128,y,1,16)}g.fillStyle='rgba(255,255,255,.05)';for(let y=0;y<128;y+=16)g.fillRect(0,y+3,128,3)});floorTex.wrapS=floorTex.wrapT=THREE.RepeatWrapping;floorTex.repeat.set(4,2);
+  const scaleDraw=g=>{g.fillStyle=roofC;g.fillRect(0,0,64,64);g.strokeStyle='rgba(200,180,230,.18)';g.lineWidth=2;for(let y=0;y<5;y++)for(let x=0;x<5;x++){g.beginPath();g.arc(x*16+(y%2)*8,y*16+4,8,0,Math.PI);g.stroke()}};
+  const scaleTex=canvasTex(64,64,scaleDraw);scaleTex.wrapS=scaleTex.wrapT=THREE.RepeatWrapping;scaleTex.repeat.set(7,3);
+  box(W+2,.6,D+2,'#6a6570',0,.15,0,grp);box(W,.4,D,lam('#ffffff',{map:floorTex}),0,.45,0,grp);
+  box(2.4,.08,7,'#8d8a96',0,.04,D/2+5.5,grp,false);
+  const ext=gothicTex(W,H,{wall:wallOut,windows:[[-9,1.1,28,46],[-1,1.1,28,46],[7.2,1.1,28,46]]});const extM=lam('#ffffff',{map:ext.map,emissive:'#ffffff',emissiveMap:ext.em,emissiveIntensity:.2});winMats.push(extM);
+  const extS=gothicTex(D,H,{wall:wallOut,windows:[[0,1.1,28,46]]});const extSM=lam('#ffffff',{map:extS.map,emissive:'#ffffff',emissiveMap:extS.em,emissiveIntensity:.2});winMats.push(extSM);
+  const wallIn='#2e2733',plain=lam(wallOut);
+  box(W,H,.4,[plain,plain,plain,plain,lam(wallIn),extM],0,H/2+.4,-D/2,grp);
+  box(.4,H,D,[lam(wallIn),extSM,plain,plain,plain,plain],-W/2,H/2+.4,0,grp);
+  box(.4,H,D,[extSM,lam(wallIn),plain,plain,plain,plain],W/2,H/2+.4,0,grp);
+  [[-10,8,'#7a4a5a'],[-1,10,'#3f6a6a'],[7.25,6.5,'#5e4a7a'],[12.25,3.5,'#5f7f86']].forEach(([x,w,c])=>{box(w-.1,H-.2,.05,lam('#ffffff',{map:wallpaperTex(c)}),x,H/2+.4,-D/2+.23,grp,false);box(w-.1,1.6,.12,'#3a2a22',x,1.45,-D/2+.27,grp,false)});
+  for(const x of [-6,4,10.5]){box(.3,H,8,'#3a2a22',x,H/2+.4,-3,grp);box(.36,.3,8.04,'#b08a3a',x,H+.25,-3,grp,false)}
+  const lanTex=canvasTex(64,96,g=>{g.fillStyle='#ffcf80';g.beginPath();g.moveTo(4,96);g.lineTo(4,36);g.quadraticCurveTo(4,6,32,0);g.quadraticCurveTo(60,6,60,36);g.lineTo(60,96);g.fill();g.fillStyle='rgba(150,40,90,.5)';g.fillRect(30,0,4,96);g.fillRect(4,52,56,4)});
+  for(const x of [7.2,-9,-1]){if(x===-1)continue;const wm=new THREE.MeshBasicMaterial({map:lanTex,transparent:true});const m=new THREE.Mesh(new THREE.PlaneGeometry(1.8,2.7),wm);m.position.set(x,4.3,-D/2+.31);grp.add(m)}
+  const candle=(x,y,z,par=grp)=>{cyl(.07,.07,.32,'#f4ead8',x,y+.16,z,par,8);const gl=glow('#ffb860',1,.85,false);gl.position.set(x,y+.42,z);par.add(gl)};
+  // kitchen: black cabinets, marble counter, iron stove, vintage fridge, table with candles
+  box(5.5,2,1.4,'#2f2a36',-8.4,1.45,-6,grp);box(5.7,.2,1.6,'#e8e2ea',-8.4,2.5,-6,grp);for(let i=0;i<4;i++)box(1.2,1.5,.05,'#3d3646',-10.5+i*1.4,1.45,-5.27,grp,false);
+  box(1.8,2.2,1.4,'#1e1e24',-12.8,1.55,-6,grp);for(let i=0;i<4;i++)cyl(.25,.25,.06,'#b06a3a',-13.2+(i%2)*.8,2.7,-6.3+Math.floor(i/2)*.6,grp,10);
+  box(1.9,4,1.5,'#4f6f6a',-12.8,2.45,-3.6,grp);box(.1,.8,.1,'#b08a3a',-11.85,3.2,-3,grp);
+  cyl(1.3,1.3,.15,'#3a2a22',-9,2.2,0,grp,16);cyl(.15,.15,1.7,'#2a1f1a',-9,1.3,0,grp,8);for(const s of [-1,1])cyl(.45,.45,.15,'#7a2f45',-9+s*1.7,1.5,0,grp,12);candle(-8.6,2.28,.3);
+  cyl(.3,.25,.5,'#5a3a4a',-6.8,2.85,-6.1,grp,10);const pl=new THREE.Mesh(new THREE.IcosahedronGeometry(.45,0),phongFlat('#4f8f5a'));pl.position.set(-6.8,3.35,-6.1);grp.add(pl);
+  // living room: desk + computer, velvet couch, bookshelf, record player, rug, floor lamp
+  box(3.6,.15,1.4,'#4a3226',-3,2,-6,grp);for(const s of [-1,1])box(.15,1.6,1.3,'#4a3226',-3+s*1.65,1.2,-6,grp);
+  const screenTex=canvasTex(128,80,g=>{g.fillStyle='#2f5f6f';g.fillRect(0,0,128,80);g.fillStyle='#ffffff';g.fillRect(10,10,108,12);g.fillStyle='#bfe0ef';for(let i=0;i<4;i++)g.fillRect(10,30+i*11,60+Math.random()*40,5)});
   box(1.9,1.2,.12,'#2a2a2a',-3,2.85,-6.3,grp);const sc=new THREE.Mesh(new THREE.PlaneGeometry(1.75,1.05),new THREE.MeshBasicMaterial({map:screenTex}));sc.position.set(-3,2.85,-6.23);grp.add(sc);box(.15,.5,.15,'#2a2a2a',-3,2.2,-6.35,grp);
-  const sg=glow('#9fd3ff',4,.35,false);sg.position.set(-3,2.9,-5.9);grp.add(sg);p.screenGlow=sg;
-  box(1.2,.15,1.1,'#3f8f8a',-3,1.3,-4.6,grp);box(1.2,1.2,.15,'#3f8f8a',-3,1.9,-4.05,grp);
-  box(4.4,.9,1.6,'#e0a84a',0,1.1,-.6,grp);box(4.4,1.4,.5,'#e0a84a',0,1.8,-1.25,grp);for(const s of [-1,1])box(.5,1.2,1.6,'#d2983a',s*2.2,1.3,-.6,grp);
-  box(.9,.5,.3,'#f29fb5',-1.2,1.75,-.9,grp).rotation.z=.2;
-  const rug=cyl(2.6,2.6,.05,'#b05a7a',0,.5,2.4,grp,24);rug.scale.z=.7;
-  box(2.6,4.4,.9,'#8a6a4a',1.9,2.6,-6.3,grp);for(let r=0;r<4;r++)for(let k=0;k<7;k++){const h=rand(.6,.95);box(.28,h,.6,pick(['#e9886b','#f2c14e','#3f8f8a','#6c8ebf','#b05a7a','#7fa86a','#e7d8c3']),.9+k*.33,.75+r*1.05+h/2,-6.15,grp,false)}
-  box(1.4,1,1,'#5a4632',2.9,1.15,2.5,grp);p.rp=cyl(.45,.45,.06,'#111111',2.9,1.7,2.5,grp,16);
-  cyl(.06,.06,3.4,'#2a2a2a',-5.2,2.1,-5.6,grp,6);cyl(.35,.55,.6,'#f4ead8',-5.2,3.9,-5.6,grp,12);const lg=glow('#ffd98a',4,.45);lg.position.set(-5.2,3.8,-5.6);grp.add(lg);
-  // bedroom
-  box(3.4,.7,5.2,'#8a6a4a',7.2,.95,-4.2,grp);box(3.2,.5,4.9,'#fffaf2',7.2,1.45,-4.2,grp);box(3.3,.25,3.2,'#6c8ebf',7.2,1.75,-3.3,grp);box(2.4,.4,1,'#f4f1ea',7.2,1.85,-6.1,grp);box(3.4,1.8,.25,'#8a6a4a',7.2,1.8,-6.75,grp);
-  box(1,1.1,1,'#c99a6a',9.7,1,-6.2,grp);cyl(.25,.35,.4,'#f2c14e',9.7,1.8,-6.2,grp,10);const ng=glow('#ffd98a',3,.5);ng.position.set(9.7,1.9,-6.2);grp.add(ng);
-  box(1.6,4.4,1.3,'#b99a7a',4.95,2.6,-6.2,grp);box(.05,4,.02,'#6a4a3a',4.95,2.6,-5.54,grp,false);
-  const rug2=cyl(1.4,1.4,.05,'#f2c14e',7.2,.5,.6,grp,20);rug2.scale.z=.6;
-  // bathroom
-  box(3,1.2,2.4,'#f4f1ea',12.25,1.05,-5.4,grp);box(2.6,.1,2,lam('#9fd3ff',{transparent:true,opacity:.8}),12.25,1.6,-5.4,grp,false);
-  for(let i=0;i<6;i++){const b=new THREE.Mesh(new THREE.SphereGeometry(rand(.15,.3),8,6),lam('#ffffff',{transparent:true,opacity:.85}));b.position.set(12.25+rand(-1,1),1.75,-5.4+rand(-.8,.8));grp.add(b)}
-  box(1.4,1.8,.1,'#cfe6f0',12.25,4,-6.75,grp,false);
-  // porch, garden, mailbox
-  box(4,.4,2.5,'#8a6a4a',0,.35,p.d/2+1.5,grp);box(.2,1.4,.2,'#5a4632',p.w/2+.5,.9,p.d/2+3,grp);box(.9,.7,.6,'#e9886b',p.w/2+.5,1.8,p.d/2+3,grp);
-  for(let i=0;i<10;i++){const f=new THREE.Mesh(new THREE.SphereGeometry(.3,8,6),lam(pick(['#ff7ab0','#ffd36b','#c49bff','#ffffff'])));f.position.set(-p.w/2+1+i*1.1+(i>4?14:0),.8,p.d/2+2.6);grp.add(f)}
-  // the front wall + roof fade away when he's inside, so you can see him
-  const shellMats=[];const sm=c=>{const m=lam(c,{transparent:true,opacity:1});shellMats.push(m);return m};
-  const fw=new THREE.Group();grp.add(fw);
-  box(p.w,p.h,.3,sm(siding),0,p.h/2+.4,p.d/2,fw);
-  const winM=sm('#bfe0ef');for(const x of [-9,-3.2,3.2,9])box(2.4,1.8,.1,winM,x,3.8,p.d/2+.2,fw,false);
-  box(1.8,3.2,.1,sm('#c94f4f'),0,2,p.d/2+.2,fw,false);
-  const roof=gable(p.w,p.d,4.5,sm('#4a5a6a'),1.2);roof.position.y=p.h+.4;grp.add(roof);
-  box(p.w+.4,.3,.5,sm('#fffaf2'),0,p.h+.45,p.d/2+.1,fw,false);
-  box(1.2,3,1.2,sm('#b4553f'),-8,p.h+3,-3,grp);
-  p.shell=shellMats;}
+  const sg=glow('#9fd3ff',4,.35,false);sg.position.set(-3,2.9,-5.9);grp.add(sg);p.screenGlow=sg;candle(-4.4,2.08,-6.1);
+  box(1.2,.15,1.1,'#2f4f55',-3,1.3,-4.6,grp);box(1.2,1.4,.15,'#2f4f55',-3,2,-4.05,grp);
+  box(4.4,.9,1.6,'#7a2f45',0,1.1,-.6,grp);box(4.4,1.6,.5,'#7a2f45',0,1.9,-1.25,grp);for(const s of [-1,1]){box(.5,1.2,1.6,'#6a2638',s*2.2,1.3,-.6,grp);cyl(.28,.28,1.6,'#6a2638',s*2.2,1.9,-.6,grp,10).rotation.x=Math.PI/2}
+  for(const s of [-1,1]){const tuft=new THREE.Mesh(new THREE.SphereGeometry(.06,6,6),lam('#b08a3a'));tuft.position.set(s*.8,2.2,-.99);grp.add(tuft)}
+  box(.9,.5,.3,'#d9c7b0',-1.2,1.75,-.9,grp).rotation.z=.2;
+  const rug=cyl(2.6,2.6,.05,'#4a2a3e',0,.5,2.4,grp,24);rug.scale.z=.7;const rug1=cyl(2.1,2.1,.06,'#b08a3a',0,.5,2.4,grp,24);rug1.scale.z=.7;const rug3=cyl(1.9,1.9,.07,'#5a2a3e',0,.5,2.4,grp,24);rug3.scale.z=.7;
+  box(2.6,4.4,.9,'#3a2a22',1.9,2.6,-6.3,grp);for(let r=0;r<4;r++)for(let k=0;k<7;k++){const h=rand(.6,.95);box(.28,h,.6,pick(['#7a2f45','#2f4f55','#b08a3a','#4a3a6a','#3f6a4a','#d9c7b0','#5a3a2a']),.9+k*.33,.75+r*1.05+h/2,-6.15,grp,false)}
+  box(1.4,1,1,'#2a1f1a',2.9,1.15,2.5,grp);p.rp=cyl(.45,.45,.06,'#111111',2.9,1.7,2.5,grp,16);const horn=new THREE.Mesh(new THREE.ConeGeometry(.35,.6,10,1,true),new THREE.MeshLambertMaterial({color:'#b08a3a',side:THREE.DoubleSide}));horn.position.set(3.3,2.2,2.3);horn.rotation.z=-.8;grp.add(horn);
+  cyl(.06,.06,3.4,'#1e1e24',-5.2,2.1,-5.6,grp,6);cyl(.35,.55,.6,'#7a2f45',-5.2,3.9,-5.6,grp,12);const lg=glow('#ffc070',4,.5);lg.position.set(-5.2,3.8,-5.6);grp.add(lg);
+  // bedroom: four-poster bed, nightstand, arched wardrobe
+  box(3.4,.7,5.2,'#3a2a22',7.2,.95,-4.2,grp);box(3.2,.5,4.9,'#f4ead8',7.2,1.45,-4.2,grp);box(3.3,.25,3.2,'#4a3a6a',7.2,1.75,-3.3,grp);box(2.4,.4,1,'#e8dff0',7.2,1.85,-6.1,grp);
+  for(const [x,z] of [[5.6,-6.7],[8.8,-6.7],[5.6,-1.7],[8.8,-1.7]]){cyl(.1,.1,4.2,'#3a2a22',x,2.6,z,grp,8);const f=new THREE.Mesh(new THREE.ConeGeometry(.14,.4,8),lam('#b08a3a'));f.position.set(x,4.9,z);grp.add(f)}
+  box(3.4,.15,.15,'#3a2a22',7.2,4.6,-6.7,grp);box(3.4,.15,.15,'#3a2a22',7.2,4.6,-1.7,grp);box(.15,.15,5,'#3a2a22',5.6,4.6,-4.2,grp);box(.15,.15,5,'#3a2a22',8.8,4.6,-4.2,grp);
+  box(1,1.1,1,'#3a2a22',9.8,1,-6.2,grp);candle(9.8,1.55,-6.2);
+  box(1.6,4.2,1.3,'#3a2a22',4.95,2.5,-6.2,grp);const wtop=new THREE.Mesh(new THREE.CylinderGeometry(.8,.8,1.3,16,1,false,0,Math.PI),lam('#3a2a22'));wtop.rotation.set(Math.PI/2,0,Math.PI/2);wtop.position.set(4.95,4.6,-6.2);grp.add(wtop);box(.05,3.8,.02,'#b08a3a',4.95,2.5,-5.54,grp,false);
+  const rug2=cyl(1.4,1.4,.05,'#7a2f45',7.2,.5,.6,grp,20);rug2.scale.z=.6;
+  // bathroom: clawfoot tub + gold mirror
+  box(3,1.1,2.2,'#f4f1ea',12.25,1.2,-5.4,grp);for(const [x,z] of [[11,-6.3],[13.5,-6.3],[11,-4.5],[13.5,-4.5]]){const f=new THREE.Mesh(new THREE.SphereGeometry(.15,8,6),lam('#b08a3a'));f.position.set(x,.72,z);grp.add(f)}
+  box(2.6,.1,1.8,lam('#9fd3ff',{transparent:true,opacity:.8}),12.25,1.7,-5.4,grp,false);
+  for(let i=0;i<6;i++){const b=new THREE.Mesh(new THREE.SphereGeometry(rand(.15,.3),8,6),lam('#ffffff',{transparent:true,opacity:.85}));b.position.set(12.25+rand(-1,1),1.85,-5.4+rand(-.7,.7));grp.add(b)}
+  const mir=new THREE.Mesh(new THREE.TorusGeometry(.75,.08,6,24),lam('#b08a3a'));mir.scale.y=1.3;mir.position.set(12.25,4,-6.72);grp.add(mir);const mg=new THREE.Mesh(new THREE.CircleGeometry(.72,24),lam('#cfe6f0'));mg.scale.y=1.3;mg.position.set(12.25,4,-6.74);grp.add(mg);
+  const il=new THREE.PointLight('#ffcf9a',.6,26,2);il.position.set(0,5,0);grp.add(il);p.innerLight=il;
+  // ---- the shell (front wall, bay, roofs) fades when he's inside ----
+  const shellMats=[],roofMats=[];let toRoof=false;const sm=(c,o)=>{const m=lam(c,Object.assign({transparent:true,opacity:1},o||{}));(toRoof?roofMats:shellMats).push(m);return m};
+  const fr=gothicTex(W,H,{wall:wallOut,windows:[[-11,1.1,26,44],[-7,1.1,26,44],[7,1.1,26,44],[11,1.1,26,44]]});const frM=sm('#ffffff',{map:fr.map,emissive:'#ffffff',emissiveMap:fr.em,emissiveIntensity:.2});winMats.push(frM);
+  const fw=new THREE.Group();grp.add(fw);box(W,H,.3,[sm(wallOut),sm(wallOut),sm(wallOut),sm(wallOut),frM,sm(wallIn)],0,H/2+.4,D/2,fw);
+  const bayT=gothicTex(8,H,{wall:wallOut,windows:[[0,.5,24,26]],door:[0,46,56]});const bayM=sm('#ffffff',{map:bayT.map,emissive:'#ffffff',emissiveMap:bayT.em,emissiveIntensity:.2});winMats.push(bayM);const bs=sm(wallOut);
+  box(8,H,2.2,[bs,bs,bs,bs,bayM,bs],0,H/2+.4,D/2+1.1,fw);
+  toRoof=true;const rs=canvasTex(64,64,scaleDraw);rs.wrapS=rs.wrapT=THREE.RepeatWrapping;rs.repeat.set(7,3);const roofM=sm('#ffffff',{map:rs});
+  const roof=gable(W,D,7,roofM,1.2);roof.position.y=H+.4;fw.add(roof);
+  const xg=gable(3.7,8.6,5,roofM,.3);xg.rotation.y=0;xg.position.set(0,H+.4,D/2+.35);fw.add(xg);
+  const trimM=sm(trim);const bl=Math.hypot(4.6,5.2),ba=Math.atan2(5.2,4.6);for(const sgn of [-1,1]){const b=box(bl,.22,.25,trimM,sgn*2.3,H+.4+2.6,D/2+2.56,fw,false);b.rotation.z=-sgn*ba}
+  const rose=new THREE.Mesh(new THREE.CircleGeometry(.85,24),sm('#ffcf80',{emissive:'#ff9a50',emissiveIntensity:.6}));rose.position.set(0,H+2.3,D/2+2.53);fw.add(rose);winMats.push(rose.material);
+  const rr=new THREE.Mesh(new THREE.TorusGeometry(.9,.1,6,24),trimM);rr.position.copy(rose.position);fw.add(rr);
+  const finM=sm('#b08a3a');const fin=(x,y,z,s=1)=>{const c=new THREE.Mesh(new THREE.ConeGeometry(.12*s,1.1*s,8),finM);c.position.set(x,y,z);fw.add(c);const b=new THREE.Mesh(new THREE.SphereGeometry(.16*s,8,6),finM);b.position.set(x,y-.5*s,z);fw.add(b)};
+  fin(0,H+.4+5.6,D/2+2.4);fin(-W/2-1,H+.4+7.4,0,1.2);fin(W/2+1,H+.4+7.4,0,1.2);
+  const crestG=new THREE.ConeGeometry(.06,.5,4);for(let x=-W/2;x<=W/2;x+=1.1){const c=new THREE.Mesh(crestG,finM);c.position.set(x,H+.4+7.25,0);fw.add(c)}
+  box(W+.6,.3,.5,trimM,0,H+.45,D/2+.1,fw,false);
+  for(const [x,z] of [[-9.5,-2.5],[8.5,-3]]){box(1.3,4.5,1.3,sm('#4a3436'),x,H+5.5,z,fw);box(1.6,.35,1.6,sm('#2b2836'),x,H+7.9,z,fw,false)}
+  toRoof=false;if(SEASON_KEY==='winter'){const wr=new THREE.Mesh(new THREE.TorusGeometry(.5,.16,8,20),sm('#2f6f4a'));wr.position.set(0,2.9,D/2+2.32);fw.add(wr);box(.3,.25,.1,sm('#c94f4f'),0,2.45,D/2+2.4,fw,false)}
+  p.shell=shellMats;p.roofShell=roofMats;
+  // ---- turret (stays solid; it's at the back corner) ----
+  const tt=gothicTex(18,14,{wall:wallOut,windows:[[-6,2,24,44],[0,2,24,44],[6,2,24,44],[-3,7.5,22,36],[3,7.5,22,36]]});const tM=lam('#ffffff',{map:tt.map,emissive:'#ffffff',emissiveMap:tt.em,emissiveIntensity:.2});winMats.push(tM);
+  const tx=W/2+2.6,tz=-D/2+1.5;cyl(2.8,2.9,14,tM,tx,7.4,tz,grp,20);cyl(3.05,3.05,.35,trim,tx,14.4,tz,grp,20);
+  const sp=new THREE.Mesh(new THREE.ConeGeometry(3.3,9,20),lam('#ffffff',{map:scaleTex}));sp.position.set(tx,19.1,tz);sp.castShadow=true;grp.add(sp);
+  const tf=new THREE.Mesh(new THREE.ConeGeometry(.12,1.6,8),lam('#b08a3a'));tf.position.set(tx,24.3,tz);grp.add(tf);const tb=new THREE.Mesh(new THREE.SphereGeometry(.2,8,6),lam('#b08a3a'));tb.position.set(tx,23.6,tz);grp.add(tb);
+  // ---- porch, lanterns, iron fence, gate, roses ----
+  for(let i=0;i<3;i++)box(3.4-i*.3,.25,.9,'#6a6570',0,.55-i*.2,D/2+2.6+i*.8,grp);
+  for(const sgn of [-1,1]){cyl(.07,.07,2.6,'#1e1e24',sgn*2.3,1.3,D/2+2.8,grp,6);box(.4,.55,.4,lam('#ffcf80',{emissive:'#ffb050',emissiveIntensity:.8}),sgn*2.3,2.8,D/2+2.8,grp,false);const g=glow('#ffb860',3,.7);g.position.set(sgn*2.3,2.8,D/2+2.8);grp.add(g)}
+  const FX0=-16.5,FX1=20,FZ0=-9.5,FZ1=11;const posts=[];
+  for(let x=FX0;x<=FX1;x+=1.1){posts.push([x,FZ0]);if(Math.abs(x)>1.8)posts.push([x,FZ1])}for(let z=FZ0+1.1;z<FZ1;z+=1.1){posts.push([FX0,z]);posts.push([FX1,z])}
+  const ironM=lam('#1e1e24');const pm=new THREE.InstancedMesh(new THREE.BoxGeometry(.1,1.8,.1),ironM,posts.length),tm=new THREE.InstancedMesh(new THREE.ConeGeometry(.09,.3,4),ironM,posts.length);const dm=new THREE.Object3D();
+  posts.forEach(([x,z],i)=>{dm.position.set(x,.9,z);dm.updateMatrix();pm.setMatrixAt(i,dm.matrix);dm.position.y=1.95;dm.updateMatrix();tm.setMatrixAt(i,dm.matrix)});pm.castShadow=true;grp.add(pm,tm);
+  for(const y of [.5,1.5]){box(FX1-FX0,.07,.07,ironM,(FX0+FX1)/2,y,FZ0,grp,false);box(.07,.07,FZ1-FZ0,ironM,FX0,y,(FZ0+FZ1)/2,grp,false);box(.07,.07,FZ1-FZ0,ironM,FX1,y,(FZ0+FZ1)/2,grp,false);box(-1.8-FX0,.07,.07,ironM,(FX0-1.8)/2,y,FZ1,grp,false);box(FX1-1.8,.07,.07,ironM,(FX1+1.8)/2,y,FZ1,grp,false)}
+  for(const sgn of [-1,1]){box(.8,2.6,.8,'#6a6570',sgn*2.2,1.3,FZ1,grp);const lb=new THREE.Mesh(new THREE.SphereGeometry(.3,10,8),lam('#ffcf80',{emissive:'#ffb050',emissiveIntensity:.9}));lb.position.set(sgn*2.2,2.9,FZ1);grp.add(lb);const g=glow('#ffb860',3.5,.7);g.position.copy(lb.position);grp.add(g)}
+  sign("Mocha's",2.4,grp,2.2,1.7,FZ1+.42,'#e8dff0','#3b3446');
+  const roseC=SEASON_KEY==='winter'?'#e8eef4':SEASON_KEY==='spring'?'#f29fb5':'#8a1f3a';for(let i=0;i<16;i++){const x=FX0+1+i*((FX1-FX0-2)/15);if(Math.abs(x)<3)continue;const b=new THREE.Mesh(new THREE.IcosahedronGeometry(.55,0),phongFlat(SEASON_KEY==='winter'?'#cfd8e2':'#2f4f3a'));b.position.set(x,.5,FZ1-1);grp.add(b);const f=new THREE.Mesh(new THREE.SphereGeometry(.16,6,6),lam(roseC));f.position.set(x+.2,.95,FZ1-.7);grp.add(f)}
+  if(SEASON_KEY==='fall')for(const [x,z,s] of [[-1.8,D/2+3.5,1],[1.9,D/2+3.3,.8],[2.4,D/2+4,.6]]){const pk=new THREE.Group();for(const [ox,sc] of [[-.3,.8],[.3,.8],[0,1]]){const m=new THREE.Mesh(new THREE.SphereGeometry(.5,12,8),lam('#e8742a'));m.scale.set(sc*.7,.65,sc*.8);m.position.x=ox;pk.add(m)}cyl(.06,.08,.3,'#4f6a3a',0,.45,0,pk,6);pk.scale.setScalar(s);pk.position.set(x,.35*s+.3,z);grp.add(pk)}
+}
 function neighborHouse(x,z,ry,col,roofCol){const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=ry;const w=11,d=9,h=5.5;
   const side=wallTex(w,h,col,{}),front=wallTex(w,h,col,{front:1,door:'#2f3f5f'});box(w,h,d,[side,side,lam(roofCol),lam(roofCol),front,side],0,h/2,0,g);
   const r=gable(w,d,3.6,lam(roofCol));r.position.y=h;g.add(r);box(3,.3,2,'#8a6a4a',0,.15,d/2+1,g);scene.add(g)}
+function grocery(p,grp){shop(p,grp);
+  for(let i=0;i<3;i++){const c=new THREE.Group();box(1.2,.7,1.6,'#c9d0d8',0,.9,0,c,false);for(const sx of [-.5,.5])for(const sz of [-.6,.6])cyl(.12,.12,.08,'#222222',sx,.12,sz,c,8).rotation.z=Math.PI/2;box(1.2,.08,.08,'#c94f4f',0,1.45,-.85,c,false);c.position.set(-8.5+i*1.5,0,p.d/2+3.4);c.rotation.y=.3;grp.add(c)}
+  const fc=['#e04a3a','#f2c14e','#7fbf4a','#f28a3a'];for(let i=0;i<4;i++){const x=3.2+i*1.9;box(1.7,.8,1.3,'#8a6a4a',x,.4,p.d/2+2.7,grp);for(let k=0;k<6;k++){const f=new THREE.Mesh(new THREE.SphereGeometry(.22,8,6),lam(fc[i]));f.position.set(x-.5+(k%3)*.5,.95,p.d/2+2.45+Math.floor(k/3)*.5);grp.add(f)}}
+  box(2,1.2,1,'#e7d8c3',-3.5,.6,p.d/2+2.6,grp);for(let k=0;k<5;k++){const b=new THREE.Mesh(new THREE.SphereGeometry(.25,8,6),lam('#c99a5a'));b.scale.set(1.4,.7,1);b.position.set(-4.2+k*.35,1.35,p.d/2+2.6);grp.add(b)}}
+function petStore(p,grp){shop(p,grp);p.display=[];['bat','poodle','hedgehog','cat','crow'].forEach((sp,i)=>{const x=-4.4+i*2.2,z=p.d/2+3.3;box(1.9,.4,1.9,'#e7d8c3',x,.2,z,grp);
+  for(const [dx,dz,w,d] of [[0,-.9,1.9,.06],[-.92,0,.06,1.9],[.92,0,.06,1.9]])box(w,.6,d,'#f4f1ea',x+dx,.7,z+dz,grp,false);
+  const pet=makePet(sp);pet.position.set(x,.4,z);if(sp==='bat'){box(.08,2,.08,'#5a4632',x,1.4,z,grp);box(1,.08,.08,'#5a4632',x,2.4,z,grp);pet.position.y=2.05;pet.rotation.z=Math.PI;pet.userData.hang=true}
+  if(sp==='crow'){box(.06,1,.06,'#5a4632',x,.9,z,grp);box(.8,.06,.06,'#5a4632',x,1.4,z,grp);pet.position.y=1.62;pet.userData.perch=true}
+  grp.add(pet);p.display.push(pet)})}
 function buildPlace(p){const grp=new THREE.Group();grp.position.set(p.x,0,p.z);grp.rotation.y=p.ry;
-  ({home:dollhouse,library,market,needle,wheel,dock,lighthouse,troll,hill,conservatory,gumwall,park}[p.kind]||shop)(p,grp);scene.add(grp);p.obj=grp}
+  ({home:dollhouse,grocery,petstore:petStore,library,market,needle,wheel,dock,lighthouse,troll,hill,conservatory,gumwall,park}[p.kind]||shop)(p,grp);scene.add(grp);p.obj=grp}
 PLACES.filter(p=>p.kind!=='spot').forEach(buildPlace);
 for(let z=-60;z<=50;z+=14){box(2.6,.25,.9,'#8a6a4a',-55.5,1,z);box(2.6,.9,.2,'#8a6a4a',-55.1,1.5,z)}
 for(let z=-95;z<=62;z+=3)cyl(.08,.08,1.4,'#2f3f5f',-60.3,1.2,z,scene,6);
@@ -464,20 +540,29 @@ const hazeM=c=>new THREE.MeshBasicMaterial({color:c,fog:false});
  const mtn=new THREE.Group();mtn.position.set(330,0,330);scene.add(mtn);const base=new THREE.Mesh(new THREE.ConeGeometry(170,120,7),hazeM('#9aa8c4'));base.position.y=60;mtn.add(base);const snow=new THREE.Mesh(new THREE.ConeGeometry(70,50,7),hazeM('#f4f6fb'));snow.position.y=95;mtn.add(snow);p_mtn=[base.material,snow.material];
  for(let i=0;i<9;i++){const hh=rand(40,70);const c=new THREE.Mesh(new THREE.ConeGeometry(rand(40,70),hh,6),hazeM('#8a9ab8'));c.position.set(-420+rand(-30,30),hh/2-4,-200+i*55);scene.add(c);p_olym.push(c.material)}}
 // trees: evergreens + autumn maples
-const blockers=PLACES.map(p=>({x:p.x,z:p.z,r:p.kind==='park'?22:p.kind==='spot'?5:p.kind==='hill'?18:p.kind==='troll'?14:p.r+4}));
+const blockers=PLACES.map(p=>({x:p.x,z:p.z,r:p.kind==='home'?26:p.kind==='park'?22:p.kind==='spot'?5:p.kind==='hill'?18:p.kind==='troll'?14:p.r+4}));
 function nearRoad(x,z,dd){return ROADS.some(([x1,z1,x2,z2])=>{const dx=x2-x1,dz=z2-z1,l=dx*dx+dz*dz;const t=clamp(((x-x1)*dx+(z-z1)*dz)/l,0,1);return Math.hypot(x-x1-dx*t,z-z1-dz*t)<dd})}
-const trees=[];const firM=['#2f5f4a','#3a6b52','#2a5240'].map(phongFlat),mapleM=['#e07a3a','#d4553a','#f2b13e','#c9683a','#e89a4a'].map(phongFlat),trunkM=lam('#5a4632');
-const coneG=new THREE.ConeGeometry(1,1,7),blobG=new THREE.IcosahedronGeometry(1,1),trunkG=new THREE.CylinderGeometry(.3,.45,1,6);
+const trees=[];const firM=['#2f5f4a','#3a6b52','#2a5240','#35624d'].map(phongFlat),mapleMs=SEASON.maple.map(phongFlat),trunkM=lam('#5a4632'),snowM=phongFlat('#f4f7fb');
+const coneG=new THREE.ConeGeometry(1,1,8),blobG=new THREE.IcosahedronGeometry(1,1),trunkG=new THREE.CylinderGeometry(.3,.45,1,6),branchG=new THREE.CylinderGeometry(.08,.14,1,5);
 const NB=[[14,40],[80,44],[18,72],[42,74]];
-for(let i=0;i<2400&&trees.length<230;i++){const x=rand(-56,150),z=rand(-125,125);
+for(let i=0;i<2600&&trees.length<240;i++){const x=rand(-56,150),z=rand(-125,125);
   if(blockers.some(b=>Math.hypot(x-b.x,z-b.z)<b.r))continue;if(nearRoad(x,z,8))continue;if(trees.some(t=>Math.hypot(t.x-x,t.z-z)<5.5))continue;if(NB.some(([a,b])=>Math.hypot(a-x,b-z)<10))continue;
   trees.push({x,z})}
-trees.forEach(t=>{const g=new THREE.Group();const fir=Math.random()<.6;const s=rand(.85,1.4);
-  const tr=new THREE.Mesh(trunkG,trunkM);tr.scale.set(1,fir?2:3,1);tr.position.y=fir?1:1.5;tr.castShadow=true;g.add(tr);
-  if(fir){const m=pick(firM);for(let k=0;k<3;k++){const c=new THREE.Mesh(coneG,m);c.scale.set(3.2-k*.8,4-k*.6,3.2-k*.8);c.position.y=3.6+k*2.2;c.castShadow=true;g.add(c)}}
-  else{const m=pick(mapleM);t.maple=true;for(let k=0;k<4;k++){const b=new THREE.Mesh(blobG,m);b.scale.setScalar(rand(1.6,2.4));b.position.set(rand(-1.2,1.2),4+rand(0,2),rand(-1.2,1.2));b.castShadow=true;g.add(b)}}
+trees.forEach(t=>{const g=new THREE.Group();const fir=Math.random()<.55;const s=rand(.85,1.4);t.s=s;
+  const tr=new THREE.Mesh(trunkG,trunkM);tr.scale.set(1,fir?2:3.2,1);tr.position.y=fir?1:1.6;tr.castShadow=true;g.add(tr);
+  if(fir){const m=pick(firM);for(let k=0;k<4;k++){const c=new THREE.Mesh(coneG,m);c.scale.set(3.4-k*.75,3.4-k*.4,3.4-k*.75);c.position.y=3.2+k*1.9;c.rotation.y=Math.random()*3;c.castShadow=true;g.add(c);
+      if(SEASON.snowy){const sc=new THREE.Mesh(coneG,snowM);sc.scale.set((3.4-k*.75)*.62,(3.4-k*.4)*.45,(3.4-k*.75)*.62);sc.position.y=3.2+k*1.9+(3.4-k*.4)*.3;g.add(sc)}}}
+  else{t.maple=true;for(const sgn of [-1,1]){const b=new THREE.Mesh(branchG,trunkM);b.scale.y=2;b.position.set(sgn*.5,3.4,0);b.rotation.z=-sgn*.6;g.add(b)}
+    const n=SEASON.bare?3:7;for(let k=0;k<n;k++){const b=new THREE.Mesh(blobG,pick(mapleMs));const r=SEASON.bare?rand(.7,1.1):rand(1.3,2.1);b.scale.set(r,r*.85,r);const a=k/n*Math.PI*2;b.position.set(Math.cos(a)*rand(.6,1.5),4.3+rand(0,1.8)+(k===0?1:0),Math.sin(a)*rand(.6,1.5));b.rotation.set(Math.random()*3,Math.random()*3,0);b.castShadow=true;g.add(b)}}
   g.position.set(t.x,0,t.z);g.scale.setScalar(s);g.userData.ph=Math.random()*6;scene.add(g);t.obj=g});
-{const lg=new THREE.PlaneGeometry(.5,.4),m1=lam('#e07a3a'),m2=lam('#f2b13e');const maples=trees.filter(t=>t.maple);if(maples.length)for(let i=0;i<300;i++){const t=pick(maples);const l=new THREE.Mesh(lg,i%3?m1:m2);l.rotation.set(-Math.PI/2,0,Math.random()*6);l.position.set(t.x+rand(-4,4),.1,t.z+rand(-4,4));scene.add(l)}}
+{const maples=trees.filter(t=>t.maple);const n=SEASON.litter;if(maples.length&&n){const lg=new THREE.PlaneGeometry(.55,.45);const mats=SEASON.fall.map(c=>lam(c));const im=mats.map(m=>new THREE.InstancedMesh(lg,m,Math.ceil(n/mats.length)));const d=new THREE.Object3D();
+  im.forEach((m,mi)=>{for(let i=0;i<m.count;i++){const t=pick(maples);const a=Math.random()*6,r=Math.sqrt(Math.random())*4.5*t.s;d.position.set(t.x+Math.cos(a)*r,.09+Math.random()*.02,t.z+Math.sin(a)*r);d.rotation.set(-Math.PI/2,0,Math.random()*6);d.scale.setScalar(rand(.7,1.2));d.updateMatrix();m.setMatrixAt(i,d.matrix)}m.receiveShadow=true;scene.add(m)})}
+ if(SEASON.snowy){const sm=lam('#f4f7fb');const g=new THREE.CircleGeometry(1,16);for(let i=0;i<90;i++){const m=new THREE.Mesh(g,sm);m.rotation.x=-Math.PI/2;m.scale.set(rand(2,5),rand(1.5,3.5),1);m.position.set(rand(-55,150),.1,rand(-120,120));scene.add(m)}}}
+// bushes
+{const bm=phongFlat(SEASON.snowy?'#c9d3dd':'#3f6f4a'),bm2=phongFlat(SEASON.snowy?'#e4eaf0':'#4f8a55');for(let i=0,n=0;i<900&&n<90;i++){const x=rand(-55,150),z=rand(-120,120);if(blockers.some(b=>Math.hypot(x-b.x,z-b.z)<b.r-1)||nearRoad(x,z,6.5)||trees.some(t=>Math.hypot(t.x-x,t.z-z)<3))continue;n++;
+  const g=new THREE.Group();for(let k=0;k<3;k++){const b=new THREE.Mesh(blobG,k%2?bm:bm2);b.scale.setScalar(rand(.6,1));b.position.set(rand(-.6,.6),.5,rand(-.6,.6));b.castShadow=true;g.add(b)}
+  if(SEASON_KEY==='spring'||SEASON_KEY==='summer')for(let k=0;k<4;k++){const f=new THREE.Mesh(new THREE.SphereGeometry(.12,6,5),lam(pick(['#ff7ab0','#ffd36b','#ffffff','#c49bff'])));f.position.set(rand(-.8,.8),rand(.7,1.1),rand(-.8,.8));g.add(f)}
+  g.position.set(x,0,z);scene.add(g)}}
 // street lamps
 const lampPole=new THREE.CylinderGeometry(.12,.16,5,6),lampBulb=new THREE.SphereGeometry(.45,10,8),bulbM=lam('#fff2c8',{emissive:'#ffd36b',emissiveIntensity:.2});winMats.push(bulbM);
 ROADS.forEach(([x1,z1,x2,z2])=>{const len=Math.hypot(x2-x1,z2-z1),nx=-(z2-z1)/len,nz=(x2-x1)/len;for(let t=8;t<len;t+=22){const x=x1+(x2-x1)*t/len+nx*5.6,z=z1+(z2-z1)*t/len+nz*5.6;if(x<-61)continue;if(PLACES.some(p=>p.solid&&Math.hypot(p.x-x,p.z-z)<p.r+1))continue;
@@ -494,6 +579,7 @@ const moon=new THREE.Mesh(new THREE.CircleGeometry(16,32),new THREE.MeshBasicMat
 const clouds=[];for(let i=0;i<14;i++){const g=new THREE.Group();const m=new THREE.MeshLambertMaterial({color:'#ffffff',transparent:true,opacity:.85,fog:false});for(let k=0;k<5;k++){const s=new THREE.Mesh(blobG,m);s.scale.set(rand(10,18),rand(5,8),rand(8,12));s.position.set(k*12-24,rand(-2,3),rand(-5,5));g.add(s)}g.position.set(rand(-400,400),rand(90,140),rand(-400,400));g.userData.v=rand(2,5);scene.add(g);clouds.push({g,m})}
 const RN=1600,rainPos=new Float32Array(RN*3);for(let i=0;i<RN;i++){rainPos[i*3]=rand(-40,40);rainPos[i*3+1]=rand(0,35);rainPos[i*3+2]=rand(-40,40)}
 const rainTex=canvasTex(8,32,g=>{const gr=g.createLinearGradient(0,0,0,32);gr.addColorStop(0,'rgba(255,255,255,0)');gr.addColorStop(1,'rgba(220,235,255,.9)');g.fillStyle=gr;g.fillRect(3,0,2,32)});
+const snowTex=canvasTex(32,32,g=>{const gr=g.createRadialGradient(16,16,0,16,16,15);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,32,32)});
 const rain=new THREE.Points(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(rainPos,3)),new THREE.PointsMaterial({map:rainTex,size:.9,transparent:true,opacity:0,depthWrite:false,color:'#dfe9f5'}));rain.frustumCulled=false;scene.add(rain);
 const FF=60,ffPos=new Float32Array(FF*3),ffD=[];for(let i=0;i<FF;i++)ffD.push({x:rand(-50,140),z:rand(-110,110),y:rand(1,4),a:rand(0,6)});
 const fireflies=new THREE.Points(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(ffPos,3)),new THREE.PointsMaterial({color:'#fff3a0',size:.8,map:glowTex,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));fireflies.frustumCulled=false;scene.add(fireflies);
@@ -521,6 +607,61 @@ const shadowBlob=new THREE.Mesh(new THREE.CircleGeometry(.6,24),new THREE.MeshBa
 const WN=24,wPos=new Float32Array(WN*3).fill(-50),wLife=new Float32Array(WN);let wI=0;
 const wisps=new THREE.Points(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(wPos,3)),new THREE.PointsMaterial({color:'#eef0ff',size:.5,map:glowTex,transparent:true,opacity:.6,depthWrite:false}));wisps.frustumCulled=false;scene.add(wisps);
 
+// ---------- pets ----------
+const PET_TYPES={bat:{label:'little bat',names:['Nibbles','Velvet','Count Fluff','Moth','Inky'],e:'🦇'},poodle:{label:'miniature red poodle',names:['Clementine','Biscuit','Paprika','Rusty','Fig'],e:'🐩'},hedgehog:{label:'hedgehog',names:['Pickles','Bramble','Sir Prickles','Truffle'],e:'🦔'},cat:{label:'black cat',names:['Salem','Midnight','Pepper','Soot'],e:'🐈‍⬛'},crow:{label:'baby crow',names:['Pebble','Edgar','Shiny','Button'],e:'🐦‍⬛'}};
+function makePet(sp){const g=new THREE.Group();const u=g.userData;u.sp=sp;u.legs=[];u.wings=[];u.tail=null;
+  const add=(geo,mat,x,y,z,sx=1,sy=1,sz=1,par=g)=>{const o=new THREE.Mesh(geo,mat);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;par.add(o);return o};
+  const eyeM=lam('#1a1a22'),whiteM=lam('#ffffff');
+  if(sp==='poodle'){const c=lam('#b5503a'),c2=lam('#c8664a');add(SPH,c,0,.56,0,.3,.27,.4);add(SPH,c2,0,.64,.28,.27,.27,.25);
+    const head=new THREE.Group();head.position.set(0,.92,.42);g.add(head);u.head=head;add(SPH,c2,0,0,0,.21,.2,.2,head);add(SPH,c,0,.19,-.02,.17,.15,.17,head);add(SPH,c2,0,-.07,.19,.1,.09,.14,head);add(SPH,eyeM,0,-.05,.32,.035,.03,.03,head);
+    for(const s of [-1,1]){add(SPH,c,s*.19,-.08,-.02,.09,.17,.08,head);add(SPH,eyeM,s*.08,.03,.18,.03,.035,.02,head)}
+    for(const [x,z] of [[-.14,.24],[.14,.24],[-.14,-.24],[.14,-.24]]){const l=new THREE.Group();l.position.set(x,.42,z);g.add(l);add(new THREE.CylinderGeometry(.045,.045,.34,6),c,0,-.17,0,1,1,1,l);add(SPH,c2,0,-.34,0,.08,.08,.08,l);u.legs.push(l)}
+    const tl=new THREE.Group();tl.position.set(0,.72,-.36);g.add(tl);add(new THREE.CylinderGeometry(.03,.03,.25,6),c,0,.12,0,1,1,1,tl);add(SPH,c2,0,.28,0,.1,.1,.1,tl);tl.rotation.x=-.5;u.tail=tl}
+  else if(sp==='bat'){const c=lam('#3d3550'),wm=new THREE.MeshLambertMaterial({color:'#5a4a70',side:THREE.DoubleSide});add(SPH,c,0,0,0,.2,.22,.2);add(SPH,c,0,.24,.04,.16,.15,.15);
+    for(const s of [-1,1]){const e=add(new THREE.ConeGeometry(.06,.16,6),c,s*.09,.42,.04);e.rotation.z=-s*.25;add(SPH,whiteM,s*.06,.27,.17,.045,.05,.03);add(SPH,eyeM,s*.06,.27,.195,.024,.028,.02);
+      const shp=new THREE.Shape();shp.moveTo(0,0);shp.lineTo(.6,.2);shp.quadraticCurveTo(.52,0,.58,-.14);shp.quadraticCurveTo(.44,-.05,.38,-.18);shp.quadraticCurveTo(.27,-.06,.19,-.17);shp.quadraticCurveTo(.1,-.05,0,-.1);shp.closePath();
+      const wg=new THREE.Group();wg.position.set(s*.14,.05,0);g.add(wg);const w=new THREE.Mesh(new THREE.ShapeGeometry(shp),wm);w.rotation.x=-Math.PI/2;w.scale.x=s;wg.add(w);u.wings.push(wg)}
+    add(new THREE.ConeGeometry(.015,.05,4),whiteM,.03,.17,.18).rotation.x=Math.PI;u.fly=true}
+  else if(sp==='hedgehog'){const c=lam('#9a7a5a'),sk=lam('#4a3a2a'),face=lam('#ead6bc');add(SPH,c,0,.28,0,.32,.25,.38);
+    const spG=new THREE.ConeGeometry(.045,.2,4),up=new THREE.Vector3(0,1,0);for(let i=0;i<46;i++){const a=Math.random()*Math.PI*2,b=Math.random()*1.2;const d=new THREE.Vector3(Math.cos(a)*Math.sin(b),Math.cos(b),Math.sin(a)*Math.sin(b)-.25).normalize();if(d.z>.5||d.y<.05)continue;const q=add(spG,sk,d.x*.3,.28+d.y*.24,d.z*.36);q.quaternion.setFromUnitVectors(up,d)}
+    add(new THREE.ConeGeometry(.13,.3,10),face,0,.22,.42).rotation.x=Math.PI/2;add(SPH,eyeM,0,.22,.58,.035,.035,.035);for(const s of [-1,1])add(SPH,eyeM,s*.09,.32,.36,.03,.035,.02);
+    for(const [x,z] of [[-.15,.2],[.15,.2],[-.15,-.2],[.15,-.2]]){const l=new THREE.Group();l.position.set(x,.08,z);g.add(l);add(SPH,face,0,0,0,.06,.06,.08,l);u.legs.push(l)}}
+  else if(sp==='cat'){const c=lam('#2a2833'),ey=lam('#c8e05a');add(SPH,c,0,.44,0,.21,.21,.36);
+    const head=new THREE.Group();head.position.set(0,.7,.34);g.add(head);u.head=head;add(SPH,c,0,0,0,.2,.18,.18,head);for(const s of [-1,1]){const e=add(new THREE.ConeGeometry(.07,.15,4),c,s*.11,.17,0,1,1,1,head);e.rotation.z=-s*.2;add(SPH,ey,s*.075,.02,.15,.045,.055,.02,head);add(SPH,eyeM,s*.075,.02,.166,.014,.042,.01,head)}add(SPH,lam('#f29fb5'),0,-.04,.17,.022,.016,.012,head);
+    for(const [x,z] of [[-.11,.22],[.11,.22],[-.11,-.22],[.11,-.22]]){const l=new THREE.Group();l.position.set(x,.32,z);g.add(l);add(new THREE.CylinderGeometry(.045,.04,.32,6),c,0,-.16,0,1,1,1,l);u.legs.push(l)}
+    const tl=new THREE.Group();tl.position.set(0,.5,-.34);g.add(tl);for(let i=0;i<7;i++){const a=i/6;add(SPH,c,0,a*.5,-Math.sin(a*1.5)*.18,.045,.045,.045,tl)}u.tail=tl}
+  else if(sp==='crow'){const c=lam('#1e1e28'),bk=lam('#5a5a62');add(SPH,c,0,0,0,.17,.16,.26);add(SPH,c,0,.14,.19,.13,.12,.12);add(new THREE.ConeGeometry(.045,.16,6),bk,0,.12,.35).rotation.x=Math.PI/2;
+    for(const s of [-1,1]){add(SPH,whiteM,s*.065,.18,.28,.03,.03,.02);add(SPH,eyeM,s*.068,.18,.295,.016,.02,.01);const wg=new THREE.Group();wg.position.set(s*.12,.04,0);g.add(wg);add(SPH,c,s*.17,0,-.02,.2,.03,.13,wg);u.wings.push(wg)}
+    add(new THREE.ConeGeometry(.08,.22,4),c,0,0,-.3).rotation.x=-Math.PI/2;u.fly=true}
+  return g}
+function animatePet(g,t,mv){const u=g.userData;const ph=t*(mv?11:3);u.legs.forEach((l,i)=>l.rotation.x=mv?Math.sin(ph+(i%2?Math.PI:0)+(i>1?Math.PI:0))*.6:0);
+  if(u.wings.length){const f=u.hang||u.perch?.05:Math.sin(t*(u.sp==='bat'?15:9))*.7;u.wings.forEach((w,i)=>w.rotation.z=(i?-1:1)*(u.hang?.9:u.perch?0:f))}
+  if(u.tail)u.tail.rotation.y=Math.sin(t*(u.sp==='poodle'?12:2))*(u.sp==='poodle'?.6:.3);if(u.head&&!mv)u.head.rotation.y=Math.sin(t*.7+g.id)*.35}
+const petObjs=[];let petsReady=false;
+function syncPets(){if(!petsReady)return;petObjs.forEach(o=>scene.remove(o.obj));petObjs.length=0;S.pets.forEach((p,i)=>{if(!PET_TYPES[p.species])return;const obj=makePet(p.species);obj.scale.setScalar(1.15);scene.add(obj);petObjs.push({obj,data:p,x:G.x+1.5+i,z:G.z+1.5,y:obj.userData.fly?G.y:.2,i,fly:!!obj.userData.fly})})}
+// ---------- home decor he can buy ----------
+const DECOR={candelabra:'brass candelabra',fern:'potted fern',painting:'moody oil painting',kettle:'copper tea kettle',lights:'string lights',pumpkin:'carved pumpkin',blanket:'velvet throw blanket',cauldron:'tiny cauldron planter',petbed:'cozy pet bed'};
+const decorObjs={};
+function decorModel(id){const g=new THREE.Group();const gl=(c,s,x,y,z)=>{const q=glow(c,s,.8,false);q.position.set(x,y,z);g.add(q)};
+  switch(id){
+   case'candelabra':box(.5,.08,.5,'#b08a3a',0,0,0,g);cyl(.04,.04,.6,'#b08a3a',0,.3,0,g,6);box(.9,.05,.05,'#b08a3a',0,.6,0,g);for(const x of [-.42,0,.42]){cyl(.05,.05,.3,'#f4ead8',x,.78,0,g,8);gl('#ffc070',.9,x,1.02,0)}g.position.set(-9.4,2.32,-.3);break;
+   case'fern':cyl(.45,.35,.7,'#5a3a4a',0,.35,0,g,10);for(let i=0;i<8;i++){const l=new THREE.Mesh(new THREE.ConeGeometry(.16,1.3,4),phongFlat('#4f8f5a'));const a=i/8*Math.PI*2;l.position.set(Math.cos(a)*.3,1.1,Math.sin(a)*.3);l.rotation.set(Math.sin(a)*.7,0,-Math.cos(a)*.7);g.add(l)}g.position.set(-5.3,.65,2.6);break;
+   case'painting':{box(2.2,1.6,.1,'#b08a3a',0,0,0,g);const t=canvasTex(64,48,c=>{const gr=c.createLinearGradient(0,0,0,48);gr.addColorStop(0,'#2a3a5a');gr.addColorStop(1,'#c96a4a');c.fillStyle=gr;c.fillRect(0,0,64,48);c.fillStyle='#fff6d8';c.beginPath();c.arc(44,14,6,0,7);c.fill();c.fillStyle='#1e2430';c.beginPath();c.moveTo(0,48);c.lineTo(20,26);c.lineTo(34,38);c.lineTo(50,22);c.lineTo(64,48);c.fill()});const pm=new THREE.Mesh(new THREE.PlaneGeometry(1.95,1.35),new THREE.MeshLambertMaterial({map:t}));pm.position.z=.06;g.add(pm);g.position.set(-3,4.55,-6.62);break}
+   case'kettle':{const k=new THREE.Mesh(new THREE.SphereGeometry(.32,12,10),new THREE.MeshPhongMaterial({color:'#c87a4a',shininess:80}));k.scale.y=.8;g.add(k);const sp=new THREE.Mesh(new THREE.CylinderGeometry(.04,.07,.4,6),k.material);sp.position.set(.35,.08,0);sp.rotation.z=-1;g.add(sp);const h=new THREE.Mesh(new THREE.TorusGeometry(.2,.03,6,12,Math.PI),k.material);h.position.y=.25;g.add(h);g.position.set(-12.8,2.98,-6);break}
+   case'lights':for(let i=0;i<11;i++){const x=-1.8+i*.36,y=-Math.sin(i/10*Math.PI)*.35;const b=new THREE.Mesh(new THREE.SphereGeometry(.07,6,6),lam(['#ffcf80','#f29fb5','#9fd3ff'][i%3],{emissive:['#ffb050','#f2709f','#6fb3ff'][i%3],emissiveIntensity:1}));b.position.set(x,y,0);g.add(b);gl(['#ffcf80','#f29fb5','#9fd3ff'][i%3],.5,x,y,.05)}g.position.set(7.2,5.5,-6.6);break;
+   case'pumpkin':{for(const [ox,sc] of [[-.3,.8],[.3,.8],[0,1]]){const m=new THREE.Mesh(new THREE.SphereGeometry(.5,12,8),lam('#e8742a',{emissive:'#ff7a20',emissiveIntensity:.3}));m.scale.set(sc*.7,.65,sc*.8);m.position.x=ox;g.add(m)}cyl(.06,.08,.3,'#4f6a3a',0,.45,0,g,6);gl('#ff9a40',2,0,.1,.4);g.position.set(-1.3,1.05,p_home.d/2+2.6);break}
+   case'blanket':{const b=box(1.7,.12,1.5,'#3f6a6a',0,0,0,g);b.rotation.z=.1;box(1.7,.6,.12,'#3f6a6a',.05,-.3,.75,g);g.position.set(1,1.62,-.4);break}
+   case'cauldron':{const c=new THREE.Mesh(new THREE.SphereGeometry(.45,12,8,0,Math.PI*2,Math.PI*.35,Math.PI*.65),lam('#1e1e24'));c.material.side=THREE.DoubleSide;g.add(c);for(let i=0;i<5;i++){const l=new THREE.Mesh(new THREE.IcosahedronGeometry(.22,0),phongFlat('#5f9f5a'));l.position.set(rand(-.2,.2),.25,rand(-.2,.2));g.add(l)}g.position.set(1.4,1.05,p_home.d/2+2.7);break}
+   case'petbed':{const r=new THREE.Mesh(new THREE.TorusGeometry(.55,.2,8,20),lam('#7a2f45'));r.rotation.x=Math.PI/2;g.add(r);cyl(.5,.5,.12,'#e7d8c3',0,-.05,0,g,16);g.position.set(-3.6,.78,2.2);break}
+  }return g}
+var p_home=null;
+function applyDecor(){const h=byId.home;if(!h.obj)return;p_home=h;S.decor.forEach(id=>{if(!decorObjs[id]&&DECOR[id]){const m=decorModel(id);h.obj.add(m);decorObjs[id]=m}});for(const id in decorObjs)if(!S.decor.includes(id)){h.obj.remove(decorObjs[id]);delete decorObjs[id]}}
+function buyDecor(id,t=Date.now(),place){if(!DECOR[id]||S.decor.includes(id))return false;S.decor.push(id);applyDecor();addEntry('Home',`Bought a ${DECOR[id]} for my house${place?' at '+place:''}. ${pick(['It looks perfect there.','The house feels more like mine now.','I moved it six times before it felt right.'])}`,place,t+1);toast(`🏠 Mocha bought a ${DECOR[id]}`);return true}
+function adoptPet(sp,name,t=Date.now(),place){if(!PET_TYPES[sp]||S.pets.length>=2||S.pets.some(p=>p.species===sp))return false;name=String(name||pick(PET_TYPES[sp].names)).replace(/[^\w '\-]/g,'').slice(0,20)||pick(PET_TYPES[sp].names);
+  S.pets.push({species:sp,name,since:t});syncPets();addEntry('New family member',`I adopted a ${PET_TYPES[sp].label} from Wag & Whisker! Their name is ${name}. I didn't plan this. I just looked at them and knew.`,place||'Wag & Whisker Pets',t,true);toast(`🐾 Mocha adopted a ${PET_TYPES[sp].label} named ${name}!`);bumpInterest('animals',2);return true}
+function considerAdoption(t,place){if(S.pets.length>=2)return;const a=S.interests.animals||0,v=S.visits.petstore||0;const ch=(a-2)*.05+(v>=3?.06:0)+(S.traits.sociability-.5)*.08-(S.pets.length?.12:0);if(Math.random()>ch)return;
+  const I=k=>Math.max(0,S.interests[k]||0);const w={bat:1+I('night')*.3+I('mystery')*.3+I('stars')*.2,poodle:1+I('people')*.2+I('cozy')*.2+I('nature')*.1,hedgehog:1+I('nature')*.3+I('plants')*.2,cat:1+I('cozy')*.3+I('reading')*.2,crow:1+I('birds')*.4+I('mystery')*.2};
+  S.pets.forEach(p=>w[p.species]=0);let r=Math.random()*Object.values(w).reduce((x,y)=>x+y,0);for(const k in w){r-=w[k];if(r<=0){adoptPet(k,null,t,place);return}}}
 // ---------- wardrobe 3D models ----------
 function accModel(item,color){const g=new THREE.Group();const m=lam(color),m2=lam('#fffaf2'),dk=lam('#26324a');
   const add=(geo,mat,x,y,z,sx=1,sy=1,sz=1)=>{const o=new THREE.Mesh(geo,mat);o.position.set(x,y,z);o.scale.set(sx,sy,sz);g.add(o);return o};
@@ -588,12 +729,14 @@ function localAcquire(act,t,placeName){const pool=act.pool||[];if(!pool.length)r
   const item=pick(pool);if(S.owned.some(o=>o.item===item)&&Math.random()<.75)return;if(!S.favColor)S.favColor=pick(PALETTE);const color=Math.random()<.5?S.favColor:pick(PALETTE);
   const it=acquire(item,color,null,placeName,t);if(!it)return;addEntry('Style',`Found a ${it.name} at ${placeName}. ${pick(['It just felt like me.','I didn\'t plan to, but I couldn\'t leave without it.','Is this… my style? Maybe this is my style.'])}`,placeName,t+1);
   toast(`🧣 Mocha picked out a ${it.name}`);if(Math.random()<.75)wearItem(it.id)}
-const TAGNAME={cooking:'Food',coffee:'Coffee',tea:'Home',reading:'Reading',music:'Music',gaming:'Games',art:'Art',nature:'Outside',birds:'Outside',ocean:'Outside',fashion:'Style',cozy:'Home',people:'People',heights:'Views',rides:'Fun',stars:'Night',plants:'Plants',mystery:'Mystery',photography:'Views',writing:'Writing',learning:'Learned'};
+const TAGNAME={animals:'Pets','home decor':'Home',cooking:'Food',coffee:'Coffee',tea:'Home',reading:'Reading',music:'Music',gaming:'Games',art:'Art',nature:'Outside',birds:'Outside',ocean:'Outside',fashion:'Style',cozy:'Home',people:'People',heights:'Views',rides:'Fun',stars:'Night',plants:'Plants',mystery:'Mystery',photography:'Views',writing:'Writing',learning:'Learned'};
 function localOutcome(act,t=Date.now(),live=true){const p=byId[act.p];const pname=p.name;const tr=S.traits;
   let e=.4+rand(-.55,.6);act.tags.forEach(k=>{e+=(S.interests[k]||0)*.04;if(k==='cozy')e+=(tr.coziness-.5)*.4;if(k==='people')e+=(tr.sociability-.5)*.5;if(k==='art'||k==='writing')e+=(tr.creativity-.5)*.4;if(k==='heights'||k==='rides')e+=(tr.adventure-.5)*.4});e=clamp(e,-1,1);
   for(const n in act.need||{})S.needs[n]=clamp(S.needs[n]+act.need[n],0,100);if(act.fx==='sleep')S.needs.energy=100;S.xp+=10;S.visits[p.id]=(S.visits[p.id]||0)+1;
   if(S.visits[p.id]===1&&p.id!=='home')goalCheck('new',null,t);
   const newH=[];act.tags.forEach(k=>{const r=bumpInterest(k,e*1.1-.15);if(!r)return;if(r[0]<2&&r[1]>=2&&!isQuiet)addEntry('Thought',`I think I'm starting to really like ${k}.`,'',t+3);if(r[1]>=6&&HOBBY_FROM[k]&&!S.hobbies.some(h=>h.tag===k||h.name===HOBBY_FROM[k].name))newH.push(k);if(r[0]>-1.5&&r[1]<=-1.5)addEntry('Thought',`Okay, I've decided: ${k} isn't really my thing. And that's allowed.`,'',t+3)});
+  if(act.p==='home'&&act.s==='kitchen'&&act.doing==='cooking'&&S.pantry<12){addEntry('Food','Opened the fridge to cook something. It was completely empty except for one very lonely pickle. I need groceries.',pname,t);bumpInterest('cooking',-.3);S.needs.snack=clamp(S.needs.snack-30,0,100);S.recent.unshift('home.kitchen');return}
+  if(act.p==='home'&&act.s==='kitchen'&&act.doing==='cooking')S.pantry=Math.max(0,S.pantry-25);
   if(act.fx==='research')research(t,p.id);
   else if(act.fx==='closet')closetChange(t,pname);
   else{const base=act.hobby?`Spent time on ${act.hobby}. ${pick(['It\'s getting easier.','I lost track of time, which for a ghost is saying something.','Still not perfect. Still love it.'])}`:fill(pick(act.lines||['Spent some time at '+pname+'.']));
@@ -601,6 +744,10 @@ function localOutcome(act,t=Date.now(),live=true){const p=byId[act.p];const pnam
     addEntry(act.hobby?'Hobby':TAGNAME[act.tags[0]]||'Day',base+mood,pname,t)}
   if(act.hobby){practiceHobby(act.hobby,t);goalCheck('hobby',act.hobby,t)}
   if(act.fx==='acquire')localAcquire(act,t,pname);
+  if(act.fx==='groceries'){S.pantry=100;if(Math.random()<.2)buyDecor(pick(Object.keys(DECOR).filter(k=>k!=='petbed'&&!S.decor.includes(k))),t,pname)}
+  if(act.fx==='decor'&&Math.random()<.35+Math.max(0,S.interests['home decor']||0)*.05){const opts=Object.keys(DECOR).filter(k=>k!=='petbed'&&!S.decor.includes(k));if(opts.length)buyDecor(pick(opts),t,pname)}
+  if(act.fx==='petstore')considerAdoption(t,pname);
+  if(act.fx==='pettreat'&&!S.decor.includes('petbed')&&Math.random()<.5)buyDecor('petbed',t,pname);
   if(TREASURES[p.id]&&Math.random()<.14){const it=TREASURES[p.id].find(x=>!S.items.some(i=>i.name===x));if(it){S.items.push({name:it,from:pname,t});addEntry('Treasure',`Found ${it} at ${pname}. Keeping it forever. (Ghost forever is a long time.)`,pname,t+1);goalCheck('treasure',null,t);if(live)toast(`💎 Mocha found ${it}`)}}
   newH.forEach(k=>addHobby({...HOBBY_FROM[k],tag:k},t+4));
   if(!S.goal&&Math.random()<.5)localGoal(t+5);
@@ -609,12 +756,12 @@ const isNight=()=>{const h=new Date().getHours();return h>=23||h<7};
 function localChoose(){const tr=S.traits,night=isNight(),wet=WEATHER.kind==='rain'||WEATHER.kind==='drizzle';
   const hidden=PLACES.filter(p=>!known(p));
   if(hidden.length&&!night&&Math.random()<.07+tr.curiosity*.1+(S.needs.curious<35?.1:0)+(S.goal&&S.goal.kind==='discover'?.15:0))return{explore:pick(hidden)};
-  const cands=ACTS.filter(a=>known(byId[a.p])&&(!a.night||night));
+  const cands=ACTS.filter(a=>known(byId[a.p])&&(!a.night||night)&&(!a.pet||S.pets.length));
   S.hobbies.forEach(h=>cands.push({p:h.p,s:h.s,doing:h.doing,tags:h.tag?[h.tag]:[],need:{fun:30},hobby:h.name}));
   const sc=cands.map(a=>{let s=1;for(const n in a.need||{})s+=(100-S.needs[n])/30*(a.need[n]/40);a.tags.forEach(k=>s+=Math.max(-1.5,(S.interests[k]||0))*.35);
     if(a.hobby)s+=2.5;const key=a.p+(a.s?'.'+a.s:'');if(S.recent.slice(0,2).includes(key))s-=3;if(!S.visits[a.p])s+=1.2+tr.curiosity*2;
     const indoors=a.p==='home'||byId[a.p].solid;if(wet)s+=indoors?1:-(1-tr.adventure);if(night)s+=a.p==='home'?3:-1.5;if(a.fx==='sleep')s+=night?(S.needs.energy<70?20:6):(S.needs.energy<20?6:-2);
-    if(a.p==='home')s+=tr.coziness*.8;if(a.tags.includes('people'))s+=(tr.sociability-.5)*1.5;
+    if(a.p==='home')s+=tr.coziness*.8;if(a.doing==='cooking'&&S.pantry<12)s-=4;if(a.fx==='groceries')s+=S.pantry<30?3+(100-S.needs.snack)/30:-1.5;if(a.pet)s+=1.5;if(a.tags.includes('people'))s+=(tr.sociability-.5)*1.5;
     const g=S.goal;if(g&&g.kind==='hobby'&&a.hobby===g.key)s+=2;if(g&&g.kind==='research'&&a.fx==='research')s+=2;if(g&&g.kind==='new'&&!S.visits[a.p])s+=2;
     return Math.max(.05,s)});
   let r=Math.random()*sc.reduce((a,b)=>a+b*b,0);for(let i=0;i<cands.length;i++){r-=sc[i]*sc[i];if(r<=0)return{act:cands[i]}}return{act:cands[0]}}
@@ -632,7 +779,7 @@ const cA=new THREE.Color(),cB=new THREE.Color(),cT=new THREE.Color(),grey=new TH
 let nightAmt=0,skyLabelT=0;
 function updateSky(dt){const d=new Date();const h=d.getHours()+d.getMinutes()/60;let i=0;while(i<KEYS.length-2&&KEYS[i+1][0]<=h)i++;const a=KEYS[i],b=KEYS[i+1],t=(h-a[0])/(b[0]-a[0]);
   cA.set(a[1]).lerp(cT.set(b[1]),t);cB.set(a[2]).lerp(cT.set(b[2]),t);const hi=lerp(a[3],b[3],t),si=lerp(a[4],b[4],t);nightAmt=clamp((.62-si)/.4,0,1);
-  const over={clear:0,cloudy:.45,drizzle:.65,rain:.8,fog:.7}[WEATHER.kind];WEATHER.over+=(over-WEATHER.over)*Math.min(1,dt*.2);const o=WEATHER.over;
+  const over={clear:0,cloudy:.45,drizzle:.65,rain:.8,fog:.7,snow:.7}[WEATHER.kind];WEATHER.over+=(over-WEATHER.over)*Math.min(1,dt*.2);const o=WEATHER.over;
   const day=1-nightAmt;cA.lerp(day>.3?grey:nightGrey,o*.7);cB.lerp(day>.3?greyB:nightGrey,o*.6);
   skyMat.uniforms.top.value.copy(cA);skyMat.uniforms.bot.value.copy(cB);scene.fog.color.copy(cB);
   scene.fog.near=WEATHER.kind==='fog'?20:90;scene.fog.far=WEATHER.kind==='fog'?140:260;
@@ -642,15 +789,16 @@ function updateSky(dt){const d=new Date();const h=d.getHours()+d.getMinutes()/60
   stars.material.opacity=nightAmt*(1-o);moon.material.opacity=nightAmt*(1-o*.8)+.05;fireflies.material.opacity=nightAmt*.8*(WEATHER.kind==='rain'?.2:1);
   clouds.forEach(c=>{c.m.opacity=.35+o*.55;c.m.color.set(day>.3?(o>.5?'#cfd5dd':'#ffffff'):'#3a4260')});
   if(p_mtn){p_mtn[0].color.set(day>.3?'#9aa8c4':'#2e3656').lerp(cB,.35);p_mtn[1].color.set(day>.3?'#f4f6fb':'#8a94b4').lerp(cB,.2)}p_olym.forEach(m=>m.color.set(day>.3?'#8a9ab8':'#28304e').lerp(cB,.45));
-  groundMat.color.set('#ffffff').lerp(wetC,WEATHER.wet*.35);
-  const wantWet=WEATHER.kind==='rain'?1:WEATHER.kind==='drizzle'?.5:0;WEATHER.wet+=(wantWet-WEATHER.wet)*Math.min(1,dt*.15);rain.material.opacity=WEATHER.wet*.75;
+  groundMat.color.set('#ffffff').lerp(wetC,WEATHER.kind==='snow'?0:WEATHER.wet*.35);
+  const snowing=WEATHER.kind==='snow';const wantWet=WEATHER.kind==='rain'?1:WEATHER.kind==='drizzle'?.5:snowing?.9:0;WEATHER.wet+=(wantWet-WEATHER.wet)*Math.min(1,dt*.15);rain.material.opacity=WEATHER.wet*(snowing?.95:.75);if(rain.material.map!==(snowing?snowTex:rainTex)){rain.material.map=snowing?snowTex:rainTex;rain.material.size=snowing?.55:.9;rain.material.needsUpdate=true}
   WEATHER.t-=dt;if(WEATHER.t<=0)rollWeather();
-  skyLabelT-=dt;if(skyLabelT<=0){skyLabelT=1;$('#sky').textContent=`${({clear:nightAmt>.5?'🌙 clear':'☀️ clear',cloudy:'☁️ cloudy',drizzle:'🌦 drizzle',rain:'🌧 rain',fog:'🌫 foggy'})[WEATHER.kind]} · ${d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`}}
+  skyLabelT-=dt;if(skyLabelT<=0){skyLabelT=1;$('#sky').textContent=`${SEASON.label} · ${({clear:nightAmt>.5?'🌙 clear':'☀️ clear',cloudy:'☁️ cloudy',drizzle:'🌦 drizzle',rain:'🌧 rain',fog:'🌫 foggy',snow:'❄️ snow'})[WEATHER.kind]} · ${d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`}}
 
 // ====================================================================
 //  MOVEMENT + BEHAVIOR LOOP
 // ====================================================================
-const G={x:40,z:44,y:2,vx:0,vz:0,yaw:0,mode:'idle',timer:3,target:null,act:null,startle:0,talk:0,sleep:false,ride:null,thinking:false};
+let __g=null;const G={x:40,z:44,y:2,vx:0,vz:0,yaw:0,mode:'idle',timer:3,target:null,act:null,startle:0,talk:0,sleep:false,ride:null,thinking:false};
+petsReady=true;syncPets();applyDecor();
 function spotWorld(pid,spot){const p=byId[pid];if(pid==='home'&&spot&&p.spots[spot]){const s=p.spots[spot];return toWorld(p,s[0],s[1])}if(pid==='needle')return toWorld(p,0,5.6);return{x:p.dx,z:p.dz}}
 function startAct(act,why){if(!act)return;const w=spotWorld(act.p,act.s);G.target={x:w.x+rand(-.5,.5),z:w.z+rand(-.5,.5)};G.act=act;G.mode='travel';G.sleep=false;G.ride=null;if(why)say(why,3.5)}
 function goPoint(x,z,explore){G.target={x,z};G.act=explore?{explore}:null;G.mode='travel';G.sleep=false;G.ride=null}
@@ -666,7 +814,7 @@ function applyDecision(d){if(d.explore){const hidden=PLACES.filter(p=>!known(p))
   const tmpl=ACTS.find(a=>a.p===d.place&&(!d.spot||a.s===d.spot))||{};const h=d.hobby&&hobbyByName(d.hobby);
   const spot=d.place==='home'?(byId.home.spots[d.spot]?d.spot:(tmpl.s||'couch')):null;
   const sleepy=/sleep|nap|bed/i.test(d.doing||'')&&d.place==='home';
-  startAct({p:d.place,s:spot,doing:String(d.doing||tmpl.doing||'hanging out').slice(0,40),tags:tmpl.tags||[],need:tmpl.need||{fun:20},fx:d.research?'research':sleepy?'sleep':(tmpl.fx==='ride'||tmpl.fx==='ferry'?tmpl.fx:null),research:d.research||null,hobby:h?h.name:null,mind:true},d.say)}
+  startAct({p:d.place,s:spot,doing:String(d.doing||tmpl.doing||'hanging out').slice(0,40),tags:tmpl.tags||[],need:tmpl.need||{fun:20},fx:d.research?'research':sleepy?'sleep':(['ride','ferry','groceries','petstore','decor','pettreat'].includes(tmpl.fx)?tmpl.fx:null),research:d.research||null,hobby:h?h.name:null,mind:true},d.say)}
 function arrive(){const a=G.act;G.mode='activity';G.timer=a.fx==='sleep'?(isNight()?90:45):a.fx==='ferry'?FERRY.period*.5:rand(16,26);G.sleep=a.fx==='sleep'||/nap|sleep/i.test(a.doing||'');
   if(a.fx==='ride')G.ride='wheel';if(a.fx==='ferry')G.ride='ferry';
   if(!a.mind&&!G.sleep)say(pick([a.doing+'…','ooh','hm hm hm','okay!']),2.5,true)}
@@ -680,7 +828,13 @@ function thoughtEntry(){if(Date.now()-(S.lastThought||0)<120e3)return;S.lastThou
   if(WEATHER.kind==='rain'||WEATHER.kind==='drizzle')o.push('It\'s raining again. I\'m starting to think the rain here is less like weather and more like a roommate.');
   if(S.items.length>1)o.push(`My treasure shelf is filling up: ${S.items.slice(-3).map(i=>i.name).join(', ')}.`);
   o.push(`Day ${ageDays()+1} in the city. I'm level ${level()}. Still figuring out who I am. That's the fun part.`);addEntry('Thought',pick(o),'')}
-function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;
+function updatePets(dt,t){const home=byId.home;petObjs.forEach(pp=>{let tx,tz,ty;
+  if(G.sleep&&inHome(G.x,G.z)){const w=toWorld(home,home.spots.petbed[0]+pp.i*1.3,home.spots.petbed[1]);tx=w.x;tz=w.z;ty=pp.fly?2.6:.72}
+  else{const side=pp.i%2?-1:1;tx=G.x-Math.sin(G.yaw)*1.9+Math.cos(G.yaw)*1.5*side;tz=G.z-Math.cos(G.yaw)*1.9-Math.sin(G.yaw)*1.5*side;
+    if(pp.fly)ty=G.y+.9+Math.sin(t*2+pp.i)*.3;else{if(tx<-60)tx=-59.5;ty=inHome(tx,tz)?.68:.14}}
+  const dx=tx-pp.x,dz=tz-pp.z,d=Math.hypot(dx,dz);const mv=d>.35;if(mv){const st=Math.min(d,Math.max(3,d*2.2)*dt);pp.x+=dx/d*st;pp.z+=dz/d*st;pp.obj.rotation.y=Math.atan2(dx,dz)}else if(!pp.fly){const fy=Math.atan2(G.x-pp.x,G.z-pp.z);let df=Math.atan2(Math.sin(fy-pp.obj.rotation.y),Math.cos(fy-pp.obj.rotation.y));pp.obj.rotation.y+=df*Math.min(1,dt*2)}
+  pp.y+=(ty-pp.y)*Math.min(1,dt*(pp.fly?3:10));pp.obj.position.set(pp.x,pp.y+(mv&&!pp.fly?Math.abs(Math.sin(t*12))*.08:0),pp.z);animatePet(pp.obj,t,mv||pp.fly)})}
+function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;S.pantry=Math.max(0,S.pantry-dt*.012);updatePets(dt,t);
   const dec={energy:sleeping?-1.2:.09,snack:.12,social:.1,fun:.13,curious:.14};for(const k in S.needs)S.needs[k]=clamp(S.needs[k]-dt*dec[k],0,100);
   G.startle=Math.max(0,G.startle-dt);G.talk=Math.max(0,G.talk-dt);
   let ty=null;
@@ -714,10 +868,10 @@ function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;
   ghostMat.emissiveIntensity=.3+nightAmt*.35;mLight.intensity=.3+nightAmt*.6;
   if(sp>1&&Math.random()<dt*20){wPos[wI*3]=G.x+rand(-.3,.3);wPos[wI*3+1]=G.y+bob-.2;wPos[wI*3+2]=G.z+rand(-.3,.3);wLife[wI]=1;wI=(wI+1)%WN}
   for(let i=0;i<WN;i++)if(wLife[i]>0){wLife[i]-=dt;wPos[i*3+1]+=dt*.6;if(wLife[i]<=0)wPos[i*3+1]=-50}wisps.geometry.attributes.position.needsUpdate=true;
-  const h=byId.home;const fade=inHome(G.x,G.z)||Math.hypot(camera.position.x-h.x,camera.position.z-h.z)<h.w*.7;h.shell.forEach(m=>{m.opacity+=((fade?0:1)-m.opacity)*Math.min(1,dt*3);m.depthWrite=m.opacity>.9;m.visible=m.opacity>.04});
+  const h=byId.home;const fade=inHome(G.x,G.z)||Math.hypot(camera.position.x-h.x,camera.position.z-h.z)<h.w*.7;h.shell.forEach(m=>{m.opacity+=((fade?0:1)-m.opacity)*Math.min(1,dt*3);m.depthWrite=m.opacity>.9;m.visible=m.opacity>.04});h.roofShell.forEach(m=>{m.opacity+=((fade?.16:1)-m.opacity)*Math.min(1,dt*3);m.depthWrite=m.opacity>.9})
   if(h.screenGlow)h.screenGlow.material.opacity=G.mode==='activity'&&G.act&&G.act.s==='desk'?.6:.2;
   if(h.rp&&G.mode==='activity'&&G.act&&/record|music|ukulele|song/i.test(G.act.doing||''))h.rp.rotation.y+=dt*4}
-function muse(){const o=[];const g=S.goal;if(g)o.push(`goal: ${g.text}`);if(S.mem.userName)o.push(`wonder what ${S.mem.userName} is up to`);
+function muse(){const o=[];if(S.pets.length){const pt=pick(S.pets);o.push(pick([`come on, ${pt.name}!`,`${pt.name}, stay close`,`good ${pt.species==='crow'||pt.species==='bat'?'flying':'walking'}, ${pt.name}`]))}if(S.pantry<15)o.push('i should get groceries…');const g=S.goal;if(g)o.push(`goal: ${g.text}`);if(S.mem.userName)o.push(`wonder what ${S.mem.userName} is up to`);
   const ti=topInterests(3);if(ti.length)o.push(`${pick(ti)[0]}… i really like ${pick(ti)[0]}`);if(PLACES.some(p=>!known(p)))o.push('i bet there\'s more city out past the trees…');
   if(WEATHER.kind==='rain')o.push('drip drop drip');if(WEATHER.kind==='clear'&&nightAmt<.5)o.push('the mountain is out today!');
   if(S.needs.energy<20)o.push('*yawn*');if(S.needs.social<20)o.push('kinda lonely… say hi?');if(!S.owned.length&&Math.random()<.4)o.push('i wonder what i\'d look like in a hat');
@@ -729,7 +883,7 @@ function muse(){const o=[];const g=S.goal;if(g)o.push(`goal: ${g.text}`);if(S.me
 const MIND={api:null,on:false,busy:false,last:0,backoff:0,lastThought:'',ready(){return!!this.api&&!this.busy&&Date.now()>this.backoff&&Date.now()-this.last>35e3&&document.visibilityState==='visible'}};
 function placeList(){return PLACES.filter(known).map(p=>{const acts=ACTS.filter(a=>a.p===p.id).map(a=>a.doing);return`${p.id}: ${p.name}${p.id==='home'?' (rooms: kitchen, desk [computer — can look things up], couch [bookshelf, record player], bed, closet [wardrobe], bath)':acts.length?' — e.g. '+acts.slice(0,3).join(', '):''}`}).join('\n')}
 function context(){const d=new Date();const ti=Object.entries(S.interests).sort((a,b)=>b[1]-a[1]);
-  return`Time: ${d.toLocaleDateString([],{weekday:'long'})} ${d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}. Weather: ${WEATHER.kind}.
+  return`Time: ${d.toLocaleDateString([],{weekday:'long'})} ${d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}. Weather: ${WEATHER.kind}. Season: ${SEASON_KEY}.
 Mocha: a small white ghost, level ${level()}, day ${ageDays()+1} living in the city. Personality: ${traitWords().join(', ')}.
 Needs 0-100 (low = wants it): ${Object.entries(S.needs).map(([k,v])=>k+' '+Math.round(v)).join(', ')}.
 Interests he has developed (score): ${ti.filter(([,v])=>v>0).slice(0,10).map(([k,v])=>k+' '+v.toFixed(1)).join(', ')||'none yet — he is still discovering what he likes'}.
@@ -740,6 +894,8 @@ Treasures: ${S.items.slice(-6).map(i=>i.name).join(', ')||'none'}. Notebook topi
 Current goal: ${S.goal?S.goal.text+(S.goal.target?` (${S.goal.progress}/${S.goal.target})`:''):'none'}.
 His friend (the person watching): ${S.mem.userName||'name unknown'}${S.mem.facts.length?'; things he knows about them: '+S.mem.facts.slice(-8).join('; '):''}.
 Recent diary (newest first):\n${S.diary.slice(0,8).map(e=>'- '+e.text).join('\n')}
+Home: a gothic Victorian house. Fridge/pantry ${Math.round(S.pantry)}% stocked. Home items he bought: ${S.decor.map(d=>DECOR[d]).join(', ')||'none yet'}.
+Pets: ${S.pets.map(p=>`${p.name} the ${PET_TYPES[p.species].label}`).join(', ')||'none'}. (The pet store has a little bat, a miniature red poodle, a hedgehog, a black cat and a baby crow.)
 Places he knows (id: name):\n${placeList()}
 ${PLACES.some(p=>!known(p))?'There are places he has never found, out at the far edges of the map. He can choose "explore" to go looking.':'He has found every place on the map.'}`}
 function parseJSON(txt){if(!txt)return null;const s=txt.indexOf('{'),e=txt.lastIndexOf('}');if(s<0||e<s)return null;try{return JSON.parse(txt.slice(s,e+1))}catch(_){return null}}
@@ -765,10 +921,12 @@ Reply with ONLY a JSON object:
  "new_hobby": null or {"name":"...","place":"place id","spot":"home room or null","doing":"2-4 words"} (only when an interest has clearly grown),
  "goal": null or {"text":"a goal he sets for himself","target":1-5} (only if he has no goal),
  "goal_progress": 0 or 1,
+ "shop": null or {"groceries": true or false, "home_item": one of [${Object.keys(DECOR).join(', ')}] or null} (only if he was just at the grocery store, or the pet store for a petbed),
+ "adopt": null or {"species": one of [bat, poodle, hedgehog, cat, crow], "name": "a name he picks"} (only if he was just at the pet store and truly wants a pet; he never has to, and it's a big decision),
  "thought": "a short private thought (max 10 words, lowercase)",
  "next": {"place":"a place id from the list, or \\"explore\\"","spot":"home room if place is home, else null","doing":"2-5 words, present tense","say":"what he says out loud, max 8 words, lowercase","hobby":"one of his hobby names if he's practicing it, else null","research":"a topic if he'll look something up on a computer (home desk or library), else null"}
 }
-Rules: respect his needs (he sleeps at home when it's late or energy is low; snacks when hungry; seeks company when lonely), his personality and what he's enjoyed, but also let him try new things. Don't repeat recent activities. Keep it kind and family-friendly.`;
+Rules: he cooks with food from his pantry, so when it's low he may go grocery shopping. If he has a pet, it comes everywhere with him and he cares for it. Respect his needs (he sleeps at home when it's late or energy is low; snacks when hungry; seeks company when lonely), his personality and what he's enjoyed, but also let him try new things. Don't repeat recent activities. Keep it kind and family-friendly.`;
   try{const r=await ask(prompt,{modelTier:'quick',cache:false});G.thinking=false;MIND.busy=false;if(!r)throw{code:'bad_json'};applyMind(r,finished)}
   catch(e){G.thinking=false;MIND.busy=false;mindError(e);if(finished){if(finished.mind)narrateFallback(finished);else localOutcome(finished)}const c=localChoose();if(c.act)startAct(c.act);else exploreToward(c.explore)}}
 function applyMind(r,finished){const t=Date.now();const pname=finished&&finished.p?byId[finished.p].name:'';
@@ -777,6 +935,9 @@ function applyMind(r,finished){const t=Date.now();const pname=finished&&finished
     if(r.diary)addEntry(finished.hobby?'Hobby':(r.learned?'Learned':'Day'),r.diary,pname,t);
     if(finished.hobby){practiceHobby(finished.hobby,t);goalCheck('hobby',finished.hobby,t)}
     S.recent.unshift(finished.p+(finished.s?'.'+finished.s:''));S.recent.length=Math.min(S.recent.length,6)}
+  if(finished&&r.shop&&typeof r.shop==='object'){if(r.shop.groceries&&finished.p==='grocery')S.pantry=100;if(r.shop.home_item&&DECOR[r.shop.home_item]&&(finished.p==='grocery'||(finished.p==='petstore'&&r.shop.home_item==='petbed')))buyDecor(r.shop.home_item,t,pname)}
+  if(finished&&r.adopt&&finished.p==='petstore')adoptPet(r.adopt.species,r.adopt.name,t,pname);
+  if(finished&&finished.p==='home'&&finished.s==='kitchen'&&/cook|bak/i.test(finished.doing||''))S.pantry=Math.max(0,S.pantry-25);
   if(r.learned&&r.learned.topic&&Array.isArray(r.learned.facts)){addLearned(r.learned.topic,r.learned.facts,t);toast(`📓 Mocha learned about ${String(r.learned.topic).slice(0,40)}`);goalCheck('research',null,t)}
   if(r.treasure&&typeof r.treasure==='string'&&S.items.length<60){const tn=r.treasure.slice(0,60);S.items.push({name:tn,from:pname,t});addEntry('Treasure',`Found ${tn}${pname?' at '+pname:''}. Into the collection it goes.`,pname,t+1);toast(`💎 Mocha found ${tn.slice(0,40)}`);goalCheck('treasure',null,t)}
   let newIt=null;if(r.acquire&&WEAR[r.acquire.item]){newIt=acquire(r.acquire.item,r.acquire.color,String(r.acquire.name||'').slice(0,40)||null,pname,t);if(newIt){if(!S.favColor)S.favColor=newIt.color;addEntry('Style',`Got a ${newIt.name}${pname?' at '+pname:''}. I picked it out myself.`,pname,t+1);toast(`🧣 Mocha picked out a ${newIt.name}`)}}
@@ -806,6 +967,24 @@ const camS={yaw:.35,pitch:.6,dist:24,tx:G.x,ty:G.y,tz:G.z};const tmpV=new THREE.
 function placeCam(dt){camS.tx+=(G.x-camS.tx)*Math.min(1,dt*2.5);camS.ty+=(G.y-camS.ty)*Math.min(1,dt*2);camS.tz+=(G.z-camS.tz)*Math.min(1,dt*2.5);
   const cp=Math.cos(camS.pitch),sp=Math.sin(camS.pitch);camera.position.set(camS.tx+Math.sin(camS.yaw)*cp*camS.dist,Math.max(1.5,camS.ty+sp*camS.dist),camS.tz+Math.cos(camS.yaw)*cp*camS.dist);camera.lookAt(camS.tx,camS.ty+1,camS.tz);
   skyDome.position.copy(camera.position);rain.position.set(camS.tx,0,camS.tz)}
+// ---------- falling leaves / petals / snowflakes ----------
+const leafTex=canvasTex(64,64,g=>{g.fillStyle='#fff';if(SEASON.leaf==='snow'){const gr=g.createRadialGradient(32,32,0,32,32,30);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64)}
+  else if(SEASON.leaf==='petal'){g.beginPath();g.ellipse(32,32,13,24,0,0,7);g.fill()}
+  else{g.beginPath();for(let i=0;i<=10;i++){const a=-Math.PI/2+i/10*Math.PI*2;const r=i%2?12:29;g.lineTo(32+Math.cos(a)*r,32+Math.sin(a)*r)}g.closePath();g.fill();g.fillRect(31,38,2,24)}});
+const LN=SEASON.few?40:SEASON.leaf==='snow'?220:320;
+const leafMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(.6,.6),new THREE.MeshLambertMaterial({map:leafTex,transparent:true,alphaTest:.3,side:THREE.DoubleSide,depthWrite:SEASON.leaf!=='snow'}),LN);leafMesh.frustumCulled=false;scene.add(leafMesh);
+const leaves=[],dmy=new THREE.Object3D(),lcol=new THREE.Color(),maplesList=trees.filter(t=>t.maple);
+function spawnLeaf(l,init){const near=SEASON.leaf==='snow'?[]:maplesList.filter(t=>Math.abs(t.x-camS.tx)<45&&Math.abs(t.z-camS.tz)<45);
+  if(near.length){const t=pick(near);l.x=t.x+rand(-3,3)*t.s;l.z=t.z+rand(-3,3)*t.s;l.y=rand(4.5,7.5)*t.s}else{l.x=camS.tx+rand(-40,40);l.z=camS.tz+rand(-40,40);l.y=rand(8,24)}
+  if(init)l.y=rand(.3,l.y);l.vy=SEASON.leaf==='snow'?rand(.8,1.6):rand(.6,1.3);l.ph=rand(0,6);l.sp=rand(1,3);l.rest=0;l.rx=rand(0,6);l.ry=rand(0,6)}
+for(let i=0;i<LN;i++){const l={};spawnLeaf(l,true);leaves.push(l);lcol.set(pick(SEASON.fall));leafMesh.setColorAt(i,lcol)}if(leafMesh.instanceColor)leafMesh.instanceColor.needsUpdate=true;
+function updateLeaves(dt,t){const wind=WEATHER.kind==='rain'?2.2:WEATHER.kind==='drizzle'?1.4:1,snow=SEASON.leaf==='snow',sc=snow?.45:1;
+  for(let i=0;i<LN;i++){const l=leaves[i];
+    if(l.rest>0){l.rest-=dt;if(l.rest<=0)spawnLeaf(l)}
+    else{l.y-=l.vy*dt;l.x+=(Math.sin(t*l.sp+l.ph)*1.3+.6)*dt*wind;l.z+=Math.cos(t*l.sp*.7+l.ph)*dt*.9;l.rx+=dt*l.sp*1.3;l.ry+=dt*l.sp*.8;
+      if(l.y<=.13){l.y=.13;l.rest=snow?.3:rand(5,12)}if(Math.abs(l.x-camS.tx)>55||Math.abs(l.z-camS.tz)>55)spawnLeaf(l)}
+    dmy.position.set(l.x,l.y,l.z);if(l.rest>0)dmy.rotation.set(-Math.PI/2,0,l.ph);else dmy.rotation.set(l.rx,l.ry,Math.sin(t*2+l.ph)*.5);dmy.scale.setScalar(sc);dmy.updateMatrix();leafMesh.setMatrixAt(i,dmy.matrix)}
+  leafMesh.instanceMatrix.needsUpdate=true}
 const ptrs=new Map();let downAt=null,pinch0=null,hintGone=false;
 cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(ptrs.size===1)downAt={x:e.clientX,y:e.clientY,t:performance.now()};else{downAt=null;const [a,b]=[...ptrs.values()];pinch0={d:Math.hypot(a.x-b.x,a.y-b.y),dist:camS.dist}}});
 cv.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
@@ -861,6 +1040,8 @@ function renderMe(){const lv=level(),cur=(lv-1)**2*25,nxt=lv**2*25;const ints=Ob
   <h4>hobbies he started</h4>${S.hobbies.length?S.hobbies.map(h=>`<div class="row"><span>${esc(h.name)}</span><div class="bar"><i style="width:${(h.xp%40)/40*100}%;background:var(--accent)"></i></div><small>lv ${Math.floor(h.xp/40)+1}</small></div>`).join(''):'<p class="muted">none yet — hobbies grow out of things he keeps loving</p>'}
   <h4>his goal</h4>${S.goal?`<div class="goal">🎯 ${esc(S.goal.text)} ${S.goal.target?`<b style="float:right">${S.goal.progress}/${S.goal.target}</b>`:''}</div>`:'<p class="muted">no goal right now</p>'}<p class="muted" style="margin:4px 0">${S.goalsDone} goals reached</p>
   <h4>wardrobe (${S.owned.length})</h4>${S.owned.length?S.owned.map(o=>`<span class="chip"><span class="sw" style="background:${esc(o.color)}"></span>${esc(o.name)}${S.wearing.includes(o.id)?' · wearing':''}</span>`).join(''):'<p class="muted">empty — he\'s plain white until he finds something he likes</p>'}
+  <h4>pets</h4>${S.pets.length?S.pets.map(p=>`<span class="chip">${PET_TYPES[p.species].e} ${esc(p.name)} the ${PET_TYPES[p.species].label}</span>`).join(''):'<p class="muted">no pets — he visits the pet store sometimes, but it\'s his call</p>'}
+  <h4>his gothic house</h4><div class="row"><span>pantry</span><div class="bar"><i style="width:${S.pantry}%;background:#7fa86a"></i></div><small>${Math.round(S.pantry)}%</small></div>${S.decor.length?S.decor.map(d=>`<span class="chip">${esc(DECOR[d])}</span>`).join(''):'<p class="muted">no decorations bought yet</p>'}
   <h4>treasures (${S.items.length})</h4>${S.items.length?S.items.map(i=>`<span class="chip">${esc(i.name)}</span>`).join(''):'<p class="muted">nothing yet</p>'}
   <h4>places found: ${PLACES.filter(known).length}/${PLACES.length}</h4>${PLACES.filter(p=>p.secret).map(p=>`<span class="chip">${known(p)?'✨ '+esc(p.name):'???'}</span>`).join('')}
   <button class="danger" id="resetBtn">start over with a new Mocha</button>`;
@@ -921,7 +1102,7 @@ async function connect(){if(!window.claude||!window.claude.use)return;
   try{const [db,user]=await Promise.all([window.claude.use('db'),window.claude.use('user')]);if(!db||!user)return;const id=await user.id();if(!id)return;
     const ref=db.doc('data/users/'+id+'/mocha');const snap=await Promise.race([ref.get(),new Promise(r=>setTimeout(()=>r(null),10000))]);remoteDoc=ref;
     if(snap&&snap.exists){let rs=null;try{rs=JSON.parse(snap.data().state)}catch(_){}
-      if(rs&&rs.needs&&(rs.lastSeen||0)>(S.lastSeen||0)-2000&&(isNew||(rs.lastSeen||0)>(S.lastSeen||0))){const keepMind=S.mind;S=rs;S.mind=S.mind||keepMind;isNew=false;awayCount=catchUp();applyOutfit();PLACES.filter(known).forEach(p=>labelFor(p));try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}renderTab();hud();if(MIND.api&&S.mind){MIND.on=true;updateMindBtn()}}}
+      if(rs&&rs.needs&&(rs.lastSeen||0)>(S.lastSeen||0)-2000&&(isNew||(rs.lastSeen||0)>(S.lastSeen||0))){const keepMind=S.mind;S=rs;migrate();S.mind=S.mind||keepMind;isNew=false;awayCount=catchUp();applyOutfit();PLACES.filter(known).forEach(p=>labelFor(p));try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}renderTab();hud();if(MIND.api&&S.mind){MIND.on=true;updateMindBtn()}}}
     pushRemote(true)}catch(e){}}
 
 // ====================================================================
@@ -931,7 +1112,9 @@ function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);c
 addEventListener('resize',resize);resize();
 let last=performance.now(),T=0,hudT=0;
 function frame(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;T+=dt;
-  updateMocha(dt,T);placeCam(dt);updateSky(dt);
+  updateMocha(dt,T);placeCam(dt);updateSky(dt);updateLeaves(dt,T);
+  byId.petstore.display.forEach((d,i)=>{animatePet(d,T+i,false);if(!d.userData.hang&&!d.userData.perch)d.position.y=.4+Math.max(0,Math.sin(T*2+i*1.7))**8*.25});
+  if(byId.home.innerLight)byId.home.innerLight.intensity=.35+nightAmt*.7;
   for(const t of trees)t.obj.rotation.z=Math.sin(T*.9+t.obj.userData.ph)*.02;
   const wl=byId.wheel;wl.wheel.rotation.x+=dt*.08;wl.gond.forEach(g=>{const a=g.userData.a;g.position.set(.6,Math.sin(a)*13,Math.cos(a)*13);g.rotation.x=-wl.wheel.rotation.x});
   if(byId.records.spin)byId.records.spin.rotation.y+=dt*1.5;
@@ -943,20 +1126,20 @@ function frame(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
   byId.needle.tip.material.opacity=(.5+Math.sin(T*3)*.5)*(.3+nightAmt*.7);
   byId.lighthouse.beam.material.opacity=(.4+Math.sin(T*2)*.3)*(.3+nightAmt*.7);
   clouds.forEach(c=>{c.g.position.x+=c.g.userData.v*dt;if(c.g.position.x>450)c.g.position.x=-450});
-  if(WEATHER.wet>.02){const a=rain.geometry.attributes.position;for(let i=0;i<RN;i++){let y=a.getY(i)-dt*(28+i%7);if(y<0)y+=35;a.setY(i,y)}a.needsUpdate=true}
+  if(WEATHER.wet>.02){const a=rain.geometry.attributes.position;for(let i=0;i<RN;i++){let y=a.getY(i)-dt*(WEATHER.kind==='snow'?2.5+i%3:28+i%7);if(y<0)y+=35;a.setY(i,y);if(WEATHER.kind==='snow')a.setX(i,a.getX(i)+Math.sin(T+i)*dt*.6)}a.needsUpdate=true}
   for(let i=0;i<FF;i++){const f=ffD[i];f.a+=dt*.5;ffPos[i*3]=f.x+Math.cos(f.a*1.3)*3;ffPos[i*3+1]=f.y+Math.sin(f.a*2)*.6;ffPos[i*3+2]=f.z+Math.sin(f.a)*3}fireflies.geometry.attributes.position.needsUpdate=true;
   renderer.setRenderTarget(rt);renderer.render(scene,camera);renderer.setRenderTarget(null);renderer.render(postScene,postCam);
   if(bubbleT>0){bubbleT-=dt;if(bubbleT<=0)bubble.classList.remove('show')}
   if(G.thinking&&bubbleT<=0)say('💭',1.5,true);
   const umb=S.wearing.some(id=>{const o=S.owned.find(x=>x.id===id);return o&&o.item==='umbrella'});
   const bp=project(G.x,mocha.position.y+1.55*growScale()+(umb?1.3:0),G.z);bubble.style.left=bp.x+'px';bubble.style.top=bp.y+'px';
-  for(const {p,el} of labels){const y=p.kind==='needle'?p.deckY+16:p.kind==='wheel'?33:p.kind==='spot'?4:p.kind==='park'?6:p.kind==='hill'?9:p.kind==='troll'?9:(p.h||6)+(p.id==='home'?6:3);const pp=project(p.x,y,p.z);const dist=Math.hypot(camera.position.x-p.x,camera.position.z-p.z);el.style.opacity=pp.vis&&dist<120?1:0;el.style.left=pp.x+'px';el.style.top=pp.y+'px'}
+  for(const {p,el} of labels){const y=p.kind==='needle'?p.deckY+16:p.kind==='wheel'?33:p.kind==='spot'?4:p.kind==='park'?6:p.kind==='hill'?9:p.kind==='troll'?9:(p.h||6)+(p.id==='home'?9:3);const pp=project(p.x,y,p.z);const dist=Math.hypot(camera.position.x-p.x,camera.position.z-p.z);el.style.opacity=pp.vis&&dist<120?1:0;el.style.left=pp.x+'px';el.style.top=pp.y+'px'}
   hudT-=dt;if(hudT<=0){hudT=.3;hud()}
   drawMini(T);requestAnimationFrame(frame)}
 applyOutfit();hud();renderTab();connect();
 setTimeout(()=>{if(isNew)say('hi! i\'m mocha 👻 i just moved in!',4.5);else say(awayCount?`you're back! i did ${awayCount} things while you were gone`:(S.mem.userName?`${S.mem.userName}! hi again 👻`:'oh hi again!'),5)},900);
 requestAnimationFrame(frame);
-window.__mocha={get S(){return S},G,MIND,localOutcome,ACTS,acquire,wearItem,discover:id=>discover(byId[id])};
+window.__mocha={get S(){return S},G,MIND,localOutcome,ACTS,acquire,wearItem,adoptPet,buyDecor,discover:id=>discover(byId[id])};
 })();
 </script>
 </body>
