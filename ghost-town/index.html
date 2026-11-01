@@ -1674,7 +1674,7 @@ function resize(){const w=innerWidth,h=innerHeight;const pr=renderer.getPixelRat
 addEventListener('resize',resize);resize();
 let last=performance.now(),T=0,hudT=0;
 function applyPower(){sun.castShadow=!SET.saver;renderer.setPixelRatio(SET.saver?1:Math.min(devicePixelRatio||1,TOUCH?1.5:1.75));resize()}
-const edge=$('#edge');
+const edge=$('#edge');const GFX={calls:0,tris:0};
 function frame(now){const fps=SET.saver?20:TOUCH?30:60;if(now-last<1000/fps-2){requestAnimationFrame(frame);return}const dt=Math.min(.08,Math.max(0,(now-last)/1000));last=now;T+=dt;
   updateMocha(dt,T);if(camS.mode==='walk')updateYou(dt,T);updateW(dt,T);placeCam(dt);
   {const cin=byId.cinema;if(MOVIE&&Math.floor(T*8)!==Math.floor((T-dt)*8))drawFilm();if(cin.beam)cin.beam.material.opacity=MOVIE?.07+Math.random()*.02:0}
@@ -1696,7 +1696,7 @@ function frame(now){const fps=SET.saver?20:TOUCH?30:60;if(now-last<1000/fps-2){r
   if(WEATHER.wet>.02){const a=rain.geometry.attributes.position;for(let i=0;i<RN;i++){let y=a.getY(i)-dt*(WEATHER.kind==='snow'?2.5+i%3:28+i%7);if(y<0)y+=35;a.setY(i,y);if(WEATHER.kind==='snow')a.setX(i,a.getX(i)+Math.sin(T+i)*dt*.6)}a.needsUpdate=true}
   for(let i=0;i<FF;i++){const f=ffD[i];f.a+=dt*.5;ffPos[i*3]=f.x+Math.cos(f.a*1.3)*3;ffPos[i*3+1]=f.y+Math.sin(f.a*2)*.6;ffPos[i*3+2]=f.z+Math.sin(f.a)*3}fireflies.geometry.attributes.position.needsUpdate=true;
   BEND.value.y=Math.max(22,camS.dist*1.15+8);BEND.value.w=T;BENDC.copy(camera.position);
-  renderer.setRenderTarget(rt);renderer.render(scene,camera);renderer.setRenderTarget(null);renderer.render(postScene,postCam);
+  renderer.setRenderTarget(rt);renderer.render(scene,camera);GFX.calls=renderer.info.render.calls;GFX.tris=renderer.info.render.triangles;renderer.setRenderTarget(null);renderer.render(postScene,postCam);
   if(bubbleT>0){bubbleT-=dt;if(bubbleT<=0)bubble.classList.remove('show')}
   if(G.thinking&&bubbleT<=0)say('💭',1.5,true);
   const umb=S.wearing.some(id=>{const o=S.owned.find(x=>x.id===id);return o&&o.item==='umbrella'});
@@ -1711,7 +1711,7 @@ function frame(now){const fps=SET.saver?20:TOUCH?30:60;if(now-last<1000/fps-2){r
 applyOutfit();applyPower();applyPaintings();KEEPERS.forEach(k=>{k.obj.visible=isOpen(byId[k.shop])});labels.forEach(({p,el})=>{if(p.hours&&!isOpen(p))el.textContent=el.dataset.base+' · closed'});hud();renderTab();connect();
 setTimeout(()=>{if(isNew)say('hi! i\'m mocha 👻 i just moved in!',4.5);else say(awayCount?`you're back! i did ${awayCount} things while you were gone`:(S.mem.userName?`${S.mem.userName}! hi again 👻`:'oh hi again!'),5)},900);
 requestAnimationFrame(frame);
-window.__you=()=>({x:+YOU.x.toFixed(1),z:+YOU.z.toFixed(1),yaw:+YOU.yaw.toFixed(2),cam:+camS.yaw.toFixed(2),joy:[+JOY.x.toFixed(2),+JOY.y.toFixed(2)]});window.__mocha={KEEPERS,MOVIE:()=>MOVIE,makePainting,sched,SUN:()=>SUN,asleepAt,hourAt,get S(){return S},G,MIND,localOutcome,ACTS,acquire,wearItem,adoptPet,buyDecor,takeSelfie,setCamMode,forceAct:a=>{const w=spotWorld(a.p,a.s);G.x=w.x+3;G.z=w.z+3;startAct(a)},discover:id=>discover(byId[id])};
+window.__you=()=>({x:+YOU.x.toFixed(1),z:+YOU.z.toFixed(1),yaw:+YOU.yaw.toFixed(2),cam:+camS.yaw.toFixed(2),joy:[+JOY.x.toFixed(2),+JOY.y.toFixed(2)]});window.__mocha={KEEPERS,MOVIE:()=>MOVIE,makePainting,sched,SUN:()=>SUN,asleepAt,hourAt,get S(){return S},G,MIND,localOutcome,ACTS,acquire,wearItem,adoptPet,buyDecor,takeSelfie,setCamMode,cam:o=>{if(o)Object.assign(camS,o);return{...camS}},gfx:()=>({...GFX,progs:renderer.info.programs.length,geos:renderer.info.memory.geometries,tex:renderer.info.memory.textures}),BEND,post,forceAct:a=>{const w=spotWorld(a.p,a.s);G.x=w.x+3;G.z=w.z+3;startAct(a)},discover:id=>discover(byId[id])};
 })();
 </script>
 </body>
