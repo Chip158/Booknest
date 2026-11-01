@@ -120,9 +120,8 @@
   .round{border:0;width:50px;height:50px;border-radius:50%;background:var(--paper);box-shadow:0 4px 0 rgba(0,0,0,.16);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
   body.panelOpen #dock{right:calc(min(400px,42vw) + 24px + env(safe-area-inset-right))}
   body.panelOpen.wideP #dock{right:calc(min(720px,72vw) + 24px)}
-  #joy{position:fixed;left:max(18px,env(safe-area-inset-left));bottom:calc(90px + env(safe-area-inset-bottom));width:128px;height:128px;border-radius:50%;background:rgba(255,250,242,.28);border:2px solid rgba(255,250,242,.7);display:none;touch-action:none;z-index:4;backdrop-filter:blur(2px)}
-  body.walk #joy{display:block}
-  #knob{position:absolute;left:50%;top:50%;width:56px;height:56px;border-radius:50%;background:var(--paper);box-shadow:0 3px 0 rgba(0,0,0,.2);transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:22px}
+  #joyOld{position:fixed;left:max(18px,env(safe-area-inset-left));bottom:calc(90px + env(safe-area-inset-bottom));width:128px;height:128px;border-radius:50%;background:rgba(255,250,242,.28);border:2px solid rgba(255,250,242,.7);display:none;touch-action:none;z-index:4;backdrop-filter:blur(2px)}
+  #knobOld{position:absolute;left:50%;top:50%;width:56px;height:56px;border-radius:50%;background:var(--paper);box-shadow:0 3px 0 rgba(0,0,0,.2);transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:22px}
   #near{position:fixed;top:calc(62px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:none;font-size:13px;z-index:3;max-width:86vw;overflow:hidden;text-overflow:ellipsis}
   #mapWrap{position:fixed;inset:0;background:rgba(20,26,40,.55);display:flex;align-items:center;justify-content:center;z-index:8;padding:16px}
   #mapWrap.hidden{display:none}
@@ -136,15 +135,36 @@
     #panel{top:auto;width:auto;right:0}
     body.panelOpen #dock,body.panelOpen #joy{display:none!important}
     #dock{bottom:calc(84px + env(safe-area-inset-bottom))}
-    #joy{bottom:calc(84px + env(safe-area-inset-bottom));width:120px;height:120px}
   }
   @media (orientation:landscape) and (max-height:520px){
     #panel{top:8px;bottom:8px;width:min(46vw,440px)}
     body.panelOpen #dock{right:calc(min(46vw,440px) + 22px)}
     #dock{bottom:max(10px,env(safe-area-inset-bottom));flex-direction:row-reverse}
-    #joy{bottom:68px;width:104px;height:104px}#knob{width:46px;height:46px}
     #near{top:8px}
   }
+  /* ---- game controller (walk mode) ---- */
+  .stick{position:fixed;width:132px;height:132px;border-radius:50%;background:radial-gradient(circle,rgba(255,250,242,.18),rgba(255,250,242,.32));border:2.5px solid rgba(255,250,242,.8);display:none;touch-action:none;z-index:4;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);box-shadow:0 4px 0 rgba(0,0,0,.12)}
+  .stick .nub{position:absolute;left:50%;top:50%;width:60px;height:60px;border-radius:50%;background:var(--paper);box-shadow:0 4px 0 rgba(0,0,0,.22);transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:22px;pointer-events:none}
+  .stick .lab{position:absolute;left:50%;bottom:-24px;transform:translateX(-50%);color:#fff;font-size:11px;font-weight:800;letter-spacing:.06em;text-shadow:0 1px 3px rgba(0,0,0,.6);white-space:nowrap;pointer-events:none}
+  .stick.live{opacity:1!important}
+  body.walk .stick{display:block}
+  #joy{left:max(26px,env(safe-area-inset-left));bottom:calc(46px + env(safe-area-inset-bottom));opacity:.75;transition:opacity .2s}
+  #joy.float{transition:none}
+  #look{right:max(26px,env(safe-area-inset-right));bottom:calc(46px + env(safe-area-inset-bottom));opacity:.75}
+  body.walk #chatwrap{display:none}body.walk.chatOpen #chatwrap{display:block;bottom:calc(196px + env(safe-area-inset-bottom))}
+  #chatBtn{display:none}body.walk #chatBtn{display:flex}
+  body.walk #dock{bottom:calc(214px + env(safe-area-inset-bottom))}
+  body.walk.chatOpen #dock{bottom:calc(270px + env(safe-area-inset-bottom))}
+  body.walk #hint{display:none}
+  body.walk.panelOpen .stick{display:none}
+  @media (max-width:760px){#joy,#look{width:124px;height:124px}}
+  @media (orientation:landscape) and (max-height:520px){
+    .stick{width:112px;height:112px}.stick .nub{width:50px;height:50px}
+    #joy{bottom:max(24px,env(safe-area-inset-bottom))}#look{bottom:max(24px,env(safe-area-inset-bottom))}
+    body.walk #dock{bottom:auto;top:56px;flex-direction:column}
+    body.walk.chatOpen #chatwrap{bottom:max(10px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(46vw,420px)}
+  }
+  html:not(.touch) body.walk .stick{display:none}html:not(.touch) body.walk #chatwrap{display:block}html:not(.touch) #chatBtn{display:none!important}html:not(.touch) body.walk #dock{bottom:calc(86px + env(safe-area-inset-bottom))}
 </style>
 </head>
 <body>
@@ -181,8 +201,9 @@
 </aside>
 
 <div id="hint">tap 🚶 to walk around on your own · drag to look · pinch to zoom</div>
-<div id="dock"><button class="pill" id="modeBtn">🚶 walk around</button><button class="round" id="mapBtn" title="map">🗺</button><button class="round" id="bookBtn" title="diary">📖</button></div>
-<div id="joy"><div id="knob">🚶</div></div>
+<div id="dock"><button class="pill" id="modeBtn">🚶 walk around</button><button class="round" id="chatBtn" title="talk to Mocha">💬</button><button class="round" id="mapBtn" title="map">🗺</button><button class="round" id="bookBtn" title="diary">📖</button></div>
+<div id="joy" class="stick"><div class="nub" id="knob">🚶</div><div class="lab">MOVE</div></div>
+<div id="look" class="stick"><div class="nub" id="lnub">👀</div><div class="lab">LOOK</div></div>
 <div id="near" class="pill"></div>
 <div id="bubble2"></div>
 <div id="mapWrap" class="hidden"><div class="mapCard"><header><b>🗺 Map</b><span class="muted">tap anywhere to walk there</span><button class="x" id="mapClose">×</button></header><canvas id="bigmap" width="640" height="640"></canvas><div class="legend">👻 Mocha · 🟡 you · 🦝 Wendell · ? = places he hasn't found yet</div></div></div>
@@ -362,7 +383,7 @@ const ageDays=()=>Math.floor((Date.now()-S.born)/864e5);
 const topInterests=(n=5)=>Object.entries(S.interests).filter(([,v])=>v>=2).sort((a,b)=>b[1]-a[1]).slice(0,n);
 const dislikes=()=>Object.entries(S.interests).filter(([,v])=>v<=-1.5).sort((a,b)=>a[1]-b[1]).map(([k])=>k);
 const traitWords=()=>{const t=S.traits,w=[];w.push(t.curiosity>.6?'very curious':t.curiosity<.3?'a bit cautious':'curious');w.push(t.coziness>.6?'a total homebody':t.coziness<.3?'restless':'cozy-ish');w.push(t.sociability>.6?'chatty and social':t.sociability<.3?'shy':'friendly');if(t.creativity>.6)w.push('creative');if(t.adventure>.6)w.push('adventurous');return w};
-const TOUCH=matchMedia('(pointer:coarse)').matches;
+const TOUCH=matchMedia('(pointer:coarse)').matches;if(TOUCH)document.documentElement.classList.add('touch');
 let SET={autoSend:TOUCH,mic:false,saver:false,pace:'normal'};try{Object.assign(SET,JSON.parse(localStorage.getItem('mocha-settings')||'{}'))}catch(e){}
 function saveSet(){try{localStorage.setItem('mocha-settings',JSON.stringify(SET))}catch(e){}}
 let PHOTOS={};try{PHOTOS=JSON.parse(localStorage.getItem('mocha-photos')||'{}')}catch(e){}
@@ -1213,16 +1234,18 @@ function makeVisitor(){const g=new THREE.Group();const coat=lam('#f2c14e'),dark=
 const visitor=makeVisitor();scene.add(visitor);visitor.visible=false;
 function animateVisitor(t,mv){const u=visitor.userData,ph=t*10;u.legs.forEach((l,i)=>l.rotation.x=mv?Math.sin(ph+i*Math.PI)*.75*mv:0);u.arms.forEach((a,i)=>a.rotation.x=mv?-Math.sin(ph+i*Math.PI)*.5*mv:Math.sin(t*1.5+i)*.04)}
 function setCamMode(m){camS.mode=m;document.body.classList.toggle('walk',m==='walk');const b=$('#modeBtn');if(b)b.textContent=m==='walk'?'👻 watch Mocha':'🚶 walk around';visitor.visible=m==='walk';
-  if(m==='walk'){camS.dist=clamp(camS.dist,5,12);camS.pitch=Math.min(camS.pitch,.42);camS.tx=YOU.x;camS.tz=YOU.z}else camS.dist=Math.max(camS.dist,14);$('#edge').style.display='none';$('#near').style.display='none'}
-const JOY={x:0,y:0};
+  if(m==='walk'){camS.dist=7;camS.pitch=.3;camS.yaw=YOU.yaw+Math.PI;camS.tx=YOU.x;camS.tz=YOU.z}else{document.body.classList.remove('chatOpen');camS.dist=Math.max(camS.dist,14)}$('#edge').style.display='none';$('#near').style.display='none'}
+const JOY={x:0,y:0},LOOK={x:0,y:0};let lastLook=-9;
 const PIERS=[[-101,-61,-37,-13],[-99,-61,9,19],[-89,-61,41,51]];
 function walkable(x,z){return x>=-61||PIERS.some(([a,b,c,d])=>x>=a&&x<=b&&z>=c&&z<=d)}
 function floorAt(x,z){if(inHome(x,z))return .65;for(const q of PLACES)if(q.interior&&q.kind!=='home'&&inBuilding(q,x,z))return .3;return .12}
 function updateYou(dt,t){const k=KEYS_DOWN;let jx=JOY.x+((k.d||k.arrowright)?1:0)-((k.a||k.arrowleft)?1:0),jy=JOY.y+((k.s||k.arrowdown)?1:0)-((k.w||k.arrowup)?1:0);const m=Math.min(1,Math.hypot(jx,jy));
   if(m>.08){const sy=Math.sin(camS.yaw),cy=Math.cos(camS.yaw);const dx=cy*jx+sy*jy,dz=-sy*jx+cy*jy,l=Math.hypot(dx,dz)||1,sp=(m>.85?9:5)*m,nx=clamp(YOU.x+dx/l*sp*dt,-200,165),nz=clamp(YOU.z+dz/l*sp*dt,-145,145);
     if(walkable(nx,nz)){YOU.x=nx;YOU.z=nz}else if(walkable(nx,YOU.z))YOU.x=nx;else if(walkable(YOU.x,nz))YOU.z=nz;
-    const ty=Math.atan2(dx,dz),df=Math.atan2(Math.sin(ty-YOU.yaw),Math.cos(ty-YOU.yaw));YOU.yaw+=df*Math.min(1,dt*10);YOU.moving=m}else YOU.moving=0;
-  if(k.q)camS.yaw+=dt*1.6;if(k.e)camS.yaw-=dt*1.6;
+    const ty=Math.atan2(dx,dz),df=Math.atan2(Math.sin(ty-YOU.yaw),Math.cos(ty-YOU.yaw));YOU.yaw+=df*Math.min(1,dt*12);YOU.moving=m;
+    if(t-lastLook>.7&&jy<.35){const want=YOU.yaw+Math.PI,d2=Math.atan2(Math.sin(want-camS.yaw),Math.cos(want-camS.yaw));camS.yaw+=d2*Math.min(1,dt*(.5+Math.abs(jx)*1.6)*m)}}else YOU.moving=0;
+  if(LOOK.x||LOOK.y){camS.yaw-=LOOK.x*Math.abs(LOOK.x)*dt*2.8;camS.pitch=clamp(camS.pitch+LOOK.y*Math.abs(LOOK.y)*dt*1.4,.06,1.2);lastLook=t}
+  if(k.q){camS.yaw+=dt*1.8;lastLook=t}if(k.e){camS.yaw-=dt*1.8;lastLook=t}
   visitor.position.set(YOU.x,floorAt(YOU.x,YOU.z)+(YOU.moving?Math.abs(Math.sin(t*10))*.07:0),YOU.z);visitor.rotation.y=YOU.yaw;animateVisitor(t,YOU.moving)}
 function placeCam(dt){if(camS.mode==='walk'){camS.tx+=(YOU.x-camS.tx)*Math.min(1,dt*8);camS.tz+=(YOU.z-camS.tz)*Math.min(1,dt*8);camS.ty+=(floorAt(YOU.x,YOU.z)+1.2-camS.ty)*Math.min(1,dt*4)}
   else{camS.tx+=(G.x-camS.tx)*Math.min(1,dt*2.5);camS.ty+=(G.y-camS.ty)*Math.min(1,dt*2);camS.tz+=(G.z-camS.tz)*Math.min(1,dt*2.5)}
@@ -1251,12 +1274,12 @@ try{if(localStorage.getItem('mocha-hint')){hintGone=true;$('#hint').style.displa
 function hideHint(){if(!hintGone){hintGone=true;$('#hint').style.opacity=0;try{localStorage.setItem('mocha-hint','1')}catch(e){}}}
 function twoState(){const [a,b]=[...ptrs.values()];return{d:Math.hypot(a.x-b.x,a.y-b.y),ang:Math.atan2(b.y-a.y,b.x-a.x),my:(a.y+b.y)/2}}
 cv.addEventListener('contextmenu',e=>e.preventDefault());
-cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(ptrs.size===1)downAt={x:e.clientX,y:e.clientY,t:performance.now()};else{downAt=null;two={...twoState(),dist:camS.dist,yaw:camS.yaw,pitch:camS.pitch}}});
-cv.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
-  if(ptrs.size===1){if(downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<6)return;hideHint();camS.yaw-=dx*.006;camS.pitch=clamp(camS.pitch+dy*.004,.06,1.3)}
+cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}if(camS.mode==='walk'&&e.pointerType!=='mouse'&&e.clientX<innerWidth*.45&&e.clientY>innerHeight*.28&&STICK.id===null){STICK.start(e,true);return}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(ptrs.size===1)downAt={x:e.clientX,y:e.clientY,t:performance.now()};else{downAt=null;two={...twoState(),dist:camS.dist,yaw:camS.yaw,pitch:camS.pitch}}});
+cv.addEventListener('pointermove',e=>{if(e.pointerId===STICK.id){STICK.move(e);return}const p=ptrs.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+  if(ptrs.size===1){if(downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<6)return;hideHint();const sens=camS.mode==='walk'?.0075:.006;camS.yaw-=dx*sens;camS.pitch=clamp(camS.pitch+dy*sens*.65,.06,1.3);lastLook=T}
   else if(ptrs.size===2&&two){const n=twoState();camS.dist=clamp(two.dist*two.d/Math.max(1,n.d),camS.mode==='walk'?3.5:6,80);camS.yaw=two.yaw-(n.ang-two.ang);camS.pitch=clamp(two.pitch+(n.my-two.my)*.004,.06,1.3);hideHint()}});
-cv.addEventListener('pointerup',e=>{const was=ptrs.size;ptrs.delete(e.pointerId);if(ptrs.size<2)two=null;if(was===1&&downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<8&&performance.now()-downAt.t<600)tap(e.clientX,e.clientY);downAt=null});
-cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);downAt=null;two=null});
+cv.addEventListener('pointerup',e=>{if(e.pointerId===STICK.id){STICK.end(e);return}const was=ptrs.size;ptrs.delete(e.pointerId);if(ptrs.size<2)two=null;if(was===1&&downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<8&&performance.now()-downAt.t<600)tap(e.clientX,e.clientY);downAt=null});
+cv.addEventListener('pointercancel',e=>{if(e.pointerId===STICK.id){STICK.end(e);return}ptrs.delete(e.pointerId);downAt=null;two=null});
 cv.addEventListener('wheel',e=>{e.preventDefault();camS.dist=clamp(camS.dist*(1+e.deltaY*.001),camS.mode==='walk'?3.5:6,80)},{passive:false});
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key.toLowerCase();if(['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){KEYS_DOWN[k]=1;if(!['q','e'].includes(k)&&camS.mode!=='walk')setCamMode('walk');e.preventDefault()}if(k==='f')setCamMode('follow');if(k==='m')toggleMap()});
 addEventListener('keyup',e=>{KEYS_DOWN[e.key.toLowerCase()]=0});
@@ -1267,9 +1290,17 @@ function tap(x,y){ndc.set(x/innerWidth*2-1,-(y/innerHeight)*2+1);ray.setFromCame
   if(wObj.visible&&ray.intersectObject(wObj,true).length&&!wBubT){wSay(pick(W_LINES),3)}}
 $('#modeBtn').onclick=()=>{setCamMode(camS.mode==='walk'?'follow':'walk');hideHint()};
 $('#edge').onclick=()=>setCamMode('follow');
-{const joy=$('#joy'),knob=$('#knob');let jid=null;const mv=e=>{const r=joy.getBoundingClientRect();let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);const R=r.width/2-12,l=Math.hypot(dx,dy);if(l>R){dx*=R/l;dy*=R/l}JOY.x=dx/R;JOY.y=dy/R;knob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`};
- joy.addEventListener('pointerdown',e=>{jid=e.pointerId;try{joy.setPointerCapture(jid)}catch(_){}mv(e);hideHint();e.preventDefault()});joy.addEventListener('pointermove',e=>{if(e.pointerId===jid)mv(e)});
- const end=e=>{if(e.pointerId!==jid)return;jid=null;JOY.x=JOY.y=0;knob.style.transform='translate(-50%,-50%)'};joy.addEventListener('pointerup',end);joy.addEventListener('pointercancel',end)}
+const STICK=(()=>{const joy=$('#joy'),knob=$('#knob');const o={id:null,cx:0,cy:0};
+  o.start=(e,float)=>{o.id=e.pointerId;const r=joy.getBoundingClientRect();if(float){joy.classList.add('float');joy.style.left=(e.clientX-r.width/2)+'px';joy.style.top=(e.clientY-r.height/2)+'px';joy.style.bottom='auto';o.cx=e.clientX;o.cy=e.clientY}else{o.cx=r.left+r.width/2;o.cy=r.top+r.height/2}joy.classList.add('live');o.move(e);hideHint()};
+  o.move=e=>{const R=joy.offsetWidth/2-14;let dx=e.clientX-o.cx,dy=e.clientY-o.cy;const l=Math.hypot(dx,dy);if(l>R){dx*=R/l;dy*=R/l}JOY.x=dx/R;JOY.y=dy/R;if(Math.hypot(JOY.x,JOY.y)<.12){JOY.x=JOY.y=0}knob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;knob.textContent=Math.hypot(dx,dy)>R*.88?'🏃':'🚶'};
+  o.end=()=>{o.id=null;JOY.x=JOY.y=0;knob.style.transform='translate(-50%,-50%)';knob.textContent='🚶';joy.classList.remove('live','float');joy.style.left='';joy.style.top='';joy.style.bottom=''};
+  joy.addEventListener('pointerdown',e=>{if(o.id!==null)return;try{joy.setPointerCapture(e.pointerId)}catch(_){}o.start(e,false);e.preventDefault()});
+  joy.addEventListener('pointermove',e=>{if(e.pointerId===o.id)o.move(e)});joy.addEventListener('pointerup',e=>{if(e.pointerId===o.id)o.end()});joy.addEventListener('pointercancel',e=>{if(e.pointerId===o.id)o.end()});
+  return o})();
+{const lk=$('#look'),ln=$('#lnub');let id=null;const mv=e=>{const r=lk.getBoundingClientRect(),R=r.width/2-14;let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);const l=Math.hypot(dx,dy);if(l>R){dx*=R/l;dy*=R/l}LOOK.x=dx/R;LOOK.y=dy/R;if(Math.hypot(LOOK.x,LOOK.y)<.1)LOOK.x=LOOK.y=0;ln.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`};
+ lk.addEventListener('pointerdown',e=>{if(id!==null)return;id=e.pointerId;try{lk.setPointerCapture(id)}catch(_){}lk.classList.add('live');mv(e);hideHint();e.preventDefault()});lk.addEventListener('pointermove',e=>{if(e.pointerId===id)mv(e)});
+ const end=e=>{if(e.pointerId!==id)return;id=null;LOOK.x=LOOK.y=0;ln.style.transform='translate(-50%,-50%)';lk.classList.remove('live')};lk.addEventListener('pointerup',end);lk.addEventListener('pointercancel',end)}
+$('#chatBtn').onclick=()=>{const on=document.body.classList.toggle('chatOpen');if(on)setTimeout(()=>$('#say').focus(),50)};
 
 // ====================================================================
 //  HTML OVERLAYS
@@ -1458,7 +1489,7 @@ function frame(now){const fps=SET.saver?20:TOUCH?30:60;if(now-last<1000/fps-2){r
 applyOutfit();applyPower();hud();renderTab();connect();
 setTimeout(()=>{if(isNew)say('hi! i\'m mocha 👻 i just moved in!',4.5);else say(awayCount?`you're back! i did ${awayCount} things while you were gone`:(S.mem.userName?`${S.mem.userName}! hi again 👻`:'oh hi again!'),5)},900);
 requestAnimationFrame(frame);
-window.__mocha={get S(){return S},G,MIND,localOutcome,ACTS,acquire,wearItem,adoptPet,buyDecor,takeSelfie,setCamMode,forceAct:a=>{const w=spotWorld(a.p,a.s);G.x=w.x+3;G.z=w.z+3;startAct(a)},discover:id=>discover(byId[id])};
+window.__you=()=>({x:+YOU.x.toFixed(1),z:+YOU.z.toFixed(1),yaw:+YOU.yaw.toFixed(2),cam:+camS.yaw.toFixed(2),joy:[+JOY.x.toFixed(2),+JOY.y.toFixed(2)]});window.__mocha={get S(){return S},G,MIND,localOutcome,ACTS,acquire,wearItem,adoptPet,buyDecor,takeSelfie,setCamMode,forceAct:a=>{const w=spotWorld(a.p,a.s);G.x=w.x+3;G.z=w.z+3;startAct(a)},discover:id=>discover(byId[id])};
 })();
 </script>
 </body>
