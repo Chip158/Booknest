@@ -74,7 +74,7 @@
   form#chat #micBtn{background:var(--soft);color:var(--ink);padding:8px 12px;display:none}
   form#chat #micBtn.on{background:var(--accent);color:#fff;animation:pulse 1.4s infinite}
   @keyframes pulse{50%{box-shadow:0 0 0 6px rgba(233,136,107,.25)}}
-  .post{border-top:1.5px dashed var(--line);padding:12px 0}.post img{width:100%;border-radius:14px;display:block;background:var(--soft)}.post .cap{font-size:15px;margin:8px 0 4px;line-height:1.4}.post .meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--mut);font-weight:700}
+  .post{border-top:1.5px dashed var(--line);padding:12px 0}.post img,.post .pic{display:block;margin:0 auto;max-width:100%;max-height:min(34vh,300px);width:auto;height:auto;border-radius:12px;background:var(--soft);cursor:zoom-in}.post .pic.art{border:6px solid #b08a3a;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}.post .cap{font-size:15px;margin:8px 0 4px;line-height:1.4}.post .meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--mut);font-weight:700}
   .nophoto{background:var(--soft);border-radius:14px;padding:30px;text-align:center;color:var(--mut);font-size:13px}
   .heart{border:0;background:var(--soft);border-radius:999px;padding:4px 10px;font:inherit;cursor:pointer;color:#c0603f;font-weight:800}.heart.on{background:#fde3dc}
   .set{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1.5px dashed var(--line);font-size:14px;font-weight:700}
@@ -97,6 +97,7 @@
     #toast{top:auto;bottom:calc(250px + env(safe-area-inset-bottom))}
     #chatwrap{bottom:max(8px,env(safe-area-inset-bottom))}
     .entry{font-size:15px}
+    .post img,.post .pic{max-height:min(30vh,280px)}
   }
   @media (orientation:landscape) and (max-height:520px){
     #top{top:max(8px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right))}
@@ -129,7 +130,7 @@
   .mapCard header{display:flex;align-items:center;gap:10px}.mapCard header b{font-size:16px}.mapCard header .muted{flex:1}
   #bigmap{width:min(86vw,74vh,620px);height:min(86vw,74vh,620px);border-radius:16px;cursor:crosshair;touch-action:none}
   .legend{font-size:12px;color:var(--mut);font-weight:700;text-align:center}
-  @media (min-width:761px){body.panelOpen #chatwrap{left:calc((100vw - min(400px,42vw) - 24px)/2);width:min(520px,calc(100vw - min(400px,42vw) - 60px))}body.panelOpen.wideP #chatwrap{left:calc((100vw - min(720px,72vw) - 24px)/2);width:min(520px,calc(100vw - min(720px,72vw) - 60px))}}
+  @media (min-width:761px){body.panelOpen #hint{left:calc((100vw - min(400px,42vw) - 24px)/2);white-space:normal;text-align:center;width:max-content;max-width:calc(100vw - min(400px,42vw) - 230px)}body.panelOpen #chatwrap{left:calc((100vw - min(400px,42vw) - 24px)/2);width:min(520px,calc(100vw - min(400px,42vw) - 60px))}body.panelOpen.wideP #chatwrap{left:calc((100vw - min(720px,72vw) - 24px)/2);width:min(520px,calc(100vw - min(720px,72vw) - 60px))}}
   @media (max-width:760px){#near{top:calc(108px + env(safe-area-inset-top))}}
   @media (max-width:760px){
     #panel{top:auto;width:auto;right:0}
@@ -161,10 +162,55 @@
   @media (orientation:landscape) and (max-height:520px){
     .stick{width:112px;height:112px}.stick .nub{width:50px;height:50px}
     #joy{bottom:max(24px,env(safe-area-inset-bottom))}#look{bottom:max(24px,env(safe-area-inset-bottom))}
-    body.walk #dock{bottom:auto;top:56px;flex-direction:column}
+    body.walk #dock{bottom:auto;top:max(8px,env(safe-area-inset-top));flex-direction:column;gap:8px}body.walk #dock .round{width:46px;height:46px;font-size:20px}body.walk.showMeters #meters{display:none!important}
     body.walk.chatOpen #chatwrap{bottom:max(10px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(46vw,420px)}
   }
   html:not(.touch) body.walk .stick{display:none}html:not(.touch) body.walk #chatwrap{display:block}html:not(.touch) #chatBtn{display:none!important}html:not(.touch) body.walk #dock{bottom:calc(86px + env(safe-area-inset-bottom))}
+  /* ---- paintings grid + picture viewer (lightbox) ---- */
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:12px 9px;margin:6px 0 2px}
+  .pcard{border:0;background:none;padding:0;font:inherit;text-align:left;cursor:zoom-in;color:var(--mut);font-size:11px;font-weight:700;min-width:0;line-height:1.3}
+  .pcard img{display:block;width:100%;aspect-ratio:4/3;object-fit:contain;background:#f6efe2;border:4px solid #b08a3a;border-radius:5px;box-shadow:0 2px 0 rgba(0,0,0,.12)}
+  .pcard b{display:block;color:var(--ink);font-size:12px;margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pcard span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #lb{position:fixed;inset:0;z-index:20;background:radial-gradient(ellipse at 50% 42%,#2e3756 0%,#1a2034 62%,#121726 100%);display:grid;grid-template-columns:76px minmax(0,1fr) 76px;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"prev stage next" "cap cap cap";padding:max(10px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));color:#fffaf2;touch-action:none;user-select:none;-webkit-user-select:none;animation:lbIn .2s ease-out}
+  #lb.hidden{display:none}
+  @keyframes lbIn{from{opacity:0}}
+  .lbTop{position:absolute;top:max(10px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));z-index:2}
+  .lbBtn{border:0;width:48px;height:48px;border-radius:50%;background:rgba(255,250,242,.16);color:#fffaf2;font:inherit;font-size:30px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0 0 3px;flex:none;transition:background .15s}
+  .lbBtn:hover,.lbBtn:focus-visible{background:rgba(255,250,242,.3);outline:none}
+  #lbPrev{grid-area:prev;align-self:center;justify-self:center}#lbNext{grid-area:next;align-self:center;justify-self:center}
+  #lb.one #lbPrev,#lb.one #lbNext{visibility:hidden}
+  .lbStage{grid-area:stage;min-height:0;min-width:0;display:flex;align-items:center;justify-content:center;overflow:visible}
+  #lbImg{display:block;box-sizing:content-box;max-width:none;max-height:none;border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.5);background:#fffaf2;will-change:transform;-webkit-user-drag:none;pointer-events:none}
+  #lbImg.art{border:clamp(6px,1.5vmin,14px) solid #b08a3a;border-radius:4px;box-shadow:inset 0 0 0 2px rgba(0,0,0,.25),0 0 0 2px #7d5f24,0 14px 40px rgba(0,0,0,.55)}
+  #lbImg.slideL{animation:lbSlideL .22s ease-out}#lbImg.slideR{animation:lbSlideR .22s ease-out}
+  @keyframes lbSlideL{from{opacity:0;transform:translateX(40px)}}@keyframes lbSlideR{from{opacity:0;transform:translateX(-40px)}}
+  .lbCap{grid-area:cap;text-align:center;padding:10px 8px 2px;min-height:56px;display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:0}
+  #lbTitle{font-size:17px;font-weight:800;line-height:1.3;overflow-wrap:anywhere}
+  #lbSub{font-size:13px;font-weight:700;opacity:.78;line-height:1.35}
+  #lbCount{font-size:11px;font-weight:800;letter-spacing:.08em;opacity:.55}
+  @media (max-width:600px) and (orientation:portrait){
+    #lb{grid-template-columns:60px minmax(0,1fr) 60px;grid-template-rows:56px minmax(0,1fr) auto;grid-template-areas:"top top top" "stage stage stage" "prev cap next"}
+    .lbTop{position:static;grid-area:top;justify-self:end;align-self:center;margin-right:4px}
+    #lbPrev,#lbNext{align-self:center}
+  }
+  @media (orientation:landscape) and (max-height:520px){.post img,.post .pic{max-height:52vh}.lbCap{min-height:44px;padding-top:6px}#lbTitle{font-size:15px}#lb{grid-template-columns:68px minmax(0,1fr) 68px}}
+  /* ---- zoom buttons ---- */
+  #zoom{position:fixed;display:flex;flex-direction:column;gap:8px;z-index:4;left:max(12px,env(safe-area-inset-left));bottom:calc(86px + env(safe-area-inset-bottom))}
+  .zb{border:0;width:44px;height:44px;border-radius:50%;background:rgba(255,250,242,.9);box-shadow:0 3px 0 rgba(0,0,0,.16);font:inherit;font-size:26px;font-weight:800;line-height:1;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0 0 2px;touch-action:none;user-select:none;-webkit-user-select:none;transition:transform .1s,background .1s}
+  .zb.on{transform:scale(.92);background:#fff}
+  html.touch body.walk #zoom{left:auto;right:calc(max(26px,env(safe-area-inset-right)) + 144px);bottom:calc(64px + env(safe-area-inset-bottom))}
+  html.touch body.walk .zb{background:rgba(255,250,242,.78);border:2px solid rgba(255,250,242,.9)}
+  body.walk.panelOpen #zoom{display:none}
+  @media (max-width:760px){
+    #zoom{bottom:calc(84px + env(safe-area-inset-bottom))}
+    body.panelOpen #zoom{display:none}
+    html.touch body.walk #zoom{right:calc(max(26px,env(safe-area-inset-right)) + 136px);bottom:calc(60px + env(safe-area-inset-bottom))}
+  }
+  @media (orientation:landscape) and (max-height:520px){
+    #zoom{bottom:calc(76px + env(safe-area-inset-bottom))}
+    html.touch body.walk #zoom{right:calc(max(26px,env(safe-area-inset-right)) + 124px);bottom:max(32px,calc(env(safe-area-inset-bottom) + 8px))}
+  }
 </style>
 </head>
 <body>
@@ -200,7 +246,7 @@
   <div class="tab" id="tab-set"></div>
 </aside>
 
-<div id="hint">tap 🚶 to walk around on your own · drag to look · pinch to zoom</div>
+<div id="hint">tap 🚶 to walk around on your own · drag to look · pinch or +/− to zoom</div>
 <div id="dock"><button class="pill" id="modeBtn">🚶 walk around</button><button class="round" id="chatBtn" title="talk to Mocha">💬</button><button class="round" id="mapBtn" title="map">🗺</button><button class="round" id="bookBtn" title="diary">📖</button></div>
 <div id="joy" class="stick"><div class="nub" id="knob">🚶</div><div class="lab">MOVE</div></div>
 <div id="look" class="stick"><div class="nub" id="lnub">👀</div><div class="lab">LOOK</div></div>
@@ -208,6 +254,8 @@
 <div id="bubble2"></div><div id="bubble3"></div>
 <div id="mapWrap" class="hidden"><div class="mapCard"><header><b>🗺 Map</b><span class="muted">tap anywhere to walk there</span><button class="x" id="mapClose">×</button></header><canvas id="bigmap" width="640" height="640"></canvas><div class="legend">👻 Mocha · 🟡 you · 🦝 Wendell · ? = places he hasn't found yet</div></div></div>
 <div id="edge" title="go to Mocha">👻</div>
+<div id="zoom"><button class="zb" id="zIn" aria-label="zoom in" title="zoom in">+</button><button class="zb" id="zOut" aria-label="zoom out" title="zoom out">−</button></div>
+<div id="lb" class="hidden" role="dialog" aria-modal="true" aria-label="picture viewer"><div class="lbTop"><button class="lbBtn" id="lbClose" aria-label="close">×</button></div><button class="lbBtn" id="lbPrev" aria-label="previous picture">‹</button><div class="lbStage" id="lbStage"><img id="lbImg" alt=""></div><button class="lbBtn" id="lbNext" aria-label="next picture">›</button><div class="lbCap"><b id="lbTitle"></b><span id="lbSub"></span><span id="lbCount"></span></div></div>
 
 <div id="chatwrap">
   <div id="chatlog"></div>
@@ -244,6 +292,8 @@ const PLACES=[
  {id:'petstore',name:'Wag & Whisker Pets',x:7.5,z:-15.5,ry:0,w:15,d:11,h:7.5,hours:[9,19],kind:'petstore',wall:'#9fd3c7',roof:'#2f5f6f',awn:['#f29fb5','#fffaf2']},
  {id:'cinema',name:'Rain City Cinema',x:40,z:16,ry:Math.PI,w:18,d:12,h:11,kind:'cinema',wall:'#7a2f45',roof:'#2a2a33',inner:'#3a2a3a',floor:'#5a2a3a',awn:['#f2c14e','#7a2f45'],hours:[12,23]},
  {id:'studio',hours:[10,19],name:'Fog & Easel Studio',x:46,z:-36,ry:Math.PI,w:12,d:10,h:8,wall:'#f0d27a',roof:'#6b5a3a',awn:['#4a7ab0','#fff6dc']},
+ {id:'phones',hours:[10,20],name:'Cascade Mobile',x:-15.5,z:-15,ry:0,w:9.5,d:10,h:7,wall:'#a9b8e8',roof:'#30365e',inner:'#fbf6ff',floor:'#d9d2e6',awn:['#ffcf5a','#30365e']},
+ {id:'bikes',hours:[9,19],name:'Spoke & Sprocket',x:28,z:-37,ry:Math.PI,w:10,d:9,h:7.5,wall:'#d9824e',roof:'#2f4a3a',inner:'#f6eddc',floor:'#bdb2a0',awn:['#4f8a5b','#fff6dc']},
  {id:'needle',name:'Sky Needle',x:6,z:-72,ry:0,w:10,d:10,h:46,kind:'needle'},
  {id:'arcade',hours:[11,23],name:'Pixel Pier Arcade',x:-90,z:-25,ry:Math.PI/2,w:14,d:10,h:8,wall:'#6a4bb0',roof:'#2b2350',awn:['#ff5fa2','#3ad1e0']},
  {id:'wheel',name:'Waterfront Wheel',x:-84,z:14,ry:Math.PI/2,w:4,d:4,h:30,kind:'wheel'},
@@ -277,7 +327,7 @@ const ROADS=[[-58,0,128,0],[-58,-48,70,-48],[-5,-90,-5,60],[66,-60,66,70],[-5,58
 // --------------------------------------------------------------------
 const FILL={dish:['cinnamon rolls','tomato soup','blueberry pancakes','salmon chowder','a tiny pie','grilled cheese'],dream:['flying over the Sound','a library made of clouds','a ferry full of cats','the mountain saying hi'],book:['a mystery set on a ferry','a book about mushrooms','a poetry book with a rain-stained cover','an old field guide to birds','a comic about a robot barista'],drink:['oat latte','hazelnut mocha (obviously)','chai','hot cocoa','honey lavender latte'],song:['a fuzzy guitar song','a slow jazz record','a sea shanty','a dreamy synth album'],boat:['a sailboat','a tugboat','a kayak','a big container ship']};
 const petName=()=>S.pets&&S.pets.length?pick(S.pets).name:'my pet';
-const fill=s=>s.replace(/\{(\w+)\}/g,(_,k)=>k==='pet'?petName():pick(FILL[k]||['something']));
+const fill=s=>s.replace(/\{(\w+)\}/g,(_,k)=>k==='pet'?petName():k==='bike'?(S.bike?S.bike.name:'my bike'):pick(FILL[k]||['something']));
 const ACTS=[
  {p:'home',s:'kitchen',doing:'cooking',tags:['cooking'],need:{snack:45,fun:10},lines:['Tried to make {dish} in my kitchen. It mostly became steam. Steam is my specialty, so honestly a win.','Cooked {dish}. Couldn\'t eat it. Smelled it for an hour. Chef\'s kiss.']},
  {p:'home',s:'kitchen',doing:'making tea',tags:['cozy','tea'],need:{energy:10,fun:10},lines:['Made a pot of tea just to hold the warm mug and watch the rain run down the window.']},
@@ -332,6 +382,23 @@ const ACTS=[
  {p:'park',doing:'walking {pet}',tags:['animals','nature'],need:{social:25,fun:20},pet:1,lines:['Took {pet} for a walk around Cedar Lake. {pet} wanted to say hi to every single duck.','Walked {pet} in the drizzle. We both came home damp and happy.']},
  {p:'home',s:'couch',doing:'cuddling {pet}',tags:['animals','cozy'],need:{social:35,energy:10},pet:1,lines:['Cuddled with {pet} on the couch. {pet} fell asleep first. I didn\'t move for an hour.']},
  {p:'petstore',s:'counter',doing:'buying pet treats',tags:['animals'],need:{fun:10},pet:1,fx:'pettreat',lines:['Bought treats for {pet}. Stood in the aisle way too long choosing. {pet} deserves the best.']},
+ // odd jobs: he helps out at open shops for a few coins (his own choice; more likely when he's saving up for something)
+ {p:'cafe',s:'counter',doing:'helping Juniper at the counter',tags:['people','helping','coffee'],need:{social:20,fun:5},fx:'job',keeper:'juniper',pay:[12,20],lines:['Helped Juniper behind the counter during the rush. I wrote names on cups. Mostly my own name, by accident.','Wiped tables and stacked mugs at Drizzle & Bean while Juniper steamed milk. The espresso machine hisses like a friendly dragon.'],thx:['you\'re a natural, mocha!','best helper i\'ve ever had','here\'s your pay, plus a cookie']},
+ {p:'bookstore',s:'shelves',doing:'shelving books for Mabel',tags:['reading','helping'],need:{curious:15,fun:5},fx:'job',keeper:'mabel',pay:[10,18],lines:['Shelved new books for Mabel at Rainy Day Books. Alphabetical order is hard when every book looks interesting.','Dusted the poetry shelf for Mabel. The store cat supervised from the top of the ladder.'],thx:['whooo knew ghosts were so tidy?','perfectly shelved, thank you dear','you have a librarian\'s soul']},
+ {p:'grocery',s:'aisle',doing:'stocking shelves for Hank',tags:['helping','cooking'],need:{fun:5},fx:'job',keeper:'hank',pay:[14,22],lines:['Stocked shelves for Hank at Puget Pantry. Lined up the soup cans so every label faces front. Deeply satisfying.','Helped Hank unload a delivery of apples. I counted 212. Hank said "close enough."'],thx:['you\'re a busy beaver like me!','shelves never looked better','thanks, buddy. here you go']},
+ {p:'cinema',s:'main',doing:'sweeping the cinema for Monty',tags:['movies','helping'],need:{fun:5},fx:'job',keeper:'monty',pay:[12,20],lines:['Swept up popcorn between the seats at Rain City Cinema for Monty. Found a lot of popcorn and one very old ticket stub.','Helped Monty polish the brass railings in the cinema lobby. They shine like a movie premiere now.'],thx:['a five-star sweep!','the theater sparkles, thanks pal','that deserves a standing ovation']},
+ {p:'petstore',s:'pens',doing:'helping Bea feed the animals',tags:['animals','helping'],need:{social:15,fun:10},fx:'job',keeper:'bea',pay:[10,18],lines:['Helped Bea feed the animals at Wag & Whisker. The hedgehog supervised. The poodle supervised the hedgehog.','Refilled the water bowls and fluffed the pet beds for Bea. Every animal said thank you in its own way.'],thx:['the animals love you!','thank you, sweet ghost','tail wags all around']},
+ {p:'records',s:'crates',doing:'sorting records for Basil',tags:['music','helping'],need:{fun:10},fx:'job',keeper:'basil',pay:[10,18],lines:['Sorted the new-arrivals bin for Basil at Rain City Records. Jazz goes with jazz. Mostly.','Alphabetized a whole crate of records for Basil. Found three albums with rain on the cover. Very Seattle.'],thx:['you\'ve got an ear for this','crate-digging champion!','thanks, mocha. rock on']},
+ {p:'library',s:'shelves',doing:'shelving returns for Rosalind',tags:['reading','helping'],need:{curious:15},fx:'job',keeper:'rosalind',pay:[10,16],lines:['Pushed the returns cart around the library for Rosalind and put every book back where it lives.','Helped Rosalind fix the little labels on the book spines. Quiet work. Nice work.'],thx:['thank you, very helpful!','the stacks are in order','you\'re welcome here any time']},
+ {p:'phones',s:'display',doing:'untangling cables for Dot',tags:['gadgets','helping'],need:{fun:5},fx:'job',keeper:'dot',pay:[12,20],lines:['Untangled a giant box of charging cables for Dot at Cascade Mobile. She has eight arms and still asked for help. That\'s how tangled it was.','Wiped smudges off every display phone at Cascade Mobile. Ghosts don\'t leave fingerprints, so I\'m perfect for the job.'],thx:['eight arms and i still needed you!','tangle-free at last, thanks!','you\'re a pro, mocha']},
+ {p:'bikes',s:'bikes',doing:'pumping up tires for Kip',tags:['bikes','helping'],need:{fun:10},fx:'job',keeper:'kip',pay:[12,20],lines:['Pumped up tires for Kip at Spoke & Sprocket. Pssst. Pssst. I could do that all day.','Helped Kip wash a muddy mountain bike. Kip says Seattle mud is "the good kind of mud."'],thx:['you\'re a real gear-head now!','tires are perfect, thanks!','great work, mocha. ride safe!']},
+ // gadgets + bikes: he decides if and what to buy
+ {p:'phones',s:'display',doing:'looking at phones',tags:['gadgets'],need:{curious:25,fun:15},fx:'phoneshop'},
+ {p:'phones',s:'cases',doing:'browsing phone cases',tags:['gadgets','fashion'],need:{fun:20},fx:'phoneshop'},
+ {p:'bikes',s:'bikes',doing:'looking at bikes',tags:['bikes'],need:{fun:20,curious:15},fx:'bikeshop'},
+ {p:'bikes',s:'helmets',doing:'trying on bike helmets',tags:['bikes','fashion'],need:{fun:15},fx:'bikeshop'},
+ {p:'park',doing:'going for a bike ride',tags:['bikes','nature'],need:{fun:30,energy:-6},fx:'bikeride',bike:1,loop:'park',lines:['Rode {bike} around Cedar Lake. The ducks raced me. The ducks won.','Biked loops around the lake until my wheels sparkled with puddle water. {bike} is the best bike in the city.','Went for a bike ride around Cedar Lake. A heron watched me go by like a tiny judge.']},
+ {p:'promenade',doing:'biking the waterfront',tags:['bikes','ocean'],need:{fun:30,energy:-6},fx:'bikeride',bike:1,loop:'promenade',lines:['Biked along the waterfront with the salty wind in my sheet. Waved at the ferry. I think it honked back.','Rode {bike} down the whole promenade and back. The seagulls kept up for a while. Then they got bored.']},
 ];
 // shopkeepers: each store has someone who runs it during business hours, and knows their trade
 const KEEPERS=[
@@ -345,6 +412,8 @@ const KEEPERS=[
  {id:'chip',name:'Chip',species:'chipmunk',pr:'he',shop:'arcade',topic:'video games',fk:['arcade games'],pos:[-6.3,3,Math.PI/2],ask:[-4.2,3],look:{fur:'#b07a4a',light:'#f2dcc0',ears:'round',snout:'short',apron:'#6a4bb0',stripes:1,tail:'bushy'},hi:['high score\'s still BOB','tokens? tokens!','ready player mocha']},
  {id:'hank',name:'Hank',species:'beaver',pr:'he',shop:'grocery',topic:'food and groceries',fk:['groceries','bread'],pos:[7.5,4.85,Math.PI],ask:[7.5,2.4],look:{fur:'#7a5232',light:'#c99a6a',ears:'round',snout:'short',teeth:1,apron:'#3f8f6a',tail:'flat'},hi:['apples are crisp today','need a basket?','welcome to Puget Pantry']},
  {id:'bea',name:'Bea',species:'beagle',pr:'she',shop:'petstore',topic:'pets and animal care',fk:['poodles','bats','hedgehogs'],pos:[5,3.9,Math.PI],ask:[5,1.6],look:{fur:'#f4ead8',light:'#ffffff',ears:'floppy',earC:'#a8632f',snout:'long',apron:'#f29fb5',patch:'#a8632f',tail:'short'},hi:['the hedgehog misses you','everyone say hi to mocha!','treats are on the left']},
+ {id:'dot',name:'Dot',species:'octopus',pr:'she',shop:'phones',topic:'phones and gadgets',fk:['phones'],pos:[2.5,-3.55,0],ask:[2.5,-1.15],look:{fur:'#ee8aa2',light:'#f9cbd6',ears:'none',snout:'none',apron:'#3f6fb0',octo:1},hi:['eight arms, zero dropped calls!','new cases just came in','hi mocha! need a charger?']},
+ {id:'kip',name:'Kip',species:'mountain goat',pr:'he',shop:'bikes',topic:'bicycles',fk:['bicycles'],pos:[2.6,-3.45,0],ask:[2.6,-1.25],look:{fur:'#f4f1ea',light:'#ffffff',ears:'side',snout:'long',nose:'#3a3a44',apron:'#4f8a5b',horns:1,beard:1,tail:'short'},hi:['helmet first, then adventure!','tires are pumped and ready','hey mocha! wanna test ride?']},
  {id:'monty',name:'Monty',species:'moose',pr:'he',shop:'cinema',topic:'movies and film history',fk:['film history'],pos:[-6.2,-5.15,0],ask:[-6.2,-2.9],look:{fur:'#6a4a3a',light:'#a88a6a',ears:'pointy',antlers:1,snout:'long',big:1,apron:'#7a2f45'},hi:['one ticket? enjoy the show','popcorn\'s fresh','the movie starts soon!']},
 ];
 const KB=Object.fromEntries(KEEPERS.map(k=>[k.id,k]));
@@ -362,8 +431,10 @@ const FILMS=[
 const FILM_THEMES=['moon','spooky','train','city','boat','street','snow','dino','ocean','space','nature','generic'];
 KEEPERS.forEach(k=>ACTS.push({p:k.shop,s:'counter',doing:`asking ${k.name} about ${k.topic}`,tags:['people','learning'],need:{social:30,curious:35},fx:'ask',keeper:k.id}));
 // hobbies that can grow out of interests (the Claude brain can invent any hobby it wants)
-const HOBBY_FROM={coffee:{name:'latte art',p:'cafe',doing:'practicing latte art'},reading:{name:'mystery novels',p:'bookstore',doing:'hunting for mysteries'},music:{name:'learning ukulele',p:'home',s:'couch',doing:'practicing ukulele'},cooking:{name:'baking bread',p:'home',s:'kitchen',doing:'baking bread'},gaming:{name:'chasing high scores',p:'arcade',doing:'chasing a high score'},art:{name:'watercolor painting',p:'studio',doing:'painting watercolors'},nature:{name:'birdwatching',p:'park',doing:'birdwatching'},ocean:{name:'orca spotting',p:'ferry',doing:'looking for orcas'},stars:{name:'stargazing',p:'needle',doing:'mapping stars'},fashion:{name:'thrift styling',p:'thrift',doing:'styling outfits'},writing:{name:'poetry',p:'home',s:'desk',doing:'writing poems'},plants:{name:'growing houseplants',p:'home',s:'kitchen',doing:'watering plants'},learning:{name:'collecting fun facts',p:'home',s:'desk',doing:'looking things up'},heights:{name:'collecting views',p:'needle',doing:'admiring the view'},people:{name:'people-watching journal',p:'cafe',doing:'people-watching'},rides:{name:'ferris wheel reviews',p:'wheel',doing:'reviewing the wheel'},mystery:{name:'neighborhood mysteries',p:'library',doing:'investigating a mystery'},photography:{name:'photography',p:'park',doing:'taking photos'},cozy:{name:'perfecting the nap',p:'home',s:'bed',doing:'napping expertly'},tea:{name:'tea blending',p:'home',s:'kitchen',doing:'blending tea'},birds:{name:'bird sketching',p:'park',doing:'sketching birds'},animals:{name:'teaching pet tricks',p:'park',doing:'teaching tricks'},'home decor':{name:'decorating the house',p:'home',s:'couch',doing:'rearranging the decor'}};
+const HOBBY_FROM={bikes:{name:'bike rides',p:'park',doing:'going for a bike ride'},gadgets:{name:'phone photography',p:'park',doing:'taking photos with my phone'},coffee:{name:'latte art',p:'cafe',doing:'practicing latte art'},reading:{name:'mystery novels',p:'bookstore',doing:'hunting for mysteries'},music:{name:'learning ukulele',p:'home',s:'couch',doing:'practicing ukulele'},cooking:{name:'baking bread',p:'home',s:'kitchen',doing:'baking bread'},gaming:{name:'chasing high scores',p:'arcade',doing:'chasing a high score'},art:{name:'watercolor painting',p:'studio',doing:'painting watercolors'},nature:{name:'birdwatching',p:'park',doing:'birdwatching'},ocean:{name:'orca spotting',p:'ferry',doing:'looking for orcas'},stars:{name:'stargazing',p:'needle',doing:'mapping stars'},fashion:{name:'thrift styling',p:'thrift',doing:'styling outfits'},writing:{name:'poetry',p:'home',s:'desk',doing:'writing poems'},plants:{name:'growing houseplants',p:'home',s:'kitchen',doing:'watering plants'},learning:{name:'collecting fun facts',p:'home',s:'desk',doing:'looking things up'},heights:{name:'collecting views',p:'needle',doing:'admiring the view'},people:{name:'people-watching journal',p:'cafe',doing:'people-watching'},rides:{name:'ferris wheel reviews',p:'wheel',doing:'reviewing the wheel'},mystery:{name:'neighborhood mysteries',p:'library',doing:'investigating a mystery'},photography:{name:'photography',p:'park',doing:'taking photos'},cozy:{name:'perfecting the nap',p:'home',s:'bed',doing:'napping expertly'},tea:{name:'tea blending',p:'home',s:'kitchen',doing:'blending tea'},birds:{name:'bird sketching',p:'park',doing:'sketching birds'},animals:{name:'teaching pet tricks',p:'park',doing:'teaching tricks'},'home decor':{name:'decorating the house',p:'home',s:'couch',doing:'rearranging the decor'}};
 const FACTS={
+  phones:['The first handheld cell phone call was made in 1973 by Martin Cooper of Motorola, on a street in New York City.','That first cell phone weighed about 2.5 pounds, and phones like it got the nickname "the brick."','The first text message was sent in 1992. It said "Merry Christmas."','Cell phones are called "cell" phones because the land is split into areas called cells, each with its own antenna tower.','Most phone touchscreens work by sensing how your fingertip changes a tiny electric field on the glass, which is why they often ignore regular gloves.','The word "emoji" comes from Japanese: "e" means picture and "moji" means character.'],
+  bicycles:['One of the first bicycles, the "running machine" Karl Drais invented in 1817, had no pedals at all. Riders pushed along with their feet.','Old "penny-farthing" bikes had a giant front wheel because the pedals were attached right to it, so a bigger wheel went farther with each turn.','The Tour de France bike race started in 1903.','A bike helmet has a layer of foam inside that crushes to soak up a bump, so your head doesn\'t have to.','Seattle\'s Burke-Gilman Trail is a bike path built along an old railroad line.','Riding a bicycle is one of the most energy-efficient ways for a person to travel.'],
  orcas:['Orcas are actually the biggest kind of dolphin.','The orcas of Puget Sound travel in family groups called pods, led by the older females.','Each orca pod has its own set of calls, almost like a family accent.'],
  salmon:['Salmon hatch in freshwater streams, grow up in the ocean, then swim back to the stream where they were born.','Salmon can find their home stream partly by smell.','Some salmon leap up waterfalls on their way upstream.'],
  rain:['Seattle actually gets less rain per year than New York City — it just drizzles on more days.','Seattle\'s cloudiest stretch is usually from October through April.','A lot of Seattle rain is light drizzle rather than big storms.'],
@@ -390,13 +461,79 @@ const FACTS={
  groceries:['Bananas are technically berries, but strawberries are not.','Sealed honey can last for a very long time because it is low in water and acidic.','Washington grows more apples than any other U.S. state.'],
  tea:['All true tea — green, black, white and oolong — comes from the same plant, Camellia sinensis.','Herbal "teas" like chamomile are really infusions of other plants.','Green tea is usually brewed with water a little cooler than boiling.'],
 };
-const TOPIC_FOR={movies:'film history',fashion:'vintage fashion',gaming:'arcade games',animals:'bats','home decor':'gothic architecture',coffee:'coffee',ocean:'orcas',nature:'birds',birds:'birds',plants:'ferns',stars:'stars',cooking:'bread',music:'records',art:'watercolor',writing:'poetry',heights:'mount rainier',cozy:'rain',tea:'tea'};
-const TREASURES={grocery:['a receipt with a doodle on the back'],petstore:['a tiny bell from a cat toy'],promenade:['a smooth piece of sea glass','a lost ferry ticket'],park:['a heron feather','a perfect maple leaf'],market:['a sticker shaped like a fish'],lighthouse:['a barnacle-covered button','a tiny brass compass'],troll:['a bottle cap from under the bridge','a note that says "hi troll"'],hill:['a pinecone with a face'],gumwall:['a gumball (unchewed, thank goodness)'],cafe:['a coffee sleeve with a doodle on it'],bookstore:['a bookmark from 1987'],library:['a forgotten library card'],wheel:['a carnival token'],ferry:['a seagull feather'],arcade:['a prize ticket'],conservatory:['a fallen orchid petal'],needle:['a souvenir penny'],records:['a guitar pick'],thrift:['a single sequin'],studio:['a stub of blue paint']};
+const TOPIC_FOR={gadgets:'phones',bikes:'bicycles',movies:'film history',fashion:'vintage fashion',gaming:'arcade games',animals:'bats','home decor':'gothic architecture',coffee:'coffee',ocean:'orcas',nature:'birds',birds:'birds',plants:'ferns',stars:'stars',cooking:'bread',music:'records',art:'watercolor',writing:'poetry',heights:'mount rainier',cozy:'rain',tea:'tea'};
+const TREASURES={phones:['a tiny screwdriver from a repair kit'],bikes:['a shiny tire valve cap'],grocery:['a receipt with a doodle on the back'],petstore:['a tiny bell from a cat toy'],promenade:['a smooth piece of sea glass','a lost ferry ticket'],park:['a heron feather','a perfect maple leaf'],market:['a sticker shaped like a fish'],lighthouse:['a barnacle-covered button','a tiny brass compass'],troll:['a bottle cap from under the bridge','a note that says "hi troll"'],hill:['a pinecone with a face'],gumwall:['a gumball (unchewed, thank goodness)'],cafe:['a coffee sleeve with a doodle on it'],bookstore:['a bookmark from 1987'],library:['a forgotten library card'],wheel:['a carnival token'],ferry:['a seagull feather'],arcade:['a prize ticket'],conservatory:['a fallen orchid petal'],needle:['a souvenir penny'],records:['a guitar pick'],thrift:['a single sequin'],studio:['a stub of blue paint']};
 
 // wardrobe pieces he can find (he picks colors and what to wear)
-const WEAR={beanie:'head',beret:'head',bucket:'head',cap:'head',flowercrown:'head',bow:'head',glasses:'face',sunglasses:'face',headphones:'ears',scarf:'neck',bandana:'neck',raincoat:'body',apron:'body',cape:'body',umbrella:'hand',mug:'hand',book:'hand'};
+const WEAR={helmet:'head',beanie:'head',beret:'head',bucket:'head',cap:'head',flowercrown:'head',bow:'head',glasses:'face',sunglasses:'face',headphones:'ears',scarf:'neck',bandana:'neck',raincoat:'body',apron:'body',cape:'body',umbrella:'hand',mug:'hand',book:'hand'};
 const PALETTE=['#e9886b','#f2c14e','#3f8f8a','#6c8ebf','#b05a7a','#7fa86a','#2f3f5f','#e7d8c3','#c94f4f','#8a6bbf','#f29fb5','#4a4a4a'];
 const COLOR_NAMES={'#e9886b':'coral','#f2c14e':'mustard','#3f8f8a':'teal','#6c8ebf':'denim blue','#b05a7a':'berry','#7fa86a':'moss green','#2f3f5f':'navy','#e7d8c3':'oatmeal','#c94f4f':'cherry red','#8a6bbf':'lavender','#f29fb5':'pink','#4a4a4a':'charcoal'};
+// ---------- coins, gadgets + bikes (Mocha decides if/what to buy; prices in coins) ----------
+const PHONES={'Drizzle Flip':{price:80,flip:1},'Nimbus Mini':{price:95},'Ghostphone':{price:120}};
+const GEAR_COL={'#9fe0c8':'mint','#c7b3f0':'lavender','#ff9a8a':'coral','#ffd36b':'sunny yellow','#2b3350':'midnight','#f4f1ea':'cloud white','#f7a8c4':'pink','#8cc8f0':'sky blue','#e04f4f':'cherry red','#4f8a5b':'forest green','#3f8f8a':'teal','#f28a3a':'pumpkin orange'};
+const PHONE_COLS=['#9fe0c8','#c7b3f0','#ff9a8a','#ffd36b','#2b3350','#f4f1ea','#f7a8c4','#8cc8f0'];
+const CASE_PATS=['solid','stripes','polka dots','stars','clouds','little bats'];
+const CHARMS={'tiny pumpkin':'#f28a3a','little cloud':'#ffffff','gold star':'#ffd36b','salmon':'#f29f8a','mini ghost':'#eef0ff','raindrop':'#8cc8f0','acorn':'#a8743a'};
+const BIKES={city:{label:'city bike',price:110,r:.5,tt:.06,wb:1.7,seat:1.22,bar:.08,bw:.62,fender:1},cruiser:{label:'cruiser with a basket',price:130,r:.54,tt:.08,wb:1.8,seat:1.12,bar:.2,bw:.82,basket:1,step:1},bmx:{label:'BMX',price:100,r:.4,tt:.09,wb:1.45,seat:.98,bar:.3,bw:.7,rim:'#f2c14e'}};
+const BIKE_COLS=['#3f8f8a','#e04f4f','#f7a8c4','#ffd36b','#8cc8f0','#4f8a5b','#c7b3f0','#2b3350','#f28a3a'];
+const BIKE_NAMES=['Biscuit','Zoom','Puddle','Sprocket','Pickle','Comet','Marshmallow','Drizzle','Noodle','Pancake','Rocket','Waffles'];
+const GADGETS={phone:{store:'phones'},case:{price:15,store:'phones'},charm:{price:6,store:'phones'},earbuds:{price:30,store:'phones',e:'🎧',label:'earbuds'},speaker:{price:35,store:'phones',e:'🔊',label:'little speaker'},bike:{store:'bikes'},helmet:{price:22,store:'bikes'},bell:{price:6,store:'bikes',e:'🔔',label:'bike bell'},lights:{price:12,store:'bikes',e:'💡',label:'bike lights'}};
+const hexOk=c=>/^#[0-9a-f]{6}$/i.test(c||''),aan=w=>(/^[aeiou]/i.test(w)?'an ':'a ')+w;
+function colName(h){h=String(h||'').toLowerCase();if(GEAR_COL[h])return GEAR_COL[h];if(COLOR_NAMES[h])return COLOR_NAMES[h];if(!hexOk(h))return'colorful';const c=new THREE.Color(h),d=new THREE.Color();let b='colorful',bd=9;for(const [k,v] of Object.entries(Object.assign({},COLOR_NAMES,GEAR_COL))){d.set(k);const e=(d.r-c.r)**2+(d.g-c.g)**2+(d.b-c.b)**2;if(e<bd){bd=e;b=v}}return b}
+function hasGadget(k){return(S.gadgets||[]).some(g=>g.k===k)}
+function hasHelmet(){return S.owned.some(o=>o.item==='helmet')||hasGadget('helmet')}
+function helmetCol(){const o=S.owned.find(o=>o.item==='helmet');return o?o.color:((S.gadgets||[]).find(g=>g.k==='helmet')||{}).c||'#e04f4f'}
+function favBike(){const t=S.traits;return t.adventure>.62?'bmx':t.coziness>.55?'cruiser':'city'}
+function nextWant(){if(!S.phone)return{what:'a phone',price:Math.min(...Object.values(PHONES).map(p=>p.price))};if(!S.bike){const b=BIKES[favBike()];return{what:'a '+b.label,price:b.price}}if(!hasHelmet())return{what:'a bike helmet',price:GADGETS.helmet.price};return null}
+function phoneDesc(){const p=S.phone;if(!p)return'';return`${colName(p.color)} ${p.model}${p.case?` in ${aan(colName(p.case.c))} case${p.case.pat==='solid'?'':' with '+p.case.pat}`:''}${p.charm?` with a ${p.charm} charm`:''}`}
+function bikeDesc(){const b=S.bike;return b?`"${b.name}", ${aan(colName(b.color))} ${(BIKES[b.type]||BIKES.city).label}`:''}
+function hobbyOk(h){const t=String((h.name||'')+' '+(h.doing||''));if(/\bbik|cycl/i.test(t)&&!S.bike)return false;if(/phone/i.test(t)&&!S.phone)return false;return true}
+function pickPhone(){const t=S.traits,w={'Drizzle Flip':.7+t.coziness,'Nimbus Mini':.6+(1-t.adventure)*.4+t.curiosity*.3,'Ghostphone':.5+t.creativity+t.curiosity*.4};const ok=Object.keys(PHONES).filter(m=>PHONES[m].price<=S.coins);const L=ok.length?ok:Object.keys(PHONES);let r=Math.random()*L.reduce((a,m)=>a+w[m],0);for(const m of L){r-=w[m];if(r<=0)return m}return L[0]}
+// one place where every purchase happens (built-in brain, Claude mind and test hooks all come through here)
+function buyGear(item,o={},t=Date.now(),live=true,place){item=String(item||'').toLowerCase();o=o||{};const G0=GADGETS[item];if(!G0)return false;const where=place||(G0.store==='phones'?'Cascade Mobile':'Spoke & Sprocket');const K=KB[G0.store==='phones'?'dot':'kip'];
+  const col=(c,list)=>hexOk(c)?c.toLowerCase():pick(list);let price=0,txt='',ts='',say='';
+  if(item==='phone'){const model=PHONES[o.model]?o.model:pickPhone();price=PHONES[model].price;if(S.coins<price||(S.phone&&S.phone.model===model))return false;const first=!S.phone,c=col(o.color,PHONE_COLS);S.phone={model,color:c,case:first?null:S.phone.case,charm:first?null:S.phone.charm,since:t};
+    txt=first?`Bought my very first phone at Cascade Mobile: ${aan(colName(c))} ${model}! (${price} coins.) Dot showed me how the camera works. Now I can take selfies.`:`Got a new ${colName(c)} ${model} at Cascade Mobile (${price} coins). Moved my case and charm over.`;ts=`📱 Mocha bought a ${model}!`;say=first?'welcome to the future, mocha!':'ooh, an upgrade!'}
+  else if(item==='bike'){const type=BIKES[o.type]?o.type:favBike();price=BIKES[type].price;if(S.coins<price||(S.bike&&S.bike.type===type))return false;const c=col(o.color,BIKE_COLS),first=!S.bike;const nm=String(o.name||'').replace(/[^\w '\-]/g,'').trim().slice(0,16)||pick(BIKE_NAMES);S.bike={type,color:c,name:nm,since:t,rides:first?0:(S.bike.rides||0)};
+    txt=`${first?'Bought a bike!!':'Got a new bike!'} ${aan(colName(c)).replace(/^a/,'A')} ${BIKES[type].label} from Spoke & Sprocket (${price} coins). I named it ${nm}.`;ts='🚲 Mocha bought a bike!';say='it\'s all yours. ride safe!'}
+  else{price=G0.price;if(S.coins<price)return false;
+    if(item==='case'){if(!S.phone)return false;const pat=CASE_PATS.includes(o.pattern)?o.pattern:pick(CASE_PATS),c=col(o.color,PHONE_COLS.concat(PALETTE));S.phone.case={c,pat};txt=`Got ${aan(colName(c))} phone case${pat==='solid'?'':' with '+pat+' on it'} at Cascade Mobile (${price} coins). My phone is dressed up now too.`;ts='📱 Mocha got a new phone case';say='that case is so you'}
+    else if(item==='charm'){if(!S.phone)return false;const ch=CHARMS[o.charm]?o.charm:pick(Object.keys(CHARMS).filter(k=>k!==S.phone.charm));S.phone.charm=ch;txt=`Clipped a ${ch} charm onto my phone (${price} coins). It swings when I float.`;ts=`✨ Mocha got a ${ch} phone charm`;say='cute pick!'}
+    else if(item==='helmet'){if(hasHelmet())return false;const c=col(o.color,BIKE_COLS);if(!acquire('helmet',c,colName(c)+' bike helmet',where,t))S.gadgets.push({k:'helmet',c,t});txt=`Bought ${aan(colName(c))} bike helmet (${price} coins). Kip says safety is the coolest accessory.`;ts='🚲 Mocha bought a bike helmet';say='safety first, style second. nailed both!'}
+    else{if(hasGadget(item))return false;if((item==='bell'||item==='lights')&&!S.bike)return false;const c=col(o.color,PALETTE);S.gadgets.push({k:item,c,t});S.gadgets=S.gadgets.slice(-12);
+      txt={earbuds:`Bought ${colName(c)} earbuds at Cascade Mobile (${price} coins). Music sounds like it's happening inside my head now. Which it is.`,speaker:`Bought a little ${colName(c)} speaker for my house (${price} coins). The old house has very good echoes.`,bell:`Put a bell on ${S.bike?S.bike.name:'my bike'} (${price} coins). Ring ring!`,lights:`Got lights for ${S.bike?S.bike.name:'my bike'} (${price} coins) so I can ride safely after dark.`}[item];ts=`${G0.e} Mocha bought ${{speaker:'a little speaker',bell:'a bike bell'}[item]||G0.label}`;say=item==='bell'?'ring it proudly!':'enjoy, mocha!'}}
+  S.coins=Math.max(0,S.coins-price);addEntry('Bought',txt,where,t);if(live){toast(ts);if(K&&K.obj&&K.obj.visible)kSay(K,say,3.5)}applyGear();return true}
+// built-in brain: what he does (or doesn't) buy on a shop visit
+function shopVisit(act,t,live,pname,quiet){const c=S.coins,I=k=>Math.max(0,S.interests[k]||0);let did=false;
+  if(act.fx==='phoneshop'){
+    if(!S.phone){if(c>=80&&Math.random()<.85){did=buyGear('phone',{color:Math.random()<.4&&hexOk(S.favColor)?S.favColor:null},t,live,pname);if(did)act.bought=1}}
+    else{const opts=[['case',S.phone.case?.08:.5],['charm',S.phone.charm?0:.3],['earbuds',hasGadget('earbuds')?0:.1+I('music')*.06],['speaker',hasGadget('speaker')?0:.06+I('music')*.05+I('cozy')*.02]];
+      for(const [k,ch] of opts){if(c-GADGETS[k].price>=8&&Math.random()<ch){did=buyGear(k,{color:Math.random()<.5&&hexOk(S.favColor)?S.favColor:null},t,live,pname);if(did)break}}}
+    if(!did&&!quiet)addEntry('Gadgets',!S.phone?(c<80?`Looked at phones at Cascade Mobile. The cheapest one is 80 coins and I have ${c}. Saving up. Dot let me hold the Ghostphone anyway.`:'Compared every phone at Cascade Mobile and couldn\'t decide yet. Dot says that\'s very normal. I said I\'m a ghost. She said "even more normal."'):pick(['Browsed the phone cases at Cascade Mobile. Dot says the one with little clouds is "very me."','Tried the fancy speakers at Cascade Mobile. Dot played a song about the ocean. Very relaxing.','Looked at the newest phones. Mine is still my favorite. We\'ve been through a lot together.']),pname,t)}
+  else{
+    if(!S.bike){const fav=favBike(),pf=BIKES[fav].price,pfirst=!S.phone&&c-pf<80;if(c>=pf&&Math.random()<(pfirst?.15:.85))did=buyGear('bike',{type:fav},t,live,pname);else if(c>=100&&!pfirst&&Math.random()<.35){const ok=Object.keys(BIKES).filter(k=>BIKES[k].price<=c);did=buyGear('bike',{type:pick(ok)},t,live,pname)}
+      if(did&&!hasHelmet()&&S.coins>=GADGETS.helmet.price)buyGear('helmet',{},t+1,live,pname)}
+    else if(!hasHelmet()){if(c>=GADGETS.helmet.price&&Math.random()<.9)did=buyGear('helmet',{},t,live,pname)}
+    else if(!hasGadget('bell')&&c>=14&&Math.random()<.3)did=buyGear('bell',{},t,live,pname);
+    else if(!hasGadget('lights')&&c>=24&&Math.random()<.25)did=buyGear('lights',{},t,live,pname);
+    if(!did&&!quiet){const fav=favBike(),pf=BIKES[fav].price;addEntry('Bikes',!S.bike?`Test-sat on ${aan(colName(pick(BIKE_COLS)))} ${BIKES[fav].label} at Spoke & Sprocket. It's ${pf} coins and I have ${c}.${!S.phone&&c>=pf?' But I think a phone comes first.':''} Kip says it'll wait for me.`:pick([`Kip checked ${S.bike.name}'s tires and said they look great. I feel like a proud parent.`,`Looked at all the shiny new bikes at Spoke & Sprocket. ${S.bike.name} is still the best one.`,'Watched Kip fix a squeaky chain. He let me hold the oil can. Very important job.']),pname,t)}}
+  return did}
+function payJob(act,t,live,pname,brief){const k=KB[act.keeper],pr=act.pay||[10,18];const pay=Math.max(1,Math.round(rand(pr[0],pr[1])+Math.min(5,Math.floor(level()/3))));S.coins+=pay;S.jobs=(S.jobs||0)+1;S.lastJob=t;const who=k?k.name:'the shopkeeper';
+  addEntry('Work',brief?`Earned ${pay} coins helping ${who} at ${pname}.`:`${fill(pick(act.lines||['Helped out at '+pname+'.']))} ${who} paid me ${pay} coins.`,pname,t);
+  if(live){toast(`🪙 Mocha earned ${pay} coins`);if(k&&k.obj&&k.obj.visible)kSay(k,pick(act.thx||['thanks, mocha!']),4)}return pay}
+function gearScore(a,at){const tr=S.traits,c=S.coins,w=nextWant();let s=0;
+  if(a.fx==='job'){s+=c<25?3:w&&c<w.price?1.4+Math.min(1.2,(w.price-c)/60):-1.3;if(S.lastJob&&at-S.lastJob<3*3600e3)s-=1.6;s+=(tr.sociability-.5)*.6}
+  else if(a.fx==='phoneshop'){if(!S.phone)s+=c>=80?4:.4;else s+=I0('gadgets')*.25+(c>=25?0:-1.2)}
+  else if(a.fx==='bikeshop'){if(!S.bike){const pr=BIKES[favBike()].price+(S.phone?0:80);s+=c>=pr?3.4+tr.adventure:(c>=60?.3:-.4)}else if(!hasHelmet())s+=c>=GADGETS.helmet.price?2.2:-.3;else s+=I0('bikes')*.15-.9}
+  else if(a.fx==='bikeride')s+=.8+tr.adventure+I0('bikes')*.3;
+  return s}
+function I0(k){return Math.max(0,S.interests[k]||0)}
+function mindBuy(b,finished,t,pname){if(!b||typeof b!=='object'||!finished)return false;const item=String(b.item||'').toLowerCase().trim(),G0=GADGETS[item];if(!G0||G0.store!==finished.p)return false;
+  const o={color:hexOk(b.color)?b.color:null,pattern:String(b.pattern||'').toLowerCase(),charm:String(b.charm||'').toLowerCase(),name:b.name};
+  if(item==='phone'){const m=String(b.model||'').toLowerCase();o.model=Object.keys(PHONES).find(k=>m.includes(k.toLowerCase())||(m.length>3&&k.toLowerCase().includes(m)))||null}
+  if(item==='bike'){const m=String(b.model||b.type||'').toLowerCase();o.type=Object.keys(BIKES).find(k=>m.includes(k))||(/basket|cruis/.test(m)?'cruiser':/city|commut/.test(m)?'city':null)}
+  if(o.charm&&!CHARMS[o.charm])o.charm=Object.keys(CHARMS).find(k=>k.includes(o.charm)||o.charm.includes(k))||null;
+  return buyGear(item,o,t,true,pname)}
 
 // ====================================================================
 //  STATE
@@ -407,10 +544,11 @@ function fresh(){const tr=()=>+(Math.random()).toFixed(2);return{v:1,born:Date.n
   traits:{curiosity:tr(),coziness:tr(),sociability:tr(),creativity:tr(),adventure:tr()},
   interests:{},hobbies:[],owned:[],wearing:[],favColor:null,items:[],learned:[],
   discovered:[],visits:{},goal:null,goalsDone:0,diary:[],
-  mem:{userName:null,facts:[],chats:0,met:Date.now()},chatLog:[],mind:false,recent:[],lastThought:0,pets:[],decor:[],pantry:60,paintings:[],coins:0,know:{},seen:[]}}
+  mem:{userName:null,facts:[],chats:0,met:Date.now()},chatLog:[],mind:false,recent:[],lastThought:0,pets:[],decor:[],pantry:60,paintings:[],coins:150,know:{},seen:[],phone:null,gadgets:[],bike:null,jobs:0,seed150:1}}
 let S=null;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 let isNew=!S||!S.needs;if(isNew)S=fresh();
-function migrate(){S.paintings=S.paintings||[];S.coins=S.coins||0;S.know=S.know||{};S.seen=S.seen||[];S.posts=S.posts||[];S.pets=S.pets||[];S.decor=S.decor||[];if(S.pantry==null)S.pantry=60}migrate();
+function migrate(){S.paintings=S.paintings||[];S.coins=S.coins||0;S.know=S.know||{};S.seen=S.seen||[];S.posts=S.posts||[];S.pets=S.pets||[];S.decor=S.decor||[];if(S.pantry==null)S.pantry=60;
+  if(!S.seed150){S.coins=(+S.coins||0)+150;S.seed150=1;S.seedNote=1}S.coins=Math.max(0,Math.round(+S.coins||0));if(S.phone===undefined)S.phone=null;S.gadgets=Array.isArray(S.gadgets)?S.gadgets.slice(-12):[];if(S.bike===undefined)S.bike=null;S.jobs=S.jobs||0}migrate();
 let dirty=true;
 function save(){S.lastSeen=Date.now();dirty=true;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 setInterval(save,8000);addEventListener('beforeunload',save);
@@ -553,9 +691,48 @@ function shop(p,grp){const brick=p.id==='bookstore'||p.id==='market';const L=[];
   if(p.id==='cafe'){for(const s of [-1,1]){cyl(.7,.7,.1,'#2f3f5f',s*3.5,1.4,p.d/2+3.5,grp);cyl(.08,.08,1.4,'#2f3f5f',s*3.5,.7,p.d/2+3.5,grp);const u=new THREE.Mesh(new THREE.ConeGeometry(1.8,.8,8),lam('#3f8f8a'));u.position.set(s*3.5,3.2,p.d/2+3.5);grp.add(u);cyl(.05,.05,2,'#dddddd',s*3.5,2.2,p.d/2+3.5,grp)}}
   if(p.id==='records'){const disc=cyl(1.4,1.4,.15,'#111111',0,p.h+2.2,p.d/2-1,grp,24);disc.rotation.x=Math.PI/2;p.spin=disc;const lb=cyl(.5,.5,.18,'#e9b949',0,0,0,null);disc.add(lb)}
   if(p.id==='arcade'){const n=glow('#ff5fa2',10,.5);n.position.set(0,p.h+1,p.d/2);grp.add(n);box(p.w+6,.8,p.d+9,'#8a6a4a',0,-.25,2.5,grp,false);for(let i=0;i<8;i++)cyl(.4,.4,3,'#5a4632',(i%2?1:-1)*(p.w/2+2),-1.5,-p.d/2+i*2.2,grp,8)}
+  if(p.id==='phones'){const ex=new THREE.Group();grp.add(ex);const sb=new THREE.Group();sb.position.set(3.1,0,p.d/2+1.5);sb.rotation.y=-.25;ex.add(sb);for(const s of [-1,1]){const b=box(1.1,1.5,.06,'#30365e',0,.75,s*.22,sb);b.rotation.x=-s*.28}
+    const sg=canvasPlane(.95,1.2,c=>{c.fillStyle='#fffaf2';c.fillRect(0,0,64,80);c.fillStyle='#e9886b';c.font='bold 13px ui-rounded,system-ui';c.textAlign='center';c.fillText('NEW!',32,18);c.fillStyle='#30365e';c.font='bold 10px ui-rounded,system-ui';c.fillText('phones',32,34);c.fillText('cases',32,48);c.fillText('charms',32,62);c.fillStyle='#ffcf5a';c.fillRect(16,68,32,4)},64,80);sg.position.set(0,.78,.27);sg.rotation.x=-.28;sb.add(sg);bake(ex)}
+  if(p.id==='bikes'){const ex=new THREE.Group();grp.add(ex);const rx=-(p.w/2+1.6);for(const z of [-1.6,1.6]){const a=new THREE.Mesh(new THREE.TorusGeometry(.42,.05,6,12,Math.PI),lam('#5a5a66'));a.rotation.y=Math.PI/2;a.position.set(rx,0,z);ex.add(a)}box(.08,.08,3.3,'#5a5a66',rx,.42,0,ex,false);
+    const b=makeBike('cruiser','#8cc8f0',{});b.position.set(rx+.25,0,0);b.rotation.set(0,0,.06);ex.add(b);bake(ex)}
   if(INTERIORS[p.id])INTERIORS[p.id](p,grp)}
 function canvasPlane(w,h,draw,cw=128,ch=96,basic){const t=canvasTex(cw,ch,draw);return new THREE.Mesh(new THREE.PlaneGeometry(w,h),basic?new THREE.MeshBasicMaterial({map:t}):new ToonM({map:t}))}
 const PAINT=()=>canvasTex(64,48,g=>{const c=['#e9886b','#3f8f8a','#f2c14e','#6c8ebf','#b05a7a','#7fa86a'];g.fillStyle=pick(c);g.fillRect(0,0,64,48);for(let i=0;i<6;i++){g.fillStyle=pick(c);g.beginPath();g.arc(Math.random()*64,Math.random()*48,4+Math.random()*12,0,7);g.fill()}});
+// ---------- bikes (shared by the bike shop and Mocha's own bike) ----------
+const _up=new THREE.Vector3(0,1,0),_tv=new THREE.Vector3(),V3=(x,y,z)=>new THREE.Vector3(x,y,z);
+function tube(a,b,r,m,par){_tv.subVectors(b,a);const L=_tv.length();const c=new THREE.Mesh(new THREE.CylinderGeometry(r,r,L,7),m);c.position.copy(a).addScaledVector(_tv,.5);c.quaternion.setFromUnitVectors(_up,_tv.normalize());c.castShadow=true;par.add(c);return c}
+function makeBike(type,color,o={}){const B=BIKES[type]||BIKES.city,g=new THREE.Group(),fm=lam(color),dk=lam('#2a2a33'),mt=lam('#c9d0d8'),r=B.r,wb=B.wb;const wheels=[];
+  for(const zz of [-wb/2,wb/2]){const w=new THREE.Group();w.position.set(0,r,zz);g.add(w);const tr=new THREE.Mesh(new THREE.TorusGeometry(r-B.tt/2,B.tt,8,26),dk);tr.rotation.y=Math.PI/2;w.add(tr);const rim=new THREE.Mesh(new THREE.TorusGeometry(r-B.tt*1.4,.024,5,22),B.rim?lam(B.rim):mt);rim.rotation.y=Math.PI/2;w.add(rim);
+    for(let k=0;k<3;k++){const sp=new THREE.Mesh(new THREE.BoxGeometry(.018,2*(r-B.tt*1.4),.018),mt);sp.rotation.x=k*Math.PI/3;w.add(sp)}const hub=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.15,8),fm);hub.rotation.z=Math.PI/2;w.add(hub);wheels.push(w)}
+  const BB=V3(0,r*.85,-wb*.05),St=V3(0,B.seat-.14,-wb*.2),Ht=V3(0,B.seat-.04,wb*.33),Hb=V3(0,B.seat-.34,wb*.37),Ra=V3(0,r,-wb/2),Fa=V3(0,r,wb/2);
+  tube(BB,St,.05,fm,g);tube(BB,Hb,.055,fm,g);tube(Hb,Ht,.06,fm,g);
+  if(B.step){const M=V3(0,(BB.y+St.y)/2,BB.z-.04);tube(M,V3(0,Hb.y+.06,Hb.z-.08),.045,fm,g)}else tube(St,Ht,.045,fm,g);
+  for(const s of [-1,1]){tube(V3(s*.05,BB.y,BB.z),V3(s*.08,Ra.y,Ra.z),.026,fm,g);tube(V3(s*.04,St.y,St.z),V3(s*.08,Ra.y,Ra.z),.024,fm,g);tube(V3(s*.04,Hb.y,Hb.z),V3(s*.08,Fa.y,Fa.z),.03,fm,g)}
+  tube(St,V3(0,B.seat-.03,St.z-.05),.032,mt,g);const seat=new THREE.Mesh(SPH,lam('#5a3a2a'));seat.scale.set(.13,.06,.22);seat.position.set(0,B.seat,St.z-.08);seat.castShadow=true;g.add(seat);
+  const hy=Ht.y+B.bar,hz=Ht.z+.08;tube(Ht,V3(0,hy,hz),.032,mt,g);const bar=new THREE.Mesh(new THREE.CylinderGeometry(.028,.028,B.bw,8),mt);bar.rotation.z=Math.PI/2;bar.position.set(0,hy,hz);g.add(bar);
+  for(const s of [-1,1]){const gp=new THREE.Mesh(new THREE.CylinderGeometry(.042,.042,.16,8),dk);gp.rotation.z=Math.PI/2;gp.position.set(s*(B.bw/2-.06),hy,hz);g.add(gp)}
+  const crank=new THREE.Group();crank.position.copy(BB);g.add(crank);const ring=new THREE.Mesh(new THREE.TorusGeometry(.14,.028,5,16),mt);ring.rotation.y=Math.PI/2;ring.position.x=.09;crank.add(ring);
+  for(const s of [-1,1]){const arm=new THREE.Mesh(new THREE.BoxGeometry(.035,.3,.045),mt);arm.position.set(s*.13,s*.13,0);crank.add(arm);const pd=new THREE.Mesh(new THREE.BoxGeometry(.16,.035,.09),dk);pd.position.set(s*.19,s*.27,0);crank.add(pd)}
+  tube(V3(.09,BB.y+.13,BB.z),V3(.09,Ra.y+.05,Ra.z),.012,dk,g);tube(V3(.09,BB.y-.13,BB.z),V3(.09,Ra.y-.05,Ra.z),.012,dk,g);
+  if(B.fender)for(const zz of [-wb/2,wb/2]){const f=new THREE.Mesh(new THREE.TorusGeometry(r+.04,.045,5,14,Math.PI*.8),fm);f.rotation.y=Math.PI/2;f.rotation.x=0;f.position.set(0,r,zz);f.rotation.z=Math.PI*.1;g.add(f)}
+  if(B.basket){const bk=new THREE.Group();bk.position.set(0,Hb.y+.12,Fa.z+.1);g.add(bk);const wk=lam('#c9955a');box(.46,.3,.36,wk,0,0,0,bk);box(.4,.04,.3,lam('#7a5232'),0,.14,0,bk,false);box(.5,.05,.4,lam('#a8743a'),0,.15,0,bk,false)}
+  const ks=tube(V3(-.07,BB.y-.02,BB.z-.12),V3(-.22,0,BB.z-.25),.018,mt,g);
+  if(o.bell){const bl=new THREE.Mesh(new THREE.SphereGeometry(.06,10,6,0,Math.PI*2,0,Math.PI/2),lam('#ffd36b'));bl.position.set(B.bw/2-.2,hy+.03,hz);g.add(bl)}
+  let light=null;if(o.lights){const lm=new THREE.Mesh(new THREE.CylinderGeometry(.05,.06,.1,10),lam('#2a2a33'));lm.rotation.x=Math.PI/2;lm.position.set(0,hy-.1,hz+.08);g.add(lm);box(.07,.07,.04,lam('#ff5a5a',{emissive:'#ff2a2a',emissiveIntensity:.6}),0,B.seat-.12,St.z-.24,g,false);light=glow('#fff3c8',1.6,0,false);light.position.set(0,hy-.1,hz+.25);g.add(light)}
+  g.userData={wheels,crank,r,seatY:B.seat+.05,light};return g}
+// merge a static group into a few meshes (fewer draw calls on phones): plain toon parts become one vertex-coloured mesh,
+// textured / special materials are merged per material
+let BAKEM=null;
+function bake(grp,shallow){grp.updateMatrixWorld(true);const inv=new THREE.Matrix4().copy(grp.matrixWorld).invert(),m=new THREE.Matrix4(),nm=new THREE.Matrix3(),v=new THREE.Vector3(),c=new THREE.Color(),groups=new Map(),dead=[];
+  (shallow?f=>grp.children.slice().forEach(f):f=>grp.traverse(f))(o=>{if(!o.isMesh||o.isInstancedMesh||Array.isArray(o.material)||o.userData.keep)return;const mt=o.material;const plain=mt.isMeshToonMaterial&&!mt.map&&!mt.transparent&&mt.side===THREE.FrontSide&&!mt.emissiveMap&&mt.emissive.getHex()===0&&!mt.userData.sway&&!mt.vertexColors;
+    const key=plain?'vc':mt.uuid;let gp=groups.get(key);if(!gp)groups.set(key,gp={mat:plain?null:mt,list:[]});gp.list.push(o)});
+  groups.forEach((gp,key)=>{if(key!=='vc'&&gp.list.length<2)return;const vc=key==='vc',P=[],N=[],U=[],C=[],I=[];
+    gp.list.forEach(o=>{m.multiplyMatrices(inv,o.matrixWorld);nm.getNormalMatrix(m);const g=o.geometry,pa=g.attributes.position,na=g.attributes.normal,ua=g.attributes.uv,base=P.length/3;if(vc)c.copy(o.material.color);
+      for(let i=0;i<pa.count;i++){v.fromBufferAttribute(pa,i).applyMatrix4(m);P.push(v.x,v.y,v.z);v.fromBufferAttribute(na,i).applyMatrix3(nm).normalize();N.push(v.x,v.y,v.z);if(!vc)U.push(ua?ua.getX(i):0,ua?ua.getY(i):0);else C.push(c.r,c.g,c.b)}
+      if(g.index)for(let i=0;i<g.index.count;i++)I.push(base+g.index.getX(i));else for(let i=0;i<pa.count;i++)I.push(base+i);dead.push(o)});
+    const bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.Float32BufferAttribute(P,3));bg.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));if(vc)bg.setAttribute('color',new THREE.Float32BufferAttribute(C,3));else bg.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));bg.setIndex(I);bg.computeBoundingSphere();
+    if(vc&&!BAKEM)BAKEM=new ToonM({color:'#ffffff',vertexColors:true});const mesh=new THREE.Mesh(bg,vc?BAKEM:gp.mat);mesh.castShadow=true;mesh.receiveShadow=true;grp.add(mesh)});
+  dead.forEach(o=>{if(o.parent)o.parent.remove(o)});return grp}
 const INTERIORS={
  cinema(p,g){const zf=p.d/2-.3;const sc=document.createElement('canvas');sc.width=320;sc.height=180;const st=new THREE.CanvasTexture(sc);p.screen={c:sc,t:st};
   box(13,5.6,.2,'#111111',0,5.4,zf-.15,g,false);const scr=new THREE.Mesh(new THREE.PlaneGeometry(12.4,5.2),new THREE.MeshBasicMaterial({map:st}));scr.position.set(0,5.4,zf-.27);scr.rotation.y=Math.PI;g.add(scr);
@@ -620,6 +797,47 @@ const INTERIORS={
   const cage=new THREE.Mesh(new THREE.CylinderGeometry(.6,.6,1.4,12,1,true),new THREE.MeshBasicMaterial({color:'#b08a3a',wireframe:true}));cage.position.set(-5.8,4.4,-1.6);g.add(cage);
   for(const x of [-4,1,5]){const gl=glow('#fff6e0',3,.4);gl.position.set(x,p.h-1,0);g.add(gl)}
   p.spots={main:[0,3],tanks:[-4.6,-2.8],pens:[-4.2,1.2],counter:[5,1.6],cats:[0,.2]}},
+ phones(p,g){const f=new THREE.Group();g.add(f);const z0=-p.d/2+.3,wood='#c9a77a',cols=['#ff9a8a','#ffd36b','#9fe0c8','#8cc8f0','#c7b3f0','#f7a8c4','#2b3350','#f4f1ea','#e04f4f','#4f8a5b','#f28a3a','#3f8f8a'];
+  // the case wall: rows of colourful phone cases on a pegboard
+  box(5.2,3.1,.1,'#efe3cf',-1.9,3.0,z0+.08,f);for(let r=0;r<4;r++)for(let k=0;k<6;k++){const x=-4.0+k*.84,y=1.95+r*.72;box(.46,.62,.06,cols[(r*5+k*7)%cols.length],x,y,z0+.17,f,false);box(.05,.05,.12,'#8a8a96',x,y+.36,z0+.12,f,false);if((r+k)%3===0)box(.46,.12,.065,'#ffffff',x,y+.06,z0+.175,f,false);if((r+k)%4===1)box(.1,.1,.07,'#2b3350',x-.12,y+.18,z0+.18,f,false)}
+  const cw=canvasPlane(2.2,.55,c=>{c.fillStyle='#30365e';c.fillRect(0,0,128,32);c.fillStyle='#ffcf5a';c.font='bold 18px ui-rounded,system-ui';c.textAlign='center';c.fillText('CASES',64,23)},128,32,true);cw.position.set(-1.9,4.85,z0+.15);f.add(cw);
+  // counter + register + a jar of charms
+  box(3.2,1.15,1.1,'#4f5f96',2.5,.88,-2.4,f);box(3.4,.1,1.3,'#fbf6ff',2.5,1.5,-2.4,f);box(.62,.36,.46,'#2b3350',1.55,1.73,-2.5,f);box(.5,.04,.3,'#9fe0c8',1.55,1.93,-2.45,f,false);
+  cyl(.2,.2,.32,'#d8f0f6',3.45,1.71,-2.3,f,12);for(let k=0;k<6;k++){const b=new THREE.Mesh(SPH,lam(cols[k*2%cols.length]));b.scale.setScalar(.065);b.position.set(3.37+(k%3)*.08,1.92+Math.floor(k/3)*.07,-2.3+(k%2)*.06);f.add(b)}
+  const logo=canvasPlane(3.4,1.1,c=>{const gr=c.createLinearGradient(0,0,256,0);gr.addColorStop(0,'#30365e');gr.addColorStop(1,'#4b4f8e');c.fillStyle=gr;c.fillRect(0,0,256,82);c.fillStyle='#ffffff';c.beginPath();c.arc(40,46,16,0,7);c.arc(58,38,20,0,7);c.arc(78,48,14,0,7);c.fill();
+    c.fillStyle='#ffcf5a';for(let i=0;i<4;i++)c.fillRect(30+i*14,74-i*7-8,9,i*7+8);c.fillStyle='#fffaf2';c.font='bold 26px ui-rounded,system-ui';c.fillText('Cascade',104,40);c.fillStyle='#ffcf5a';c.font='bold 20px ui-rounded,system-ui';c.fillText('MOBILE',106,66)},256,82,true);logo.position.set(2.55,4.35,z0+.06);f.add(logo);
+  // display tables, phones on little stands (screens glow a bit)
+  const scrM=new THREE.MeshBasicMaterial({map:canvasTex(32,64,c=>{const gr=c.createLinearGradient(0,0,0,64);gr.addColorStop(0,'#8cc8f0');gr.addColorStop(1,'#c7b3f0');c.fillStyle=gr;c.fillRect(0,0,32,64);const ic=['#ff9a8a','#ffd36b','#9fe0c8','#fffaf2','#f7a8c4','#2b3350'];for(let r=0;r<3;r++)for(let k=0;k<3;k++){c.fillStyle=ic[(r*3+k)%ic.length];c.fillRect(4+k*9,8+r*10,6,6)}c.fillStyle='#fffaf2';c.fillRect(10,54,12,3)})});
+  [[-2.3,.7,2.6,1.4,4],[1.5,1.9,2.2,1.1,3]].forEach(([x,z,w,d,n],ti)=>{box(w,.12,d,wood,x,1.0,z,f);for(const sx of [-1,1])for(const sz of [-1,1])cyl(.05,.05,.9,'#8a6a4a',x+sx*(w/2-.15),.55,z+sz*(d/2-.15),f,6);
+    for(let k=0;k<n;k++){const ph=new THREE.Group();ph.position.set(x-w/2+(k+.5)*w/n,1.06,z+.1);ph.rotation.x=-.32;f.add(ph);box(.12,.05,.26,'#c9d0d8',0,.02,-.06,ph,false);box(.3,.54,.045,cols[(k*3+ti*5)%cols.length],0,.29,0,ph,false);const sc=new THREE.Mesh(new THREE.PlaneGeometry(.25,.46),scrM);sc.position.set(0,.29,.024);ph.add(sc)}});
+  // left wall shelves: earbuds, little speakers, boxed phones
+  box(.08,3,3.6,wood,-4.52,1.85,1.6,f);for(const y of [.95,1.85,2.75])box(.62,.08,3.6,wood,-4.24,y,1.6,f);
+  for(let k=0;k<4;k++){const e=new THREE.Mesh(SPH,lam(['#fffaf2','#2b3350','#f7a8c4','#fffaf2'][k]));e.scale.set(.16,.1,.13);e.position.set(-4.22,1.07,.3+k*.82);f.add(e)}
+  for(let k=0;k<3;k++){const c0=['#ff9a8a','#9fe0c8','#c7b3f0'][k];const sp=cyl(.22,.24,.4,c0,-4.22,2.12,.5+k*1.1,f,14);sp.rotation.z=Math.PI/2;const gr=cyl(.15,.15,.02,'#2b3350',-4.0,2.12,.5+k*1.1,f,12);gr.rotation.z=Math.PI/2}
+  for(let k=0;k<5;k++)box(.4,.26,.55,cols[(k*5+2)%cols.length],-4.24,2.92,.1+k*.72,f);
+  // charm rack by the window
+  cyl(.04,.04,1.9,'#8a8a96',-3.3,1.25,3.7,f,6);box(1.4,.05,.05,'#8a8a96',-3.3,2.2,3.7,f,false);Object.values(CHARMS).forEach((cc,k)=>{const x=-3.9+k*.2;box(.012,.22,.012,'#5a5a66',x,2.08,3.7,f,false);const b=new THREE.Mesh(SPH,lam(cc));b.scale.setScalar(.075);b.position.set(x,1.94,3.7);f.add(b)});
+  const ad=canvasPlane(1.7,2.2,c=>{c.fillStyle='#fbe9f1';c.fillRect(0,0,96,124);c.fillStyle='#30365e';c.font='bold 13px ui-rounded,system-ui';c.textAlign='center';c.fillText('Ghostphone',48,20);c.fillStyle='#2b3350';c.fillRect(30,32,36,66);c.fillStyle='#8cc8f0';c.fillRect(33,36,30,56);c.fillStyle='#fff';c.beginPath();c.arc(48,58,9,Math.PI,0);c.lineTo(57,72);c.lineTo(39,72);c.fill();c.fillStyle='#26324a';c.fillRect(44,56,2,3);c.fillRect(50,56,2,3);c.fillStyle='#e9886b';c.font='bold 11px system-ui';c.fillText('now in 8 colors!',48,114)},96,124);ad.position.set(-4.47,4.35,1.6);ad.rotation.y=Math.PI/2;f.add(ad);
+  const rug=cyl(1.7,1.7,.04,'#c7b3f0',0,.33,2.9,f,24);rug.scale.z=.55;cyl(.32,.26,.55,'#e9886b',4.0,.58,3.9,f,10);for(let k=0;k<4;k++){const b=new THREE.Mesh(ballG(.32),lam(['#5fa04a','#4f8f3f','#79b35a'][k%3]));b.position.set(4.0+rand(-.2,.2),1.05+k*.2,3.9+rand(-.2,.2));f.add(b)}
+  for(const x of [-2,2]){cyl(.02,.02,1.2,'#222222',x,p.h-.6,.5,f,4);cyl(.2,.36,.3,'#30365e',x,p.h-1.3,.5,f,10);const gl=glow('#fff3d8',2.6,.5);gl.position.set(x,p.h-1.55,.5);g.add(gl)}
+  bake(f);p.spots={main:[0,2.8],display:[-2.3,2.35],cases:[-1.9,-2.9]}},
+ bikes(p,g){const f=new THREE.Group();g.add(f);const z0=-p.d/2+.3,wood='#a8835a';
+  // showroom: three bikes in a row with little price cards
+  [['city','#3f8f8a',-2.1],['cruiser','#f7a8c4',.15],['bmx','#e04f4f',2.4]].forEach(([t,c,z])=>{const b=makeBike(t,c,{bell:t==='cruiser'});b.position.set(-3.05,.3,z);b.rotation.y=Math.PI/2-.06;f.add(b);box(.04,.5,.04,'#5a4632',-1.3,.55,z+.55,f,false);box(.42,.28,.03,'#fffaf2',-1.3,.9,z+.56,f,false);box(.3,.05,.035,c,-1.3,.95,z+.57,f,false)});
+  // a bike hung on the back wall
+  {const hb=makeBike('city','#ffd36b',{});hb.rotation.y=Math.PI/2;hb.position.set(-1.6,3.3,z0+.35);f.add(hb);for(const x of [-2.4,-.8])box(.06,.06,.4,'#5a5a66',x,4.35,z0+.2,f,false)}
+  // helmet shelf on the side wall
+  box(.08,2.2,3.4,wood,4.62,2.25,.8,f);for(const y of [1.5,2.6])box(.62,.08,3.4,wood,4.32,y,.8,f);
+  ['#e04f4f','#ffd36b','#8cc8f0','#9fe0c8','#c7b3f0','#f28a3a','#2b3350','#f7a8c4'].forEach((c,k)=>{const y=(k<4?1.5:2.6)+.04,z=-.45+(k%4)*.85;const h=new THREE.Mesh(new THREE.SphereGeometry(.27,14,8,0,Math.PI*2,0,Math.PI/2),lam(c));h.scale.y=.85;h.position.set(4.3,y,z);f.add(h);box(.06,.05,.3,'#2a2a33',4.3,y+.2,z,f,false);box(.08,.04,.22,lam('#2a2a33'),4.08,y+.04,z,f,false)});
+  // counter, bell, pump, a coiled tube; tyres on the wall behind Kip
+  box(3,1.1,1.1,'#3b5a46',2.6,.85,-2.5,f);box(3.2,.1,1.3,'#efe3cf',2.6,1.45,-2.5,f);cyl(.08,.08,.08,'#ffd36b',1.6,1.54,-2.4,f,10);cyl(.05,.05,.9,'#c94f4f',3.5,1.95,-2.6,f,8);box(.3,.05,.05,'#2a2a33',3.5,2.4,-2.6,f,false);
+  {const tb=new THREE.Mesh(new THREE.TorusGeometry(.22,.05,6,16),lam('#2a2a33'));tb.rotation.x=Math.PI/2;tb.position.set(2.5,1.55,-2.3);f.add(tb)}
+  for(let k=0;k<3;k++){const t=new THREE.Mesh(new THREE.TorusGeometry(.45,.08,6,22),lam('#2a2a33'));t.position.set(1.6+k*1.05,3.7,z0+.2);f.add(t);box(.06,.06,.3,'#5a5a66',1.6+k*1.05,4.18,z0+.15,f,false)}
+  // repair stand with a wheel clamped on top
+  box(.9,.08,.9,'#5a5a66',1.7,.34,1.7,f);cyl(.05,.05,1.7,'#5a5a66',1.7,1.2,1.7,f,8);box(.5,.08,.08,'#e04f4f',1.85,2.02,1.7,f,false);{const wh=new THREE.Group();wh.position.set(2.3,2.0,1.72);f.add(wh);wh.add(new THREE.Mesh(new THREE.TorusGeometry(.42,.06,6,22),lam('#2a2a33')));wh.add(new THREE.Mesh(new THREE.TorusGeometry(.33,.02,5,20),lam('#c9d0d8')));for(let k=0;k<3;k++){const sp=new THREE.Mesh(new THREE.BoxGeometry(.016,.66,.016),lam('#c9d0d8'));sp.rotation.z=k*Math.PI/3;wh.add(sp)}}
+  const pst=canvasPlane(1.8,2.2,c=>{c.fillStyle='#fff6dc';c.fillRect(0,0,96,118);c.strokeStyle='#4f8a5b';c.lineWidth=5;c.beginPath();c.arc(30,62,16,0,7);c.stroke();c.beginPath();c.arc(68,62,16,0,7);c.stroke();c.beginPath();c.moveTo(30,62);c.lineTo(46,42);c.lineTo(62,42);c.lineTo(68,62);c.moveTo(46,42);c.lineTo(50,62);c.lineTo(62,42);c.stroke();c.fillStyle='#2f4a3a';c.font='bold 12px ui-rounded,system-ui';c.textAlign='center';c.fillText('RIDE MORE,',48,96);c.fillText('WORRY LESS',48,110)},96,118);pst.position.set(-4.62,4.2,-1.4);pst.rotation.y=Math.PI/2;f.add(pst);
+  for(const x of [-2,2]){cyl(.02,.02,1.4,'#222222',x,p.h-.7,.4,f,4);cyl(.22,.4,.32,'#2f4a3a',x,p.h-1.5,.4,f,10);const gl=glow('#ffe6b0',2.6,.5);gl.position.set(x,p.h-1.75,.4);g.add(gl)}
+  bake(f);p.spots={main:[0,2.6],bikes:[-.7,.7],helmets:[3.0,.9]}},
  market(p,g){const z0=-p.d/2+.3;box(10,1.2,1.4,'#f4f1ea',0,.9,z0+1.2,g);box(10,.15,1.4,lam('#e0f4ff'),0,1.55,z0+1.2,g);for(let k=0;k<9;k++){const f=new THREE.Mesh(SPH,lam(pick(['#f28a7a','#c9d0d8','#f2a38a'])));f.scale.set(.4,.12,.15);f.position.set(-4+k,1.72,z0+1.2);f.rotation.y=rand(-.3,.3);g.add(f)}
   for(let k=0;k<8;k++){cyl(.3,.25,.6,'#6c8ebf',-11+(k%4)*1,.6,-2+Math.floor(k/4)*1.2,g,10);for(let j=0;j<4;j++){const f=new THREE.Mesh(SPH,lam(pick(['#ff7ab0','#ffd36b','#c94f4f','#ffffff','#c49bff'])));f.scale.setScalar(.18);f.position.set(-11+(k%4)+rand(-.15,.15),1.1+rand(0,.3),-2+Math.floor(k/4)*1.2+rand(-.15,.15));g.add(f)}}
   for(let i=0;i<3;i++){box(1.6,.9,1.2,'#8a6a4a',8.5+(i%2)*2,.75,-2+i*1.4,g);for(let k=0;k<6;k++){const f=new THREE.Mesh(SPH,lam(['#e04a3a','#f2c14e','#7fbf4a'][i]));f.scale.setScalar(.2);f.position.set(8.1+(i%2)*2+(k%3)*.4,1.35,-2.3+i*1.4+Math.floor(k/3)*.5);g.add(f)}}
@@ -660,7 +878,7 @@ function wheel(p,grp){const R0=13,cy=R0+3;const wg=new THREE.Group();wg.position
 function dock(p,grp){box(10,.8,26,'#8a6a4a',0,.2,4,grp,false);for(let i=0;i<6;i++)cyl(.35,.35,3,'#5a4632',(i%2?4.6:-4.6),-.8,-8+i*5,grp,8);box(5,4,4,'#e7d8c3',0,2.4,11,grp);sign('Ferry Dock ⛴',5,grp,0,5,13.05)}
 function lighthouse(p,grp){box(12,1.4,12,'#8d8a86',0,.3,0,grp);cyl(p.w*.38,p.w*.52,p.h,'#fffaf2',0,p.h/2,0,grp,16);for(let i=0;i<3;i++)cyl(p.w*.46-i*.4,p.w*.5-i*.4,1.2,'#c94f4f',0,3+i*6,0,grp,16);
   cyl(1.5,1.5,2.2,lam('#fff6c8',{emissive:'#ffe080',emissiveIntensity:1}),0,p.h+1.1,0,grp,12);const cap=new THREE.Mesh(new THREE.ConeGeometry(2.4,2.4,12),lam('#c94f4f'));cap.position.y=p.h+3.4;grp.add(cap);const b=glow('#fff3b0',16,.6);b.position.y=p.h+1.1;grp.add(b);p.beam=b}
-function troll(p,grp){const creek=new THREE.Mesh(new THREE.PlaneGeometry(10,60),new ToonM({color:'#4f8fb0',shininess:60}));creek.rotation.x=-Math.PI/2;creek.position.y=.08;grp.add(creek);
+function troll(p,grp){const creek=new THREE.Mesh(new THREE.PlaneGeometry(10,60,1,6),new ToonM({color:'#4f8fb0',shininess:60}));creek.rotation.x=-Math.PI/2;creek.position.y=.08;grp.add(creek);
   box(16,1,8,'#9a948a',0,5.5,0,grp);box(1.5,6,8,'#9a948a',-7.3,3,0,grp);box(1.5,6,8,'#9a948a',7.3,3,0,grp);
   const tm=phongFlat('#7c8a6a');const head=new THREE.Mesh(new THREE.IcosahedronGeometry(2.4,1),tm);head.position.set(0,2.4,0);head.scale.set(1.2,1,1);grp.add(head);
   const eye=new THREE.Mesh(new THREE.SphereGeometry(.5,12,10),lam('#eae6d8'));eye.position.set(.8,2.9,2.4);grp.add(eye);const pu=new THREE.Mesh(new THREE.SphereGeometry(.22,8,8),lam('#222222'));pu.position.set(.85,2.95,2.85);grp.add(pu);
@@ -835,7 +1053,8 @@ function paintCanvas(pt,W=128,H=96){const c=document.createElement('canvas');c.w
    case'sky':sky(C[0],C[1]||'#f6c9a8');g.fillStyle=C[2]||'#ffd36b';g.beginPath();g.arc(64,60,14,0,7);g.fill();blobs(10,'#ffffff',10,50,6,10);g.fillStyle='#26324a';g.fillRect(0,78,128,18);break;
    case'friend':sky(C[0],'#f6efe2');g.fillStyle=C[1]||'#8d8d96';g.beginPath();g.arc(64,50,24,0,7);g.fill();g.fillStyle='#26324a';g.beginPath();g.arc(56,46,3,0,7);g.arc(72,46,3,0,7);g.fill();g.beginPath();g.arc(64,56,3,0,7);g.fill();break;
    default:sky(C[0],C[1]||'#f6efe2');for(let i=0;i<26;i++){g.strokeStyle=pc();g.globalAlpha=.6;g.lineWidth=2+r()*6;g.beginPath();const x=r()*128,y=r()*96;g.moveTo(x,y);g.quadraticCurveTo(x+r()*40-20,y+r()*40-20,x+r()*60-30,y+r()*60-30);g.stroke()}g.globalAlpha=1}
-  g.globalAlpha=.12;for(let i=0;i<220;i++){g.fillStyle=r()<.5?'#000':'#fff';g.fillRect(r()*128,r()*96,1,1)}g.globalAlpha=1;return c}
+  const gn=Math.round(220*Math.min(3,Math.max(1,sx))),gz=sx>2?.5:1;g.globalAlpha=sx>2?.1:.12;for(let i=0;i<gn;i++){g.fillStyle=r()<.5?'#000':'#fff';g.fillRect(r()*128,r()*96,gz,gz)}g.globalAlpha=1;return c}
+const bigCache=new Map();function paintBig(pt){let u=bigCache.get(pt.id);if(!u){u=paintCanvas(pt,512,384).toDataURL('image/jpeg',.9);bigCache.set(pt.id,u);if(bigCache.size>40)bigCache.delete(bigCache.keys().next().value)}return u}
 function framedPainting(pt,sc=1){const g=new THREE.Group();box(1.75*sc,1.35*sc,.08,'#b08a3a',0,0,0,g,false);const m=new THREE.Mesh(new THREE.PlaneGeometry(1.52*sc,1.12*sc),new ToonM({map:new THREE.CanvasTexture(paintCanvas(pt))}));m.position.z=.05;g.add(m);return g}
 const paintObjs={};
 function applyPaintings(){for(const k in paintObjs){paintObjs[k].parent&&paintObjs[k].parent.remove(paintObjs[k]);delete paintObjs[k]}
@@ -850,6 +1069,14 @@ function makePainting(subjectTxt,title,t=Date.now(),choice){const fav=S.favColor
   else if(String(c).startsWith('give')){let who=String(c).split(':')[1];const friends=['wendell',...Object.keys(S.know||{})].filter(x=>x==='wendell'?S.metW:KB[x]);if(!who||!(who==='wendell'||KB[who]))who=friends.length?pick(friends):null;if(who){pt.where='gift:'+who;note=`Gave it to ${who==='wendell'?'Wendell':KB[who].name}. They're hanging it up!`}else note='Leaning it against the wall for now.'}
   else note='Leaning it against the wall for now.';
   applyPaintings();addEntry('Art',`Painted "${pt.title}"${pt.raw?` (${pt.raw})`:''} at the studio. ${note}`,'Fog & Easel Studio',t);toast(`🎨 Mocha painted "${pt.title}"`);return pt}
+// Mocha sometimes posts a finished painting to his feed (his own choice; built-in brain uses pride/enjoyment, Claude mind uses "post_painting")
+function paintCaption(pt){const w=String(pt.where||''),ti=pt.title,k=w.slice(5),nm=k==='wendell'?'Wendell':(KB[k]||{}).name||'a friend';
+  return pick(w==='home'?[`"${ti}" is going on my wall 🖼`,`new one for the living room ✨`,`finished "${ti}"! hanging it up 🏠`]:w==='sold'?[`"${ti}" found a new home today 💛`,`someone bought my painting!! 🥹`,`goodbye "${ti}", be good 🎨`]:w.startsWith('gift:')?[`made this one for ${nm} 🎁`,`"${ti}" — a little present for ${nm} 💛`]:[`new painting: "${ti}" 🎨`,`finished "${ti}" today ✨`,`${ti.toLowerCase()} 🖌`,`not sure about this one… "${ti}" 🤔`])}
+function postPainting(pt,caption,t=Date.now()){if(!pt||!pt.id)return null;caption=String(caption||'').slice(0,80)||paintCaption(pt);
+  const p={id:'pp'+t.toString(36)+Math.floor(Math.random()*99),kind:'painting',pid:pt.id,art:{s:pt.subject,c:(pt.colors||[]).slice(0,4),seed:pt.seed,ti:String(pt.title||'').slice(0,50)},caption,place:'Fog & Easel Studio',t,likes:Math.floor(rand(4,40)),liked:false};
+  S.posts.unshift(p);S.posts.length=Math.min(S.posts.length,30);try{savePhotos()}catch(e){}
+  addEntry('Posted',`Posted my painting "${pt.title}" to my feed: "${caption}"`,'Fog & Easel Studio',t+2);toast('🎨 Mocha posted his painting');try{if(curTab==='feed')renderFeed()}catch(e){}return p}
+function maybePostPainting(pt,e,t){if(pt&&Math.random()<.38+Math.max(0,+e||0)*.42)return postPainting(pt,paintCaption(pt),t);return null}
 for(let z=-60;z<=50;z+=14){box(2.6,.25,.9,'#8a6a4a',-55.5,1,z);box(2.6,.9,.2,'#8a6a4a',-55.1,1.5,z)}
 for(let z=-95;z<=62;z+=3)cyl(.08,.08,1.4,'#2f3f5f',-60.3,1.2,z,scene,6);
 neighborHouse(80,44,0,'#9fb6d8','#3c4a5a');neighborHouse(18,72,Math.PI,'#d98a8a','#4a3a3a');neighborHouse(42,74,Math.PI,'#c7b8e0','#4a3f6a');
@@ -935,7 +1162,27 @@ const sleepEyes=[-1,1].map(s=>{const m=new THREE.Mesh(new THREE.TorusGeometry(.0
 const smile=new THREE.Mesh(new THREE.TorusGeometry(.06,.017,6,12,Math.PI),black);smile.rotation.z=Math.PI;smile.position.set(0,.53,.57);body.add(smile);
 const mouthO=new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),black);mouthO.scale.set(1,1,.4);mouthO.position.set(0,.5,.57);mouthO.visible=false;body.add(mouthO);
 const arms=[-1,1].map(s=>{const a=new THREE.Mesh(new THREE.SphereGeometry(.15,12,10),ghostMat);a.scale.set(.8,1.1,.8);a.position.set(s*.66,.2,.05);body.add(a);return a});
-const phone=new THREE.Group();{const pm=new THREE.Mesh(new THREE.BoxGeometry(.14,.26,.03),lam('#26324a'));phone.add(pm);const sc=new THREE.Mesh(new THREE.PlaneGeometry(.11,.21),new THREE.MeshBasicMaterial({color:'#9fd3ff'}));sc.position.z=-.017;sc.rotation.y=Math.PI;phone.add(sc)}phone.position.set(.78,.45,.35);phone.rotation.y=Math.PI;phone.visible=false;body.add(phone);
+const phone=new THREE.Group();phone.position.set(.66,.36,.42);phone.rotation.set(-.12,-.4,0);phone.visible=false;body.add(phone);
+const caseTexC={};function caseTex(cs){const k=cs.c+cs.pat;if(caseTexC[k])return caseTexC[k];return caseTexC[k]=canvasTex(32,64,g=>{g.fillStyle=cs.c;g.fillRect(0,0,32,64);const lc=new THREE.Color(cs.c),ink=(lc.r*.3+lc.g*.59+lc.b*.11)>.62?'rgba(38,50,74,.55)':'rgba(255,255,255,.78)';g.fillStyle=ink;
+  if(cs.pat==='stripes'){for(let y=-32;y<64;y+=10){g.beginPath();g.moveTo(0,y);g.lineTo(32,y+16);g.lineTo(32,y+21);g.lineTo(0,y+5);g.fill()}}
+  else if(cs.pat==='polka dots'){for(let y=6;y<64;y+=10)for(let x=(y/10%2)*5+4;x<32;x+=10){g.beginPath();g.arc(x,y,2.4,0,7);g.fill()}}
+  else if(cs.pat==='stars'){for(let i=0;i<7;i++){const x=6+(i*13)%22,y=6+i*8.5;g.beginPath();for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k%2?1.6:3.8;g.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r)}g.fill()}}
+  else if(cs.pat==='clouds'){for(let i=0;i<4;i++){const x=7+(i%2)*12,y=11+i*14;g.beginPath();g.arc(x,y,4,0,7);g.arc(x+5,y-2,5,0,7);g.arc(x+10,y,4,0,7);g.fill()}}
+  else if(cs.pat==='little bats'){for(let i=0;i<4;i++){const x=11+(i%2)*10,y=10+i*14;g.beginPath();g.ellipse(x,y,2.4,3,0,0,7);g.fill();for(const sg of [-1,1]){g.beginPath();g.moveTo(x+sg*2,y);g.quadraticCurveTo(x+sg*6,y-5,x+sg*9,y-1);g.quadraticCurveTo(x+sg*6,y+1,x+sg*2,y+2);g.fill()}}}
+  g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.arc(9,9,3.4,0,7);g.fill()})}
+function applyPhoneLook(){while(phone.children.length)phone.remove(phone.children[0]);const P=S.phone||{color:'#26324a'},fl=PHONES[P.model]&&PHONES[P.model].flip,h=fl?.2:.26;
+  phone.add(new THREE.Mesh(new THREE.BoxGeometry(.14,h,.034),lam(P.color)));const sc=new THREE.Mesh(new THREE.PlaneGeometry(.112,h-.05),new THREE.MeshBasicMaterial({color:'#9fd3ff'}));sc.position.z=-.018;sc.rotation.y=Math.PI;phone.add(sc);
+  if(fl){const hg=new THREE.Mesh(new THREE.CylinderGeometry(.021,.021,.145,8),lam('#c9d0d8'));hg.rotation.z=Math.PI/2;phone.add(hg)}
+  if(P.case){const cm=lam(P.case.c),bk=new THREE.Mesh(new THREE.BoxGeometry(.158,h+.018,.014),[cm,cm,cm,cm,new ToonM({map:caseTex(P.case)}),cm]);bk.position.z=.022;phone.add(bk)}
+  else{const cam=new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,.012,10),lam('#1e2430'));cam.rotation.x=Math.PI/2;cam.position.set(-.035,h/2-.04,.019);phone.add(cam)}
+  phone.userData.charm=null;if(P.charm){const st=new THREE.Mesh(new THREE.CylinderGeometry(.005,.005,.09,4),lam('#26324a'));st.position.set(.055,-h/2-.045,.012);phone.add(st);const ch=new THREE.Mesh(SPH,lam(CHARMS[P.charm]||'#ffffff'));ch.scale.setScalar(.035);ch.position.set(.055,-h/2-.1,.012);phone.add(ch);phone.userData.charm=ch}}
+// his bike: parked (BK) when he isn't riding it
+const BK={x:34.5,z:54.1,yaw:Math.PI/2,y:.14};let bikeObj=null,rideHelm=null;
+function bikeY(x,z){return x<-61?.62:nearRoad(x,z,3.6)?.3:nearRoad(x,z,5.6)?.14:.06}
+function syncBike(){if(bikeObj){scene.remove(bikeObj);bikeObj=null}if(rideHelm){body.remove(rideHelm);rideHelm=null}if(!S.bike)return;bikeObj=makeBike(S.bike.type,S.bike.color,{bell:hasGadget('bell'),lights:hasGadget('lights')});BK.y=bikeY(BK.x,BK.z);bikeObj.position.set(BK.x,BK.y,BK.z);bikeObj.rotation.set(0,BK.yaw,.1);scene.add(bikeObj);if(hasHelmet()){rideHelm=accModel('helmet',helmetCol());rideHelm.visible=false;body.add(rideHelm)}}
+let spkObj=null;function applySpeaker(){const h=byId.home.obj;if(spkObj&&spkObj.parent)spkObj.parent.remove(spkObj);spkObj=null;const g0=(S.gadgets||[]).find(g=>g.k==='speaker');if(!g0||!h)return;
+  spkObj=new THREE.Group();spkObj.position.set(3.42,1.65,2.5);spkObj.rotation.y=-.5;box(.32,.42,.28,g0.c,0,.21,0,spkObj);const gr=cyl(.1,.1,.02,'#26324a',0,.24,.145,spkObj,12);gr.rotation.x=Math.PI/2;const tw=cyl(.04,.04,.02,'#26324a',0,.37,.145,spkObj,8);tw.rotation.x=Math.PI/2;h.add(spkObj)}
+function applyGear(){applyPhoneLook();syncBike();applySpeaker()}
 const mGlow=glow('#e6ecff',3,.22,false);mGlow.position.y=.4;body.add(mGlow);
 const mLight=new THREE.PointLight('#e6ecff',.5,10,2);mLight.position.y=.6;mocha.add(mLight);
 const shadowBlob=new THREE.Mesh(new THREE.CircleGeometry(.6,24),new THREE.MeshBasicMaterial({color:'#000000',transparent:true,opacity:.2,depthWrite:false}));shadowBlob.rotation.x=-Math.PI/2;scene.add(shadowBlob);
@@ -1003,6 +1250,7 @@ function accModel(item,color){const g=new THREE.Group();const m=lam(color),m2=la
   const ds=c=>new ToonM({color:c,side:THREE.DoubleSide});
   switch(item){
    case'beanie':add(new THREE.SphereGeometry(.6,20,12,0,Math.PI*2,0,Math.PI/2),m,0,.62,0,1,.75,1);add(new THREE.TorusGeometry(.56,.09,8,28),m,0,.66,0).rotation.x=Math.PI/2;add(new THREE.SphereGeometry(.13,10,8),m2,0,1.12,0);break;
+   case'helmet':add(new THREE.SphereGeometry(.6,20,12,0,Math.PI*2,0,Math.PI/2),m,0,.77,-.03,1,.72,1);for(const x of [-.17,0,.17])add(new THREE.BoxGeometry(.08,.05,.56),dk,x,1.19,-.06).rotation.x=-.12;add(new THREE.BoxGeometry(.5,.045,.2),m,0,.8,.56).rotation.x=-.25;add(new THREE.TorusGeometry(.6,.03,6,24),m2,0,.78,-.03).rotation.x=Math.PI/2;break;
    case'beret':add(new THREE.SphereGeometry(.56,20,10),m,.05,.98,0,1,.28,1).rotation.z=-.2;add(new THREE.CylinderGeometry(.03,.03,.12,6),m,.08,1.14,0);break;
    case'bucket':add(new THREE.CylinderGeometry(.42,.52,.36,20),m,0,1.0,0);add(new THREE.CylinderGeometry(.52,.8,.12,24),m,0,.84,0);break;
    case'cap':add(new THREE.SphereGeometry(.6,20,10,0,Math.PI*2,0,Math.PI/2),m,0,.66,0,1,.65,1);add(new THREE.BoxGeometry(.6,.05,.42),m,0,.72,.62).rotation.x=.12;break;
@@ -1022,7 +1270,7 @@ function accModel(item,color){const g=new THREE.Group();const m=lam(color),m2=la
   }return g}
 const worn={};
 function applyOutfit(){Object.values(worn).forEach(o=>body.remove(o));for(const k in worn)delete worn[k];
-  S.wearing=S.wearing.filter(id=>S.owned.some(o=>o.id===id));S.wearing.forEach(id=>{const it=S.owned.find(o=>o.id===id);const m=accModel(it.item,it.color);body.add(m);worn[id]=m})}
+  S.wearing=S.wearing.filter(id=>S.owned.some(o=>o.id===id));S.wearing.forEach(id=>{const it=S.owned.find(o=>o.id===id);const m=accModel(it.item,it.color);m.userData.slot=WEAR[it.item];body.add(m);worn[id]=m})}
 function wearItem(id){const it=S.owned.find(o=>o.id===id);if(!it)return;const slot=WEAR[it.item];S.wearing=S.wearing.filter(w=>{const o=S.owned.find(x=>x.id===w);return o&&WEAR[o.item]!==slot});S.wearing.push(id);applyOutfit()}
 function acquire(item,color,name,from,t=Date.now()){if(!WEAR[item]||S.owned.length>=30)return null;const id='w'+Date.now().toString(36)+Math.floor(Math.random()*999);
   const c=/^#[0-9a-f]{6}$/i.test(color||'')?color.toLowerCase():pick(PALETTE);const it={id,item,color:c,name:name||((COLOR_NAMES[c]||'')+' '+item).trim(),from,t};S.owned.push(it);return it}
@@ -1056,7 +1304,7 @@ function discover(p,t=Date.now(),live=true){if(known(p))return;S.discovered.push
   addEntry('Discovery',`I found somewhere new: ${p.name}! It was just out past the edge of where I usually float. Putting it on my map.`,p.name,t,true);goalCheck('discover',null,t);
   if(live){toast(`🧭 Mocha discovered ${p.name}!`);labelFor(p)}}
 function closetChange(t,place){if(!S.owned.length){addEntry('Style','Opened my wardrobe. It\'s empty. Just me, plain and white. Maybe I should go find something I like.',place,t);bumpInterest('fashion',.3);return}
-  const wet=WEATHER.kind==='rain'||WEATHER.kind==='drizzle';const bySlot={};S.owned.forEach(o=>{(bySlot[WEAR[o.item]]=bySlot[WEAR[o.item]]||[]).push(o)});
+  const wet=WEATHER.kind==='rain'||WEATHER.kind==='drizzle';const bySlot={};S.owned.filter(o=>o.item!=='helmet').forEach(o=>{(bySlot[WEAR[o.item]]=bySlot[WEAR[o.item]]||[]).push(o)});
   const chosen=[];for(const slot in bySlot){const list=bySlot[slot];if(slot==='hand'||slot==='body'){const u=list.find(o=>o.item==='umbrella'||o.item==='raincoat');if(wet&&u){chosen.push(u.id);continue}}if(Math.random()<.65){const favs=list.filter(o=>o.color===S.favColor);chosen.push(pick(favs.length&&Math.random()<.6?favs:list).id)}}
   S.wearing=chosen;applyOutfit();const names=chosen.map(id=>S.owned.find(o=>o.id===id).name);
   addEntry('Style',names.length?`Tried on everything in my wardrobe. Went with: ${names.join(', ')}. I feel very ${pick(['me','dapper','cozy','put-together','mysterious'])}.`:'Tried on everything, then decided to go plain today. Sometimes a ghost just wants to be a sheet.',place,t)}
@@ -1064,7 +1312,7 @@ function localAcquire(act,t,placeName){const pool=act.pool||[];if(!pool.length)r
   const item=pick(pool);if(S.owned.some(o=>o.item===item)&&Math.random()<.75)return;if(!S.favColor)S.favColor=pick(PALETTE);const color=Math.random()<.5?S.favColor:pick(PALETTE);
   const it=acquire(item,color,null,placeName,t);if(!it)return;addEntry('Style',`Found a ${it.name} at ${placeName}. ${pick(['It just felt like me.','I didn\'t plan to, but I couldn\'t leave without it.','Is this… my style? Maybe this is my style.'])}`,placeName,t+1);
   toast(`🧣 Mocha picked out a ${it.name}`);if(Math.random()<.75)wearItem(it.id)}
-const TAGNAME={movies:'Movies',stories:'Movies',friends:'Friends',animals:'Pets','home decor':'Home',cooking:'Food',coffee:'Coffee',tea:'Home',reading:'Reading',music:'Music',gaming:'Games',art:'Art',nature:'Outside',birds:'Outside',ocean:'Outside',fashion:'Style',cozy:'Home',people:'People',heights:'Views',rides:'Fun',stars:'Night',plants:'Plants',mystery:'Mystery',photography:'Views',writing:'Writing',learning:'Learned'};
+const TAGNAME={gadgets:'Gadgets',bikes:'Bikes',helping:'Work',movies:'Movies',stories:'Movies',friends:'Friends',animals:'Pets','home decor':'Home',cooking:'Food',coffee:'Coffee',tea:'Home',reading:'Reading',music:'Music',gaming:'Games',art:'Art',nature:'Outside',birds:'Outside',ocean:'Outside',fashion:'Style',cozy:'Home',people:'People',heights:'Views',rides:'Fun',stars:'Night',plants:'Plants',mystery:'Mystery',photography:'Views',writing:'Writing',learning:'Learned'};
 function localOutcome(act,t=Date.now(),live=true){const p=byId[act.p];const pname=p.name;const tr=S.traits;
   let e=.4+rand(-.55,.6);act.tags.forEach(k=>{e+=(S.interests[k]||0)*.04;if(k==='cozy')e+=(tr.coziness-.5)*.4;if(k==='people')e+=(tr.sociability-.5)*.5;if(k==='art'||k==='writing')e+=(tr.creativity-.5)*.4;if(k==='heights'||k==='rides')e+=(tr.adventure-.5)*.4});e=clamp(e,-1,1);
   for(const n in act.need||{})S.needs[n]=clamp(S.needs[n]+act.need[n],0,100);if(act.fx==='sleep')S.needs.energy=100;S.xp+=10;S.visits[p.id]=(S.visits[p.id]||0)+1;
@@ -1076,14 +1324,17 @@ function localOutcome(act,t=Date.now(),live=true){const p=byId[act.p];const pnam
     addEntry('Movies',`Watched "${f.title}"${f.year?' ('+f.year+')':''} at Rain City Cinema. ${f.scenes?'My favorite part: '+pick(f.scenes)+'. ':''}I learned that ${fact.charAt(0).toLowerCase()+fact.slice(1)}${e>.6?' Loved it.':''}`,pname,t);S.recent.unshift('cinema.seat');S.xp+=4;return}
   if(act.fx==='ask'){const k=KB[act.keeper];if(k){const key=pick(k.fk.filter(x=>FACTS[x]));const fact=pick(FACTS[key]||['they know a lot']);addLearned(`${key} (asked ${k.name})`,[fact],t);S.know[k.id]=(S.know[k.id]||0)+1;
     addEntry('Asked',`Asked ${k.name} the ${k.species} about ${k.topic}. ${k.pr==='they'?'They':k.pr==='she'?'She':'He'} told me: "${fact}" ${pick(['Writing that down.','I love when people know things.','My brain grew a size.'])}`,pname,t);if(live&&k.obj.visible)kSay(k,fact,5);S.recent.unshift(act.p+'.counter');return}}
-  if(act.p==='studio'&&(act.fx==='paint'||/paint/i.test(act.doing||''))){const subj=pick([...topInterests(3).map(([k])=>k),'the sound at sunset','a rainy street','my house','the mountain','autumn trees','wendell','myself','the night sky']);makePainting(subj,pick(['Untitled #'+(S.paintings.length+1),'Rainy Mood','Little Light','Gray, But Specific','Hello, '+subj,'A Quiet Moment','Drizzle Study']),t);if(Math.random()<.15)localAcquire({...act,pool:['beret','apron']},t,pname);}
+  if(act.p==='studio'&&(act.fx==='paint'||/paint/i.test(act.doing||''))){const subj=pick([...topInterests(3).map(([k])=>k),'the sound at sunset','a rainy street','my house','the mountain','autumn trees','wendell','myself','the night sky']);const ptN=makePainting(subj,pick(['Untitled #'+(S.paintings.length+1),'Rainy Mood','Little Light','Gray, But Specific','Hello, '+subj,'A Quiet Moment','Drizzle Study']),t);maybePostPainting(ptN,e,t);if(Math.random()<.15)localAcquire({...act,pool:['beret','apron']},t,pname);}
   if(act.fx==='research')research(t,p.id);
   else if(act.fx==='closet')closetChange(t,pname);
+  else if(act.fx==='job')payJob(act,t,live,pname);
+  else if(act.fx==='phoneshop'||act.fx==='bikeshop')shopVisit(act,t,live,pname);
   else{const base=act.hobby?`Spent time on ${act.hobby}. ${pick(['It\'s getting easier.','I lost track of time, which for a ghost is saying something.','Still not perfect. Still love it.'])}`:fill(pick(act.lines||['Spent some time at '+pname+'.']));
     const mood=e>.65?pick([' Loved it.',' Best part of my day.','']):e<.05?pick([' Honestly? Not my thing.',' Kind of boring, to be honest.',' Hmm. Not sure about this one.']):'';
     addEntry(act.hobby?'Hobby':TAGNAME[act.tags[0]]||'Day',base+mood,pname,t)}
   if(act.hobby){practiceHobby(act.hobby,t);goalCheck('hobby',act.hobby,t)}
   if(act.fx==='acquire')localAcquire(act,t,pname);
+  if(act.fx==='bikeride'&&S.bike)S.bike.rides=(S.bike.rides||0)+1;
   if(act.fx==='groceries'){S.pantry=100;if(Math.random()<.2)buyDecor(pick(Object.keys(DECOR).filter(k=>k!=='petbed'&&!S.decor.includes(k))),t,pname)}
   if(act.fx==='decor'&&Math.random()<.35+Math.max(0,S.interests['home decor']||0)*.05){const opts=Object.keys(DECOR).filter(k=>k!=='petbed'&&!S.decor.includes(k));if(opts.length)buyDecor(pick(opts),t,pname)}
   if(act.fx==='petstore')considerAdoption(t,pname);
@@ -1109,12 +1360,12 @@ function localChoose(at=Date.now()){const tr=S.traits,h=hourAt(at),asleep=asleep
   if(asleep)return{act:ACTS.find(a=>a.fx==='sleep')};const s0=sched(),toBed=((s0.bed-h)+24)%24;
   const hidden=PLACES.filter(p=>!known(p));
   if(hidden.length&&!night&&Math.random()<.07+tr.curiosity*.1+(S.needs.curious<35?.1:0)+(S.goal&&S.goal.kind==='discover'?.15:0))return{explore:pick(hidden)};
-  const cands0=1;const cands=ACTS.filter(a=>known(byId[a.p])&&(!a.night||night)&&(!a.pet||S.pets.length)&&(!a.npc||wAvail())&&isOpen(byId[a.p],h)&&(a.fx!=='sleep'||S.needs.energy<8));
-  S.hobbies.forEach(h=>cands.push({p:h.p,s:h.s,doing:h.doing,tags:h.tag?[h.tag]:[],need:{fun:30},hobby:h.name}));
+  const cands0=1;const cands=ACTS.filter(a=>known(byId[a.p])&&(!a.night||night)&&(!a.pet||S.pets.length)&&(!a.bike||S.bike)&&(!a.npc||wAvail())&&isOpen(byId[a.p],h)&&(a.fx!=='sleep'||S.needs.energy<8));
+  S.hobbies.forEach(hb=>{if(!hobbyOk(hb)||(byId[hb.p]&&!isOpen(byId[hb.p],hourAt(at))))return;cands.push({p:hb.p,s:hb.s,doing:hb.doing,tags:hb.tag?[hb.tag]:[],need:{fun:30},hobby:hb.name})});
   const sc=cands.map(a=>{let s=1;for(const n in a.need||{})s+=(100-S.needs[n])/30*(a.need[n]/40);a.tags.forEach(k=>s+=Math.max(-1.5,(S.interests[k]||0))*.35);
     if(a.hobby)s+=2.5;const key=a.p+(a.s?'.'+a.s:'');if(S.recent.slice(0,2).includes(key))s-=3;if(!S.visits[a.p])s+=1.2+tr.curiosity*2;
-    const indoors=a.p==='home'||byId[a.p].solid;if(wet)s+=indoors?1:-(1-tr.adventure);if(toBed<1.5)s+=a.p==='home'?3:-1;if(night)s+=a.p==='home'?.8:-.3;if(a.fx==='sleep')s+=10;if(a.fx==='movie')s+=1;if(a.fx==='ask')s+=.4+(tr.curiosity-.5)+(tr.sociability-.5);
-    if(a.p==='home')s+=tr.coziness*.8;if(a.doing==='cooking'&&S.pantry<12)s-=4;if(a.fx==='groceries')s+=S.pantry<30?3+(100-S.needs.snack)/30:-1.5;if(a.pet)s+=1.5;if(a.npc)s+=(S.metW?.5:2)+(S.friendW||0)*.05;if(a.tags.includes('people'))s+=(tr.sociability-.5)*1.5;
+    const indoors=a.p==='home'||byId[a.p].solid;if(wet)s+=indoors?1:-(1-tr.adventure);if(toBed<1.5)s+=a.p==='home'?3:-1;if(night)s+=a.p==='home'?.8:-.3;if(a.fx==='sleep')s+=10;if(a.fx==='movie')s+=1;if(a.fx==='ask')s+=.4+(tr.curiosity-.5)+(tr.sociability-.5)-Math.min(1.4,(S.know[a.keeper]||0)*.2);
+    if(a.p==='home')s+=tr.coziness*.8;if(a.doing==='cooking'&&S.pantry<12)s-=4;if(a.fx==='groceries')s+=S.pantry<30?3+(100-S.needs.snack)/30:-1.5;if(a.pet)s+=1.5;if(a.npc)s+=(S.metW?.5:2)+(S.friendW||0)*.05;if(a.tags.includes('people'))s+=(tr.sociability-.5)*1.5;s+=gearScore(a,at);
     const g=S.goal;if(g&&g.kind==='hobby'&&a.hobby===g.key)s+=2;if(g&&g.kind==='research'&&a.fx==='research')s+=2;if(g&&g.kind==='new'&&!S.visits[a.p])s+=2;
     return Math.max(.05,s)});
   let r=Math.random()*sc.reduce((a,b)=>a+b*b,0);for(let i=0;i<cands.length;i++){r-=sc[i]*sc[i];if(r<=0)return{act:cands[i]}}return{act:cands[0]}}
@@ -1124,7 +1375,8 @@ let awayMs=0;function catchUp(){if(isNew)return 0;const now=Date.now(),away=now-
     const c=localChoose(t);if(c.explore){if(Math.random()<.5)discover(c.explore,t,false);t+=rand(30,60)*60e3;continue}if(c.act.fx==='sleep'){t+=45*60e3;continue}localOutcome(c.act,t,false);t+=rand(40,90)*60e3;n++}
   isQuiet=false;S.diary.sort((a,b)=>b.t-a.t);S.lastSeen=now;return n}
 let awayCount=catchUp();
-if(isNew)addEntry('Moved in','Moved into a little house in a rainy city by the water. It\'s mine! I don\'t know what I like yet. I guess I\'ll have to go find out.',"Mocha's House");
+if(isNew)addEntry('Moved in','Moved into a little house in a rainy city by the water. It\'s mine! I don\'t know what I like yet. I guess I\'ll have to go find out. I have 150 coins saved up from moving, for something really useful.',"Mocha's House");
+if(S.seedNote){delete S.seedNote;addEntry('Money','Found my moving-day savings tucked inside a box: 150 coins! I\'m going to save them for something really useful.',"Mocha's House")}
 
 // ====================================================================
 //  TIME OF DAY + WEATHER (uses your real clock)
@@ -1146,7 +1398,7 @@ function updateSky(dt){const d=new Date();if(d.getDate()!==keysDay)buildKeys();c
   const sa=clamp((h-SUN.rise)/(SUN.set-SUN.rise),0,1)*Math.PI;sun.position.set(camS.tx+Math.cos(sa)*60,20+Math.max(.15,Math.sin(sa))*60,camS.tz+30);sun.target.position.set(camS.tx,0,camS.tz);sun.color.set(nightAmt>.5?'#b4c6ff':h<9||h>16?'#ffd6b0':'#fff4e6');
   nightAmt=clamp((.62-si)/.4,0,1);post.uniforms.night.value=nightAmt;winMats.forEach(m=>m.emissiveIntensity=.12+nightAmt*.9);nightGlows.forEach(g=>g.material.opacity=g.userData.op*(.15+nightAmt*.85));
   stars.material.opacity=nightAmt*(1-o);moon.material.opacity=nightAmt*(1-o*.8)+.05;fireflies.material.opacity=nightAmt*.8*(WEATHER.kind==='rain'?.2:1);
-  clouds.forEach(c=>{c.m.opacity=.45+o*.45;c.m.color.set(day>.3?(o>.5?'#d5dbe3':'#ffffff'):'#3a4260');c.m.emissiveIntensity=day>.3?.5:.04});
+  clouds.forEach(c=>{c.m.opacity=.45+o*.45;c.m.color.set(day>.3?(o>.5?'#d5dbe3':'#ffffff'):'#4b5577');c.m.emissiveIntensity=day>.3?.5:.04});
   if(p_mtn){p_mtn[0].color.set(day>.3?'#9aa8c4':'#2e3656').lerp(cB,.35);p_mtn[1].color.set(day>.3?'#f4f6fb':'#8a94b4').lerp(cB,.2)}p_olym.forEach(m=>m.color.set(day>.3?'#86a0c4':'#28304e').lerp(cB,.5));p_snow.forEach(m=>m.color.set(day>.3?'#f4f6fb':'#6a7496').lerp(cB,.3));p_sky.forEach(([m,c])=>m.color.set(day>.3?c:'#2a3152').lerp(cB,day>.3?.68:.4));
   groundMat.color.set('#ffffff').lerp(wetC,WEATHER.kind==='snow'?0:WEATHER.wet*.35);
   const snowing=WEATHER.kind==='snow';const wantWet=WEATHER.kind==='rain'?1:WEATHER.kind==='drizzle'?.5:snowing?.9:0;WEATHER.wet+=(wantWet-WEATHER.wet)*Math.min(1,dt*.15);rain.material.opacity=WEATHER.wet*(snowing?.95:.75);if(rain.material.map!==(snowing?snowTex:rainTex)){rain.material.map=snowing?snowTex:rainTex;rain.material.size=snowing?.55:.9;rain.material.needsUpdate=true}
@@ -1156,12 +1408,41 @@ function updateSky(dt){const d=new Date();if(d.getDate()!==keysDay)buildKeys();c
 // ====================================================================
 //  MOVEMENT + BEHAVIOR LOOP
 // ====================================================================
-let __g=null;const G={x:40,z:44,y:2,vx:0,vz:0,yaw:0,mode:'idle',timer:3,target:null,act:null,startle:0,talk:0,sleep:false,ride:null,thinking:false};
+let __g=null;const G={x:40,z:44,y:2,vx:0,vz:0,yaw:0,mode:'idle',timer:3,target:null,act:null,startle:0,talk:0,sleep:false,ride:null,thinking:false,biking:false,route:null,phoneT:0,loopI:0,yawV:0};
 petsReady=true;syncPets();applyDecor();
 function spotWorld(pid,spot){const p=byId[pid];if(p.spots){const s=p.spots[spot]||p.spots.main;if(s)return toWorld(p,s[0],s[1])}if(pid==='needle')return toWorld(p,0,5.6);return{x:p.dx,z:p.dz}}
 function wSpot(){const a=Math.atan2(G.x-W.x,G.z-W.z);return{x:W.x+Math.sin(a)*2.4,z:W.z+Math.cos(a)*2.4}}
-function startAct(act,why){if(!act)return;const w=act.npc?wSpot():spotWorld(act.p,act.s);G.target={x:w.x+rand(-.5,.5),z:w.z+rand(-.5,.5)};G.act=act;G.mode='travel';G.sleep=false;G.ride=null;if(why)say(why,3.5)}
-function goPoint(x,z,explore){G.target={x,z};G.act=explore?{explore}:null;G.mode='travel';G.sleep=false;G.ride=null}
+function startAct(act,why){if(!act)return;if(S.bike&&BIKE_LOOPS[act.p]&&act.fx!=='bikeride'&&/\bbik(e|ing)|cycl/i.test(act.doing||''))act=Object.assign({},ACTS.find(a=>a.fx==='bikeride'&&a.loop===act.p)||{},act,{fx:'bikeride',loop:act.p,bike:1});
+  const w=act.npc?wSpot():act.fx==='bikeride'&&S.bike&&BIKE_LOOPS[act.loop]?{x:BIKE_LOOPS[act.loop][0][0],z:BIKE_LOOPS[act.loop][0][1]}:spotWorld(act.p,act.s);G.target={x:w.x+rand(-.5,.5),z:w.z+rand(-.5,.5)};G.act=act;G.mode='travel';G.sleep=false;G.ride=null;planRide(act,G.target);if(why)say(why,3.5)}
+function goPoint(x,z,explore){G.target={x,z};G.act=explore?{explore}:null;G.mode='travel';G.sleep=false;G.ride=null;G.route=null;if(G.biking)parkBike()}
+// ---- bike trips: he rides on the roads (right-hand lane) for longer trips, then parks and floats in ----
+const BIKE_LOOPS={park:Array.from({length:24},(_,i)=>{const a=Math.PI+i/24*Math.PI*2;return[96+Math.cos(a)*21,22-Math.sin(a)*17.5]}),promenade:(()=>{const o=[];for(let z=40;z>=-50;z-=10)o.push([-58.4,z]);for(let z=-45;z<=35;z+=10)o.push([-57.6,z]);return o})()};
+let NDist=null,NNext=null;
+function nodeTables(){if(NDist)return;const n=NODES.length;NDist=[];NNext=[];for(let i=0;i<n;i++){NDist.push(Array(n).fill(1e9));NNext.push(Array(n).fill(-1));NDist[i][i]=0;NNext[i][i]=i;for(const [j,w] of NADJ[i]){NDist[i][j]=w;NNext[i][j]=j}}
+  for(let k=0;k<n;k++)for(let i=0;i<n;i++)for(let j=0;j<n;j++)if(NDist[i][k]+NDist[k][j]<NDist[i][j]){NDist[i][j]=NDist[i][k]+NDist[k][j];NNext[i][j]=NNext[i][k]}}
+function segClear(ax,az,bx,bz){const L=Math.hypot(bx-ax,bz-az);for(let t=2;t<L-1;t+=2){const x=ax+(bx-ax)*t/L,z=az+(bz-az)*t/L;if(!walkable(x,z))return false;if(PLACES.some(p=>p.solid&&p.w&&inBuilding(p,x,z)))return false;if(Math.hypot(x-byId.hill.x,z-byId.hill.z)<16||Math.hypot(x-byId.park.x,z-byId.park.z)<17)return false}return true}
+const rnorm=(a,b)=>{const dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1;return[-dz/l,dx/l]};
+function bikePath(ax,az,bx,bz){nodeTables();const n=NODES.length,dA=NODES.map(q=>Math.hypot(q[0]-ax,q[1]-az)),dB=NODES.map(q=>Math.hypot(q[0]-bx,q[1]-bz));let best=1e9,bs=0,bt=0;
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){const c=(dA[i]+dB[j])*2.5+NDist[i][j];if(c<best){best=c;bs=i;bt=j}}
+  if(Math.hypot(bx-ax,bz-az)<(dA[bs]+NDist[bs][bt]+dB[bt])*.75&&segClear(ax,az,bx,bz))return[];
+  const ids=[bs];while(ids[ids.length-1]!==bt&&ids.length<40)ids.push(NNext[ids[ids.length-1]][bt]);
+  // join/leave the road where he actually is, instead of riding back to a corner first
+  const tOn=(P,a,b)=>{const dx=b[0]-a[0],dz=b[1]-a[1];return((P[0]-a[0])*dx+(P[1]-a[1])*dz)/(dx*dx+dz*dz)},onSeg=(t,a,b)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];let pre=null,post=null;
+  if(ids.length>=2){const a=NODES[ids[0]],b=NODES[ids[1]],t=tOn([ax,az],a,b);if(t>0&&t<1){pre=onSeg(t,a,b);ids.shift()}}
+  if(ids.length>=2){const a=NODES[ids[ids.length-2]],b=NODES[ids[ids.length-1]],t=tOn([bx,bz],a,b);if(t>0&&t<1){post=onSeg(t,a,b);ids.pop()}}
+  const L=(pre?[pre]:[]).concat(ids.map(id=>NODES[id]),post?[post]:[]),out=L.map((q,k)=>{const pv=k>0?L[k-1]:[ax,az],nx=k<L.length-1?L[k+1]:[bx,bz];let n1=rnorm(pv,q),n2=rnorm(q,nx);if(L.length>1){if(k===0)n1=n2;if(k===L.length-1)n2=n1}
+    const dd=1+n1[0]*n2[0]+n1[1]*n2[1],f=dd>.3?1.8/dd:1.8;return[q[0]+(n1[0]+n2[0])*f,q[1]+(n1[1]+n2[1])*f]});return out}
+function dismountPt(p,w){if(!p)return{x:w.x,z:w.z};if(p.kind==='home')return{x:34.5,z:54.1,yaw:Math.PI/2};if(p.kind==='park')return{x:p.x-21,z:p.z,yaw:0};if(p.x<-60)return{x:-58.6,z:clamp(p.dz,-95,60),yaw:0};
+  if(p.kind==='hill'){const a=Math.atan2(G.x-p.x,G.z-p.z);return{x:p.x+Math.sin(a)*18,z:p.z+Math.cos(a)*18}}if(p.kind==='needle'){const q=toWorld(p,2.4,9);return{x:q.x,z:q.z,yaw:p.ry+Math.PI/2}}
+  if(p.w){const q=toWorld(p,2.4,p.d/2+4.6);return{x:q.x,z:q.z,yaw:p.ry+Math.PI/2}}return{x:p.dx,z:p.dz}}
+function planRide(act,w){G.route=null;if(!S.bike||!bikeObj||act.npc){if(G.biking)parkBike();return}const loop=act.fx==='bikeride',d=Math.hypot(w.x-G.x,w.z-G.z);
+  if(!loop&&d<(G.biking?22:38)){if(G.biking)parkBike();return}
+  const p=byId[act.p],dm=loop?{x:w.x,z:w.z}:dismountPt(p,w);let m=null;
+  if(!G.biking){const bd=Math.hypot(BK.x-G.x,BK.z-G.z);if(bd<60&&bd<Math.hypot(dm.x-G.x,dm.z-G.z)+10)m=[BK.x,BK.z];else{const ib=PLACES.find(q=>(q.interior||q.kind==='home')&&inBuilding(q,G.x,G.z));m=ib?[ib.dx,ib.dz]:[G.x,G.z];BK.x=m[0];BK.z=m[1];BK.y=bikeY(m[0],m[1]);BK.yaw=G.yaw}}
+  const A=m?{x:m[0],z:m[1]}:{x:G.x,z:G.z};G.route={pts:(m?[m]:[]).concat(bikePath(A.x,A.z,dm.x,dm.z),[[dm.x,dm.z]]),i:0,mount:!!m,loop,yaw:dm.yaw}}
+function mountBike(){if(!bikeObj)return;G.biking=true;BK.y=bikeY(G.x,G.z)}
+function parkBike(yaw){if(!G.biking)return;G.biking=false;BK.x=G.x;BK.z=G.z;BK.yaw=yaw!=null?yaw:G.yaw;BK.y=bikeY(G.x,G.z)}
+function rideY(){return bikeY(G.x,G.z)+bikeObj.userData.seatY*growScale()/1.3+.5*growScale()-.06}
 function exploreToward(p){const a=Math.atan2(p.z-G.z,p.x-G.x)+rand(-.25,.25),d=Math.hypot(p.x-G.x,p.z-G.z)*rand(.75,.95);goPoint(G.x+Math.cos(a)*d,G.z+Math.sin(a)*d,p)}
 function inHome(x,z){const h=byId.home;return Math.abs(x-h.x)<h.w/2+.5&&Math.abs(z-h.z)<h.d/2+.5}
 function altitudeAt(x,z){let h=2;for(const p of PLACES){if(!p.solid)continue;if(p.kind==='needle'){if(Math.hypot(x-p.x,z-p.z)<8)h=Math.max(h,p.deckY+6);continue}if(p.kind==='wheel'){if(Math.hypot(x-p.x,z-p.z)<5)h=Math.max(h,32);continue}if(Math.hypot(x-p.x,z-p.z)<p.r+1.5)h=Math.max(h,(p.h||8)+3.5)}
@@ -1171,26 +1452,28 @@ function nextThing(){if(MIND.on&&MIND.ready()){mindThink(null);return}
   const c=localChoose();if(c.explore){exploreToward(c.explore);say(pick(['what\'s over this way…?','exploring time 🧭','i wonder what\'s past those trees']),3,true)}else startAct(c.act)}
 function applyDecision(d){if(asleepAt(hourAt(Date.now()))&&!/sleep|bed/i.test(d.doing||'')){startAct(ACTS.find(a=>a.fx==='sleep'),d.say||'*yawn* bedtime');return}
   if(d.ask&&KB[d.ask]){const k=KB[d.ask];if(isOpen(byId[k.shop])&&known(byId[k.shop])){startAct({p:k.shop,s:'counter',doing:String(d.doing||'asking '+k.name+' a question').slice(0,40),tags:['people','learning'],need:{social:30,curious:35},fx:'ask',keeper:k.id,question:d.question?String(d.question).slice(0,120):null,mind:true},d.say);return}}
+  if(d.job&&d.place){const j=ACTS.find(a=>a.p===d.place&&a.fx==='job');if(j&&isOpen(byId[j.p])&&known(byId[j.p])){startAct({...j,doing:String(d.doing||j.doing).slice(0,40),mind:true},d.say);return}}
   if(d.place&&byId[d.place]&&!isOpen(byId[d.place])){const c=localChoose();if(c.act)startAct(c.act);else exploreToward(c.explore);return}
   if(d.place==='cinema'&&(d.film||d.spot==='seat'||/movie|film|watch/i.test(d.doing||''))){const f=d.film&&d.film.title?{title:String(d.film.title).slice(0,60),year:+d.film.year||'',by:String(d.film.by||'').slice(0,50),theme:FILM_THEMES.includes(d.film.theme)?d.film.theme:'generic',scenes:(d.film.scenes||[]).slice(0,6).map(x=>String(x).slice(0,80)),facts:(d.film.facts||[]).slice(0,3).map(x=>String(x).slice(0,220))}:null;startAct({p:'cinema',s:'seat',doing:f?('watching "'+f.title+'"').slice(0,40):'watching a movie',tags:['movies','stories'],need:{fun:45,curious:25},fx:'movie',film:f,mind:true},d.say);return}if((d.place==='wendell'||d.place==='neighbor')&&W.visible&&W.busy<=0){const t=ACTS.find(a=>a.npc);startAct({...t,doing:String(d.doing||t.doing).slice(0,40),mind:true},d.say);return}if(d.place==='wendell'||d.place==='neighbor')d.place='home';if(d.explore){const hidden=PLACES.filter(p=>!known(p));if(hidden.length){exploreToward(pick(hidden));if(d.say)say(d.say,3.5);return}}
   const p=byId[d.place];if(!p||!known(p)){const c=localChoose();if(c.act)startAct(c.act);else exploreToward(c.explore);return}
-  const tmpl=ACTS.find(a=>a.p===d.place&&(!d.spot||a.s===d.spot))||{};const h=d.hobby&&hobbyByName(d.hobby);
+  const tmpl=ACTS.find(a=>a.p===d.place&&(!d.spot||a.s===d.spot)&&a.fx!=='job')||{};const h=d.hobby&&hobbyByName(d.hobby);
   const spot=p.spots?(p.spots[d.spot]&&d.spot!=='main'?d.spot:(tmpl.s||(d.place==='home'?'couch':null))):null;
   const sleepy=/sleep|nap|bed/i.test(d.doing||'')&&d.place==='home'&&(asleepAt(hourAt(Date.now()))||S.needs.energy<10);
-  startAct({p:d.place,s:spot,doing:String(d.doing||tmpl.doing||'hanging out').slice(0,40),tags:tmpl.tags||[],need:tmpl.need||{fun:20},fx:d.research?'research':sleepy?'sleep':(['ride','ferry','groceries','petstore','decor','pettreat'].includes(tmpl.fx)?tmpl.fx:null),research:d.research||null,hobby:h?h.name:null,mind:true},d.say)}
+  startAct({p:d.place,s:spot,doing:String(d.doing||tmpl.doing||'hanging out').slice(0,40),tags:tmpl.tags||[],need:tmpl.need||{fun:20},fx:d.research?'research':sleepy?'sleep':(['ride','ferry','groceries','petstore','decor','pettreat','phoneshop','bikeshop'].includes(tmpl.fx)?tmpl.fx:null),research:d.research||null,hobby:h?h.name:null,mind:true},d.say)}
 function setScreen(topic){const t=byId.home.screenTex;if(!t)return;const g=t.image.getContext('2d');g.fillStyle='#2f5f6f';g.fillRect(0,0,128,80);g.fillStyle='#ffffff';g.fillRect(6,6,116,14);g.fillStyle='#26324a';g.font='bold 9px system-ui';g.fillText('🔍 '+String(topic).slice(0,22),9,16);g.fillStyle='#bfe0ef';for(let i=0;i<4;i++)g.fillRect(8,28+i*11,50+Math.random()*60,5);t.needsUpdate=true}
 const MOVIE_LEN=150;let MOVIE=null;
 function keeperAt(pid){return KEEPERS.find(k=>k.shop===pid&&k.obj.visible)}
 let kBub=null;function kSay(k,t,d=3.5){const b=$('#bubble3');b.textContent=t;b.classList.add('show');kBub={k,t:d}}
 function startMovie(a){const recent=S.seen.slice(-5);const f=a.film&&a.film.title?a.film:pick(FILMS.filter(x=>!recent.includes(x.title)))||pick(FILMS);a.film=f;MOVIE={film:f,start:T,len:MOVIE_LEN};setMarquee(f.title)}
-function arrive(){const a=G.act;{const k=keeperAt(a.p);if(k&&a.fx!=='ask'&&Math.random()<.7)setTimeout(()=>kSay(k,pick(k.hi)),600);if(k&&a.fx==='ask'){a.face=k;setTimeout(()=>say(a.question||pick(['can i ask you something?','i was wondering…','quick question!']),3),300)}}
+function arrive(){const a=G.act;if(a.fx==='sleep'&&S.bike&&Math.hypot(BK.x-34.5,BK.z-54.1)>30){BK.x=34.5;BK.z=54.1;BK.yaw=Math.PI/2;BK.y=bikeY(BK.x,BK.z)}if(a.fx==='bikeride'){if(S.bike&&bikeObj&&!G.biking)mountBike();G.loopI=1}
+  {const k=keeperAt(a.p);if(k&&a.fx!=='ask'&&Math.random()<.7)setTimeout(()=>kSay(k,pick(k.hi)),600);if(k&&a.fx==='ask'){a.face=k;setTimeout(()=>say(a.question||pick(['can i ask you something?','i was wondering…','quick question!']),3),300)}}
   if(a.fx==='movie'){startMovie(a);const c=byId.cinema;a.face=toWorld(c,0,c.d/2)}if(a.npc){W.busy=999;if(!S.metW){wSay('oh! hello there, neighbor!',3)}else wSay(pick(['mocha! perfect timing','come sit, come sit','i was hoping you\'d stop by']),3)}if(a.fx==='research'&&a.p==='home')setScreen(a.research||pick(Object.keys(FACTS)));G.mode='activity';G.timer=a.fx==='sleep'?(asleepAt(hourAt(Date.now()))?secondsToWake()+5:20*60):a.fx==='ferry'?FERRY.period*.5:a.fx==='movie'?MOVIE_LEN:rand(40,75);G.sleep=a.fx==='sleep'||/nap|sleep/i.test(a.doing||'');
   if(a.fx==='ride')G.ride='wheel';if(a.fx==='ferry')G.ride='ferry';
   if(!a.mind&&!G.sleep&&!a.npc)say(pick([a.doing+'…','ooh','hm hm hm','okay!']),2.5,true)}
-function finishAct(){const a=G.act;if(a&&a.fx==='movie'){MOVIE=null;drawIdleScreen()}if(a&&a.npc){W.busy=0;W.timer=Math.max(W.timer,20);S.friendW=(S.friendW||0)+1;if(!S.metW){S.metW=true;addEntry('Neighbor','Met my neighbor today! His name is Wendell. He\'s a raccoon in a mustard cardigan and little round glasses. He gave me a bottle cap "as a welcome gift." I think we\'re going to be friends.',"Wendell's House",Date.now()-1,true);toast('🦝 Mocha met his neighbor Wendell')}}G.sleep=false;G.ride=null;G.mode='idle';G.timer=rand(2,4);
-  if(MIND.on&&MIND.ready())mindThink(a);else{if(a.mind)narrateFallback(a);else localOutcome(a);if(Math.random()<.25)thoughtEntry();maybeSelfie(a,byId[a.p].name)}
+function finishAct(){const a=G.act;if(G.biking)parkBike();if(a&&a.fx==='movie'){MOVIE=null;drawIdleScreen()}if(a&&a.npc){W.busy=0;W.timer=Math.max(W.timer,20);S.friendW=(S.friendW||0)+1;if(!S.metW){S.metW=true;addEntry('Neighbor','Met my neighbor today! His name is Wendell. He\'s a raccoon in a mustard cardigan and little round glasses. He gave me a bottle cap "as a welcome gift." I think we\'re going to be friends.',"Wendell's House",Date.now()-1,true);toast('🦝 Mocha met his neighbor Wendell')}}G.sleep=false;G.ride=null;G.mode='idle';G.timer=rand(2,4);
+  if(MIND.on&&MIND.ready())mindThink(a);else{if(a.mind)narrateFallback(a);else localOutcome(a);if(Math.random()<.25)thoughtEntry();maybeSelfie(a,byId[a.p].name,a.bought?.55:0)}
   save()}
-function narrateFallback(a){if(a.fx==='movie'||a.fx==='ask'){localOutcome({...(ACTS.find(x=>x.fx===a.fx&&(a.fx!=='ask'||x.keeper===a.keeper))||{}),film:a.film,keeper:a.keeper,p:a.p,s:a.s,tags:a.tags||[],doing:a.doing});return}if(a.npc){localOutcome(ACTS.find(x=>x.npc));return}const tmpl=ACTS.find(x=>x.p===a.p&&(!a.s||x.s===a.s))||ACTS.find(x=>x.p===a.p);if(tmpl)localOutcome({...tmpl,hobby:a.hobby,fx:a.fx==='research'?'research':tmpl.fx});}
+function narrateFallback(a){if(['job','phoneshop','bikeshop','bikeride'].includes(a.fx)){localOutcome(a);return}if(a.fx==='movie'||a.fx==='ask'){localOutcome({...(ACTS.find(x=>x.fx===a.fx&&(a.fx!=='ask'||x.keeper===a.keeper))||{}),film:a.film,keeper:a.keeper,p:a.p,s:a.s,tags:a.tags||[],doing:a.doing});return}if(a.npc){localOutcome(ACTS.find(x=>x.npc));return}const tmpl=ACTS.find(x=>x.p===a.p&&(!a.s||x.s===a.s)&&x.fx!=='job')||ACTS.find(x=>x.p===a.p&&x.fx!=='job');if(tmpl)localOutcome({...tmpl,hobby:a.hobby,fx:a.fx==='research'?'research':tmpl.fx});}
 function thoughtEntry(){if(Date.now()-(S.lastThought||0)<120e3)return;S.lastThought=Date.now();const n=S.mem.userName||'my visitor',o=[];const ti=topInterests(3);
   if(ti.length)o.push(`Things I like so far: ${ti.map(([k])=>k).join(', ')}. When I moved in I didn't like anything yet. Look at me now.`);
   if(S.mem.facts.length)o.push(`Thinking about ${n}. (${pick(S.mem.facts)}.) I'm keeping that in mind.`);
@@ -1209,35 +1492,43 @@ function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;S.pantry=
   let ty=null;
   if(G.mode==='travel'&&!G.target){G.mode='idle';G.timer=1}
   if(G.mode==='travel'&&G.act&&G.act.npc){if(!W.visible){G.act=null;G.mode='idle';G.timer=1}else{const w=wSpot();G.target.x=w.x;G.target.z=w.z}}
-  if(G.mode==='travel'){const dx=G.target.x-G.x,dz=G.target.z-G.z,d=Math.max(.001,Math.hypot(dx,dz));const sp=(S.needs.energy<15?4:7)*(1+level()*.02);
-    G.vx+=(dx/d*sp-G.vx)*Math.min(1,dt*2.2);G.vz+=(dz/d*sp-G.vz)*Math.min(1,dt*2.2);
+  if(G.mode==='travel'){let sx=G.target.x,sz=G.target.z;const RT=G.route;if(RT){let q=RT.pts[RT.i];const dq=Math.hypot(q[0]-G.x,q[1]-G.z);if(dq<(G.biking?1.9:1.1)||(dq<5&&(q[0]-G.x)*G.vx+(q[1]-G.z)*G.vz<0)){if(RT.i===0&&RT.mount&&!G.biking)mountBike();RT.i++;if(RT.i>=RT.pts.length){G.route=null;if(!RT.loop)parkBike(RT.yaw)}else q=RT.pts[RT.i]}if(G.route){sx=q[0];sz=q[1]}}
+    const dx=sx-G.x,dz=sz-G.z,ds=Math.max(.001,Math.hypot(dx,dz)),d=G.route?99:Math.max(.001,Math.hypot(G.target.x-G.x,G.target.z-G.z));const sp=G.biking?11*(1+level()*.02):(S.needs.energy<15?4:7)*(1+level()*.02),ac=Math.min(1,dt*(G.biking?3.2:2.2));
+    G.vx+=(dx/ds*sp-G.vx)*ac;G.vz+=(dz/ds*sp-G.vz)*ac;
     for(const p of PLACES)if(p.secret&&!known(p)&&Math.hypot(G.x-p.x,G.z-p.z)<(p.r||8)+18){discover(p);const tm=ACTS.find(a=>a.p===p.id);if(tm)startAct(tm,'whoa… what is this place?!');break}
     if(G.mode==='travel'&&d<.7){G.vx*=.3;G.vz*=.3;if(G.act&&G.act.p)arrive();else{if(G.act&&G.act.explore){say(pick(['nothing here… yet','i\'ll keep looking','so quiet out here']),3,true);S.xp+=3}G.act=null;G.mode='idle';G.timer=rand(2,5)}}
     if(G.act&&G.act.p==='needle'&&d<14)ty=byId.needle.deckY+1.2;
-  }else{G.vx*=Math.pow(.03,dt);G.vz*=Math.pow(.03,dt);if(!G.thinking)G.timer-=dt;
+  }else{const loopL=G.mode==='activity'&&G.biking&&G.act&&G.act.fx==='bikeride'&&BIKE_LOOPS[G.act.loop];
+    if(loopL){let q=loopL[G.loopI%loopL.length],dq=Math.hypot(q[0]-G.x,q[1]-G.z);if(dq<2.2||(dq<5&&(q[0]-G.x)*G.vx+(q[1]-G.z)*G.vz<0)){G.loopI=(G.loopI+1)%loopL.length;q=loopL[G.loopI];dq=Math.hypot(q[0]-G.x,q[1]-G.z)}const ac=Math.min(1,dt*3);G.vx+=((q[0]-G.x)/Math.max(.001,dq)*8.5-G.vx)*ac;G.vz+=((q[1]-G.z)/Math.max(.001,dq)*8.5-G.vz)*ac}
+    else{G.vx*=Math.pow(.03,dt);G.vz*=Math.pow(.03,dt)}if(!G.thinking)G.timer-=dt;
     if(G.mode==='activity'){if(G.act.p==='needle')ty=byId.needle.deckY+1.2;if(G.act.fx==='movie')ty=1.75;if(G.timer<=0)finishAct()}
     else if(G.timer<=0&&!G.thinking){if(Math.random()<.2&&!isNight())goPoint(G.x+rand(-8,8),G.z+rand(-8,8));else nextThing()}}
   G.x=clamp(G.x+G.vx*dt,-220,170);G.z=clamp(G.z+G.vz*dt,-150,150);
   if(G.ride==='wheel'){const gd=byId.wheel.gond[0];gd.getWorldPosition(tmpV);G.x=tmpV.x;G.z=tmpV.z;ty=tmpV.y-1.4}
   if(G.ride==='ferry'){G.x=ferry.position.x;G.z=ferry.position.z+3;ty=4.8}
+  if(G.biking&&bikeObj)ty=rideY();
   const sp=Math.hypot(G.vx,G.vz);
   let fc=null;if(G.mode==='activity'&&G.act&&G.act.face){const f=G.act.face;if(f.obj){f.obj.getWorldPosition(tmpV);fc={x:tmpV.x,z:tmpV.z}}else fc=f}
-  const tYaw=sp>.5?Math.atan2(G.vx,G.vz):fc?Math.atan2(fc.x-G.x,fc.z-G.z):Math.atan2(camera.position.x-G.x,camera.position.z-G.z);const df=Math.atan2(Math.sin(tYaw-G.yaw),Math.cos(tYaw-G.yaw));G.yaw+=df*Math.min(1,dt*(sp>.5?5:1.4));
+  const tYaw=sp>.5?Math.atan2(G.vx,G.vz):fc?Math.atan2(fc.x-G.x,fc.z-G.z):Math.atan2(camera.position.x-G.x,camera.position.z-G.z);const df=Math.atan2(Math.sin(tYaw-G.yaw),Math.cos(tYaw-G.yaw)),dyaw=df*Math.min(1,dt*(sp>.5?5:1.4));G.yaw+=dyaw;G.yawV+=(dyaw/Math.max(dt,1e-3)-G.yawV)*Math.min(1,dt*6);
   const tp=G.act&&G.act.p?byId[G.act.p]:null;const goingIn=G.mode==='travel'&&tp&&tp.interior!==undefined&&(tp.interior||tp.kind==='home')&&Math.hypot(G.target.x-G.x,G.target.z-G.z)<(tp.r||8)+10;
   const insideB=PLACES.find(q=>(q.interior||q.kind==='home')&&inBuilding(q,G.x,G.z));
   let alt=ty!=null?ty:(goingIn||(insideB&&(G.mode!=='travel'||tp===insideB)))?2:altitudeAt(G.x,G.z);if(G.sleep&&inHome(G.x,G.z))alt=2.3;
-  G.y+=(alt-G.y)*Math.min(1,dt*(G.ride?8:2));
-  musingT-=dt;if(musingT<=0&&bubbleT<=0&&!G.sleep){musingT=rand(25,45);const m=muse();if(m)say(m,4,true)}
-  const sc=growScale(),bob=Math.sin(t*2.2)*(G.sleep?.06:.16)+(G.startle>0?Math.abs(Math.sin(G.startle*14))*.5:0);
+  G.y+=(alt-G.y)*Math.min(1,dt*(G.ride?8:G.biking?6:2));
+  musingT-=dt;if(musingT<=0&&bubbleT<=0&&!G.sleep){musingT=rand(25,45);const m=muse();if(m){say(m,4,true);if(m.includes('📱'))G.phoneT=3.5}}
+  const sc=growScale(),bob=G.biking?Math.abs(Math.sin(t*9))*.035:Math.sin(t*2.2)*(G.sleep?.06:.16)+(G.startle>0?Math.abs(Math.sin(G.startle*14))*.5:0);
   mocha.position.set(G.x,G.y+bob,G.z);mocha.rotation.y=G.yaw;mocha.scale.setScalar(sc);
-  body.rotation.x=G.sleep?-.5:clamp(sp*.03,0,.3);body.rotation.z=Math.sin(t*1.3)*.05;
+  body.rotation.x=G.sleep?-.5:G.biking?.06:clamp(sp*.03,0,.3);body.rotation.z=Math.sin(t*1.3)*.05;
   const sq=G.startle>0?1+Math.sin(G.startle*25)*.08:1;body.scale.set(sq,2-sq,sq);
   for(let k=0;k<hemIdx.length;k++){const [idx,ang,j]=hemIdx[k],[bx,by,bz]=hemBase[k];const w=Math.sin(ang*6+t*4)*(j?.03:.08);gPos.setXYZ(idx,bx*(1+w*.4),by+w,bz*(1+w*.4))}gPos.needsUpdate=true;
-  arms.forEach((a,i)=>{a.position.y=.2+Math.sin(t*4+i*Math.PI)*.06+(G.talk>0?Math.abs(Math.sin(t*8))*.12:0)});
+  arms.forEach((a,i)=>{const sg=i?1:-1;if(G.biking)a.position.set(sg*.38,-.24+Math.sin(t*9+i*Math.PI)*.015,.56);else if(i&&G.phoneT>0)a.position.set(.6,.2+Math.sin(t*3)*.02,.3);else{a.position.x=sg*.66;a.position.z=.05;a.position.y=.2+Math.sin(t*4+i*Math.PI)*.06+(G.talk>0?Math.abs(Math.sin(t*8))*.12:0)}});
   const blink=(t%4.3)<.13;eyes.forEach(e=>{e.visible=!G.sleep;e.scale.y=blink?.1:G.startle>0?1.3:1});sleepEyes.forEach(e=>e.visible=G.sleep);
   smile.visible=!(G.startle>0||(G.talk>0&&!G.sleep));mouthO.visible=!smile.visible;mouthO.scale.y=G.startle>0?1.4:.6+Math.abs(Math.sin(t*14))*.8;
   const cozy=Object.values(S.needs).reduce((a,b)=>a+b)/5;smile.rotation.z=cozy<25?0:Math.PI;smile.position.y=cozy<25?.49:.53;
   shadowBlob.position.set(G.x,.12,G.z);shadowBlob.scale.setScalar(sc*(1.1-bob*.3));shadowBlob.visible=G.y<3.5&&!G.ride;
+  if(bikeObj){const bs=sc/1.3,u=bikeObj.userData;bikeObj.scale.setScalar(bs);if(G.biking){BK.y+=(bikeY(G.x,G.z)-BK.y)*Math.min(1,dt*8);bikeObj.position.set(G.x,BK.y,G.z);bikeObj.rotation.set(0,G.yaw,clamp(-G.yawV*.1,-.28,.28));const w=sp*dt/(u.r*bs);u.wheels.forEach(q=>q.rotation.x+=w);u.crank.rotation.x+=w*.6}
+    else{bikeObj.position.set(BK.x,BK.y,BK.z);bikeObj.rotation.set(0,BK.yaw,.1)}if(u.light)u.light.material.opacity=nightAmt*.85}
+  if(rideHelm)rideHelm.visible=G.biking;for(const id in worn){const o=worn[id];if(o.userData.slot==='head')o.visible=!(G.biking&&rideHelm)}
+  phone.visible=G.phoneT>0;if(G.phoneT>0){G.phoneT-=dt;if(phone.userData.charm)phone.userData.charm.position.x=.055+Math.sin(t*5)*.012}
   ghostMat.emissiveIntensity=.3+nightAmt*.35;mLight.intensity=.3+nightAmt*.6;
   if(sp>1&&Math.random()<dt*20){wPos[wI*3]=G.x+rand(-.3,.3);wPos[wI*3+1]=G.y+bob-.2;wPos[wI*3+2]=G.z+rand(-.3,.3);wLife[wI]=1;wI=(wI+1)%WN}
   for(let i=0;i<WN;i++)if(wLife[i]>0){wLife[i]-=dt;wPos[i*3+1]+=dt*.6;if(wLife[i]<=0)wPos[i*3+1]=-50}wisps.geometry.attributes.position.needsUpdate=true;
@@ -1251,11 +1542,12 @@ function muse(){const o=[];if(S.pets.length){const pt=pick(S.pets);o.push(pick([
   const ti=topInterests(3);if(ti.length)o.push(`${pick(ti)[0]}… i really like ${pick(ti)[0]}`);if(PLACES.some(p=>!known(p)))o.push('i bet there\'s more city out past the trees…');
   if(WEATHER.kind==='rain')o.push('drip drop drip');if(WEATHER.kind==='clear'&&nightAmt<.5)o.push('the mountain is out today!');
   if(S.needs.energy<20)o.push('*yawn*');if(S.needs.social<20)o.push('kinda lonely… say hi?');if(!S.owned.length&&Math.random()<.4)o.push('i wonder what i\'d look like in a hat');
+  {const w=nextWant();if(w&&S.coins<w.price&&Math.random()<.5)o.push(`saving up for ${w.what}… ${S.coins}/${w.price} 🪙`)}if(S.phone&&Math.random()<.6)o.push(pick(['*checks phone* 📱','no new messages… 📱','my phone is so cute 📱']));if(S.bike&&Math.random()<.5)o.push(`${S.bike.name} and me, ready to roll 🚲`);
   if(MIND.on&&MIND.lastThought)o.push(MIND.lastThought);return o.length?pick(o):null}
 
 const SELF=360,selfieRT=new THREE.WebGLRenderTarget(SELF,SELF),selfieCam=new THREE.PerspectiveCamera(52,1,.3,700);
 let photoCol=null;
-function takeSelfie(caption,place){try{caption=String(caption||'').slice(0,80)||pick(['me 👻','vibes ✨','a ghost out and about']);
+function takeSelfie(caption,place,force){if(!S.phone&&!force)return false;try{caption=String(caption||'').slice(0,80)||pick(['me 👻','vibes ✨','a ghost out and about']);
   const sc=growScale(),fx=Math.sin(G.yaw),fz=Math.cos(G.yaw),rx=Math.cos(G.yaw),rz=-Math.sin(G.yaw),cy=mocha.position.y+.6*sc;
   selfieCam.position.set(G.x+fx*2.4*sc+rx*.8*sc,cy+.45*sc,G.z+fz*2.4*sc+rz*.8*sc);selfieCam.lookAt(G.x-rx*.4*sc,cy-.05*sc,G.z-rz*.4*sc);
   const bk=BEND.value.y;BEND.value.y=10;BENDC.copy(selfieCam.position);selfieCam.updateMatrixWorld();BENDUP.setFromMatrixColumn(selfieCam.matrixWorld,1);renderer.setRenderTarget(selfieRT);bendCull=true;renderer.render(scene,selfieCam);bendCull=false;BEND.value.y=bk;BENDC.copy(camera.position);BENDUP.setFromMatrixColumn(camera.matrixWorld,1);const px=new Uint8Array(SELF*SELF*4);renderer.readRenderTargetPixels(selfieRT,0,0,SELF,SELF,px);renderer.setRenderTarget(null);
@@ -1264,17 +1556,19 @@ function takeSelfie(caption,place){try{caption=String(caption||'').slice(0,80)||
   g.fillStyle='#26324a';g.font='700 17px ui-rounded,system-ui,sans-serif';g.fillText(caption.slice(0,40),14,SELF+40);g.fillStyle='#9a958c';g.font='600 12px system-ui';g.fillText((place||'')+'  ·  '+new Date().toLocaleDateString(),14,SELF+57);
   const url=c.toDataURL('image/jpeg',.72),pid='p'+Date.now().toString(36);PHOTOS[pid]=url;
   S.posts.unshift({id:pid,t:Date.now(),caption,place:place||'',likes:Math.floor(rand(3,30)),liked:false});S.posts.length=Math.min(S.posts.length,30);savePhotos();
-  phone.visible=true;setTimeout(()=>phone.visible=false,2500);say('*click* 📸',2,true);
+  G.phoneT=2.6;say('*click* 📸',2,true);
   addEntry('Posted',`Took a selfie${place?' at '+place:''} and posted it: "${caption}"`,place);toast('📸 Mocha posted a photo');
-  if(photoCol)photoCol.doc(pid).set({img:url,t:Date.now()}).catch(()=>{});if(curTab==='feed')renderFeed()}catch(e){}}
-function maybeSelfie(a,place,boost=0){if(!a||a.fx==='sleep'||G.sleep)return;const ch=.07+Math.max(0,S.interests.photography||0)*.02+boost;if(Math.random()<ch){const opts=[`${place.toLowerCase()} vibes ✨`,`me, a ghost, at ${place} 👻`,WEATHER.kind==='rain'?'rainy day mood 🌧':'out and about ☁️',`${a.doing} 💛`,'just a little guy doing little things'];if(S.pets.length)opts.push(`me and ${S.pets[0].name} 🐾`);takeSelfie(pick(opts),place)}}
+  if(photoCol)photoCol.doc(pid).set({img:url,t:Date.now()}).catch(()=>{});if(curTab==='feed')renderFeed();return true}catch(e){return false}}
+function maybeSelfie(a,place,boost=0){if(!S.phone||!a||a.fx==='sleep'||G.sleep)return;const ch=.07+Math.max(0,S.interests.photography||0)*.02+boost;if(Math.random()<ch){const opts=[`${place.toLowerCase()} vibes ✨`,`me, a ghost, at ${place} 👻`,WEATHER.kind==='rain'?'rainy day mood 🌧':'out and about ☁️',`${a.doing} 💛`,'just a little guy doing little things'];if(S.pets.length)opts.push(`me and ${S.pets[0].name} 🐾`);takeSelfie(pick(opts),place)}}
 function makeCritter(L){const g=new THREE.Group();const fur=lam(L.fur),light=lam(L.light),dark=lam('#2a2a33'),ap=lam(L.apron);const legs=[],arms=[];
   const add=(geo,m,x,y,z,sx=1,sy=1,sz=1,par=g)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;par.add(o);return o};
-  for(const s of [-1,1]){const l=new THREE.Group();l.position.set(s*.15,.4,0);g.add(l);add(new THREE.CylinderGeometry(.08,.07,.38,8),fur,0,-.19,0,1,1,1,l);add(SPH,dark,0,-.39,.05,.09,.05,.13,l);legs.push(l)}
+  for(const s of [-1,1]){const l=new THREE.Group();l.position.set(s*.15,.4,0);g.add(l);add(new THREE.CylinderGeometry(.08,L.octo?.05:.07,.38,8),fur,0,-.19,0,1,1,1,l);if(L.octo){add(SPH,fur,0,-.37,.1,.07,.045,.15,l);add(SPH,light,0,-.4,.1,.05,.02,.1,l)}else add(SPH,dark,0,-.39,.05,.09,.05,.13,l);legs.push(l)}
   add(SPH,fur,0,.8,0,.36,.42,.32);add(new THREE.CylinderGeometry(.34,.38,.62,16,1,true),ap,0,.78,0).material.side=THREE.DoubleSide;add(new THREE.BoxGeometry(.42,.5,.04),ap,0,.72,.33);if(L.patch)add(SPH,lam(L.patch),.16,1.02,-.12,.16,.14,.14);
-  const head=new THREE.Group();head.position.set(0,1.34,.02);g.add(head);const hm=L.frog?fur:fur;add(SPH,hm,0,0,0,.3,L.frog?.24:.28,.28,head);
+  const head=new THREE.Group();head.position.set(0,1.34,.02);g.add(head);const hm=fur;if(L.octo){const mn=add(SPH,hm,0,.1,-.04,.33,.42,.33,head);mn.rotation.x=-.18}else add(SPH,hm,0,0,0,.3,L.frog?.24:.28,.28,head);
   if(L.owl){add(SPH,light,0,-.02,.18,.24,.2,.12,head);for(const s of [-1,1]){add(SPH,lam('#ffffff'),s*.1,.04,.27,.08,.08,.03,head);add(SPH,dark,s*.1,.04,.3,.04,.045,.02,head)}add(new THREE.ConeGeometry(.04,.12,6),lam('#e8a03a'),0,-.07,.31,1,1,1,head).rotation.x=Math.PI/2}
   else if(L.frog){for(const s of [-1,1]){add(SPH,fur,s*.13,.2,.08,.1,.1,.1,head);add(SPH,lam('#ffffff'),s*.13,.23,.15,.06,.06,.04,head);add(SPH,dark,s*.13,.23,.18,.03,.035,.02,head)}add(new THREE.TorusGeometry(.13,.012,6,16,Math.PI),dark,0,-.06,.26,1,1,1,head).rotation.z=Math.PI;add(SPH,light,0,-.1,.12,.22,.12,.16,head)}
+  else if(L.octo){for(const s of [-1,1]){add(SPH,lam('#ffffff'),s*.125,.02,.27,.08,.08,.05,head);add(SPH,dark,s*.128,.02,.31,.05,.03,.02,head);add(SPH,lam('#ffffff'),s*.11,.04,.325,.015,.015,.01,head);add(SPH,lam('#ff6f93'),s*.21,-.09,.22,.055,.03,.02,head)}
+    add(new THREE.TorusGeometry(.05,.012,6,12,Math.PI),dark,0,-.1,.3,1,1,1,head).rotation.z=Math.PI;for(const [x,y,z,r] of [[.13,.3,.12,.05],[-.15,.22,.17,.04],[.02,.42,.02,.045],[-.08,.36,-.14,.035]])add(SPH,light,x,y,z,r,r,r*.6,head)}
   else{for(const s of [-1,1]){add(SPH,dark,s*.1,.05,.255,.035,.045,.02,head);add(SPH,lam('#ffffff'),s*.1+.012,.065,.27,.012,.012,.01,head)}
     if(L.snout==='long'){const sn=add(new THREE.ConeGeometry(.1,.26,10),light,0,-.06,.32,1,1,1,head);sn.rotation.x=Math.PI/2;add(SPH,lam(L.nose||'#2a2a33'),0,-.06,.45,.04,.035,.035,head)}
     else{add(SPH,light,0,-.08,.23,L.big?.15:.12,.1,.1,head);add(SPH,dark,0,-.05,.32,.04,.032,.03,head);if(L.teeth)add(new THREE.BoxGeometry(.07,.06,.02),lam('#fffaf2'),0,-.16,.31,1,1,1,head)}}
@@ -1285,14 +1579,18 @@ function makeCritter(L){const g=new THREE.Group();const fur=lam(L.fur),light=lam
   if(L.ears==='tufts')for(const s of [-1,1]){const e=add(new THREE.ConeGeometry(.05,.16,5),ec,s*.17,.27,0,1,1,1,head);e.rotation.z=-s*.5}
   if(L.ears==='floppy')for(const s of [-1,1]){const e=add(SPH,ec,s*.27,-.03,0,.08,.2,.07,head);e.rotation.z=s*.2}
   if(L.antlers)for(const s of [-1,1]){const a=add(new THREE.CylinderGeometry(.03,.04,.3,6),lam('#c9a77a'),s*.2,.32,0,1,1,1,head);a.rotation.z=-s*.6;const p2=add(new THREE.BoxGeometry(.32,.05,.16),lam('#c9a77a'),s*.36,.46,0,1,1,1,head);p2.rotation.z=-s*.25;for(let k=0;k<3;k++)add(new THREE.CylinderGeometry(.02,.025,.14,5),lam('#c9a77a'),s*(.26+k*.08),.54,0,1,1,1,head)}
+  if(L.ears==='side')for(const s of [-1,1]){const e=add(SPH,ec,s*.29,.09,-.02,.12,.045,.065,head);e.rotation.z=-s*.35;add(SPH,lam('#f2c6c8'),s*.3,.085,.01,.08,.02,.03,head).rotation.z=-s*.35}
+  if(L.horns)for(const s of [-1,1]){const h=add(new THREE.ConeGeometry(.045,.34,8),lam('#3a3a44'),s*.1,.33,-.07,1,1,1,head);h.rotation.x=-.5;h.rotation.z=-s*.14}
+  if(L.beard){const b=add(new THREE.ConeGeometry(.065,.22,8),lam('#ffffff'),0,-.24,.25,1,1,1,head);b.rotation.x=Math.PI+.25}
   if(L.stripes)for(const x of [-.06,.06])add(new THREE.BoxGeometry(.03,.02,.3),dark,x,.27,-.04,1,1,1,head);
   if(L.glasses)for(const s of [-1,1]){const gl=new THREE.Mesh(new THREE.TorusGeometry(.065,.01,6,14),lam('#c9a24a'));gl.position.set(s*.1,L.owl?.04:.05,L.owl?.31:.28);head.add(gl)}
   if(L.beret){const b=add(SPH,lam(L.beret),.03,.24,0,.28,.08,.28,head);b.rotation.z=-.2}
-  for(const s of [-1,1]){const a=new THREE.Group();a.position.set(s*.36,1.02,0);g.add(a);add(new THREE.CylinderGeometry(.07,.06,.4,8),fur,0,-.18,0,1,1,1,a);add(SPH,L.frog?fur:dark,0,-.4,0,.06,.06,.06,a);arms.push(a)}
+  for(const s of [-1,1]){const a=new THREE.Group();a.position.set(s*.36,1.02,0);g.add(a);add(new THREE.CylinderGeometry(.07,.06,.4,8),fur,0,-.18,0,1,1,1,a);add(SPH,(L.frog||L.octo)?fur:dark,0,-.4,0,.06,.06,.06,a);arms.push(a)}
+  const tent=[];if(L.octo)for(const a0 of [.75,2.35,3.95,5.5]){const tg=new THREE.Group();tg.position.set(0,.5,0);tg.rotation.order='YXZ';tg.rotation.y=a0;g.add(tg);for(let k=0;k<4;k++){const r=.075-k*.013;add(SPH,fur,0,-.06-k*.13+(k===3?.08:0),.3+k*.1,r,r,r*1.25,tg)}add(SPH,light,0,-.36,.5,.03,.03,.03,tg);tent.push(tg)}
   if(L.tail==='bushy'){const t=add(new THREE.ConeGeometry(.16,.6,10),fur,0,.55,-.38);t.rotation.x=-1.1;add(SPH,light,0,.75,-.62,.09,.09,.09)}
   if(L.tail==='flat'){const t=add(new THREE.BoxGeometry(.3,.06,.5),lam('#4a3a2a'),0,.3,-.45);t.rotation.x=.3}
   if(L.tail==='puff')add(SPH,lam('#ffffff'),0,.55,-.33,.1,.1,.1);if(L.tail==='long'){const t=add(new THREE.CylinderGeometry(.03,.05,.6,6),fur,0,.45,-.45);t.rotation.x=-1}if(L.tail==='short'){const t=add(new THREE.CylinderGeometry(.03,.04,.25,6),fur,0,.7,-.34);t.rotation.x=-.6}
-  g.userData={legs,arms,head};g.scale.setScalar(1.2);return g}
+  [g].concat(g.children.filter(c=>c.isGroup)).forEach(x=>bake(x,true));g.userData={legs,arms,head,tent};g.scale.setScalar(1.2);return g}
 function makeRaccoon(){const g=new THREE.Group();const fur=lam('#8d8d96'),light=lam('#ebe7df'),dark=lam('#2a2a33'),card=lam('#d9a53a');const legs=[],arms=[];
   const add=(geo,m,x,y,z,sx=1,sy=1,sz=1,par=g)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;par.add(o);return o};
   for(const s of [-1,1]){const l=new THREE.Group();l.position.set(s*.16,.4,0);g.add(l);add(new THREE.CylinderGeometry(.08,.07,.36,8),fur,0,-.18,0,1,1,1,l);add(SPH,dark,0,-.38,.05,.1,.06,.14,l);legs.push(l)}
@@ -1335,7 +1633,7 @@ function updateW(dt,t){wGreetT-=dt;
 //  CLAUDE BRAIN (optional): Mocha thinks for himself
 // ====================================================================
 const MIND={api:null,on:false,busy:false,last:0,backoff:0,lastThought:'',ready(){return!!this.api&&!this.busy&&Date.now()>this.backoff&&Date.now()-this.last>({chatty:35e3,normal:75e3,gentle:180e3}[SET.pace]||75e3)&&document.visibilityState==='visible'}};
-function placeList(){const h=hourAt(Date.now());return PLACES.filter(known).map(p=>{const acts=ACTS.filter(a=>a.p===p.id&&a.fx!=='ask').map(a=>a.doing);const k=KEEPERS.find(x=>x.shop===p.id);const hr=p.hours?(isOpen(p,h)?` [OPEN ${fmtH(p.hours[0])}–${fmtH(p.hours[1])}`:` [CLOSED now, opens ${fmtH(p.hours[0])}`)+(k?`; run by ${k.name} the ${k.species} (id "${k.id}"), who knows about ${k.topic}`:'')+']':'';const sp=p.spots&&p.id!=='home'?' [spots inside: '+Object.keys(p.spots).filter(k=>k!=='main').join(', ')+']':'';return`${p.id}: ${p.name}${hr}${p.id==='home'?' (his gothic house; spots: kitchen, desk [his computer — he can look up anything], couch [bookshelf, record player], bed, closet [wardrobe], bath, petbed)':sp+(acts.length?' — e.g. '+acts.slice(0,4).join(', '):'')}`}).join('\n')}
+function placeList(){const h=hourAt(Date.now());return PLACES.filter(known).map(p=>{const acts=ACTS.filter(a=>a.p===p.id&&a.fx!=='ask'&&a.fx!=='job'&&(!a.bike||S.bike)).map(a=>a.doing),job=ACTS.find(a=>a.p===p.id&&a.fx==='job');const k=KEEPERS.find(x=>x.shop===p.id);const hr=p.hours?(isOpen(p,h)?` [OPEN ${fmtH(p.hours[0])}–${fmtH(p.hours[1])}`:` [CLOSED now, opens ${fmtH(p.hours[0])}`)+(k?`; run by ${k.name} the ${k.species} (id "${k.id}"), who knows about ${k.topic}`:'')+']':'';const sp=p.spots&&p.id!=='home'?' [spots inside: '+Object.keys(p.spots).filter(k=>k!=='main').join(', ')+']':'';return`${p.id}: ${p.name}${hr}${p.id==='home'?' (his gothic house; spots: kitchen, desk [his computer — he can look up anything], couch [bookshelf, record player], bed, closet [wardrobe], bath, petbed)':sp+(acts.length?' — e.g. '+acts.slice(0,4).join(', '):'')+(job&&isOpen(p,h)?` [odd job here: ${job.doing}, pays about ${job.pay[0]}-${job.pay[1]} coins; to take it set next.job true]`:'')}`}).join('\n')}
 function context(){const d=new Date();const ti=Object.entries(S.interests).sort((a,b)=>b[1]-a[1]);
   return`Time: ${d.toLocaleDateString([],{weekday:'long'})} ${d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}. Weather: ${WEATHER.kind}. Season: ${SEASON_KEY}.
 Mocha: a small white ghost, level ${level()}, day ${ageDays()+1} living in the city. Personality: ${traitWords().join(', ')}.
@@ -1350,7 +1648,10 @@ His friend (the person watching): ${S.mem.userName||'name unknown'}${S.mem.facts
 Recent diary (newest first):\n${S.diary.slice(0,8).map(e=>'- '+e.text).join('\n')}
 Home: a gothic Victorian house. Fridge/pantry ${Math.round(S.pantry)}% stocked. Home items he bought: ${S.decor.map(d=>DECOR[d]).join(', ')||'none yet'}.
 Today: sunrise ${fmtH(SUN.rise)}, sunset ${fmtH(SUN.set)}. His own sleep schedule: bed around ${fmtH(sched().bed)}, up around ${fmtH(sched().wake)} — he lives a normal day: one night's sleep, no naps unless exhausted.
-His paintings: ${S.paintings.slice(0,6).map(x=>`"${x.title}" (${x.where.startsWith('gift:')?'given to '+x.where.slice(5):x.where})`).join(', ')||'none yet'}. Coins: ${S.coins}.
+His paintings: ${S.paintings.slice(0,6).map(x=>`"${x.title}" (${x.where.startsWith('gift:')?'given to '+x.where.slice(5):x.where})`).join(', ')||'none yet'}.
+Money: ${S.coins} coins. He earns coins with odd jobs at open shops and by selling paintings, and he never spends more than he has.${(()=>{const w=nextWant();return w?` He's been thinking about ${w.what} (${w.price} coins).`:''})()}
+His things: phone: ${S.phone?phoneDesc():'none yet (he needs one to take selfies)'}; gadgets: ${S.gadgets.map(g=>g.k).join(', ')||'none'}; bike: ${S.bike?bikeDesc()+`, ridden ${S.bike.rides||0} times (he rides it automatically on longer trips)`:'none yet'}${hasHelmet()?'; he has a bike helmet':''}.
+Prices: Cascade Mobile (id "phones") sells phones (${Object.entries(PHONES).map(([k,v])=>k+' '+v.price).join(', ')}), case 15, charm 6, earbuds 30, speaker 35. Spoke & Sprocket (id "bikes") sells bikes (${Object.entries(BIKES).map(([k,v])=>k+' = '+v.label+' '+v.price).join(', ')}), helmet 22, bell 6, lights 12.
 Shopkeepers he's chatted with: ${Object.entries(S.know).map(([k,v])=>KB[k]?KB[k].name+' ×'+v:'').filter(Boolean).join(', ')||'none yet'}.
 Neighbor: Wendell, a gentle raccoon in a mustard cardigan and round glasses who lives next door${S.metW?` (they've hung out ${S.friendW||0} times)`:' (they haven\'t met yet)'}. Right now he's ${W.visible?W.doing+' at '+wWhere():'inside his house'}. To visit him use place "wendell".
 Pets: ${S.pets.map(p=>`${p.name} the ${PET_TYPES[p.species].label}`).join(', ')||'none'}. (The pet store has a little bat, a miniature red poodle, a hedgehog, a black cat and a baby crow.)
@@ -1360,7 +1661,7 @@ function parseJSON(txt){if(!txt)return null;const s=txt.indexOf('{'),e=txt.lastI
 async function ask(prompt,opts){const r=await Promise.race([MIND.api(prompt,opts),new Promise((_,rej)=>setTimeout(()=>rej({code:'timeout'}),40000))]);return parseJSON(r&&r.text)}
 function mindError(e){const c=e&&e.code;if(c==='not_granted'){MIND.on=false;MIND.api=null;S.mind=false;updateMindBtn()}else if(c==='rate_limited')MIND.backoff=Date.now()+10*60e3;else MIND.backoff=Date.now()+90e3}
 async function mindThink(finished){MIND.busy=true;MIND.last=Date.now();G.thinking=true;const pname=finished&&finished.p?byId[finished.p].name:'';
-  const did=finished?`He just finished: "${finished.doing}" at ${pname}${finished.fx==='movie'&&finished.film?` (he watched the real film "${finished.film.title}"${finished.film.year?' ('+finished.film.year+')':''})`:''}${finished.fx==='ask'&&KB[finished.keeper]?` (he asked ${KB[finished.keeper].name} the ${KB[finished.keeper].species} a question${finished.question?': "'+finished.question+'"':''} — include "asked" with a true answer about ${KB[finished.keeper].topic})`:''}${finished.p==='studio'&&/paint/i.test(finished.doing||'')?' (he made a painting — include "painting" and "painting_choice")':''}${finished.s?' ('+finished.s+')':''}${finished.hobby?` (practicing his hobby "${finished.hobby}")`:''}${finished.research?`. He was looking up "${finished.research}" on a computer — include "learned".`:finished.fx==='research'?'. He was looking something up on a computer — choose a topic he is curious about and include "learned".':''}.`:`He is just waking up his mind${S.diary.length<3?' — he just moved in and has no interests yet':''}. Plan what he does next.`;
+  const did=finished?`He just finished: "${finished.doing}" at ${pname}${finished.fx==='movie'&&finished.film?` (he watched the real film "${finished.film.title}"${finished.film.year?' ('+finished.film.year+')':''})`:''}${finished.fx==='ask'&&KB[finished.keeper]?` (he asked ${KB[finished.keeper].name} the ${KB[finished.keeper].species} a question${finished.question?': "'+finished.question+'"':''} — include "asked" with a true answer about ${KB[finished.keeper].topic})`:''}${finished.p==='studio'&&/paint/i.test(finished.doing||'')?' (he made a painting — include "painting", "painting_choice" and "post_painting")':''}${finished.fx==='job'?' (an odd job; the coins he earned are paid automatically)':''}${finished.fx==='phoneshop'||finished.fx==='bikeshop'?` (he was shopping with ${S.coins} coins: include "buy" only if he decides to buy something sold there that he can afford; most visits he buys nothing)`:''}${finished.fx==='bikeride'?' (he was riding his bike)':''}${finished.s?' ('+finished.s+')':''}${finished.hobby?` (practicing his hobby "${finished.hobby}")`:''}${finished.research?`. He was looking up "${finished.research}" on a computer — include "learned".`:finished.fx==='research'?'. He was looking something up on a computer — choose a topic he is curious about and include "learned".':''}.`:`He is just waking up his mind${S.diary.length<3?' — he just moved in and has no interests yet':''}. Plan what he does next.`;
   const prompt=`You are the inner mind of Mocha, a small, gentle ghost living in a cozy rainy city inspired by Seattle. Nobody tells Mocha what to like: his interests, hobbies, style and goals emerge from his own experiences and personality. You decide what he does, how it went, and what's next. Be specific, varied, warm and a little funny. Let his tastes evolve naturally: he can love things, get bored of things, start new hobbies, and decide he dislikes things.
 
 ${context()}
@@ -1374,21 +1675,23 @@ Reply with ONLY a JSON object:
  "tags": ["0-3 short lowercase interest tags this touched, e.g. coffee, jazz, ferries, birds (invent freely)"],
  "learned": null or {"topic":"...","facts":["2-3 true, short, kid-friendly facts he learned"]},
  "treasure": null or "a small object he found (rarely)",
- "acquire": null or {"item": one of [${Object.keys(WEAR).join(', ')}], "color":"#rrggbb", "name":"short description like 'mustard beanie'"} (only now and then, and only where it makes sense: thrift shop, record store, bookstore, studio, market, café, or something he made),
+ "acquire": null or {"item": one of [${Object.keys(WEAR).filter(k=>k!=='helmet').join(', ')}], "color":"#rrggbb", "name":"short description like 'mustard beanie'"} (only now and then, and only where it makes sense: thrift shop, record store, bookstore, studio, market, café, or something he made),
  "wear": null or a list of owned ids (or the new item) he chooses to wear now; an empty list means he goes plain,
  "new_hobby": null or {"name":"...","place":"place id","spot":"home room or null","doing":"2-4 words"} (only when an interest has clearly grown),
  "goal": null or {"text":"a goal he sets for himself","target":1-5} (only if he has no goal),
  "goal_progress": 0 or 1,
  "shop": null or {"groceries": true or false, "home_item": one of [${Object.keys(DECOR).join(', ')}] or null} (only if he was just at the grocery store, or the pet store for a petbed),
+ "buy": null or {"item": one of [phone, case, charm, earbuds, speaker] (sold at Cascade Mobile) or [bike, helmet, bell, lights] (sold at Spoke & Sprocket), "model": "phone model or bike type (city, cruiser, bmx)", "color":"#rrggbb", "pattern": "for a case, one of [${CASE_PATS.join(', ')}]", "charm": "one of [${Object.keys(CHARMS).join(', ')}]", "name": "a name for a new bike"} (only if he was just in the store that sells it and has enough coins),
  "adopt": null or {"species": one of [bat, poodle, hedgehog, cat, crow], "name": "a name he picks"} (only if he was just at the pet store and truly wants a pet; he never has to, and it's a big decision),
  "asked": null or {"question":"what he asked","answer":"2-3 true, kid-friendly sentences in the shopkeeper's voice"} (only if he just asked a shopkeeper something),
  "painting": null or {"title":"...","subject":"what he painted"} (only if he was just painting at the studio),
  "painting_choice": null or "hang" | "sell" | "give:<shopkeeper id or wendell>" | "keep",
- "selfie": null or {"caption":"a short caption he posts with a selfie, lowercase, maybe an emoji"} (only sometimes, when a moment feels worth sharing),
+ "post_painting": null or {"caption":"a short caption, lowercase, maybe an emoji"} (only if he just made a painting and is proud enough to post it to his feed; his choice),
+ "selfie": ${S.phone?'null or {"caption":"a short caption he posts with a selfie, lowercase, maybe an emoji"} (only sometimes, when a moment feels worth sharing)':'null (he has no phone yet, so no selfies)'},
  "thought": "a short private thought (max 10 words, lowercase)",
- "next": {"place":"a place id from the list, or \\"explore\\"","spot":"one of that place's spots (see the list), or null","doing":"2-5 words, present tense","say":"what he says out loud, max 8 words, lowercase","hobby":"one of his hobby names if he's practicing it, else null","research":"a topic if he'll look something up on a computer (home desk or library), else null","ask":"a shopkeeper id if he goes to ask them something (their shop must be open), else null","question":"his question, if ask is set","film":null or {"title":"a REAL film that exists (classic films and real documentaries are great)","year":1900,"by":"director","theme":"one of '+FILM_THEMES.join('/')+'","scenes":["4-5 short kid-friendly scene captions"],"facts":["2-3 true facts about the film"]} (only if he goes to watch a movie at the cinema)}
+ "next": {"place":"a place id from the list, or \\"explore\\"","spot":"one of that place's spots (see the list), or null","doing":"2-5 words, present tense","say":"what he says out loud, max 8 words, lowercase","hobby":"one of his hobby names if he's practicing it, else null","research":"a topic if he'll look something up on a computer (home desk or library), else null","ask":"a shopkeeper id if he goes to ask them something (their shop must be open), else null","job":"true if he goes there to help out for coins (an odd job listed for that place), else false","question":"his question, if ask is set","film":null or {"title":"a REAL film that exists (classic films and real documentaries are great)","year":1900,"by":"director","theme":"one of '+FILM_THEMES.join('/')+'","scenes":["4-5 short kid-friendly scene captions"],"facts":["2-3 true facts about the film"]} (only if he goes to watch a movie at the cinema)}
 }
-Rules: closed shops are closed (no going in). When it's his bedtime he goes home to sleep for the night. He can ask shopkeepers about their specialty. He cooks with food from his pantry, so when it's low he may go grocery shopping. If he has a pet, it comes everywhere with him and he cares for it. Respect his needs (he sleeps at home when it's late or energy is low; snacks when hungry; seeks company when lonely), his personality and what he's enjoyed, but also let him try new things. Don't repeat recent activities. Keep it kind and family-friendly.`;
+Rules: closed shops are closed (no going in). When it's his bedtime he goes home to sleep for the night. He can ask shopkeepers about their specialty. He can help out at shops for coins (odd jobs) and buys bigger things (a phone, a bike) only when he really wants them and can afford them. He cooks with food from his pantry, so when it's low he may go grocery shopping. If he has a pet, it comes everywhere with him and he cares for it. Respect his needs (he sleeps at home when it's late or energy is low; snacks when hungry; seeks company when lonely), his personality and what he's enjoyed, but also let him try new things. Don't repeat recent activities. Keep it kind and family-friendly.`;
   try{const r=await ask(prompt,{modelTier:'quick',cache:false});G.thinking=false;MIND.busy=false;if(!r)throw{code:'bad_json'};applyMind(r,finished)}
   catch(e){G.thinking=false;MIND.busy=false;mindError(e);if(finished){if(finished.mind)narrateFallback(finished);else localOutcome(finished)}const c=localChoose();if(c.act)startAct(c.act);else exploreToward(c.explore)}}
 function applyMind(r,finished){const t=Date.now();const pname=finished&&finished.p?byId[finished.p].name:'';
@@ -1398,11 +1701,14 @@ function applyMind(r,finished){const t=Date.now();const pname=finished&&finished
     if(finished.hobby){practiceHobby(finished.hobby,t);goalCheck('hobby',finished.hobby,t)}
     S.recent.unshift(finished.p+(finished.s?'.'+finished.s:''));S.recent.length=Math.min(S.recent.length,6)}
   if(finished&&r.shop&&typeof r.shop==='object'){if(r.shop.groceries&&finished.p==='grocery')S.pantry=100;if(r.shop.home_item&&DECOR[r.shop.home_item]&&(finished.p==='grocery'||(finished.p==='petstore'&&r.shop.home_item==='petbed')))buyDecor(r.shop.home_item,t,pname)}
+  if(finished&&finished.fx==='job')payJob(finished,t,true,pname,!!r.diary);
+  if(finished&&finished.fx==='bikeride'&&S.bike)S.bike.rides=(S.bike.rides||0)+1;
+  if(finished&&(finished.p==='phones'||finished.p==='bikes')){if(r.buy&&typeof r.buy==='object')mindBuy(r.buy,finished,t,pname);else if(r.buy===undefined&&(finished.fx==='phoneshop'||finished.fx==='bikeshop'))shopVisit(finished,t,true,pname,true)}
   if(finished&&r.adopt&&finished.p==='petstore')adoptPet(r.adopt.species,r.adopt.name,t,pname);
   if(finished&&finished.p==='home'&&finished.s==='kitchen'&&/cook|bak/i.test(finished.doing||''))S.pantry=Math.max(0,S.pantry-25);
   if(r.learned&&r.learned.topic&&Array.isArray(r.learned.facts)){addLearned(r.learned.topic,r.learned.facts,t);toast(`📓 Mocha learned about ${String(r.learned.topic).slice(0,40)}`);goalCheck('research',null,t)}
   if(r.treasure&&typeof r.treasure==='string'&&S.items.length<60){const tn=r.treasure.slice(0,60);S.items.push({name:tn,from:pname,t});addEntry('Treasure',`Found ${tn}${pname?' at '+pname:''}. Into the collection it goes.`,pname,t+1);toast(`💎 Mocha found ${tn.slice(0,40)}`);goalCheck('treasure',null,t)}
-  let newIt=null;if(r.acquire&&WEAR[r.acquire.item]){newIt=acquire(r.acquire.item,r.acquire.color,String(r.acquire.name||'').slice(0,40)||null,pname,t);if(newIt){if(!S.favColor)S.favColor=newIt.color;addEntry('Style',`Got a ${newIt.name}${pname?' at '+pname:''}. I picked it out myself.`,pname,t+1);toast(`🧣 Mocha picked out a ${newIt.name}`)}}
+  let newIt=null;if(r.acquire&&WEAR[r.acquire.item]&&r.acquire.item!=='helmet'){newIt=acquire(r.acquire.item,r.acquire.color,String(r.acquire.name||'').slice(0,40)||null,pname,t);if(newIt){if(!S.favColor)S.favColor=newIt.color;addEntry('Style',`Got a ${newIt.name}${pname?' at '+pname:''}. I picked it out myself.`,pname,t+1);toast(`🧣 Mocha picked out a ${newIt.name}`)}}
   if(Array.isArray(r.wear)){const ids=[];r.wear.forEach(w=>{const s=String(w).toLowerCase();const o=S.owned.find(x=>x.id.toLowerCase()===s)||S.owned.find(x=>x.name.toLowerCase()===s)||(newIt&&(s===newIt.item||s===newIt.name.toLowerCase())?newIt:null)||S.owned.find(x=>x.item===s);if(o&&!ids.includes(o.id))ids.push(o.id)});
     const before=S.wearing.slice().sort().join();S.wearing=[];ids.forEach(id=>wearItem(id));applyOutfit();if(S.wearing.slice().sort().join()!==before&&!newIt){const n=S.wearing.map(id=>S.owned.find(o=>o.id===id).name);addEntry('Style',n.length?`Changed my outfit: ${n.join(', ')}.`:'Took everything off. Back to plain white. Feels honest.','',t+2)}}
   else if(newIt)wearItem(newIt.id);
@@ -1413,8 +1719,8 @@ function applyMind(r,finished){const t=Date.now();const pname=finished&&finished
   if(finished&&r.selfie&&r.selfie.caption&&finished.fx!=='sleep')takeSelfie(r.selfie.caption,pname);
   if(finished&&finished.fx==='movie'){const f=finished.film||{};if(f.title){S.seen.push(f.title);S.seen=S.seen.slice(-12);if(Array.isArray(f.facts)&&f.facts.length)addLearned(`${String(f.title).slice(0,40)}${f.year?' ('+f.year+')':''}`,f.facts,t)}}
   if(finished&&finished.fx==='ask'&&r.asked&&r.asked.answer){const k=KB[finished.keeper];if(k){S.know[k.id]=(S.know[k.id]||0)+1;addLearned(`${String(r.asked.question||k.topic).slice(0,50)} (asked ${k.name})`,[String(r.asked.answer).slice(0,300)],t);if(k.obj.visible)kSay(k,String(r.asked.answer).slice(0,140),6);if(!r.diary)addEntry('Asked',`Asked ${k.name}: "${String(r.asked.question||'').slice(0,80)}" ${k.name} said: "${String(r.asked.answer).slice(0,200)}"`,pname,t)}}
-  if(finished&&finished.p==='studio'&&r.painting&&r.painting.title)makePainting(r.painting.subject||r.painting.title,r.painting.title,t,r.painting_choice==='hang'?'hang':r.painting_choice||null);
-  const n=r.next||{};if(n.place==='explore')applyDecision({explore:true,say:n.say});else applyDecision({place:n.place,spot:n.spot,doing:n.doing,say:n.say,hobby:n.hobby,research:n.research,ask:n.ask,question:n.question,film:n.film});
+  if(finished&&finished.p==='studio'&&r.painting&&r.painting.title){const ptM=makePainting(String(r.painting.subject||r.painting.title).slice(0,60),String(r.painting.title).slice(0,50),t,r.painting_choice==='hang'?'hang':r.painting_choice||null);const pp=r.post_painting;if(pp&&typeof pp==='object'&&pp.caption)postPainting(ptM,String(pp.caption).slice(0,80),t);else if(pp===undefined)maybePostPainting(ptM,clamp(+r.enjoyed||0,-1,1),t)}
+  const n=r.next||{};if(n.place==='explore')applyDecision({explore:true,say:n.say});else applyDecision({place:n.place,spot:n.spot,doing:n.doing,say:n.say,hobby:n.hobby,research:n.research,ask:n.ask,question:n.question,film:n.film,job:n.job===true||n.job==='true'});
   save()}
 async function mindChat(text){const prompt=`You are Mocha, a small, gentle ghost who lives in a cozy, rainy, Seattle-like city. You have your own developing personality and tastes (below). Talk with your friend warmly and briefly, in lowercase, cute but genuine, 1 to 3 short sentences. Have your own opinions based on your interests. If they suggest something, you can share your opinion, but you always decide for yourself what you do and when.
 
@@ -1429,7 +1735,12 @@ Reply with ONLY JSON: {"reply":"...","friend_name":null or their name if they to
 // ====================================================================
 //  CAMERA + INPUT
 // ====================================================================
-const camS={yaw:.35,pitch:.6,dist:24,tx:G.x,ty:G.y,tz:G.z,mode:'follow',fly:null};const KEYS_DOWN={};const tmpV=new THREE.Vector3();
+const camS={yaw:.35,pitch:.6,dist:24,tx:G.x,ty:G.y,tz:G.z,mode:'follow',fly:null};
+// zoom: + / − buttons (tap = step, hold = keeps zooming smoothly), pinch and wheel all share these limits
+const ZM={dir:0,tgt:null,t0:0};function zoomLim(){return camS.mode==='walk'?[3.5,30]:[6,80]}
+function zoomBy(f){const [a,b]=zoomLim();ZM.tgt=clamp((ZM.tgt==null?camS.dist:ZM.tgt)*f,a,b);try{hideHint()}catch(e){}}
+function zoomTick(dt){if(ZM.dir&&performance.now()-ZM.t0>260){const [a,b]=zoomLim();ZM.tgt=clamp((ZM.tgt==null?camS.dist:ZM.tgt)*Math.exp(ZM.dir*dt*1.5),a,b)}
+  if(ZM.tgt!=null){camS.dist+=(ZM.tgt-camS.dist)*Math.min(1,dt*9);if(!ZM.dir&&Math.abs(ZM.tgt-camS.dist)<.01*ZM.tgt){camS.dist=ZM.tgt;ZM.tgt=null}}}const KEYS_DOWN={};const tmpV=new THREE.Vector3();
 const YOU={x:40,z:57,yaw:Math.PI,moving:0};try{const y=JSON.parse(localStorage.getItem('mocha-you')||'null');if(y&&isFinite(y.x))Object.assign(YOU,{x:y.x,z:y.z,yaw:y.yaw||0})}catch(e){}
 setInterval(()=>{try{localStorage.setItem('mocha-you',JSON.stringify({x:YOU.x,z:YOU.z,yaw:YOU.yaw}))}catch(e){}},4000);
 function makeVisitor(){const g=new THREE.Group();const coat=lam('#f2c14e'),dark=lam('#2f3a52'),boot=lam('#3a2a22');const legs=[],arms=[];
@@ -1443,7 +1754,7 @@ function makeVisitor(){const g=new THREE.Group();const coat=lam('#f2c14e'),dark=
   g.traverse(o=>{if(o.isMesh)o.castShadow=true});g.userData={legs,arms};g.scale.setScalar(1.2);return g}
 const visitor=makeVisitor();scene.add(visitor);visitor.visible=false;
 function animateVisitor(t,mv){const u=visitor.userData,ph=t*10;u.legs.forEach((l,i)=>l.rotation.x=mv?Math.sin(ph+i*Math.PI)*.75*mv:0);u.arms.forEach((a,i)=>a.rotation.x=mv?-Math.sin(ph+i*Math.PI)*.5*mv:Math.sin(t*1.5+i)*.04)}
-function setCamMode(m){camS.mode=m;document.body.classList.toggle('walk',m==='walk');const b=$('#modeBtn');if(b)b.textContent=m==='walk'?'👻 watch Mocha':'🚶 walk around';visitor.visible=m==='walk';
+function setCamMode(m){camS.mode=m;ZM.tgt=null;ZM.dir=0;document.body.classList.toggle('walk',m==='walk');const b=$('#modeBtn');if(b)b.textContent=m==='walk'?'👻 watch Mocha':'🚶 walk around';visitor.visible=m==='walk';
   if(m==='walk'){camS.dist=7;camS.pitch=.3;camS.yaw=YOU.yaw+Math.PI;camS.tx=YOU.x;camS.tz=YOU.z}else{document.body.classList.remove('chatOpen');camS.dist=Math.max(camS.dist,14)}$('#edge').style.display='none';$('#near').style.display='none'}
 const JOY={x:0,y:0},LOOK={x:0,y:0};let lastLook=-9;
 const PIERS=[[-101,-61,-37,-13],[-99,-61,9,19],[-89,-61,41,51]];
@@ -1457,7 +1768,7 @@ function updateYou(dt,t){const k=KEYS_DOWN;let jx=JOY.x+((k.d||k.arrowright)?1:0
   if(LOOK.x||LOOK.y){camS.yaw-=LOOK.x*Math.abs(LOOK.x)*dt*2.8;camS.pitch=clamp(camS.pitch+LOOK.y*Math.abs(LOOK.y)*dt*1.4,.06,1.2);lastLook=t}
   if(k.q){camS.yaw+=dt*1.8;lastLook=t}if(k.e){camS.yaw-=dt*1.8;lastLook=t}
   visitor.position.set(YOU.x,floorAt(YOU.x,YOU.z)+(YOU.moving?Math.abs(Math.sin(t*10))*.07:0),YOU.z);visitor.rotation.y=YOU.yaw;animateVisitor(t,YOU.moving)}
-function placeCam(dt){if(camS.mode==='walk'){camS.tx+=(YOU.x-camS.tx)*Math.min(1,dt*8);camS.tz+=(YOU.z-camS.tz)*Math.min(1,dt*8);camS.ty+=(floorAt(YOU.x,YOU.z)+1.2-camS.ty)*Math.min(1,dt*4)}
+function placeCam(dt){zoomTick(dt);if(camS.mode==='walk'){camS.tx+=(YOU.x-camS.tx)*Math.min(1,dt*8);camS.tz+=(YOU.z-camS.tz)*Math.min(1,dt*8);camS.ty+=(floorAt(YOU.x,YOU.z)+1.2-camS.ty)*Math.min(1,dt*4)}
   else{camS.tx+=(G.x-camS.tx)*Math.min(1,dt*2.5);camS.ty+=(G.y-camS.ty)*Math.min(1,dt*2);camS.tz+=(G.z-camS.tz)*Math.min(1,dt*2.5)}
   const cp=Math.cos(camS.pitch),sp=Math.sin(camS.pitch);camera.position.set(camS.tx+Math.sin(camS.yaw)*cp*camS.dist,Math.max(1.5,camS.ty+sp*camS.dist),camS.tz+Math.cos(camS.yaw)*cp*camS.dist);camera.lookAt(camS.tx,camS.ty+1,camS.tz);
   skyDome.position.copy(camera.position);rain.position.set(camS.tx,0,camS.tz)}
@@ -1484,14 +1795,18 @@ try{if(localStorage.getItem('mocha-hint')){hintGone=true;$('#hint').style.displa
 function hideHint(){if(!hintGone){hintGone=true;$('#hint').style.opacity=0;try{localStorage.setItem('mocha-hint','1')}catch(e){}}}
 function twoState(){const [a,b]=[...ptrs.values()];return{d:Math.hypot(a.x-b.x,a.y-b.y),ang:Math.atan2(b.y-a.y,b.x-a.x),my:(a.y+b.y)/2}}
 cv.addEventListener('contextmenu',e=>e.preventDefault());
-cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}if(camS.mode==='walk'&&e.pointerType!=='mouse'&&e.clientX<innerWidth*.45&&e.clientY>innerHeight*.28&&STICK.id===null){STICK.start(e,true);return}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(ptrs.size===1)downAt={x:e.clientX,y:e.clientY,t:performance.now()};else{downAt=null;two={...twoState(),dist:camS.dist,yaw:camS.yaw,pitch:camS.pitch}}});
+cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}
+  if(camS.mode==='walk'&&e.pointerType!=='mouse'){const now=performance.now();
+    if(STICK.id!==null&&STICK.float&&now-STICK.t0<350&&STICK.moved<16){const sid=STICK.id,sx=STICK.lx,sy=STICK.ly;STICK.end();ptrs.set(sid,{x:sx,y:sy})}
+    else if(STICK.id===null&&ptrs.size<2&&e.clientX<innerWidth*.45&&e.clientY>innerHeight*.28){const f=ptrs.size?[...ptrs.values()][0]:null;if(!(f&&downAt&&now-downAt.t<350&&Math.hypot(f.x-downAt.x,f.y-downAt.y)<16)){STICK.start(e,true);return}}}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(ptrs.size===1)downAt={x:e.clientX,y:e.clientY,t:performance.now()};else{downAt=null;two={...twoState(),dist:camS.dist,yaw:camS.yaw,pitch:camS.pitch}}});
 cv.addEventListener('pointermove',e=>{if(e.pointerId===STICK.id){STICK.move(e);return}const p=ptrs.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
   if(ptrs.size===1){if(downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<6)return;hideHint();const sens=camS.mode==='walk'?.0075:.006;camS.yaw-=dx*sens;camS.pitch=clamp(camS.pitch+dy*sens*.65,.06,1.3);lastLook=T}
-  else if(ptrs.size===2&&two){const n=twoState();camS.dist=clamp(two.dist*two.d/Math.max(1,n.d),camS.mode==='walk'?3.5:6,80);camS.yaw=two.yaw-(n.ang-two.ang);camS.pitch=clamp(two.pitch+(n.my-two.my)*.004,.06,1.3);hideHint()}});
+  else if(ptrs.size===2&&two){const n=twoState(),zl=zoomLim();ZM.tgt=null;camS.dist=clamp(two.dist*two.d/Math.max(1,n.d),zl[0],zl[1]);camS.yaw=two.yaw-(n.ang-two.ang);camS.pitch=clamp(two.pitch+(n.my-two.my)*.004,.06,1.3);hideHint()}});
 cv.addEventListener('pointerup',e=>{if(e.pointerId===STICK.id){STICK.end(e);return}const was=ptrs.size;ptrs.delete(e.pointerId);if(ptrs.size<2)two=null;if(was===1&&downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<8&&performance.now()-downAt.t<600)tap(e.clientX,e.clientY);downAt=null});
 cv.addEventListener('pointercancel',e=>{if(e.pointerId===STICK.id){STICK.end(e);return}ptrs.delete(e.pointerId);downAt=null;two=null});
-cv.addEventListener('wheel',e=>{e.preventDefault();camS.dist=clamp(camS.dist*(1+e.deltaY*.001),camS.mode==='walk'?3.5:6,80)},{passive:false});
-addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key.toLowerCase();if(['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){KEYS_DOWN[k]=1;if(!['q','e'].includes(k)&&camS.mode!=='walk')setCamMode('walk');e.preventDefault()}if(k==='f')setCamMode('follow');if(k==='m')toggleMap()});
+cv.addEventListener('wheel',e=>{e.preventDefault();const zl=zoomLim();ZM.tgt=null;camS.dist=clamp(camS.dist*clamp(1+e.deltaY*(e.ctrlKey?.01:.001),.5,2),zl[0],zl[1])},{passive:false});
+['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+addEventListener('keydown',e=>{if(LB.open){const q=e.key;if(q==='Escape'){closeLB();e.preventDefault()}else if(q==='ArrowLeft'){stepLB(-1);e.preventDefault()}else if(q==='ArrowRight'){stepLB(1);e.preventDefault()}return}if(e.target.tagName==='INPUT')return;const k=e.key.toLowerCase();if(k==='+'||k==='='){zoomBy(.8);return}if(k==='-'||k==='_'){zoomBy(1.25);return}if(['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){KEYS_DOWN[k]=1;if(!['q','e'].includes(k)&&camS.mode!=='walk')setCamMode('walk');e.preventDefault()}if(k==='f')setCamMode('follow');if(k==='m')toggleMap()});
 addEventListener('keyup',e=>{KEYS_DOWN[e.key.toLowerCase()]=0});
 const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
 // tapping never tells Mocha what to do
@@ -1501,8 +1816,8 @@ function tap(x,y){ndc.set(x/innerWidth*2-1,-(y/innerHeight)*2+1);ray.setFromCame
 $('#modeBtn').onclick=()=>{setCamMode(camS.mode==='walk'?'follow':'walk');hideHint()};
 $('#edge').onclick=()=>setCamMode('follow');
 const STICK=(()=>{const joy=$('#joy'),knob=$('#knob');const o={id:null,cx:0,cy:0};
-  o.start=(e,float)=>{o.id=e.pointerId;const r=joy.getBoundingClientRect();if(float){joy.classList.add('float');joy.style.left=(e.clientX-r.width/2)+'px';joy.style.top=(e.clientY-r.height/2)+'px';joy.style.bottom='auto';o.cx=e.clientX;o.cy=e.clientY}else{o.cx=r.left+r.width/2;o.cy=r.top+r.height/2}joy.classList.add('live');o.move(e);hideHint()};
-  o.move=e=>{const R=joy.offsetWidth/2-14;let dx=e.clientX-o.cx,dy=e.clientY-o.cy;const l=Math.hypot(dx,dy);if(l>R){dx*=R/l;dy*=R/l}JOY.x=dx/R;JOY.y=dy/R;if(Math.hypot(JOY.x,JOY.y)<.12){JOY.x=JOY.y=0}knob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;knob.textContent=Math.hypot(dx,dy)>R*.88?'🏃':'🚶'};
+  o.start=(e,float)=>{o.id=e.pointerId;o.t0=performance.now();o.float=!!float;o.sx=o.lx=e.clientX;o.sy=o.ly=e.clientY;o.moved=0;const r=joy.getBoundingClientRect();if(float){joy.classList.add('float');joy.style.left=(e.clientX-r.width/2)+'px';joy.style.top=(e.clientY-r.height/2)+'px';joy.style.bottom='auto';o.cx=e.clientX;o.cy=e.clientY}else{o.cx=r.left+r.width/2;o.cy=r.top+r.height/2}joy.classList.add('live');o.move(e);hideHint()};
+  o.move=e=>{o.lx=e.clientX;o.ly=e.clientY;o.moved=Math.max(o.moved||0,Math.hypot(e.clientX-o.sx,e.clientY-o.sy));const R=joy.offsetWidth/2-14;let dx=e.clientX-o.cx,dy=e.clientY-o.cy;const l=Math.hypot(dx,dy);if(l>R){dx*=R/l;dy*=R/l}JOY.x=dx/R;JOY.y=dy/R;if(Math.hypot(JOY.x,JOY.y)<.12){JOY.x=JOY.y=0}knob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;knob.textContent=Math.hypot(dx,dy)>R*.88?'🏃':'🚶'};
   o.end=()=>{o.id=null;JOY.x=JOY.y=0;knob.style.transform='translate(-50%,-50%)';knob.textContent='🚶';joy.classList.remove('live','float');joy.style.left='';joy.style.top='';joy.style.bottom=''};
   joy.addEventListener('pointerdown',e=>{if(o.id!==null)return;try{joy.setPointerCapture(e.pointerId)}catch(_){}o.start(e,false);e.preventDefault()});
   joy.addEventListener('pointermove',e=>{if(e.pointerId===o.id)o.move(e)});joy.addEventListener('pointerup',e=>{if(e.pointerId===o.id)o.end()});joy.addEventListener('pointercancel',e=>{if(e.pointerId===o.id)o.end()});
@@ -1511,6 +1826,10 @@ const STICK=(()=>{const joy=$('#joy'),knob=$('#knob');const o={id:null,cx:0,cy:0
  lk.addEventListener('pointerdown',e=>{if(id!==null)return;id=e.pointerId;try{lk.setPointerCapture(id)}catch(_){}lk.classList.add('live');mv(e);hideHint();e.preventDefault()});lk.addEventListener('pointermove',e=>{if(e.pointerId===id)mv(e)});
  const end=e=>{if(e.pointerId!==id)return;id=null;LOOK.x=LOOK.y=0;ln.style.transform='translate(-50%,-50%)';lk.classList.remove('live')};lk.addEventListener('pointerup',end);lk.addEventListener('pointercancel',end)}
 $('#chatBtn').onclick=()=>{const on=document.body.classList.toggle('chatOpen');if(on)setTimeout(()=>$('#say').focus(),50)};
+[['#zIn',-1],['#zOut',1]].forEach(([sel,d])=>{const b=$(sel);const stop=()=>{if(ZM.dir===d)ZM.dir=0;b.classList.remove('on')};
+  b.addEventListener('pointerdown',e=>{e.preventDefault();try{b.setPointerCapture(e.pointerId)}catch(_){}ZM.dir=d;ZM.t0=performance.now();zoomBy(d<0?.8:1.25);b.classList.add('on')});
+  b.addEventListener('pointerup',stop);b.addEventListener('pointercancel',stop);b.addEventListener('lostpointercapture',stop);b.addEventListener('contextmenu',e=>e.preventDefault());
+  b.addEventListener('click',e=>{if(e.detail===0)zoomBy(d<0?.8:1.25)})});
 
 // ====================================================================
 //  HTML OVERLAYS
@@ -1530,8 +1849,9 @@ function drawBigMap(t){const X=x=>MSZ/2+(x-MX)*MS,Z=z=>MSZ/2+(z-MZ)*MS;mc.clearR
   mc.strokeStyle='#fffaf2';mc.lineCap='round';mc.lineWidth=11;ROADS.forEach(([a,b,c,d])=>{mc.beginPath();mc.moveTo(X(a),Z(b));mc.lineTo(X(c),Z(d));mc.stroke()});
   mc.textAlign='center';mc.textBaseline='middle';
   PLACES.forEach(p=>{if(!known(p)){mc.fillStyle='#6a7a6a';mc.font='bold 22px system-ui';mc.fillText('?',X(p.x),Z(p.z));return}
-    mc.fillStyle=p.id==='home'?'#e9886b':p.wall||MINICOL[p.kind]||'#888';const w=(p.w||8)*MS*.9,d=(p.d||8)*MS*.9;mc.save();mc.translate(X(p.x),Z(p.z));mc.rotate(-p.ry);mc.beginPath();mc.roundRect?mc.roundRect(-w/2,-d/2,w,d,5):mc.rect(-w/2,-d/2,w,d);mc.fill();mc.restore();
-    mc.font='700 12px ui-rounded,system-ui,sans-serif';const nm=p.name.replace(/^The /,'');const tw=mc.measureText(nm).width+10;mc.fillStyle='rgba(255,250,242,.92)';mc.fillRect(X(p.x)-tw/2,Z(p.z)-8,tw,16);mc.fillStyle='#26324a';mc.fillText(nm,X(p.x),Z(p.z)+.5)});
+    mc.fillStyle=p.id==='home'?'#e9886b':p.wall||MINICOL[p.kind]||'#888';const w=(p.w||8)*MS*.9,d=(p.d||8)*MS*.9;mc.save();mc.translate(X(p.x),Z(p.z));mc.rotate(-p.ry);mc.beginPath();mc.roundRect?mc.roundRect(-w/2,-d/2,w,d,5):mc.rect(-w/2,-d/2,w,d);mc.fill();mc.restore()});
+  const LBR=[];PLACES.forEach(p=>{if(!known(p))return;mc.font='700 12px ui-rounded,system-ui,sans-serif';const nm=p.name.replace(/^The /,''),tw=mc.measureText(nm).width+10,lx=X(p.x);let ly=Z(p.z);for(const off of [0,16,-16,32,-32]){const y=Z(p.z)+off;if(!LBR.some(q=>lx-tw/2<q[0]+q[2]&&q[0]<lx+tw/2&&y-8<q[1]+16&&q[1]<y+8)){ly=y;break}}
+    LBR.push([lx-tw/2,ly-8,tw]);mc.fillStyle='rgba(255,250,242,.92)';mc.fillRect(lx-tw/2,ly-8,tw,16);mc.fillStyle='#26324a';mc.fillText(nm,lx,ly+.5)});
   mc.fillStyle='#f4f1ea';mc.fillRect(X(ferry.position.x)-4,Z(ferry.position.z)-9,8,18);
   if(wObj.visible){mc.font='22px system-ui';mc.fillText('🦝',X(W.x),Z(W.z))}
   mc.save();mc.translate(X(YOU.x),Z(YOU.z));mc.rotate(-YOU.yaw);mc.fillStyle='rgba(242,193,78,.35)';mc.beginPath();mc.moveTo(0,0);mc.arc(0,0,26,Math.PI/2-.5,Math.PI/2+.5);mc.fill();mc.restore();
@@ -1541,12 +1861,17 @@ bm.addEventListener('click',e=>{const r=bm.getBoundingClientRect();const x=((e.c
 $('#mapBtn').onclick=()=>toggleMap();$('#mapClose').onclick=()=>toggleMap(false);$('#mapWrap').addEventListener('click',e=>{if(e.target.id==='mapWrap')toggleMap(false)});
 
 const MLAB={energy:'Energy',snack:'Snacky',social:'Social',fun:'Fun',curious:'Curious'},MCOL={energy:'#7fc8b8',snack:'#f2b48a',social:'#f29fb5',fun:'#f2c14e',curious:'#8fb0e0'};
-function statusText(){if(G.thinking)return'💭 thinking…';if(G.startle>0)return'startled!';if(G.mode==='activity')return G.act.doing;if(G.mode==='travel')return G.act&&G.act.explore?'exploring 🧭':G.act&&G.act.p?'→ '+(G.act.p==='home'?'home':byId[G.act.p].name):'floating';return'floating'}
+function statusText(){if(G.thinking)return'💭 thinking…';if(G.startle>0)return'startled!';if(G.mode==='activity')return G.act.doing;if(G.mode==='travel')return G.biking&&G.act&&G.act.p?'🚲 → '+(G.act.p==='home'?'home':byId[G.act.p].name):G.act&&G.act.explore?'exploring 🧭':G.act&&G.act.p?'→ '+(G.act.p==='home'?'home':byId[G.act.p].name):'floating';return'floating'}
 function hud(){$('#lvl').textContent='lv '+level();$('#status').textContent=statusText();const mood=Object.values(S.needs).reduce((a,b)=>a+b,0)/5;
   $('#meters').innerHTML=`<span>Cozy</span><div class="bar"><i style="width:${mood}%;background:#26324a"></i></div>`+Object.keys(MLAB).map(k=>`<span>${MLAB[k]}</span><div class="bar"><i style="width:${S.needs[k]}%;background:${MCOL[k]}"></i></div>`).join('')}
 function ago(t){const s=(Date.now()-t)/1000;if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
 let curTab='diary';
 function renderDiary(){$('#tab-diary').innerHTML=(awayCount?`<p class="muted">✨ Mocha did ${awayCount} things while you were away</p>`:'')+S.diary.map(e=>`<div class="entry"><div class="meta"><span>${esc(e.place||'thoughts')}<span class="tag${e.big?' big':''}">${esc(e.tag)}</span></span><span class="when" data-t="${e.t}">${ago(e.t)}</span></div>${esc(e.text)}</div>`).join('')}
+function gearHTML(){const w=nextWant(),sw=c=>`<span class="sw" style="background:${esc(c)}"></span>`,gd=k=>(S.gadgets||[]).find(g=>g.k===k);
+  const gch=['earbuds','speaker'].filter(gd).map(k=>`<span class="chip">${sw(gd(k).c)}${GADGETS[k].e} ${esc(GADGETS[k].label)}</span>`).join('');
+  return`<h4>his money · ${S.coins} coins 🪙</h4><p class="muted" style="margin:2px 0">${S.jobs||0} odd job${S.jobs===1?'':'s'} so far${S.paintings.some(x=>x.where==='sold')?' · sells paintings too':''}${w?` · thinking about ${esc(w.what)} (${w.price})`:''}</p>${w?`<div class="bar" style="height:8px;margin:5px 0 2px"><i style="width:${clamp(S.coins/w.price*100,0,100)}%;background:#f2c14e"></i></div>`:''}
+  <h4>his phone</h4>${S.phone?`<span class="chip">${sw(S.phone.color)}📱 ${esc(S.phone.model)}</span>${S.phone.case?`<span class="chip">${sw(S.phone.case.c)}case${S.phone.case.pat==='solid'?'':' with '+esc(S.phone.case.pat)}</span>`:''}${S.phone.charm?`<span class="chip">${sw(CHARMS[S.phone.charm]||'#fff')}${esc(S.phone.charm)} charm</span>`:''}${gch}`:`<p class="muted">no phone yet — Cascade Mobile sells them, and he needs one for selfies. his call.</p>${gch}`}
+  <h4>his bike</h4>${S.bike?`<span class="chip">${sw(S.bike.color)}🚲 “${esc(S.bike.name)}” · ${esc((BIKES[S.bike.type]||BIKES.city).label)}</span><span class="chip">${S.bike.rides||0} ride${S.bike.rides===1?'':'s'}</span>${hasHelmet()?`<span class="chip">${sw(helmetCol())}helmet</span>`:''}${['bell','lights'].filter(gd).map(k=>`<span class="chip">${GADGETS[k].e} ${esc(GADGETS[k].label)}</span>`).join('')}`:'<p class="muted">no bike yet — Spoke & Sprocket has some beauties</p>'}`}
 function renderMe(){const lv=level(),cur=(lv-1)**2*25,nxt=lv**2*25;const ints=Object.entries(S.interests).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);const mx=Math.max(6,...ints.map(([,v])=>v));
   $('#tab-me').innerHTML=`<h4 style="margin-top:4px">level ${lv} · day ${ageDays()+1} in the city</h4><div class="bar" style="height:10px"><i style="width:${clamp((S.xp-cur)/(nxt-cur)*100,0,100)}%;background:var(--accent)"></i></div><p class="muted" style="margin:4px 0">${nxt-S.xp} xp until he grows a little bigger</p>
   <h4>personality</h4>${traitWords().map(w=>`<span class="chip">${esc(w)}</span>`).join('')}
@@ -1554,9 +1879,10 @@ function renderMe(){const lv=level(),cur=(lv-1)**2*25,nxt=lv**2*25;const ints=Ob
   ${dislikes().length?`<h4>not his thing</h4>${dislikes().map(d=>`<span class="chip dis">${esc(d)}</span>`).join('')}`:''}
   <h4>hobbies he started</h4>${S.hobbies.length?S.hobbies.map(h=>`<div class="row"><span>${esc(h.name)}</span><div class="bar"><i style="width:${(h.xp%40)/40*100}%;background:var(--accent)"></i></div><small>lv ${Math.floor(h.xp/40)+1}</small></div>`).join(''):'<p class="muted">none yet — hobbies grow out of things he keeps loving</p>'}
   <h4>his goal</h4>${S.goal?`<div class="goal">🎯 ${esc(S.goal.text)} ${S.goal.target?`<b style="float:right">${S.goal.progress}/${S.goal.target}</b>`:''}</div>`:'<p class="muted">no goal right now</p>'}<p class="muted" style="margin:4px 0">${S.goalsDone} goals reached</p>
+  ${gearHTML()}
   <h4>wardrobe (${S.owned.length})</h4>${S.owned.length?S.owned.map(o=>`<span class="chip"><span class="sw" style="background:${esc(o.color)}"></span>${esc(o.name)}${S.wearing.includes(o.id)?' · wearing':''}</span>`).join(''):'<p class="muted">empty — he\'s plain white until he finds something he likes</p>'}
   <h4>his day</h4><p class="muted" style="margin:2px 0">up around ${fmtH(sched().wake)} · bed around ${fmtH(sched().bed)} · today's sunrise ${fmtH(SUN.rise)}, sunset ${fmtH(SUN.set)}</p>
-  <h4>his paintings (${S.paintings.length}) · ${S.coins} coins</h4>${S.paintings.length?`<div style="display:flex;flex-wrap:wrap;gap:8px">${S.paintings.slice(0,12).map(pt=>`<div style="width:96px;font-size:11px;color:var(--mut);font-weight:700"><img src="${paintThumb(pt)}" style="width:96px;height:72px;border-radius:8px;border:3px solid #b08a3a;display:block"><div style="color:var(--ink)">${esc(pt.title)}</div>${pt.where==='home'?'on his wall':pt.where==='sold'?'sold':pt.where.startsWith('gift:')?'gave to '+esc(pt.where.slice(5)==='wendell'?'Wendell':(KB[pt.where.slice(5)]||{}).name||''):'in his stack'}</div>`).join('')}</div>`:'<p class="muted">none yet — the art studio has easels</p>'}
+  <h4>his paintings (${S.paintings.length})</h4>${S.paintings.length?`<div class="pgrid">${S.paintings.map(pt=>`<button class="pcard" data-lb="paint" data-id="${esc(pt.id)}" aria-label="view ${esc(pt.title)}"><img src="${paintThumb(pt)}" alt=""><b>${esc(pt.title)}</b><span>${esc(whereTxt(pt))}</span></button>`).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:12px">tap a painting to see it big</p>`:'<p class="muted">none yet — the art studio has easels</p>'}
   <h4>shopkeepers he knows</h4>${Object.keys(S.know).length?Object.entries(S.know).map(([k,v])=>KB[k]?`<span class="chip">${esc(KB[k].name)} the ${KB[k].species} · ${v} chats</span>`:'').join(''):'<p class="muted">none yet</p>'}
   <h4>pets</h4>${S.pets.length?S.pets.map(p=>`<span class="chip">${PET_TYPES[p.species].e} ${esc(p.name)} the ${PET_TYPES[p.species].label}</span>`).join(''):'<p class="muted">no pets — he visits the pet store sometimes, but it\'s his call</p>'}
   <h4>his gothic house</h4><div class="row"><span>pantry</span><div class="bar"><i style="width:${S.pantry}%;background:#7fa86a"></i></div><small>${Math.round(S.pantry)}%</small></div>${S.decor.length?S.decor.map(d=>`<span class="chip">${esc(DECOR[d])}</span>`).join(''):'<p class="muted">no decorations bought yet</p>'}
@@ -1569,8 +1895,10 @@ function renderYou(){const m=S.mem;$('#tab-you').innerHTML=`<h4 style="margin-to
   <h4>things he remembers about you</h4>${m.facts.length?m.facts.map(f=>`<span class="chip">${esc(f)}</span>`).join(''):'<p class="muted">nothing yet</p>'}
   <h4>friendship</h4><p class="muted">${m.chats} chats · met ${new Date(m.met).toLocaleDateString()}</p>
   <h4>his mind</h4><p class="muted">${MIND.on?'Awake: Claude decides what Mocha does, writes his diary, looks things up for him, and answers when you talk to him.':MIND.api?'Asleep: he runs on simple instincts. Tap "let Mocha think for himself" to wake it up.':'Running on simple instincts (his Claude-powered mind isn\'t available here).'}</p>`}
-const thumbCache={};function paintThumb(pt){if(!thumbCache[pt.id])thumbCache[pt.id]=paintCanvas(pt,96,72).toDataURL('image/jpeg',.8);return thumbCache[pt.id]}
-function renderFeed(){$('#tab-feed').innerHTML=`<p class="muted" style="margin-top:2px">Mocha has an old phone. Sometimes he takes a selfie and posts it here, whenever he feels like it.</p>`+(S.posts.length?S.posts.map(p=>`<div class="post">${PHOTOS[p.id]?`<img src="${PHOTOS[p.id]}" alt="">`:'<div class="nophoto">📸 photo saved on another device</div>'}<div class="cap">${esc(p.caption)}</div><div class="meta"><span>${esc(p.place||'')} · ${ago(p.t)}</span><button class="heart${p.liked?' on':''}" data-id="${p.id}">${p.liked?'❤️':'🤍'} ${p.likes+(p.liked?1:0)}</button></div></div>`).join(''):'<p class="muted">no posts yet</p>');
+const thumbCache={};function paintThumb(pt){if(!thumbCache[pt.id])thumbCache[pt.id]=paintCanvas(pt,192,144).toDataURL('image/jpeg',.82);return thumbCache[pt.id]}
+function whereTxt(pt){const w=String(pt.where||'');if(w==='home')return'on his wall';if(w==='sold')return'sold at the market';if(w.startsWith('gift:')){const k=w.slice(5);return'gave to '+(k==='wendell'?'Wendell':(KB[k]||{}).name||'a friend')}return'in his stack'}
+function postArt(p){return S.paintings.find(x=>x.id===p.pid)||(p.art&&Array.isArray(p.art.c)&&p.art.c.length?{id:'pa_'+p.id,title:p.art.ti||'Untitled',subject:p.art.s,colors:p.art.c,seed:+p.art.seed||1}:null)}
+function renderFeed(){$('#tab-feed').innerHTML=`<p class="muted" style="margin-top:2px">Mocha has an old phone. Sometimes he posts a selfie or one of his paintings here, whenever he feels like it. Tap a picture to see it big.</p>`+(S.posts.length?S.posts.map(p=>{let pic;if(p.kind==='painting'){const pt=postArt(p);pic=pt?`<img class="pic art" src="${paintBig(pt)}" alt="${esc(pt.title)}" data-lb="feed" data-id="${esc(p.id)}" role="button" tabindex="0">`:'<div class="nophoto">🎨 painting</div>'}else pic=PHOTOS[p.id]?`<img class="pic" src="${PHOTOS[p.id]}" alt="${esc(p.caption)}" data-lb="feed" data-id="${esc(p.id)}" role="button" tabindex="0">`:'<div class="nophoto">📸 photo saved on another device</div>';return `<div class="post">${pic}<div class="cap">${esc(p.caption)}</div><div class="meta"><span>${p.kind==='painting'?'🎨 ':''}${esc(p.place||'')} · ${ago(p.t)}</span><button class="heart${p.liked?' on':''}" data-id="${p.id}">${p.liked?'❤️':'🤍'} ${p.likes+(p.liked?1:0)}</button></div></div>`}).join(''):'<p class="muted">no posts yet</p>');
   $('#tab-feed').querySelectorAll('.heart').forEach(b=>b.onclick=()=>{const p=S.posts.find(x=>x.id===b.dataset.id);if(p){p.liked=!p.liked;save();renderFeed()}})}
 function renderSet(){const seg=(k,opts)=>`<div class="seg">${opts.map(([v,l])=>`<button data-k="${k}" data-v="${v}" class="${SET[k]===v?'on':''}">${l}</button>`).join('')}</div>`;
   $('#tab-set').innerHTML=`
@@ -1592,6 +1920,30 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.query
 const panel=$('#panel');const isSheet=()=>matchMedia('(max-width:760px)').matches;
 function panelOpen(o){panel.classList.toggle('hidden',!o);document.body.classList.toggle('panelOpen',o);if(o)renderTab()}
 try{if(localStorage.getItem('mocha-meters'))document.body.classList.add('showMeters')}catch(e){}
+// ---------- picture viewer (lightbox): paintings + feed ----------
+const LB={open:false,set:'',items:[],i:0,ret:null};const lbEl=$('#lb'),lbImg=$('#lbImg'),lbStage=$('#lbStage');
+function dayTxt(t){try{return new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'})}catch(e){return''}}
+function lbItems(set){if(set==='paint')return S.paintings.map(pt=>({id:pt.id,src:paintBig(pt),art:true,w:512,h:384,title:pt.title,sub:[pt.raw?'of '+pt.raw:'',whereTxt(pt),'painted '+dayTxt(pt.t)].filter(Boolean).join(' · ')}));
+  return S.posts.map(p=>{const lk='❤️ '+(p.likes+(p.liked?1:0));if(p.kind==='painting'){const pt=postArt(p);return pt&&{id:p.id,src:paintBig(pt),art:true,w:512,h:384,title:p.caption,sub:`🎨 “${pt.title}” · ${ago(p.t)} · ${lk}`}}
+    return PHOTOS[p.id]?{id:p.id,src:PHOTOS[p.id],art:false,w:384,h:424,title:p.caption,sub:`${p.place?p.place+' · ':''}${ago(p.t)} · ${lk}`}:null}).filter(Boolean)}
+function fitLB(){if(!LB.open)return;const it=LB.items[LB.i];if(!it)return;const r=lbStage.getBoundingClientRect(),cs=getComputedStyle(lbImg),bw=(parseFloat(cs.borderLeftWidth)||0)*2,iw=lbImg.naturalWidth||it.w,ih=lbImg.naturalHeight||it.h;
+  const k=Math.max(.05,Math.min((r.width-bw-6)/iw,(r.height-bw-6)/ih,2.6));lbImg.style.width=Math.floor(iw*k)+'px';lbImg.style.height=Math.floor(ih*k)+'px'}
+function showLB(dir){const it=LB.items[LB.i];if(!it)return;lbImg.classList.toggle('art',!!it.art);lbImg.onload=fitLB;lbImg.src=it.src;lbImg.alt=it.title||'';$('#lbTitle').textContent=it.title||'';$('#lbSub').textContent=it.sub||'';$('#lbCount').textContent=LB.items.length>1?`${LB.i+1} / ${LB.items.length}`:'';
+  lbEl.classList.toggle('one',LB.items.length<2);lbImg.style.transform='';lbImg.style.opacity='';lbImg.classList.remove('slideL','slideR');if(dir){void lbImg.offsetWidth;lbImg.classList.add(dir>0?'slideL':'slideR')}fitLB()}
+function openLB(set,id){const items=lbItems(set);if(!items.length)return false;const i=typeof id==='number'?id:items.findIndex(x=>x.id===id);LB.items=items;LB.set=set;LB.i=clamp(i<0?0:i,0,items.length-1);LB.ret=document.activeElement;LB.open=true;lbEl.classList.remove('hidden');document.body.classList.add('lbOpen');showLB(0);try{$('#lbClose').focus({preventScroll:true})}catch(e){}return true}
+function closeLB(){if(!LB.open)return;LB.open=false;lbEl.classList.add('hidden');document.body.classList.remove('lbOpen');lbImg.removeAttribute('src');try{if(LB.ret&&LB.ret.focus&&document.contains(LB.ret))LB.ret.focus({preventScroll:true})}catch(e){}LB.ret=null}
+function stepLB(d){const n=LB.items.length;if(!LB.open||n<2)return;LB.i=(LB.i+d+n)%n;showLB(d)}
+$('#lbClose').onclick=closeLB;$('#lbPrev').onclick=()=>stepLB(-1);$('#lbNext').onclick=()=>stepLB(1);
+{let sw=null,swAt=0;lbEl.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;sw={id:e.pointerId,x:e.clientX,y:e.clientY,dx:0,dy:0,moved:false};try{lbEl.setPointerCapture(e.pointerId)}catch(_){}});
+ lbEl.addEventListener('pointermove',e=>{if(!sw||e.pointerId!==sw.id)return;sw.dx=e.clientX-sw.x;sw.dy=e.clientY-sw.y;if(!sw.moved&&Math.hypot(sw.dx,sw.dy)>9)sw.moved=true;if(!sw.moved)return;const hz=Math.abs(sw.dx)>Math.abs(sw.dy);lbImg.style.transform=hz?`translateX(${sw.dx}px)`:`translateY(${Math.max(0,sw.dy)}px)`;lbImg.style.opacity=hz?'':Math.max(.35,1-Math.max(0,sw.dy)/400)});
+ lbEl.addEventListener('pointerup',e=>{if(!sw||e.pointerId!==sw.id)return;const q=sw;sw=null;lbImg.style.opacity='';
+   if(!q.moved)return;swAt=performance.now();
+   const hz=Math.abs(q.dx)>Math.abs(q.dy);if(hz&&Math.abs(q.dx)>50&&LB.items.length>1)stepLB(q.dx<0?1:-1);else if(!hz&&q.dy>90)closeLB();else{lbImg.style.transition='transform .18s';lbImg.style.transform='';setTimeout(()=>lbImg.style.transition='',200)}});
+ lbEl.addEventListener('pointercancel',e=>{if(sw&&e.pointerId===sw.id){sw=null;lbImg.style.transform='';lbImg.style.opacity=''}});
+ lbEl.addEventListener('click',e=>{if(!LB.open||e.target.closest('button')||performance.now()-swAt<400)return;const r=lbImg.getBoundingClientRect();if(!(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom))closeLB()})}
+addEventListener('resize',()=>{if(LB.open)requestAnimationFrame(fitLB)});
+panel.addEventListener('click',e=>{const b=e.target.closest('[data-lb]');if(b)openLB(b.dataset.lb,b.dataset.id)});
+panel.addEventListener('keydown',e=>{const b=e.target;if((e.key==='Enter'||e.key===' ')&&b&&b.matches&&b.matches('img[data-lb]')){e.preventDefault();openLB(b.dataset.lb,b.dataset.id)}});
 $('#mochaPill').onclick=()=>{const on=document.body.classList.toggle('showMeters');try{on?localStorage.setItem('mocha-meters','1'):localStorage.removeItem('mocha-meters')}catch(e){}};
 $('#closePanel').onclick=()=>panelOpen(false);$('#bookBtn').onclick=()=>panelOpen(panel.classList.contains('hidden'));
 $('#expandPanel').onclick=()=>{if(!isSheet()){panel.classList.toggle('wide');document.body.classList.toggle('wideP',panel.classList.contains('wide'));return}const full=panel.getBoundingClientRect().height>innerHeight*.6;panel.style.setProperty('--sheetH',full?Math.round(innerHeight*.5)+'px':'9999px')};
@@ -1662,9 +2014,9 @@ async function connect(){if(!window.claude||!window.claude.use)return;
   try{const [db,user]=await Promise.all([window.claude.use('db'),window.claude.use('user')]);if(!db||!user)return;const id=await user.id();if(!id)return;
     const ref=db.doc('data/users/'+id+'/mocha');photoCol=ref.collection('photos');const snap=await Promise.race([ref.get(),new Promise(r=>setTimeout(()=>r(null),10000))]);remoteDoc=ref;
     if(snap&&snap.exists){let rs=null;try{rs=JSON.parse(snap.data().state)}catch(_){}
-      if(rs&&rs.needs&&(rs.lastSeen||0)>(S.lastSeen||0)-2000&&(isNew||(rs.lastSeen||0)>(S.lastSeen||0))){const keepMind=S.mind;S=rs;migrate();setTimeout(applyPaintings,0);S.mind=S.mind||keepMind;isNew=false;awayCount=catchUp();applyOutfit();PLACES.filter(known).forEach(p=>labelFor(p));try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}renderTab();hud();if(MIND.api&&S.mind){MIND.on=true;updateMindBtn()}}}
+      if(rs&&rs.needs&&(rs.lastSeen||0)>(S.lastSeen||0)-2000&&(isNew||(rs.lastSeen||0)>(S.lastSeen||0))){const keepMind=S.mind;S=rs;migrate();setTimeout(applyPaintings,0);S.mind=S.mind||keepMind;isNew=false;awayCount=catchUp();applyOutfit();applyGear();PLACES.filter(known).forEach(p=>labelFor(p));try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}renderTab();hud();if(MIND.api&&S.mind){MIND.on=true;updateMindBtn()}}}
     pushRemote(true);
-    const missing=S.posts.filter(p=>!PHOTOS[p.id]).slice(0,12);for(const p of missing){try{const d=await photoCol.doc(p.id).get();if(d.exists){PHOTOS[p.id]=d.data().img}}catch(_){}}if(missing.length){savePhotos();if(curTab==='feed')renderFeed()}
+    const missing=S.posts.filter(p=>p.kind!=='painting'&&!PHOTOS[p.id]).slice(0,12);for(const p of missing){try{const d=await photoCol.doc(p.id).get();if(d.exists){PHOTOS[p.id]=d.data().img}}catch(_){}}if(missing.length){savePhotos();if(curTab==='feed')renderFeed()}
   }catch(e){}}
 
 // ====================================================================
@@ -1674,11 +2026,12 @@ function resize(){const w=innerWidth,h=innerHeight;const pr=renderer.getPixelRat
 addEventListener('resize',resize);resize();
 let last=performance.now(),T=0,hudT=0;
 function applyPower(){sun.castShadow=!SET.saver;renderer.setPixelRatio(SET.saver?1:Math.min(devicePixelRatio||1,TOUCH?1.5:1.75));resize()}
-const edge=$('#edge');const GFX={calls:0,tris:0};
-function frame(now){const fps=SET.saver?20:TOUCH?30:60;if(now-last<1000/fps-2){requestAnimationFrame(frame);return}const dt=Math.min(.08,Math.max(0,(now-last)/1000));last=now;T+=dt;
+const edge=$('#edge');const GFX={calls:0,tris:0},ADAPT={t:0,n:0,drops:0};// on slow phones, gently lower the render resolution to keep things smooth
+function frame(now){const fps=SET.saver?20:TOUCH?30:60;if(now-last<1000/fps-2){requestAnimationFrame(frame);return}const raw=now-last,dt=Math.min(.08,Math.max(0,raw/1000));last=now;T+=dt;
+  if(TOUCH&&!SET.saver&&raw<500){ADAPT.t+=raw;ADAPT.n++;if(ADAPT.t>4000){if(ADAPT.n*1000/ADAPT.t<19){const pr=renderer.getPixelRatio();if(pr>1.01){renderer.setPixelRatio(Math.max(1,pr-.25));resize();ADAPT.drops++}}ADAPT.t=ADAPT.n=0}}
   updateMocha(dt,T);if(camS.mode==='walk')updateYou(dt,T);updateW(dt,T);placeCam(dt);
   {const cin=byId.cinema;if(MOVIE&&Math.floor(T*8)!==Math.floor((T-dt)*8))drawFilm();if(cin.beam)cin.beam.material.opacity=MOVIE?.07+Math.random()*.02:0}
-  for(const k of KEEPERS){if(!k.obj.visible)continue;const u=k.obj.userData,serving=G.mode==='activity'&&G.act&&G.act.p===k.shop;u.head.rotation.y=serving?Math.sin(T*.8)*.15:Math.sin(T*.5+k.pos[0])*.35;u.arms[1].rotation.x=serving&&G.act.fx==='ask'?-1.2+Math.sin(T*3)*.25:Math.sin(T*1.2+k.pos[1])*.08;u.arms[0].rotation.x=Math.sin(T*1.1)*.06}
+  for(const k of KEEPERS){if(!k.obj.visible)continue;const u=k.obj.userData,serving=G.mode==='activity'&&G.act&&G.act.p===k.shop;u.head.rotation.y=serving?Math.sin(T*.8)*.15:Math.sin(T*.5+k.pos[0])*.35;u.arms[1].rotation.x=serving&&G.act.fx==='ask'?-1.2+Math.sin(T*3)*.25:Math.sin(T*1.2+k.pos[1])*.08;u.arms[0].rotation.x=Math.sin(T*1.1)*.06;if(u.tent&&u.tent.length)u.tent.forEach((t,i)=>t.rotation.x=Math.sin(T*1.7+i*1.3)*.22)}
   if(kBub){kBub.t-=dt;const b=$('#bubble3');kBub.k.obj.getWorldPosition(tmpV);const pp=project(tmpV.x,tmpV.y+2.7,tmpV.z);b.style.left=pp.x+'px';b.style.top=pp.y+'px';b.style.visibility=pp.vis?'visible':'hidden';if(kBub.t<=0){b.classList.remove('show');kBub=null}}
   if(camS.mode==='walk'&&!kBub&&Math.random()<dt*.15){for(const k of KEEPERS){if(!k.obj.visible)continue;k.obj.getWorldPosition(tmpV);if(Math.hypot(tmpV.x-YOU.x,tmpV.z-YOU.z)<6){kSay(k,pick(k.hi),3);break}}}updateSky(dt);updateLeaves(dt,T);
   byId.petstore.display.forEach((d,i)=>{animatePet(d,T+i,false);if(d.userData.sp==='poodle'||d.userData.sp==='hedgehog')d.position.y=.6+Math.max(0,Math.sin(T*2+i*1.7))**8*.25});
@@ -1696,7 +2049,7 @@ function frame(now){const fps=SET.saver?20:TOUCH?30:60;if(now-last<1000/fps-2){r
   if(WEATHER.wet>.02){const a=rain.geometry.attributes.position;for(let i=0;i<RN;i++){let y=a.getY(i)-dt*(WEATHER.kind==='snow'?2.5+i%3:28+i%7);if(y<0)y+=35;a.setY(i,y);if(WEATHER.kind==='snow')a.setX(i,a.getX(i)+Math.sin(T+i)*dt*.6)}a.needsUpdate=true}
   for(let i=0;i<FF;i++){const f=ffD[i];f.a+=dt*.5;ffPos[i*3]=f.x+Math.cos(f.a*1.3)*3;ffPos[i*3+1]=f.y+Math.sin(f.a*2)*.6;ffPos[i*3+2]=f.z+Math.sin(f.a)*3}fireflies.geometry.attributes.position.needsUpdate=true;
   BEND.value.y=Math.max(22,camS.dist*1.15+8);BEND.value.w=T;BENDC.copy(camera.position);camera.updateMatrixWorld();BENDUP.setFromMatrixColumn(camera.matrixWorld,1);
-  renderer.setRenderTarget(rt);bendCull=true;renderer.render(scene,camera);bendCull=false;GFX.calls=renderer.info.render.calls;GFX.tris=renderer.info.render.triangles;renderer.setRenderTarget(null);renderer.render(postScene,postCam);
+  if(!LB.open||Math.floor(T*3)!==Math.floor((T-dt)*3)){renderer.setRenderTarget(rt);bendCull=true;renderer.render(scene,camera);bendCull=false;GFX.calls=renderer.info.render.calls;GFX.tris=renderer.info.render.triangles;renderer.setRenderTarget(null);renderer.render(postScene,postCam)}
   if(bubbleT>0){bubbleT-=dt;if(bubbleT<=0)bubble.classList.remove('show')}
   if(G.thinking&&bubbleT<=0)say('💭',1.5,true);
   const umb=S.wearing.some(id=>{const o=S.owned.find(x=>x.id===id);return o&&o.item==='umbrella'});
@@ -1708,10 +2061,12 @@ function frame(now){const fps=SET.saver?20:TOUCH?30:60;if(now-last<1000/fps-2){r
   if(camS.mode==='walk'){const dm=Math.hypot(YOU.x-G.x,YOU.z-G.z),dw=Math.hypot(YOU.x-W.x,YOU.z-W.z);let tx='';if(dm<12)tx=`👻 Mocha is right here · ${statusText()}`;else if(W.visible&&dw<9)tx=`🦝 Wendell · ${W.doing}`;const nr=$('#near');if(nr.textContent!==tx)nr.textContent=tx;nr.style.display=tx?'inline-flex':'none'}
   if(mapOpen&&Math.floor(T*4)!==Math.floor((T-dt)*4))drawBigMap(T);
   requestAnimationFrame(frame)}
-applyOutfit();applyPower();applyPaintings();KEEPERS.forEach(k=>{k.obj.visible=isOpen(byId[k.shop])});labels.forEach(({p,el})=>{if(p.hours&&!isOpen(p))el.textContent=el.dataset.base+' · closed'});hud();renderTab();connect();
+applyOutfit();applyGear();applyPower();applyPaintings();KEEPERS.forEach(k=>{k.obj.visible=isOpen(byId[k.shop])});labels.forEach(({p,el})=>{if(p.hours&&!isOpen(p))el.textContent=el.dataset.base+' · closed'});hud();renderTab();connect();
 setTimeout(()=>{if(isNew)say('hi! i\'m mocha 👻 i just moved in!',4.5);else say(awayCount?`you're back! i did ${awayCount} things while you were gone`:(S.mem.userName?`${S.mem.userName}! hi again 👻`:'oh hi again!'),5)},900);
 requestAnimationFrame(frame);
-window.__you=()=>({x:+YOU.x.toFixed(1),z:+YOU.z.toFixed(1),yaw:+YOU.yaw.toFixed(2),cam:+camS.yaw.toFixed(2),joy:[+JOY.x.toFixed(2),+JOY.y.toFixed(2)]});window.__mocha={KEEPERS,MOVIE:()=>MOVIE,makePainting,sched,SUN:()=>SUN,asleepAt,hourAt,get S(){return S},G,MIND,localOutcome,ACTS,acquire,wearItem,adoptPet,buyDecor,takeSelfie,setCamMode,cam:o=>{if(o)Object.assign(camS,o);return{...camS}},gfx:()=>({...GFX,progs:renderer.info.programs.length,geos:renderer.info.memory.geometries,tex:renderer.info.memory.textures}),BEND,post,scene,camera,renderer,weather:k=>{if(k){WEATHER.kind=k;WEATHER.t=600;WEATHER.over={clear:0,cloudy:.45,drizzle:.65,rain:.8,fog:.7,snow:.7}[k]??.5;WEATHER.wet=0}return WEATHER.kind},forceAct:a=>{const w=spotWorld(a.p,a.s);G.x=w.x+3;G.z=w.z+3;startAct(a)},discover:id=>discover(byId[id])};
+window.__you=()=>({x:+YOU.x.toFixed(1),z:+YOU.z.toFixed(1),yaw:+YOU.yaw.toFixed(2),cam:+camS.yaw.toFixed(2),joy:[+JOY.x.toFixed(2),+JOY.y.toFixed(2)]});window.__mocha={KEEPERS,MOVIE:()=>MOVIE,makePainting,sched,SUN:()=>SUN,asleepAt,hourAt,get S(){return S},G,MIND,localOutcome,ACTS,acquire,wearItem,adoptPet,buyDecor,takeSelfie:(c,p,force=true)=>takeSelfie(c,p,force),buyGear,shopVisit,payJob,mindBuy,applyMind,startAct,localChoose,bikePath,BIKE_LOOPS,BK,makeBike,nextWant,
+  gear:()=>({coins:S.coins,phone:S.phone,gadgets:S.gadgets,bike:S.bike,jobs:S.jobs,helmet:hasHelmet(),want:nextWant(),biking:G.biking,route:G.route&&{n:G.route.pts.length,i:G.route.i,mount:G.route.mount,loop:G.route.loop,pts:G.route.pts},bk:{...BK},y:+G.y.toFixed(2),bikeVisible:!!(bikeObj&&bikeObj.visible),phoneVisible:phone.visible,phoneCols:phone.children.map(o=>Array.isArray(o.material)?o.material[0]:o.material).filter(m=>m&&m.color).map(m=>'#'+m.color.getHexString())}),
+  tick:(n=1,dt=.05)=>{for(let i=0;i<n;i++){T+=dt;updateMocha(dt,T)}return{x:+G.x.toFixed(1),z:+G.z.toFixed(1),mode:G.mode,biking:G.biking}},coins:n=>{if(n!=null)S.coins=Math.max(0,Math.round(n));return S.coins},showPhone:(s=4)=>{G.phoneT=s},setCamMode,cam:o=>{if(o)Object.assign(camS,o);return{...camS}},gfx:()=>({...GFX,pr:renderer.getPixelRatio(),adaptDrops:ADAPT.drops,progs:renderer.info.programs.length,geos:renderer.info.memory.geometries,tex:renderer.info.memory.textures}),BEND,post,scene,camera,renderer,weather:k=>{if(k){WEATHER.kind=k;WEATHER.t=600;WEATHER.over={clear:0,cloudy:.45,drizzle:.65,rain:.8,fog:.7,snow:.7}[k]??.5;WEATHER.wet=0}return WEATHER.kind},forceAct:a=>{const w=spotWorld(a.p,a.s);G.x=w.x+3;G.z=w.z+3;startAct(a)},openLB,closeLB,stepLB,lb:()=>({open:LB.open,set:LB.set,i:LB.i,n:LB.items.length,title:$('#lbTitle').textContent,sub:$('#lbSub').textContent,w:lbImg.offsetWidth,h:lbImg.offsetHeight}),postPainting,maybePostPainting,paintBig,zoomBy,ZM,zoomLim,discover:id=>discover(byId[id])};
 })();
 </script>
 </body>
