@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>Mocha's Ghost Town</title>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Mocha"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#26324a"><script>if(location.protocol!=="file:"){const l=document.createElement("link");l.rel="manifest";l.href="manifest.webmanifest";document.head.appendChild(l)}</script><link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Mocha"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#26324a"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png">
 <style>
   :root{--ink:#26324a;--paper:#fffaf2;--accent:#e9886b;--teal:#3f8f8a;--line:#ece4d8;--soft:#f3efe8;--mut:#9a958c}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -411,11 +411,10 @@
 </div>
 <div id="bubble"></div>
 
-<script src="three.min.js"></script>
-<script>window.THREE||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>')</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (()=>{
-if(!window.THREE){const e=document.getElementById('err');e.textContent="Mocha's town couldn't load its 3D engine. Check your connection and reload 👻";e.style.display='flex';return}
+if(!window.THREE){document.getElementById('err').style.display='flex';return}
 const $=s=>document.querySelector(s);
 const rand=(a,b)=>a+Math.random()*(b-a);
 const pick=a=>a[Math.floor(Math.random()*a.length)];
@@ -897,7 +896,7 @@ if(WX_FORCED)rollWeather();else{WEATHER.kind=WX.at(Date.now());WEATHER.t=15;WEAT
 //  THREE: renderer, sky, light, halftone
 // ====================================================================
 const cv=$('#c');
-let renderer;try{renderer=new THREE.WebGLRenderer({canvas:cv,antialias:false,stencil:false})}catch(e){const el=$('#err');el.textContent="Mocha's town needs WebGL (3D graphics), and this browser has it turned off or unavailable. Try Safari or Chrome, or turn off Lockdown Mode 👻";el.style.display='flex';return}
+let renderer;try{renderer=new THREE.WebGLRenderer({canvas:cv,antialias:false,stencil:false})}catch(e){$('#err').style.display='flex';return}
 const PR=SET.saver?1:Math.min(devicePixelRatio||1,TOUCH?1.5:1.75);renderer.setPixelRatio(PR);
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();scene.fog=new THREE.Fog('#c8d3df',90,260);
@@ -1575,6 +1574,8 @@ const B8BLK=[{x:40,z:77,r:18},{x:-48.5,z:47,r:6.5},{x:-14.5,z:27,r:5.5},{x:-18.5
 for(let z=64;z<=88;z+=4)B8BLK.push({x:11.5,z,r:3});for(let z=8;z<=22;z+=4.5)B8BLK.push({x:-22.2,z,r:3});
 // Ferry Green's 3 trees (maples) go in with the seeded scenery
 B8TREES.push([-51.2,44.6,2,.9],[-45.3,45.2,2,.85],[-50,49.6,2,.95]);
+function buildPlace(p){const grp=new THREE.Group();grp.position.set(p.x,0,p.z);grp.rotation.y=p.ry;
+  ({home:dollhouse,npchome,cinema,grocery,petstore:petStore,library,market,needle,wheel,dock,lighthouse,troll,hill,conservatory,gumwall,park,civic:civicB,condo:condoB,cottage:cottageB,cemetery:cemeteryB,lot:lotB,plaza:plazaB}[p.kind]||shop)(p,grp);scene.add(grp);p.obj=grp;doorBuild(p,grp)}
 // ====================================================================
 //  B9 DOORS: one 512x1024 door atlas + ONE instanced material for every leaf, OPEN/CLOSED plank, chalkboard, door note and the
 //  bookstore cat (1 draw); doorways = wallTex/gothicTex opts.hole + an instanced jamb "tunnel" (2 draws). Permissions, knocking,
@@ -1791,8 +1792,6 @@ let SIGNAUTO=true;// B22's keepers take over the ritual: set false and call flip
 function flipSign(pid,open){const d=DOORS.find(x=>x.pid===pid&&x.plank);if(!d)return null;open=!!open;if(d.pk.open===open&&d.pk.t<=0)return open;const nd=d.plank.nd;d.pk.a=nd.rotation.y;d.pk.open=open;
   const cp=camera.position,seen=d.vis&&Math.hypot(d.wx-cp.x,d.wz-cp.z)<40;if(seen)d.pk.t=.4;else{d.pk.t=0;nd.rotation.y=open?0:Math.PI;diSync(d.plank.ii)}DOOREV.emit('sign',{pid,open,style:d.style,x:d.wx,z:d.wz});return open}
 
-function buildPlace(p){const grp=new THREE.Group();grp.position.set(p.x,0,p.z);grp.rotation.y=p.ry;
-  ({home:dollhouse,npchome,cinema,grocery,petstore:petStore,library,market,needle,wheel,dock,lighthouse,troll,hill,conservatory,gumwall,park,civic:civicB,condo:condoB,cottage:cottageB,cemetery:cemeteryB,lot:lotB,plaza:plazaB}[p.kind]||shop)(p,grp);scene.add(grp);p.obj=grp;doorBuild(p,grp)}
 PLACES.filter(p=>p.kind!=='spot').forEach(buildPlace);
 KEEPERS.forEach(k=>{const p=byId[k.shop];const o=makeCritter(k.look);o.position.set(k.pos[0],.3,k.pos[1]);o.rotation.y=k.pos[2];p.obj.add(o);k.obj=o;if(p.spots)p.spots.counter=k.ask;
   if(k.shop==='bookstore')box(2.2,1,.9,'#5a3a2a',3.6,.8,-2,p.obj);if(k.shop==='library')box(3,1,1.2,'#4a3226',-1,.8,-1.7,p.obj);if(k.shop==='thrift')box(2.2,1,.9,'#7a4a68',1.8,.8,2.9,p.obj);if(k.shop==='arcade')box(1,1.1,2.2,'#2b2350',-5.5,.85,3,p.obj);if(k.shop==='records')box(1.6,1,.8,'#2a1f1a',-2.2,.8,-3.4,p.obj)});
@@ -4105,6 +4104,7 @@ Object.assign(window.__mocha,{DOORS,DBY,AGENTS,OCC,DIM,TUN,DATL,DOORSPEC,answerK
   walker:(x,z,yaw,moving)=>{if(x!=null){YOU.x=x;YOU.z=z}if(yaw!=null)YOU.yaw=yaw;if(moving!=null)YOU.moving=moving;AGT.t=0;return{x:YOU.x,z:YOU.z,yaw:YOU.yaw,moving:YOU.moving}},
   doorUI:()=>({banner:BAN.el.innerHTML,bannerOn:!!(HUD.S.banner&&HUD.S.banner.on),knock:!!(HUD.S.knock&&HUD.S.knock.on),knockText:KNOCK.el.textContent,knockDoor:KNOCK.d&&KNOCK.d.id,toast:$('#toast').textContent,toastOn:$('#toast').classList.contains('show'),near:$('#near').textContent,dvis:{...DVIS},chb:{...CHB},atlas:DATL.used()}),
   doorAtlas:()=>DATL.c.toDataURL('image/png'),
+  signAuto:on=>{if(on!=null)SIGNAUTO=!!on;return SIGNAUTO},
   wForce:dest=>{W.dest=dest;W.path=[];W.busy=0;W.timer=600;if(dest==='inside'){W.visible=false;W.x=14;W.z=45;W.doing='inside his house'}else{const sp=W_SPOTS[dest];W.visible=true;W.x=sp.x;W.z=sp.z;W.doing=sp.doing}AGT.t=0;return wHomeAwake()}});
 
 })();
