@@ -849,8 +849,8 @@ function saveSet(){try{localStorage.setItem('mocha-settings',JSON.stringify(SET)
 let PHOTOS={};try{PHOTOS=JSON.parse(localStorage.getItem('mocha-photos')||'{}')}catch(e){}
 function savePhotos(){if(S.you&&Array.isArray(S.you.album)&&S.you.album.length>30)S.you.album=S.you.album.slice(-30);if(S.wend&&Array.isArray(S.wend.pol)&&S.wend.pol.length>12)S.wend.pol=S.wend.pol.slice(-12);if(Array.isArray(S.pins)&&S.pins.length>12)S.pins=S.pins.slice(-12);
   const K=photoKeep(),keep=new Set(K.all),pins=new Set(K.pins),pr=new Set([...K.pins,...K.pol]);for(const k in PHOTOS)if(!keep.has(k))delete PHOTOS[k];let tot=0;for(const k in PHOTOS)tot+=PHOTOS[k].length;
-  const drop=[...K.posts.slice(12).reverse(),...K.album];for(const k of drop){if(tot<=PHOTO_BUDGET)break;if(pr.has(k)||!PHOTOS[k])continue;tot-=PHOTOS[k].length;delete PHOTOS[k]}
-  if(S.you&&Array.isArray(S.you.album)){const id=x=>typeof x==='string'?x:x&&x.id;S.you.album=S.you.album.filter(x=>PHOTOS[id(x)])}
+  const drop=[...K.posts.slice(12).reverse(),...K.album],gone=new Set();for(const k of drop){if(tot<=PHOTO_BUDGET)break;if(pr.has(k)||!PHOTOS[k])continue;tot-=PHOTOS[k].length;delete PHOTOS[k];gone.add(k)}
+  if(S.you&&Array.isArray(S.you.album)){const id=x=>typeof x==='string'?x:x&&x.id;if(gone.size)S.you.album=S.you.album.filter(x=>!gone.has(id(x)))}
   try{localStorage.setItem('mocha-photos',JSON.stringify(PHOTOS))}catch(e){const k=drop.find(k=>PHOTOS[k]&&!pr.has(k))||Object.keys(PHOTOS).find(k=>!pr.has(k));if(k){delete PHOTOS[k];savePhotos()}}}
 const WEATHER={kind:'cloudy',t:0,wet:0,over:.5};
 const SEASONS={
@@ -863,7 +863,7 @@ const SEASON_KEY=seasonKey(),SEASON=SEASONS[SEASON_KEY];addEventListener('hashch
 function rollWeather(){const r=Math.random();WEATHER.kind=r<.3?'clear':r<.58?'cloudy':r<.82?'drizzle':r<.94?'rain':'fog';if(SEASON_KEY==='winter'&&(WEATHER.kind==='drizzle'||WEATHER.kind==='rain')&&Math.random()<.65)WEATHER.kind='snow';try{if(SEASON_KEY==='winter'&&WEATHER.kind!=='snow'&&WEATHER.kind!=='fog'){const th=holTheme(),dk=dkey(Date.now())%10000;if((th==='winter'||th==='newyear')&&Math.random()<(dk===1224||dk===1225?.6:.2))WEATHER.kind='snow'}}catch(e){}WEATHER.t=rand(180,420)}
 const WX_FORCED=!!SEASONS[(location.hash||'').slice(1).toLowerCase()];
 // WEATHER.kind follows the WX spell (eased over ~5 min); __mocha.weather(kind) holds a kind for 10 min; a #season preview uses rollWeather
-function wxTick(dt){WEATHER.t-=dt;if(WEATHER.t>0)return;if(WX_FORCED){rollWeather();return}WEATHER.t=15;const k=WX.at(Date.now());if(k!==WEATHER.kind){WEATHER.kind=k;WEATHER.slow=1}}
+function wxTick(dt){WEATHER.t-=dt;if(WEATHER.t>0)return;if(WX_FORCED){rollWeather();return}WEATHER.t=15;WEATHER.dw=WX.forDate(Date.now()).wind;const k=WX.at(Date.now());if(k!==WEATHER.kind){WEATHER.kind=k;WEATHER.slow=1}}
 if(WX_FORCED)rollWeather();else{WEATHER.kind=WX.at(Date.now());WEATHER.t=15;WEATHER.over={clear:0,cloudy:.45,drizzle:.65,rain:.8,fog:.7,snow:.7}[WEATHER.kind];WEATHER.wet=WEATHER.kind==='rain'?1:WEATHER.kind==='drizzle'?.5:WEATHER.kind==='snow'?.9:0}
 
 // ====================================================================
@@ -2345,7 +2345,7 @@ function updateSky(dt){const d=new Date();if(d.getDate()!==keysDay||d.getTimezon
   if(p_mtn){p_mtn[0].color.set(day>.3?'#9aa8c4':'#2e3656').lerp(cB,.35);p_mtn[1].color.set(day>.3?'#f4f6fb':'#8a94b4').lerp(cB,.2)}p_olym.forEach(m=>m.color.set(day>.3?'#86a0c4':'#28304e').lerp(cB,.5));p_snow.forEach(m=>m.color.set(day>.3?'#f4f6fb':'#6a7496').lerp(cB,.3));p_sky.forEach(([m,c])=>m.color.set(day>.3?c:'#2a3152').lerp(cB,day>.3?.68:.4));
   groundMat.color.set('#ffffff').lerp(wetC,WEATHER.kind==='snow'?0:WEATHER.wet*.35);
   const snowing=WEATHER.kind==='snow';const wantWet=WEATHER.kind==='rain'?1:WEATHER.kind==='drizzle'?.5:snowing?.9:0;WEATHER.wet+=(wantWet-WEATHER.wet)*Math.min(1,dt*(WEATHER.slow?.008:.15));if(WEATHER.slow&&Math.abs(over-WEATHER.over)<.02&&Math.abs(wantWet-WEATHER.wet)<.02)WEATHER.slow=0;rain.material.opacity=WEATHER.wet*(snowing?.95:.75);if(rain.material.map!==(snowing?snowTex:rainTex)){rain.material.map=snowing?snowTex:rainTex;rain.material.size=snowing?.55:.9;rain.material.needsUpdate=true}
-  wxTick(dt);WIND+=(clamp(WXW[WEATHER.kind]+WX.forDate(Date.now()).wind*.5+Math.sin(T*.11)*.06+Math.sin(T*.37)*.04,0,1)-WIND)*Math.min(1,dt*.3);
+  wxTick(dt);WIND+=(clamp(WXW[WEATHER.kind]+(WEATHER.dw||0)*.5+Math.sin(T*.11)*.06+Math.sin(T*.37)*.04,0,1)-WIND)*Math.min(1,dt*.3);
   skyLabelT-=dt;if(skyLabelT<=0){skyLabelT=1;$('#sky').textContent=`${holLabel()||SEASON.label} · ${({clear:nightAmt>.5?'🌙 clear':'☀️ clear',cloudy:'☁️ cloudy',drizzle:'🌦 drizzle',rain:'🌧 rain',fog:'🌫 foggy',snow:'❄️ snow'})[WEATHER.kind]} · ${d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`}}
 
 // ====================================================================
@@ -3470,7 +3470,7 @@ async function syncRemote(ref,tries){let snap=null;try{snap=await Promise.race([
     if(snap.exists){let rs=null;try{rs=JSON.parse(snap.data().state)}catch(_){}
       const rb=+(rs&&rs.born)||0,lb=+S.born||0,same=rb===lb,rg=+(rs&&rs.gen)||0,lg=+S.gen||0;if(rs&&rs.needs&&(isNew||(rg!==lg?rg>lg:(same?(+rs.lastSeen||0)>seen0:(rb>0&&rb<lb))))){if(!isNew){const bk=KEY+'-bak';let keep=false;if(same){try{const o=JSON.parse(localStorage.getItem(bk)||'null');keep=!!(o&&o.born&&o.born!==S.born)}catch(_){}}if(!keep)try{localStorage.setItem(bk,JSON.stringify(S))}catch(_){}}const keepMind=S.mind;S=rs;migrate();setTimeout(applyPaintings,0);S.mind=S.mind||keepMind;isNew=false;awayCount=catchUp();txAwayFlush();mailDeliver();holDirty=1;applyOutfit();applyGear();PLACES.filter(known).forEach(p=>labelFor(p));try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}renderTab();hud();adaptRest(4000);if(MIND.api&&S.mind){MIND.on=true;updateMindBtn()}}}
     pushRemote(true);
-    const missing=photoKeep().all.filter(id=>!PHOTOS[id]).slice(0,24);for(const id of missing){try{const d=await photoCol.doc(id).get();if(d.exists){PHOTOS[id]=d.data().img}}catch(_){}}if(missing.length){savePhotos();if(curTab==='feed')renderFeed()}
+    const missing=photoKeep().all.filter(id=>!PHOTOS[id]).slice(0,80);for(const id of missing){try{const d=await photoCol.doc(id).get();if(d.exists){PHOTOS[id]=d.data().img}}catch(_){}}if(missing.length){savePhotos();if(curTab==='feed')renderFeed()}
   }catch(e){}}
 
 // ====================================================================
