@@ -1495,7 +1495,7 @@ function txState(){if(!S.phone)return{k:'none',t:'no phone yet'};if(TX.typing)re
 function txNow(){if(G.mode==='trip'&&S.trip)return`on a trip to ${TRIPS[S.trip.id].n} (${tripPhase()}; back around ${fmtH(hourAt(S.trip.back))})`;if(txAsleep())return'in bed asleep (it\'s your sleep time)';if(G.biking)return'riding your bike';const a=G.mode==='activity'&&G.act;if(a)return`${a.doing} at ${txPlace(a.p)}`;if(G.mode==='travel'&&G.act&&G.act.p)return'on your way to '+txPlace(G.act.p);return'floating around'}
 function txEmoji(a){return({cafe:'☕',bookstore:'📚',library:'📚',records:'🎶',cinema:'🎬',studio:'🎨',grocery:'🛒',petstore:'🐾',market:'🐟',phones:'📱',bikes:'🚲',home:'🏠',park:'🌳',thrift:'🧥',arcade:'🕹',needle:'🌆',wheel:'🎡',ferry:'⛴'})[a&&a.p]||'✨'}
 function txWeatherLine(){return({rain:'it\'s pouring here. the puddles have puddles 🌧',drizzle:'classic drizzle day here 🌦 soft and cozy',fog:'so foggy here i can barely see the needle 🌫',snow:'it\'s SNOWING here ❄️ everything is quiet and sparkly',clear:nightAmt>.5?'clear night here! so many stars ✨':'sunny here!! the mountain is out 🏔',cloudy:'grey and cozy here ☁️'})[WEATHER.kind]||'cozy weather here ☁️'}
-function txNowLine(){if(G.mode==='trip'&&S.trip){const T=TRIPS[S.trip.id],ph=tripPhase();return/^exploring/.test(ph)?pick([`i'm in ${T.s.toLowerCase()}!! ${T.e}`,`exploring ${T.s.toLowerCase()} ${T.e} it's so pretty here`]):`${ph}! ${T.by==='train'?'🚆':'⛴'}`}if(G.biking)return`out riding ${S.bike?S.bike.name:'my bike'}! pulled over to text you, safety first 🚲`;const a=G.mode==='activity'&&G.act;if(a&&a.p){const pl=txPlace(a.p);return pick([`${a.doing} at ${pl} ${txEmoji(a)}`,`i'm at ${pl}! ${a.doing} ${txEmoji(a)}`])}
+function txNowLine(){if(G.mode==='trip'&&S.trip){const T=TRIPS[S.trip.id],ph=tripPhase();return/^exploring/.test(ph)?pick([`i'm in ${T.s.toLowerCase()}!! ${T.e}`,`exploring ${T.s.toLowerCase()} ${T.e} it's so pretty here`]):`${ph}! ${T.by==='train'?'🚆':'⛴️'}`}if(G.biking)return`out riding ${S.bike?S.bike.name:'my bike'}! pulled over to text you, safety first 🚲`;const a=G.mode==='activity'&&G.act;if(a&&a.p){const pl=txPlace(a.p);return pick([`${a.doing} at ${pl} ${txEmoji(a)}`,`i'm at ${pl}! ${a.doing} ${txEmoji(a)}`])}
   if(G.mode==='travel'&&G.act&&G.act.p)return`on my way to ${txPlace(G.act.p)}! 👻💨`;return pick(['just floating around 👻','nothing much! floating. thinking about snacks'])}
 function txMoment(){if(G.mode==='trip'&&S.trip){const T=TRIPS[S.trip.id];return pick([`greetings from ${T.s.toLowerCase()} ${T.e}`,`${tripPhase()} ${T.e} wish you were here!`,`thinking about you from ${T.s.toLowerCase()} 💛`])}const o=[],a=G.mode==='activity'&&G.act;if(a&&a.p&&!G.sleep){const pl=txPlace(a.p);o.push(pick([`currently: ${a.doing} at ${pl} ${txEmoji(a)}`,`hi! i'm at ${pl}, ${a.doing} ${txEmoji(a)}`,`${a.doing} at ${pl} rn. it's nice ${txEmoji(a)}`]))}
   if(G.mode==='travel'&&G.act&&G.act.p&&!G.biking)o.push(`on my way to ${txPlace(G.act.p)}! 👻💨`);o.push(txWeatherLine());if(nightAmt>.5)o.push('the streetlights just came on. my favorite part of the evening ✨');
@@ -1974,7 +1974,7 @@ let SUN=sunTimes(new Date());
 const isDark=(h=hourAt(Date.now()))=>h<SUN.rise-.4||h>SUN.set+.4;
 const isNight=()=>asleepAt(hourAt(Date.now()));
 function localChoose(at=Date.now()){const tr=S.traits,h=hourAt(at),asleep=asleepAt(h,at),night=isDark(h),wet=WEATHER.kind==='rain'||WEATHER.kind==='drizzle';
-  if(asleep)return{act:ACTS.find(a=>a.fx==='sleep')};const s0=sched(),toBed=((s0.bed-h)+24)%24;
+  if(asleep)return{act:ACTS.find(a=>a.fx==='sleep')};{const up=tripUnpack(at);if(up&&Math.random()<.55+tr.coziness*.35)return{act:up}}const s0=sched(),toBed=((s0.bed-h)+24)%24;
   const hidden=PLACES.filter(p=>!known(p));
   if(hidden.length&&!night&&Math.random()<.07+tr.curiosity*.1+(S.needs.curious<35?.1:0)+(S.goal&&S.goal.kind==='discover'?.15:0))return{explore:pick(hidden)};
   const cands0=1;const cands=ACTS.filter(a=>known(byId[a.p])&&(!a.night||night)&&(!a.pet||S.pets.length)&&(!a.bike||S.bike)&&(!a.npc||wAvail())&&isOpen(byId[a.p],h)&&(a.fx!=='sleep'||S.needs.energy<8)&&(a.fx!=='mail'||mailWaiting(at).length)&&(a.fx!=='writeback'||mailUnanswered(at)));
@@ -2002,7 +2002,7 @@ function nextTrain(ms=Date.now()){const P=TRN.per*1000;let c=Math.floor((ms+TRN.
 function trainDoorZ(z){return TRN.doors.reduce((b,d)=>Math.abs(d-z)<Math.abs(b-z)?d:b,TRN.doors[0])}
 // real Washington places. Facts live in FACTS (all true); the diary lines are his own little stories.
 const TRIPS={
- rainier:{n:'Mount Rainier',s:'Mount Rainier',e:'🏔',by:'train',cost:30,hrs:[2.4,3.6],ride:[45,60],tags:['nature','heights','travel'],fk:'paradise (mount rainier)',col:'#ff9a6a',
+ rainier:{n:'Mount Rainier',s:'Mount Rainier',e:'🏔\uFE0F',by:'train',cost:30,hrs:[2.4,3.6],ride:[45,60],tags:['nature','heights','travel'],fk:'paradise (mount rainier)',col:'#ff9a6a',
   sv:['a Mount Rainier enamel pin','a tiny wooden marmot from the visitor center'],pcl:'The mountain is even bigger in person, and it sparkles',
   arr:['Made it to Paradise on Mount Rainier! (The meadows. Not the ghost kind of paradise.) The mountain is so big up close that it makes its own clouds.','Stepped off at Paradise and just stared. Mount Rainier was right THERE, huge and white and glittery.'],
   see:['Floated along a trail through the meadows. A marmot whistled at me from a rock. I think it was saying hi.','Watched the clouds slide over the glaciers for a long time. The mountain didn\'t mind the company.'],
@@ -2028,11 +2028,11 @@ const TRIPS={
   arr:['Took the train to Tacoma and floated across the Bridge of Glass. The ceiling is full of glass sea creatures glowing in the light.','Tacoma! Went straight to the Museum of Glass. It has a giant tilted silver cone on top, like a party hat for a robot.'],
   see:['Watched glassblowers in the Hot Shop. They spin glowing glass on long poles like honey on a spoon.','Saw glass art shaped like waves and flowers and something that was either a jellyfish or a chandelier. Maybe both.'],
   cap:['glass made of fire?! 🔥🔮','bridge of glass ✨'],tx:'tacoma!! there\'s a bridge made of glass ✨'},
- bainbridge:{n:'Bainbridge Island',s:'Bainbridge Island',e:'⛴',by:'ferry',cost:12,hrs:[1.6,2.5],ride:[35,35],tags:['ocean','travel'],fk:'bainbridge island',col:'#5fd0c0',
+ bainbridge:{n:'Bainbridge Island',s:'Bainbridge Island',e:'⛴\uFE0F',by:'ferry',cost:12,hrs:[1.6,2.5],ride:[35,35],tags:['ocean','travel'],fk:'bainbridge island',col:'#5fd0c0',
   sv:['a ferry-shaped cookie cutter','a little jar of island honey'],pcl:'I rode the ferry and waved at the whole city',
   arr:['Took the ferry across the Sound to Bainbridge Island. I stood at the rail the whole way and waved back at the city.','The ferry ride to Bainbridge was so pretty: the city got smaller and the mountains got bigger.'],
   see:['Wandered around Winslow: a bakery, a bookstore, a tiny art museum. Everybody was very cozy.','Found a quiet beach with driftwood and little crabs. I said hello to every crab. That took a while.'],
-  cap:['ferry day ⛴','island time 🌊'],tx:'made it to bainbridge island! ⛴🌊'},
+  cap:['ferry day ⛴️','island time 🌊'],tx:'made it to bainbridge island! ⛴️🌊'},
  sanjuans:{n:'the San Juan Islands',s:'San Juan Islands',e:'🐋',by:'ferry',cost:38,hrs:[3,3.9],ride:[75,95],tags:['ocean','animals','travel'],fk:'san juan islands',night:1,col:'#ffb04a',
   sv:['an orca keychain','a lavender sachet from an island farm'],pcl:'I watched for orcas from the rocks',inn:'a bed-and-breakfast by the harbor, where the boats creaked all night like a lullaby',
   arr:['The ferry wound between little green islands for ages. Every island looked like it was keeping a secret.','Made it to the San Juan Islands! Friday Harbor is full of boats and seagulls with opinions.'],
@@ -2106,7 +2106,7 @@ function tripEnd(t=Date.now(),live=true){const tp=S.trip;if(!tp)return;while(tp.
   S.needs.fun=clamp(S.needs.fun+50,0,100);S.needs.curious=clamp(S.needs.curious+45,0,100);S.needs.energy=clamp(S.needs.energy-18,0,100);S.xp+=30;{const vp=T.by==='train'?'station':'ferry';S.visits[vp]=(S.visits[vp]||0)+1}
   S.trips=Array.isArray(S.trips)?S.trips:[];S.trips.unshift({id:tp.id,t0:tp.t0,t1:t,over:tp.over,sv:tp.sv,pc:tp.pc?tp.pc.id:null,s:tp.pc?tp.pc.s:0,x:tp.xm});S.trips.length=Math.min(S.trips.length,24);S.trip=null;
   addEntry('Trip',`Got back from ${T.n}${tp.over?' after a night away':''}! ${tp.sv?`I brought home ${tp.sv} for my treasure shelf. `:''}${pick(['Travelling is wonderful. So is my own neighborhood.','My little city looks extra cozy after a trip.','I missed the drizzle a tiny bit. Don\'t tell anyone.'])}`,T.by==='train'?'Rain City Station':'Ferry Dock',t,true);
-  txEvent('trip',{k:'home',id:tp.id},t);if(live)toast(`${T.by==='train'?'🚆':'⛴'} Mocha is back from ${T.s}!`)}
+  txEvent('trip',{k:'home',id:tp.id},t);if(live)toast(`${T.by==='train'?'🚆':'⛴️'} Mocha is back from ${T.s}!`)}
 // what he's up to on the trip right now (for texts, the away card and Claude)
 // right after a trip he likes to go home and unpack (a strong, natural pull — still just a candidate)
 function tripUnpack(at){const L=(S.trips||[])[0];if(!L||L.up||at-L.t1>50*60e3||at<L.t1)return null;const T=TRIPS[L.id];return{p:'home',s:'couch',doing:'unpacking from his trip',tags:['cozy','travel'],need:{energy:12,fun:10},fx:'unpack',tw:6,
@@ -2115,10 +2115,10 @@ function tripPhase(now=Date.now()){const tp=S.trip;if(!tp)return'';const T=TRIPS
   if(now<at('arrive'))return T.by==='train'?'on the train there':'on the ferry there';if(now>=tp.back)return T.by==='train'?'on the train home, almost back':'on the ferry home, almost back';if(now>=at('leave'))return T.by==='train'?'on the train home':'on the ferry home';
   if(tp.over&&now>=at('sleep')&&now<at('wake'))return'asleep at the inn';return'exploring '+T.s}
 function tripText(d){const T=TRIPS[d.id]||TRIPS.rainier,tr=T.by==='train';switch(d.k){
-  case'go':return{text:tr?pick([`on the train to ${T.s.toLowerCase()}!! 🚆 window seat obviously`,`going on a little trip to ${T.s.toLowerCase()} 🚆 i'll send you a postcard!`]):pick([`on the ferry to ${T.s.toLowerCase()}!! ⛴ the wind is flapping my sheet`,`ferry trip!! heading to ${T.s.toLowerCase()} ⛴`])};
+  case'go':return{text:tr?pick([`on the train to ${T.s.toLowerCase()}!! 🚆 window seat obviously`,`going on a little trip to ${T.s.toLowerCase()} 🚆 i'll send you a postcard!`]):pick([`on the ferry to ${T.s.toLowerCase()}!! ⛴️ the wind is flapping my sheet`,`ferry trip!! heading to ${T.s.toLowerCase()} ⛴️`])};
   case'arrive':return{text:T.tx};
   case'card':return{text:pick(['i made a postcard for my mom and dad 📮 here\'s the front!','sent mom and dad a postcard 📮 look!']),extra:d.pic?{pic:d.pic}:{}};
-  case'leave':return{text:tr?'heading home on the train now 🚆 see you soon!':'on the ferry home now ⛴ almost back!'};
+  case'leave':return{text:tr?'heading home on the train now 🚆 see you soon!':'on the ferry home now ⛴️ almost back!'};
   default:return{text:pick(['i\'m back!! 🏠 i have so much to tell you',`back from ${T.s.toLowerCase()}!! i missed my little city 👻`])}}}
 function tripContext(){const now=Date.now();if(S.trip){const T=TRIPS[S.trip.id];return`He is away on a trip to ${T.n} (${tripPhase()}; back around ${fmtH(hourAt(S.trip.back))}).`}
   const last=S.tripLast?Math.round((now-S.tripLast)/864e5*10)/10:null,L=Object.entries(TRIPS).map(([id,T])=>{const why=tripOk(id,now),v=(S.trips||[]).filter(x=>x.id===id).length;return`  ${id}: ${T.n} by ${T.by} (ticket ${T.cost} coins, about ${T.hrs[0]}–${T.hrs[1]} h${T.night?', or overnight':''})${v?`, been there ${v}×`:''}${why?` [not now: ${why}]`:' [he could go now]'}`});
@@ -2350,10 +2350,10 @@ function tripAway(id){return{p:tripVia(id)==='ferry'?'ferry':'station',doing:'aw
 function tripResume(){const tp=S.trip;if(!tp)return;const w=tripSpotW(tp.id);if(G.biking)parkBike();G.x=w.x;G.z=w.z;G.y=2;G.vx=G.vz=0;G.mode='trip';G.act=tripAway(tp.id);G.timer=1e9;G.ride=null;G.route=null;G.target=null;G.sleep=false;G.thinking=false}
 function tripGiveUp(a,why){const T=TRIPS[a.trip]||{};a.fx=null;a.bd=null;a.lines=[`Went to catch the ${T.by==='ferry'?'ferry':'train'} to ${T.s||'somewhere new'}, but ${why||'it didn\'t work out today'}. Next time!`];a.doing='watching the '+(T.by==='ferry'?'boats':'trains');G.timer=rand(4,8)}
 function tripGo(a){if(!S.trip&&!tripBegin(a.trip,Date.now(),true)){tripGiveUp(a,'I didn\'t have enough coins for a ticket');return false}tripAdvance(Date.now(),true);save();return true}
-function tripVanish(){const tp=S.trip;if(!tp)return;tripResume();const T=TRIPS[tp.id];toast(`${T.by==='train'?'🚆':'⛴'} Mocha left on a trip to ${T.s}! back around ${fmtH(hourAt(tp.back))}${dkey(tp.back)!==dkey(Date.now())?' tomorrow':''}`);save()}
+function tripVanish(){const tp=S.trip;if(!tp)return;tripResume();const T=TRIPS[tp.id];toast(`${T.by==='train'?'🚆':'⛴️'} Mocha left on a trip to ${T.s}! back around ${fmtH(hourAt(tp.back))}${dkey(tp.back)!==dkey(Date.now())?' tomorrow':''}`);save()}
 // he steps off the train (or rides the ferry back in)
 function tripArrive(by){const tp=S.trip,id=tp?tp.id:null,T=TRIPS[id]||{s:'his trip'};G.thinking=false;G.sleep=false;G.route=null;
-  if(by==='ferry'){G.mode='activity';G.ride='ferry';G.act={p:'ferry',doing:`riding the ferry home from ${T.s}`,tags:[],need:{},fx:'tripback',trip:id,ferryIn:true};G.timer=1e9;setTimeout(()=>say(pick(['i can see my city!! 🌆','almost home! ⛴']),3),1500);return}
+  if(by==='ferry'){G.mode='activity';G.ride='ferry';G.act={p:'ferry',doing:`riding the ferry home from ${T.s}`,tags:[],need:{},fx:'tripback',trip:id,ferryIn:true};G.timer=1e9;setTimeout(()=>say(pick(['i can see my city!! 🌆','almost home! ⛴️']),3),1500);return}
   const fw=by==='walk'||(id&&tripVia(id)==='ferry');if(fw){const w=spotWorld('ferry');G.x=w.x;G.z=w.z}else{G.x=TRN.x-1.75;G.z=trainDoorZ(G.z)}G.y=2;G.vx=G.vz=0;G.ride=null;
   if(tp)tripEnd(Date.now(),true);const w=fw?spotWorld('ferry'):spotWorld('station','platform');
   G.act={p:fw?'ferry':'station',s:fw?null:'platform',doing:id?`back from ${T.s}!`:'back in town',tags:['travel'],need:{energy:-8},fx:'tripback',trip:id};G.target={x:w.x+rand(-1.5,1.5),z:w.z+rand(-2,2)};G.mode='travel';
@@ -2372,7 +2372,7 @@ function tripTick(dt){const a=G.act,now=Date.now();
     else{const ph=ferryPh();
       if(a.onb){if(ph>.36&&ph<.6)tripVanish()}
       else if(a.bd){const fx=ferry.position.x,fz=ferry.position.z+3,k=Math.min(1,dt*2.5);G.x+=(fx-G.x)*k;G.z+=(fz-G.z)*k;a.face={x:fx-10,z:fz};if(Math.hypot(fx-G.x,fz-G.z)<1.6||ph>.1){if(tripGo(a)){G.ride='ferry';a.onb=1;a.doing='on the ferry to '+T.s}}}
-      else if(ph<.06){a.bd=1;say('all aboard! ⛴',2.5)}
+      else if(ph<.06){a.bd=1;say('all aboard! ⛴️',2.5)}
       else if(now-a.w0>6*60e3)tripGiveUp(a,'I missed the ferry')}}
   else if(a.fx==='tripback'&&a.ferryIn&&ferryPh()<.09){G.ride=null;a.ferryIn=false;if(S.trip)tripEnd(now,true);const w=spotWorld('ferry');G.target={x:w.x+rand(-1,1),z:w.z+rand(-1,1)};G.mode='travel'}}
 
@@ -2842,7 +2842,7 @@ bm.addEventListener('click',e=>{const r=bm.getBoundingClientRect();const x=((e.c
 $('#mapBtn').onclick=()=>toggleMap();$('#mapClose').onclick=()=>toggleMap(false);$('#mapWrap').addEventListener('click',e=>{if(e.target.id==='mapWrap')toggleMap(false)});
 
 const MLAB={energy:'Energy',snack:'Snacky',social:'Social',fun:'Fun',curious:'Curious'},MCOL={energy:'#7fc8b8',snack:'#f2b48a',social:'#f29fb5',fun:'#f2c14e',curious:'#8fb0e0'};
-function statusText(){if(G.mode==='trip'&&S.trip){const T=TRIPS[S.trip.id];return`${T.by==='ferry'?'⛴':'🚆'} on a trip · ${T.s}`}if(G.thinking)return'💭 thinking…';if(G.startle>0)return'startled!';if(G.mode==='activity')return G.act.doing;if(G.mode==='travel')return G.biking&&G.act&&G.act.p?'🚲 → '+(G.act.p==='home'?'home':byId[G.act.p].name):G.act&&G.act.explore?'exploring 🧭':G.act&&G.act.p?'→ '+(G.act.p==='home'?'home':byId[G.act.p].name):'floating';return'floating'}
+function statusText(){if(G.mode==='trip'&&S.trip){const T=TRIPS[S.trip.id];return`${T.by==='ferry'?'⛴️':'🚆'} on a trip · ${T.s}`}if(G.thinking)return'💭 thinking…';if(G.startle>0)return'startled!';if(G.mode==='activity')return G.act.doing;if(G.mode==='travel')return G.biking&&G.act&&G.act.p?'🚲 → '+(G.act.p==='home'?'home':byId[G.act.p].name):G.act&&G.act.explore?'exploring 🧭':G.act&&G.act.p?'→ '+(G.act.p==='home'?'home':byId[G.act.p].name):'floating';return'floating'}
 function hud(){$('#lvl').textContent='lv '+level();$('#status').textContent=statusText();awayCard();const mood=Object.values(S.needs).reduce((a,b)=>a+b,0)/5;
   $('#meters').innerHTML=`<span>Cozy</span><div class="bar"><i style="width:${mood}%;background:#26324a"></i></div>`+Object.keys(MLAB).map(k=>`<span>${MLAB[k]}</span><div class="bar"><i style="width:${S.needs[k]}%;background:${MCOL[k]}"></i></div>`).join('')}
 function ago(t){const s=(Date.now()-t)/1000;if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
@@ -3005,7 +3005,7 @@ function cardFind(id){return tripCards().find(c=>c.id===id)}
 let awaySig='';
 function awayCard(){const el=$('#away'),on=G.mode==='trip'&&!!S.trip&&camS.mode==='follow';el.classList.toggle('hidden',!on);document.body.classList.toggle('tripAway',G.mode==='trip');if(!on){awaySig='';return}
   const tp=S.trip,T=TRIPS[tp.id],now=Date.now(),tom=dkey(tp.back)!==dkey(now),ph=tripPhase(now),sig=[tp.id,ph,tom,fmtH(hourAt(tp.back)),!!tp.pc,!!S.phone].join('|');if(sig===awaySig)return;awaySig=sig;
-  $('#awE').textContent=T.e;$('#awT').textContent=`Mocha is away on a trip to ${T.n}`;$('#awS').textContent=`${ph} · back around ${fmtH(hourAt(tp.back))}${tom?' tomorrow':''} ${T.by==='train'?'🚆':'⛴'}`;
+  $('#awE').textContent=T.e;$('#awT').textContent=`Mocha is away on a trip to ${T.n}`;$('#awS').textContent=`${ph} · back around ${fmtH(hourAt(tp.back))}${tom?' tomorrow':''} ${T.by==='train'?'🚆':'⛴️'}`;
   $('#awN').textContent=S.phone?'he may text you from the road 📱':'you can still walk around town 🚶';const b=$('#awCard');b.style.display=tp.pc?'':'none';b.dataset.id=tp.pc?tp.pc.id:''}
 $('#awCard').onclick=e=>{const id=e.currentTarget.dataset.id;if(id)openLB('cards',id)};
 function tripsHTML(){const L=tripCards(),done=(S.trips||[]).length,tp=S.trip;
@@ -3247,7 +3247,7 @@ window.__you=()=>({x:+YOU.x.toFixed(1),z:+YOU.z.toFixed(1),yaw:+YOU.yaw.toFixed(
   tripNow:id=>{S.tripLast=0;if(S.coins<TRIPS[id].cost)S.coins+=TRIPS[id].cost;if(!tripBegin(id,Date.now(),true))return false;tripAdvance(Date.now(),true);tripVanish();return true},
   tripSkip:ms=>{if(!S.trip)return null;S.trip.t0-=ms;S.trip.back-=ms;S.trip.ev.forEach(e=>e[0]-=ms);tripTT=0;return tripAdvance(Date.now(),true)},
   tripSim:(id,t0,now=Date.now())=>{isQuiet=true;S.tripLast=0;if(S.coins<TRIPS[id].cost)S.coins+=TRIPS[id].cost;const r=tripBegin(id,t0,false),n=tripAdvance(now,false);isQuiet=false;return{began:!!r,n,trip:S.trip&&JSON.parse(JSON.stringify(S.trip)),last:(S.trips||[])[0]||null}},
-  tripInfo:()=>({trip:S.trip&&JSON.parse(JSON.stringify(S.trip)),trips:(S.trips||[]).slice(0,6),tripLast:S.tripLast,mode:G.mode,act:G.act&&{fx:G.act.fx,doing:G.act.doing,p:G.act.p,onb:!!G.act.onb,bd:!!G.act.bd},visible:mocha.visible,ride:G.ride,x:+G.x.toFixed(1),z:+G.z.toFixed(1),y:+G.y.toFixed(2),status:statusText(),tx:txState(),chat:chatMode(),away:!$('#away').classList.contains('hidden'),awayText:$('#away').innerText,train:trainAt(),trainVisible:TRAIN.visible,coins:S.coins,pets:petObjs.map(p=>p.obj.visible),ferryPh:+ferryPh().toFixed(3),cards:tripCards().length}),
+  tripInfo:()=>(awayCard(),{trip:S.trip&&JSON.parse(JSON.stringify(S.trip)),trips:(S.trips||[]).slice(0,6),tripLast:S.tripLast,mode:G.mode,act:G.act&&{fx:G.act.fx,doing:G.act.doing,p:G.act.p,onb:!!G.act.onb,bd:!!G.act.bd},visible:mocha.visible,ride:G.ride,x:+G.x.toFixed(1),z:+G.z.toFixed(1),y:+G.y.toFixed(2),status:statusText(),tx:txState(),chat:chatMode(),away:!$('#away').classList.contains('hidden'),awayText:$('#away').innerText,train:trainAt(),trainVisible:TRAIN.visible,coins:S.coins,pets:petObjs.map(p=>p.obj.visible),ferryPh:+ferryPh().toFixed(3),cards:tripCards().length}),
   catchUpTest:()=>{isNew=false;const n=catchUp();return n},tripUnpack,
   ferryPhase:ph=>{const cur=(T%FERRY.period)/FERRY.period;T+=((ph-cur+1)%1)*FERRY.period;return ferryPh()}};
 })();
