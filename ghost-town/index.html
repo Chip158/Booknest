@@ -211,6 +211,64 @@
     #zoom{bottom:calc(76px + env(safe-area-inset-bottom))}
     html.touch body.walk #zoom{right:calc(max(26px,env(safe-area-inset-right)) + 124px);bottom:max(32px,calc(env(safe-area-inset-bottom) + 8px))}
   }
+  /* ---- Messages: texting Mocha's phone ---- */
+  #dock .round{position:relative}#dock>*{flex:none}
+  .badge{position:absolute;top:-4px;right:-4px;min-width:21px;height:21px;padding:0 5px;border-radius:11px;background:#e5484d;color:#fff;font:800 12px/1 ui-rounded,system-ui,sans-serif;display:none;align-items:center;justify-content:center;box-shadow:0 0 0 2.5px var(--paper);pointer-events:none}
+  .badge.pop{animation:bdgPop .5s ease-out}#msgBtn.ring{animation:ring .8s ease-in-out}
+  @keyframes bdgPop{0%{transform:scale(.3)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+  @keyframes ring{0%,100%{transform:rotate(0)}15%{transform:rotate(-16deg)}30%{transform:rotate(13deg)}45%{transform:rotate(-9deg)}60%{transform:rotate(6deg)}75%{transform:rotate(-3deg)}}
+  #msgs{position:fixed;z-index:6;top:calc(70px + env(safe-area-inset-top));bottom:calc(86px + env(safe-area-inset-bottom));right:max(12px,env(safe-area-inset-right));width:min(400px,42vw);background:#f6f0e6;border-radius:22px;box-shadow:0 6px 0 rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;animation:msgIn .25s ease-out}
+  #msgs.hidden{display:none}
+  @keyframes msgIn{from{opacity:0;transform:translateY(16px)}}
+  .mHd{display:flex;align-items:center;gap:10px;padding:12px 12px 10px 14px;background:var(--paper);border-bottom:1.5px solid var(--line);flex:none}
+  .mAv{width:42px;height:42px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffffff,#e4e0f3);display:flex;align-items:center;justify-content:center;font-size:24px;flex:none;box-shadow:0 0 0 2px var(--line)}
+  .mWho{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;line-height:1.2}.mWho b{font-size:16px}
+  #msgStat{font-size:12px;font-weight:700;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #msgStat i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#b9b2a6;margin-right:5px}
+  #msgStat.on i,#msgStat.typing i{background:#3fbf7f}#msgStat.busy i{background:#f2a33a}#msgStat.sleep i{background:#8a90cf}#msgStat.typing{color:var(--teal)}
+  .mX{border:0;background:var(--soft);width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer;color:var(--ink);flex:none;display:flex;align-items:center;justify-content:center;padding:0 0 2px}
+  .mList{flex:1;min-height:0;overflow-y:auto;padding:8px 12px 12px;display:flex;flex-direction:column;gap:3px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+  .mDay{align-self:center;font-size:11px;font-weight:800;color:var(--mut);margin:12px 0 5px}
+  .mRow{display:flex}.mRow.me{justify-content:flex-end}
+  .mB{max-width:80%;padding:8px 13px;border-radius:19px;font-size:15px;line-height:1.38;overflow-wrap:anywhere;white-space:pre-wrap}
+  .him .mB{background:#fff;color:var(--ink);border-bottom-left-radius:6px;box-shadow:0 1px 0 rgba(0,0,0,.07)}
+  .me .mB{background:linear-gradient(#5f95ec,#4b80dd);color:#fff;border-bottom-right-radius:6px}
+  .mB.hasPic{padding:6px 6px 8px}.mB.hasPic img+*{margin-top:4px}
+  .mPic{display:block;width:min(200px,100%);height:auto;border-radius:14px;margin:0 0 6px;cursor:zoom-in;background:var(--soft)}.mPic.art{border:4px solid #b08a3a;border-radius:5px}
+  .mMeta{font-size:10.5px;font-weight:700;color:var(--mut);margin:1px 6px 7px}.mMeta.me{align-self:flex-end}
+  .mTyping{display:flex;gap:4px;align-items:center;padding:13px 15px}.mTyping i{width:7px;height:7px;border-radius:50%;background:#aaa395;animation:tdot 1.2s infinite}.mTyping i:nth-child(2){animation-delay:.15s}.mTyping i:nth-child(3){animation-delay:.3s}
+  @keyframes tdot{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-4px);opacity:1}}
+  .mNote{align-self:center;text-align:center;font-size:12px;font-weight:700;color:#5f6499;background:#e9e7f6;border-radius:12px;padding:7px 12px;margin:8px 8px 2px;max-width:92%;line-height:1.4}
+  .mEmpty{margin:auto;text-align:center;color:var(--mut);font-size:14px;line-height:1.5;padding:20px 22px;max-width:330px}.mEmpty .big{font-size:46px;margin-bottom:6px}.mEmpty b{color:var(--ink);display:block;font-size:16px;margin-bottom:4px}
+  form#msgForm{display:flex;gap:6px;align-items:center;padding:8px 10px;background:var(--paper);border-top:1.5px solid var(--line);flex:none}
+  form#msgForm input{flex:1;min-width:0;border:1.5px solid var(--line);background:#fff;border-radius:999px;font:inherit;font-size:16px;padding:9px 14px;outline:none;color:var(--ink)}
+  form#msgForm input:focus{border-color:#b6c7ee}form#msgForm input:disabled{background:var(--soft)}
+  form#msgForm button{border:0;width:42px;height:42px;border-radius:50%;flex:none;font:inherit;font-size:19px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  #msgSend{background:#4b80dd;color:#fff}#msgSend:disabled{background:#d3d9e6;cursor:default}#msgMic{background:var(--soft);display:none}#msgMic.on{background:var(--accent);color:#fff;animation:pulse 1.4s infinite}
+  .msg.him{align-self:flex-start;background:var(--paper);color:var(--ink);border-radius:16px 16px 16px 4px;box-shadow:0 3px 0 rgba(0,0,0,.12)}
+  #toast.tap{pointer-events:auto;cursor:pointer}
+  body.msgOpen #chatwrap,body.msgOpen #hint{display:none!important}
+  body.msgOpen #panel{visibility:hidden}
+  body.msgOpen #dock,body.msgOpen.panelOpen.wideP #dock{right:calc(min(400px,42vw) + 24px + env(safe-area-inset-right))}
+  body.msgOpen .stick,html.touch body.walk.msgOpen #zoom{display:none!important}
+  @media (max-width:760px) and (orientation:portrait){html.touch body.walk #dock{bottom:calc(184px + env(safe-area-inset-bottom));gap:8px}html.touch body.walk.chatOpen #dock{bottom:calc(258px + env(safe-area-inset-bottom))}html.touch body.walk #dock .round{width:46px;height:46px;font-size:20px}}
+  @media (max-width:760px){#toast{top:calc(98px + env(safe-area-inset-top));bottom:auto;transform:translate(-50%,-14px)}#toast.show{transform:translate(-50%,0)}body.walk #toast{top:calc(150px + env(safe-area-inset-top))}#hint{bottom:calc(312px + env(safe-area-inset-bottom))}}
+  @media (orientation:landscape) and (max-height:520px){#toast{top:calc(54px + env(safe-area-inset-top));bottom:auto;left:max(10px,env(safe-area-inset-left));transform:translateY(-12px);max-width:min(56vw,460px)}#toast.show{transform:none}body.panelOpen #toast,body.msgOpen #toast{max-width:calc(100vw - min(46vw,440px) - 84px)}
+    body.panelOpen #chatwrap,body.walk.chatOpen.panelOpen #chatwrap{left:max(10px,env(safe-area-inset-left));transform:none;width:calc(100vw - min(46vw,440px) - 84px)}
+    body.panelOpen #mochaPill,body.msgOpen #mochaPill{max-width:calc(100vw - min(46vw,440px) - 190px)}}
+  @media (max-width:760px){
+    #msgs{inset:0;width:auto;height:100%;border-radius:0;z-index:9;padding-top:env(safe-area-inset-top);animation:msgUp .28s ease-out}
+    @keyframes msgUp{from{transform:translateY(40px);opacity:0}}
+    #msgs form#msgForm{padding-bottom:max(8px,env(safe-area-inset-bottom))}#msgs.kb form#msgForm{padding-bottom:8px}
+    .mHd{padding:10px 12px 10px 14px}
+  }
+  @media (orientation:landscape) and (max-height:520px){
+    #msgs{inset:auto;top:8px;bottom:8px;right:max(8px,env(safe-area-inset-right));left:auto;width:min(46vw,440px);height:auto;border-radius:20px;z-index:6;padding-top:0}
+    #msgs form#msgForm{padding-bottom:8px}
+    .mHd{padding:7px 10px 7px 12px}.mAv{width:34px;height:34px;font-size:19px}.mX{width:36px;height:36px}
+    body.msgOpen #dock{right:calc(min(46vw,440px) + 22px)}body.walk.chatOpen #dock{bottom:auto}
+    body.panelOpen #dock,body.msgOpen #dock{bottom:auto;top:max(8px,env(safe-area-inset-top));flex-direction:column;gap:8px}body.panelOpen #dock .round,body.msgOpen #dock .round{width:46px;height:46px;font-size:20px}
+  }
 </style>
 </head>
 <body>
@@ -247,7 +305,7 @@
 </aside>
 
 <div id="hint">tap 🚶 to walk around on your own · drag to look · pinch or +/− to zoom</div>
-<div id="dock"><button class="pill" id="modeBtn">🚶 walk around</button><button class="round" id="chatBtn" title="talk to Mocha">💬</button><button class="round" id="mapBtn" title="map">🗺</button><button class="round" id="bookBtn" title="diary">📖</button></div>
+<div id="dock"><button class="pill" id="modeBtn">🚶 walk around</button><button class="round" id="chatBtn" title="talk to Mocha">💬</button><button class="round" id="msgBtn" title="messages" aria-label="messages">📱<span class="badge" id="msgBadge"></span></button><button class="round" id="mapBtn" title="map">🗺</button><button class="round" id="bookBtn" title="diary">📖</button></div>
 <div id="joy" class="stick"><div class="nub" id="knob">🚶</div><div class="lab">MOVE</div></div>
 <div id="look" class="stick"><div class="nub" id="lnub">👀</div><div class="lab">LOOK</div></div>
 <div id="near" class="pill"></div>
@@ -257,6 +315,7 @@
 <div id="zoom"><button class="zb" id="zIn" aria-label="zoom in" title="zoom in">+</button><button class="zb" id="zOut" aria-label="zoom out" title="zoom out">−</button></div>
 <div id="lb" class="hidden" role="dialog" aria-modal="true" aria-label="picture viewer"><div class="lbTop"><button class="lbBtn" id="lbClose" aria-label="close">×</button></div><button class="lbBtn" id="lbPrev" aria-label="previous picture">‹</button><div class="lbStage" id="lbStage"><img id="lbImg" alt=""></div><button class="lbBtn" id="lbNext" aria-label="next picture">›</button><div class="lbCap"><b id="lbTitle"></b><span id="lbSub"></span><span id="lbCount"></span></div></div>
 
+<div id="msgs" class="hidden" role="dialog" aria-label="Messages with Mocha"><header class="mHd"><div class="mAv" aria-hidden="true">👻</div><div class="mWho"><b>Mocha</b><span id="msgStat"><i></i>online</span></div><button class="mX" id="msgClose" aria-label="close messages">×</button></header><div class="mList" id="msgList" aria-live="polite"></div><form id="msgForm" autocomplete="off"><input id="msgIn" maxlength="280" placeholder="text Mocha…" enterkeyhint="send" aria-label="text message"><button type="button" id="msgMic" aria-label="voice">🎙</button><button id="msgSend" aria-label="send">↑</button></form></div>
 <div id="chatwrap">
   <div id="chatlog"></div>
   <form id="chat" autocomplete="off"><input id="say" maxlength="300" placeholder="say something to Mocha…" enterkeyhint="send"><button type="button" id="micBtn" aria-label="voice">🎙</button><button id="sendBtn">send</button></form>
@@ -502,7 +561,8 @@ function buyGear(item,o={},t=Date.now(),live=true,place){item=String(item||'').t
     else if(item==='helmet'){if(hasHelmet())return false;const c=col(o.color,BIKE_COLS);if(!acquire('helmet',c,colName(c)+' bike helmet',where,t))S.gadgets.push({k:'helmet',c,t});txt=`Bought ${aan(colName(c))} bike helmet (${price} coins). Kip says safety is the coolest accessory.`;ts='🚲 Mocha bought a bike helmet';say='safety first, style second. nailed both!'}
     else{if(hasGadget(item))return false;if((item==='bell'||item==='lights')&&!S.bike)return false;const c=col(o.color,PALETTE);S.gadgets.push({k:item,c,t});S.gadgets=S.gadgets.slice(-12);
       txt={earbuds:`Bought ${colName(c)} earbuds at Cascade Mobile (${price} coins). Music sounds like it's happening inside my head now. Which it is.`,speaker:`Bought a little ${colName(c)} speaker for my house (${price} coins). The old house has very good echoes.`,bell:`Put a bell on ${S.bike?S.bike.name:'my bike'} (${price} coins). Ring ring!`,lights:`Got lights for ${S.bike?S.bike.name:'my bike'} (${price} coins) so I can ride safely after dark.`}[item];ts=`${G0.e} Mocha bought ${{speaker:'a little speaker',bell:'a bike bell'}[item]||G0.label}`;say=item==='bell'?'ring it proudly!':'enjoy, mocha!'}}
-  S.coins=Math.max(0,S.coins-price);addEntry('Bought',txt,where,t);if(live){toast(ts);if(K&&K.obj&&K.obj.visible)kSay(K,say,3.5)}applyGear();return true}
+  S.coins=Math.max(0,S.coins-price);addEntry('Bought',txt,where,t);if(live){toast(ts);if(K&&K.obj&&K.obj.visible)kSay(K,say,3.5)}applyGear();
+  if(item==='phone')txEvent(txt.startsWith('Bought my very first')?'phone':'buy',{what:'a new '+S.phone.model},t);else if(item==='bike')txEvent('bike',{label:(BIKES[S.bike.type]||BIKES.city).label,name:S.bike.name,color:S.bike.color},t);else txEvent('buy',{what:{case:'a new phone case',charm:`a ${S.phone&&S.phone.charm||'little'} charm for my phone`,earbuds:'new earbuds 🎧',speaker:'a little speaker for my house 🔊',helmet:'a bike helmet',bell:`a bell for ${S.bike?S.bike.name:'my bike'} 🔔`,lights:'lights for my bike 💡'}[item]||'something new'},t);return true}
 // built-in brain: what he does (or doesn't) buy on a shop visit
 function shopVisit(act,t,live,pname,quiet){const c=S.coins,I=k=>Math.max(0,S.interests[k]||0);let did=false;
   if(act.fx==='phoneshop'){
@@ -544,11 +604,11 @@ function fresh(){const tr=()=>+(Math.random()).toFixed(2);return{v:1,born:Date.n
   traits:{curiosity:tr(),coziness:tr(),sociability:tr(),creativity:tr(),adventure:tr()},
   interests:{},hobbies:[],owned:[],wearing:[],favColor:null,items:[],learned:[],
   discovered:[],visits:{},goal:null,goalsDone:0,diary:[],
-  mem:{userName:null,facts:[],chats:0,met:Date.now()},chatLog:[],mind:false,recent:[],lastThought:0,pets:[],decor:[],pantry:60,paintings:[],coins:150,know:{},seen:[],phone:null,gadgets:[],bike:null,jobs:0,seed150:1}}
+  mem:{userName:null,facts:[],chats:0,met:Date.now()},chatLog:[],mind:false,recent:[],lastThought:0,pets:[],decor:[],pantry:60,paintings:[],coins:150,know:{},seen:[],phone:null,gadgets:[],bike:null,jobs:0,seed150:1,texts:[],txQ:[]}}
 let S=null;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 let isNew=!S||!S.needs;if(isNew)S=fresh();
 function migrate(){S.paintings=S.paintings||[];S.coins=S.coins||0;S.know=S.know||{};S.seen=S.seen||[];S.posts=S.posts||[];S.pets=S.pets||[];S.decor=S.decor||[];if(S.pantry==null)S.pantry=60;
-  if(!S.seed150){S.coins=(+S.coins||0)+150;S.seed150=1;S.seedNote=1}S.coins=Math.max(0,Math.round(+S.coins||0));if(S.phone===undefined)S.phone=null;S.gadgets=Array.isArray(S.gadgets)?S.gadgets.slice(-12):[];if(S.bike===undefined)S.bike=null;S.jobs=S.jobs||0}migrate();
+  if(!S.seed150){S.coins=(+S.coins||0)+150;S.seed150=1;S.seedNote=1}S.coins=Math.max(0,Math.round(+S.coins||0));if(S.phone===undefined)S.phone=null;S.gadgets=Array.isArray(S.gadgets)?S.gadgets.slice(-12):[];if(S.bike===undefined)S.bike=null;S.jobs=S.jobs||0;S.texts=Array.isArray(S.texts)?S.texts.filter(m=>m&&m.text&&(m.from==='me'||m.from==='him')).slice(-150):[];S.txQ=Array.isArray(S.txQ)?S.txQ.slice(-30):[]}migrate();
 let dirty=true;
 function save(){S.lastSeen=Date.now();dirty=true;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 setInterval(save,8000);addEventListener('beforeunload',save);
@@ -627,7 +687,7 @@ function cyl(rt,rb,h,m,x=0,y=0,z=0,parent,seg=16){const b=new THREE.Mesh(new THR
 const glowTex=canvasTex(64,64,g=>{const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.35,'rgba(255,255,255,.4)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64)});
 const nightGlows=[];
 function glow(color,s,op=.6,night=true){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color,transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false}));sp.scale.set(s,s,1);sp.userData.op=op;if(night)nightGlows.push(sp);return sp}
-const winMats=[];const SPH=new THREE.SphereGeometry(1,12,10);
+const winMats=[];const SPH=new THREE.SphereGeometry(1,12,10),SPH8=new THREE.SphereGeometry(1,8,6);
 
 // ---------- ground, water, roads ----------
 const grassTex=canvasTex(512,512,(g,w,h)=>{const r=seeded(77),D=SEASON.dots;g.fillStyle=SEASON.grass;g.fillRect(0,0,w,h);
@@ -1068,7 +1128,7 @@ function makePainting(subjectTxt,title,t=Date.now(),choice){const fav=S.favColor
   else if(c==='sell'){const coins=Math.floor(rand(5,40));S.coins+=coins;pt.where='sold';note=`Sold it at the market for ${coins} coins. Someone liked it enough to take it home!`}
   else if(String(c).startsWith('give')){let who=String(c).split(':')[1];const friends=['wendell',...Object.keys(S.know||{})].filter(x=>x==='wendell'?S.metW:KB[x]);if(!who||!(who==='wendell'||KB[who]))who=friends.length?pick(friends):null;if(who){pt.where='gift:'+who;note=`Gave it to ${who==='wendell'?'Wendell':KB[who].name}. They're hanging it up!`}else note='Leaning it against the wall for now.'}
   else note='Leaning it against the wall for now.';
-  applyPaintings();addEntry('Art',`Painted "${pt.title}"${pt.raw?` (${pt.raw})`:''} at the studio. ${note}`,'Fog & Easel Studio',t);toast(`🎨 Mocha painted "${pt.title}"`);return pt}
+  applyPaintings();addEntry('Art',`Painted "${pt.title}"${pt.raw?` (${pt.raw})`:''} at the studio. ${note}`,'Fog & Easel Studio',t);toast(`🎨 Mocha painted "${pt.title}"`);txEvent('paint',{id:pt.id,title:pt.title},t);return pt}
 // Mocha sometimes posts a finished painting to his feed (his own choice; built-in brain uses pride/enjoyment, Claude mind uses "post_painting")
 function paintCaption(pt){const w=String(pt.where||''),ti=pt.title,k=w.slice(5),nm=k==='wendell'?'Wendell':(KB[k]||{}).name||'a friend';
   return pick(w==='home'?[`"${ti}" is going on my wall 🖼`,`new one for the living room ✨`,`finished "${ti}"! hanging it up 🏠`]:w==='sold'?[`"${ti}" found a new home today 💛`,`someone bought my painting!! 🥹`,`goodbye "${ti}", be good 🎨`]:w.startsWith('gift:')?[`made this one for ${nm} 🎁`,`"${ti}" — a little present for ${nm} 💛`]:[`new painting: "${ti}" 🎨`,`finished "${ti}" today ✨`,`${ti.toLowerCase()} 🖌`,`not sure about this one… "${ti}" 🤔`])}
@@ -1240,7 +1300,7 @@ var p_home=null;
 function applyDecor(){const h=byId.home;if(!h.obj)return;p_home=h;S.decor.forEach(id=>{if(!decorObjs[id]&&DECOR[id]){const m=decorModel(id);h.obj.add(m);decorObjs[id]=m}});for(const id in decorObjs)if(!S.decor.includes(id)){h.obj.remove(decorObjs[id]);delete decorObjs[id]}}
 function buyDecor(id,t=Date.now(),place){if(!DECOR[id]||S.decor.includes(id))return false;S.decor.push(id);applyDecor();addEntry('Home',`Bought a ${DECOR[id]} for my house${place?' at '+place:''}. ${pick(['It looks perfect there.','The house feels more like mine now.','I moved it six times before it felt right.'])}`,place,t+1);toast(`🏠 Mocha bought a ${DECOR[id]}`);return true}
 function adoptPet(sp,name,t=Date.now(),place){if(!PET_TYPES[sp]||S.pets.length>=2||S.pets.some(p=>p.species===sp))return false;name=String(name||pick(PET_TYPES[sp].names)).replace(/[^\w '\-]/g,'').slice(0,20)||pick(PET_TYPES[sp].names);
-  S.pets.push({species:sp,name,since:t});syncPets();addEntry('New family member',`I adopted a ${PET_TYPES[sp].label} from Wag & Whisker! Their name is ${name}. I didn't plan this. I just looked at them and knew.`,place||'Wag & Whisker Pets',t,true);toast(`🐾 Mocha adopted a ${PET_TYPES[sp].label} named ${name}!`);bumpInterest('animals',2);return true}
+  S.pets.push({species:sp,name,since:t});syncPets();addEntry('New family member',`I adopted a ${PET_TYPES[sp].label} from Wag & Whisker! Their name is ${name}. I didn't plan this. I just looked at them and knew.`,place||'Wag & Whisker Pets',t,true);toast(`🐾 Mocha adopted a ${PET_TYPES[sp].label} named ${name}!`);bumpInterest('animals',2);txEvent('pet',{label:PET_TYPES[sp].label,name},t);return true}
 function considerAdoption(t,place){if(S.pets.length>=2)return;const a=S.interests.animals||0,v=S.visits.petstore||0;const ch=(a-2)*.05+(v>=3?.06:0)+(S.traits.sociability-.5)*.08-(S.pets.length?.12:0);if(Math.random()>ch)return;
   const I=k=>Math.max(0,S.interests[k]||0);const w={bat:1+I('night')*.3+I('mystery')*.3+I('stars')*.2,poodle:1+I('people')*.2+I('cozy')*.2+I('nature')*.1,hedgehog:1+I('nature')*.3+I('plants')*.2,cat:1+I('cozy')*.3+I('reading')*.2,crow:1+I('birds')*.4+I('mystery')*.2};
   S.pets.forEach(p=>w[p.species]=0);let r=Math.random()*Object.values(w).reduce((x,y)=>x+y,0);for(const k in w){r-=w[k];if(r<=0){adoptPet(k,null,t,place);return}}}
@@ -1280,15 +1340,169 @@ function acquire(item,color,name,from,t=Date.now()){if(!WEAR[item]||S.owned.leng
 // ====================================================================
 let onDiary=()=>{},toast=()=>{},labelFor=()=>{};let isQuiet=false;
 function addEntry(tag,text,place,t=Date.now(),big){if(!text)return;S.diary.unshift({t,tag,text:String(text).slice(0,500),place:place||'',big:!!big});S.diary.length=Math.min(S.diary.length,160);onDiary()}
+// ---------- texting: Mocha's phone. Thread = S.texts (cap 150, {from:'me'|'him',text,t,read,+wait/zz/q/qa/ini/pic}); Claude writes his texts when his mind is awake, the built-in brain otherwise ----------
+const TXQS=[
+ {k:'day',rep:1,q:['how\'s your day going? 💛','hiii how are you doing today?','how was your day? tell me one good thing']},
+ {k:'smile',rep:1,q:['what made you smile today?','tell me something good that happened today ✨']},
+ {k:'weather',rep:1,q:()=>`is it ${({rain:'raining',drizzle:'drizzly',fog:'foggy',snow:'snowing',clear:'sunny',cloudy:'cloudy'})[WEATHER.kind]||'cloudy'} where you are too? it is here ${({rain:'🌧',drizzle:'🌦',fog:'🌫',snow:'❄️',clear:'☀️',cloudy:'☁️'})[WEATHER.kind]||'☁️'}`},
+ {k:'food',f:'favorite food',q:['random question: what\'s your favorite food? i\'m still figuring out mine 🍜']},
+ {k:'color',f:'favorite color',q:['what\'s your favorite color? asking for… a ghost 👻']},
+ {k:'season',f:'favorite season',q:['which season do you like best? 🍂']},
+ {k:'movie',f:'a movie they love',q:['what\'s a movie you love? i need ideas for the cinema 🎬']},
+ {k:'animal',f:'favorite animal',q:['what\'s your favorite animal? 🐾']},
+ {k:'music',f:'music they like',q:['what music are you into lately? i want new songs 🎶']},
+ {k:'pets',f:'pets',q:['do you have any pets? 🐾 tell me everything']},
+ {k:'owl',f:'morning person or night owl',q:['are you a morning person or a night owl? 🌙']},
+ {k:'trip',f:'dream trip',q:['if you could go anywhere in the world, where would you go? ✈️']},
+ {k:'drink',f:'coffee or tea',q:['important question: coffee or tea? ☕']},
+ {k:'book',f:'a book they liked',q:['read anything good lately? 📚']},
+ {k:'fun',f:'for fun they like',q:['what do you like to do for fun? i\'m collecting ideas']},
+ {k:'hotdog',f:'is a hot dog a sandwich',q:['very serious question. is a hot dog a sandwich? 🌭']},
+ {k:'advice',f:'advice they gave',q:()=>{const w=nextWant();return w?`can i ask your advice? i'm saving up for ${w.what}. keep saving, or treat myself to something small? 🤔`:S.hobbies.length?`i want to get better at ${S.hobbies[0].name}. any tips?`:'can i ask your advice? how do you figure out what you like? 🤔'}}];
+const TXPRI={phone:9,pet:8,bike:7,hobby:6,discover:5,wendell:5,paint:4,goal:4,buy:2,selfie:1};
+const TX={job:false,typing:false,dueAt:0,woke:0,wasAsleep:false,outbox:[],away:null,fast:1,lastQ:0,lastAI:0,nextAt:Date.now()+rand(25,45)*60e3,viaBar:0,sig:''};
+let txOnNew=()=>{},txRefresh=()=>{};
+const txWait=ms=>new Promise(r=>setTimeout(r,ms));
+function txAdd(from,text,t=Date.now(),extra){if(!Array.isArray(S.texts))S.texts=[];const m=Object.assign({from,text:String(text||'').slice(0,280),t,read:false},extra||{});let i=S.texts.length;while(i>0&&S.texts[i-1].t>m.t)i--;S.texts.splice(i,0,m);if(S.texts.length>150)S.texts.splice(0,S.texts.length-150);txOnNew(m);return m}
+// notable things he might text you about (his choice: some kinds only sometimes). While the app was closed (catchUp) at most one gets texted, stamped at the time it happened.
+function txEvent(kind,d={},t=Date.now()){if(!S.phone)return;const p=kind==='phone'?1:({buy:.45,selfie:.3,paint:.7,goal:.8}[kind]??1);if(Math.random()>p)return;const e={kind,d,t,pri:TXPRI[kind]||1};
+  if(isQuiet){if(!TX.away||e.pri>TX.away.pri)TX.away=e;return}TX.outbox.push({...e,due:Date.now()+(kind==='phone'?rand(8,20):rand(15,60))*1000*TX.fast});TX.outbox.sort((a,b)=>b.pri-a.pri);TX.outbox.length=Math.min(TX.outbox.length,3)}
+function txEventText(e){const d=e.d||{};switch(e.kind){
+  case'phone':return{text:pick([`hi!! it's mocha 👻📱 i got a phone!! ${aan(colName(S.phone.color))} ${S.phone.model}. now we can text whenever!`,`guess who has a phone now 👻📱 me!! it's mocha. save my number ok?`])};
+  case'pet':return{text:pick([`!!! i adopted a ${d.label} 🐾 their name is ${d.name}. i'm a parent now??`,`meet ${d.name}!! my new ${d.label} 🐾 i'm already obsessed`])};
+  case'bike':return{text:pick([`i got a bike!!! ${aan(colName(d.color||'#888888'))} ${d.label} named ${d.name} 🚲`,`meet ${d.name}, my new bike 🚲 we're going everywhere now`])};
+  case'hobby':return{text:pick([`guess what… i think i have a new hobby: ${d.name} ✨`,`new hobby unlocked: ${d.name}!! nobody told me to. i just love it`])};
+  case'discover':return{text:pick([`i found a secret place: ${d.name} ✨ you have to see it someday`,`whoa. i just found ${d.name}. it was hiding out past the edge of town 🧭`])};
+  case'wendell':return{text:'i met my neighbor!! his name is wendell and he\'s a raccoon 🦝 he gave me a bottle cap. i think we\'re friends now'};
+  case'paint':{const r=Math.random();return r<.34?{text:`new painting!! “${d.title}”. be honest, do you like it? 🖌`,extra:{pic:'paint:'+d.id,q:'opinion'}}:{text:r<.67?`just finished a painting! “${d.title}” 🎨`:`i made this today 🎨 it's called “${d.title}”`,extra:{pic:'paint:'+d.id}}}
+  case'goal':return{text:pick([`i did it!! ${d.text} ✅`,`goal complete: ${d.text} 🎯 i'm kind of proud of me`])};
+  case'buy':return{text:pick([`treated myself to ${d.what} today ✨`,`new thing: ${d.what}! i love it`])};
+  case'selfie':return{text:pick(['posted a selfie! 📸','me, today 👻📸','took a selfie for you 📸']),extra:{pic:'feed:'+d.id}}}return null}
+function txEvWhy(e){const d=e.d||{};return({phone:'you just bought your very first phone, and this is your first text ever to your friend: say hi and tell them it\'s you',pet:`you just adopted a ${d.label} named ${d.name}`,bike:`you just bought a bike (${d.label}) and named it ${d.name}`,hobby:`you just realized you have a new hobby: ${d.name}`,discover:`you just discovered a hidden place: ${d.name}`,wendell:'you just met your neighbor Wendell, a raccoon in a mustard cardigan',paint:`you just finished a painting called "${d.title}" (a photo of it is attached to your text)`,goal:`you just reached your own goal: ${d.text}`,buy:`you just bought ${d.what}`,selfie:'you just posted a selfie (it is attached to your text)'})[e.kind]||'something happened'}
+function txAwayFlush(){const e=TX.away;TX.away=null;if(!e||!S.phone)return;const lastHim=(S.texts||[]).filter(m=>m.from==='him').reduce((a,m)=>Math.max(a,m.t),0);if(e.kind!=='phone'&&e.t-lastHim<40*60e3)return;const o=txEventText(e);if(o)txAdd('him',o.text,Math.min(Date.now()-60e3,e.t+rand(3,15)*60e3),Object.assign({ini:1},o.extra||{}))}
+function txAsleep(){return(G.mode==='activity'&&G.sleep)||asleepAt(hourAt(Date.now()))}
+function txBlocked(){return G.biking||(G.mode==='activity'&&G.act&&G.act.fx==='movie')}
+function txPlace(id){return id==='home'?'home':(byId[id]||{}).name||'somewhere'}
+// what Messages shows under his name (a later step can add {k:'trip',t:'on a trip · …'} here)
+function txState(){if(!S.phone)return{k:'none',t:'no phone yet'};if(TX.typing)return{k:'typing',t:'typing…'};if(txAsleep())return{k:'sleep',t:`asleep 💤 · usually up around ${fmtH(sched().wake)}`};
+  if(G.biking)return{k:'busy',t:`busy · riding ${S.bike?S.bike.name:'his bike'} 🚲`};const a=G.mode==='activity'&&G.act;
+  if(a){if(a.fx==='movie')return{k:'busy',t:'busy · at the movies 🎬 phone on silent'};if(a.fx==='job')return{k:'busy',t:`busy · helping out at ${txPlace(a.p)}`};if(a.npc)return{k:'busy',t:'busy · hanging out with Wendell 🦝'};return a.p==='home'?{k:'on',t:'online · '+a.doing}:{k:'busy',t:'busy · '+a.doing}}
+  if(G.mode==='travel'&&G.act&&G.act.p)return{k:'on',t:'online · heading to '+txPlace(G.act.p)};return{k:'on',t:'online'}}
+function txNow(){if(txAsleep())return'in bed asleep (it\'s your sleep time)';if(G.biking)return'riding your bike';const a=G.mode==='activity'&&G.act;if(a)return`${a.doing} at ${txPlace(a.p)}`;if(G.mode==='travel'&&G.act&&G.act.p)return'on your way to '+txPlace(G.act.p);return'floating around'}
+function txEmoji(a){return({cafe:'☕',bookstore:'📚',library:'📚',records:'🎶',cinema:'🎬',studio:'🎨',grocery:'🛒',petstore:'🐾',market:'🐟',phones:'📱',bikes:'🚲',home:'🏠',park:'🌳',thrift:'🧥',arcade:'🕹',needle:'🌆',wheel:'🎡',ferry:'⛴'})[a&&a.p]||'✨'}
+function txWeatherLine(){return({rain:'it\'s pouring here. the puddles have puddles 🌧',drizzle:'classic drizzle day here 🌦 soft and cozy',fog:'so foggy here i can barely see the needle 🌫',snow:'it\'s SNOWING here ❄️ everything is quiet and sparkly',clear:nightAmt>.5?'clear night here! so many stars ✨':'sunny here!! the mountain is out 🏔',cloudy:'grey and cozy here ☁️'})[WEATHER.kind]||'cozy weather here ☁️'}
+function txNowLine(){if(G.biking)return`out riding ${S.bike?S.bike.name:'my bike'}! pulled over to text you, safety first 🚲`;const a=G.mode==='activity'&&G.act;if(a&&a.p){const pl=txPlace(a.p);return pick([`${a.doing} at ${pl} ${txEmoji(a)}`,`i'm at ${pl}! ${a.doing} ${txEmoji(a)}`])}
+  if(G.mode==='travel'&&G.act&&G.act.p)return`on my way to ${txPlace(G.act.p)}! 👻💨`;return pick(['just floating around 👻','nothing much! floating. thinking about snacks'])}
+function txMoment(){const o=[],a=G.mode==='activity'&&G.act;if(a&&a.p&&!G.sleep){const pl=txPlace(a.p);o.push(pick([`currently: ${a.doing} at ${pl} ${txEmoji(a)}`,`hi! i'm at ${pl}, ${a.doing} ${txEmoji(a)}`,`${a.doing} at ${pl} rn. it's nice ${txEmoji(a)}`]))}
+  if(G.mode==='travel'&&G.act&&G.act.p&&!G.biking)o.push(`on my way to ${txPlace(G.act.p)}! 👻💨`);o.push(txWeatherLine());if(nightAmt>.5)o.push('the streetlights just came on. my favorite part of the evening ✨');
+  if(S.pets.length){const pt=pick(S.pets);o.push(`${pt.name} ${pick(['is being extra cute today','says hi 🐾','just did a little happy wiggle'])} 🐾`)}if(S.metW&&Math.random()<.5)o.push('wendell waved at me from his porch 🦝');
+  o.push(pick(['thinking about you! hope your day is cozy 💛','hi hi hi 👻 that\'s it. that\'s the text']));return pick(o)}
+function txQOk(){const now=Date.now(),L=S.texts||[];for(let i=L.length-1;i>=0&&i>=L.length-8;i--){const m=L[i];if(m.from==='him'&&m.q&&!m.qa&&now-m.t<3*3600e3)return false}return L.filter(m=>m.from==='him'&&m.q&&now-m.t<864e5).length<4&&now-TX.lastQ>12*60e3*TX.fast}
+function txQuestion(){const asked=(S.txQ||[]).concat((S.texts||[]).filter(m=>m.q).map(m=>m.q)),known=q=>q.f&&S.mem.facts.some(f=>f.startsWith(q.f+':'));let opts=TXQS.filter(q=>!q.rep&&!asked.includes(q.k)&&!known(q));if(!opts.length||Math.random()<.25){const now=Date.now(),rec=(S.texts||[]).filter(m=>m.q&&now-m.t<12*3600e3).map(m=>m.q),r=TXQS.filter(q=>q.rep&&!rec.includes(q.k));if(r.length||!opts.length)opts=r.length?r:TXQS.filter(q=>q.rep)}const q=pick(opts);TX.lastQ=Date.now();S.txQ=(S.txQ||[]).filter(k=>k!==q.k).concat(q.k).slice(-30);return{text:typeof q.q==='function'?q.q():pick(q.q),extra:{q:q.k}}}
+function txClean(s){s=String(s||'').trim();for(let i=0;i<3;i++)s=s.replace(/^(?:um+|uh+|hmm+|well|oh|ooh|haha|lol|ok(?:ay)?|so|honestly|probably|definitely|maybe|yes|yeah|yep|yup|i think|i'd say|i would say|i guess)\b[,.!\s]*/i,'').replace(/^(?:my\s+)?(?:favou?rite\s+(?:\w+\s+)?(?:is|are|would be)\s+|it'?s\s+|it is\s+|i\s+(?:really\s+)?(?:love|like|prefer|enjoy|have|am)\s+|i'?ve\s+been\s+(?:really\s+)?(?:into|loving|listening to|reading|watching)\s+|(?:i'?m|im)\s+(?:really\s+)?into\s+|i'?m\s+(?:a\s+)?)/i,'');return s.replace(/\s+(?:for sure|honestly|lol|haha|tbh)\s*$/i,'').replace(/[.!?,\s]+$/,'').slice(0,40).trim()}
+// you answered one of his questions: he remembers it (built-in brain; Claude uses "remember")
+function txAnswer(q,raw){const k=q.q,def=TXQS.find(x=>x.k===k),m=raw.toLowerCase(),a=txClean(raw);q.qa=1;
+  const pos=/\b(good|great|amazing|awesome|fun|nice|happy|fine|ok|okay|well|chill|cozy|love|yes|yeah|yep|yup|cute|beautiful|wonderful|best|perfect)\b/.test(m),neg=/\b(bad|tired|rough|sad|stress|stressed|awful|terrible|long|sick|meh|ugh|hard|exhausted|no|nope|nah|hate|not great|not good)\b/.test(m);
+  if(def&&def.f&&a){S.mem.facts=S.mem.facts.filter(x=>!x.startsWith(def.f+':'));S.mem.facts.push(`${def.f}: ${k==='pets'&&/^(no|nope|nah|none)\b/i.test(a)?'none (yet)':a}`);S.mem.facts=S.mem.facts.slice(-24)}
+  switch(k){case'day':case'smile':return neg&&!pos?pick(['oh no… sending you a big ghost hug 🫂👻','that sounds like a lot. i\'m glad you texted me 💛','sorry it was a rough one. tomorrow will be cozier, i can feel it']):pick(['yay!! that makes me so happy 💛','hehe i love that for you ✨','that\'s the best. you deserve good days']);
+    case'weather':return/\b(yes|yeah|yep|rain|raining|drizzl\w*|wet|pouring)\b/.test(m)?'rain buddies 🌧 we match':/\b(sun|sunny|hot|warm|clear|nice)\b/.test(m)?'ooh lucky! send some sun my way ☀️':'interesting!! weather is so different everywhere';
+    case'hotdog':return/\b(yes|yeah|yep|it is|totally|obviously)\b/.test(m)&&!/\bnot\b/.test(m)?'a sandwich?! bold. i respect it 🌭':'agreed. a hot dog is its own thing 🌭';
+    case'pets':return/\b(no|nope|nah|none)\b/.test(m)&&!/\b(yes|yeah|have|got)\b/.test(m)?(S.pets.length?`you can borrow ${S.pets[0].name} anytime 🐾`:'same! maybe someday 🐾'):pick(['aww!! tell them a ghost says hi 🐾','omg i need to meet them someday 🥺']);
+    case'opinion':return neg&&!pos?'fair!! i\'ll keep practicing 🖌':'aww thank you 🥹 i might paint another one';
+    case'advice':return pick(['hmm, good point. i\'ll think about it 🤔','ooh. noted! you\'re wise, you know that? 💭','thank you!! i\'ll keep that in mind 📝'])}
+  if(!def||!a)return pick(['ooh, noted 📝','hehe i like that','good to know!! 💛']);return pick([`${a}? good choice. writing that down 📝`,`ooh, ${a}! i'll remember that 💛`,`${a}!! okay that's very you`])}
+function txPicReply(){const p=(S.posts||[]).find(p=>p.kind==='painting'?postArt(p):PHOTOS[p.id]);if(!p)return{text:'i haven\'t posted any pics yet! maybe soon 📸'};return{text:p.kind==='painting'?'here\'s my latest painting 🎨':pick(['here\'s my latest one! 📸','okay okay here 📸 my best angle']),extra:{pic:'feed:'+p.id}}}
+function txGeneral(raw,info={}){const m=raw.toLowerCase().trim(),zz=info.woke||info.late;
+  if(/\b(wyd|what are you doing|what're you doing|what r u doing|whatcha|what are you up to|what you up to|wya|where are you|where r u)\b/.test(m))return txNowLine();
+  if(/\b(are you|r u|you|u) (awake|up|there|around)\b(?! to)/.test(m))return info.woke?'i am now!! ☀️ what\'s up?':info.late?'i am now! sorry, just saw this 👻':pick(['yep!! i\'m here 👻','wide awake! what\'s up?']);
+  if(/\b(good ?morning|gm)\b/.test(m))return pick(['good morning!! ☀️','morning!! did you sleep okay?','good morning 💛 '+txWeatherLine()]);
+  if(/\b(good ?night|gn|sleep well|sweet dreams|night night)\b/.test(m))return zz?'i was already asleep when you said goodnight 😴 hope you slept cozy too!':pick(['goodnight!! sleep cozy 🌙','night night 💤 talk tomorrow']);
+  if(/\b(love you|ily|luv you|luv u|love u)\b/.test(m))return pick(['love you too!! 👻💛','aww 🥹 love you more']);
+  if(/\b(miss you|miss u)\b/.test(m))return pick(['miss you too! come visit soon 🥺','aww i miss you too 👻']);
+  if(/\bboo+\b/.test(m))return'you can\'t scare me through the phone 😤 …okay maybe a little';
+  if(/\b(weather|raining|rain|sunny|snowing)\b/.test(m))return txWeatherLine();
+  if(/\b(hungry|eat|ate|food|lunch|dinner|breakfast|snack)\b/.test(m))return S.pantry<20?'my fridge is almost empty lol. i should get groceries 🛒':pick(['i could go for something cozy from the café ☕','i have snacks at home! ghost snacks','now i\'m hungry 😋']);
+  if(S.pets.length&&/\b(pet|pets|bat|cat|crow|poodle|hedgehog|puppy|dog)\b/.test(m))return`${S.pets[0].name} says hi!! 🐾`;
+  if(/wendell/.test(m))return S.metW?pick(['wendell is the best neighbor 🦝','wendell says hi! probably. he\'s very polite 🦝']):'wendell? i think that\'s my neighbor! we haven\'t really met yet';
+  if(/\b(coins?|money|saving)\b/.test(m)){const w=nextWant();return`i have ${S.coins} coins 🪙${w?' · saving for '+w.what:''}`}
+  if(/\b(thank you|thanks|thx|ty)\b/.test(m))return pick(['anytime!! 💛','hehe of course 👻']);
+  let r=localReply(raw).replace('*nods ghostily*','*nods ghostily through the phone*');
+  if(/\?\s*$/.test(m)&&/^(mhm|that's so|hehe|\*nods)/.test(r))r=pick(['hmm good question… let me think about that 🤔','ooh i don\'t know! what do you think?','that\'s a big question for a small ghost 👻']);return r}
+function txLocalReply(pend,info){const outs=[],L=S.texts,idx=L.indexOf(pend[0]),prev=idx>0?L[idx-1]:null;let rest=pend;
+  const p0=pend[0].text.trim();if(prev&&prev.from==='him'&&prev.q&&!prev.qa&&pend[0].t-prev.t<12*3600e3&&!/\?\s*$/.test(p0)&&p0.length<=120&&!/\b(wyd|what are you doing|where are you|good ?morning|good ?night|gn|love you|ily|miss you|my name is|call me)\b/i.test(p0)){outs.push({text:txAnswer(prev,pend[0].text)});rest=pend.slice(1)}
+  rest.slice(-2).forEach(m=>{const pic=/\b(selfie|pic|pics|picture|photo)s?\b/i.test(m.text)&&/\b(send|show|post|see|take|share|can i|got any)\b/i.test(m.text),o=pic?txPicReply():{text:txGeneral(m.text,info)};if(!outs.some(x=>x.text===o.text))outs.push(o)});
+  if(!outs.length)outs.push({text:'hehe 💛'});
+  if(/asleep|i am now/.test(outs[0].text));else if(info.woke)outs[0].text=(hourAt(Date.now())<12?'good morning!! sorry, i was asleep. ':pick(['sorry, was asleep! ','omg sorry, i was sleeping 😴 ']))+outs[0].text;else if(info.late)outs[0].text=pick(['sorry, just saw this! ','oops, just saw this! '])+outs[0].text;
+  if(outs.length<3&&txQOk()&&Math.random()<.3)outs.push(txQuestion());return outs}
+function txLine(m){return`[${txDay(m.t)} ${txTime(m.t)}] ${m.from==='me'?'Friend':'Mocha'}: ${m.text}${m.pic?' [photo attached]':''}`}
+async function mindText(pend,info){const L=(S.texts||[]).filter(m=>!pend.includes(m)).slice(-12);
+  const prompt=`You are Mocha, a small, gentle ghost who lives in a cozy, rainy, Seattle-like city. Your friend (the person who watches over you) is texting your phone from far away: you are NOT together right now. Text back like a real friend: lowercase, short (1-2 short sentences), cute but genuine, an emoji now and then. Have your own opinions based on your interests. If they suggest something, you can share your opinion, but you always decide for yourself what you do and when. Only mention things you actually did (see your diary). Right now you are ${txNow()}.${info.woke?' Their text(s) arrived while you were asleep; you just woke up and saw them, so mention that naturally.':info.late?' You only just saw their text(s); it has been a while.':''}
+
+${context({noTexts:1})}
+
+Your texts so far (oldest first):
+${L.map(txLine).join('\n')||'(no texts yet)'}
+
+New text(s) from your friend that you're answering now:
+${pend.map(txLine).join('\n')}
+
+Reply with ONLY JSON: {"reply":"your text back","follow_up_question":null or "a short question back about THEM (their day, favorites, opinions, or advice); only sometimes, not every time","friend_name":null or their name if they told you,"remember":["short facts about your friend worth remembering, e.g. their answer to something you asked them"],"plan":null or a short note of something you might do later}`;
+  const r=await ask(prompt,{cache:false});if(!r||!r.reply)throw{code:'bad_json'};
+  if(r.friend_name&&typeof r.friend_name==='string'&&r.friend_name.length<24&&r.friend_name!==S.mem.userName){if(!S.mem.userName)addEntry('Friends',`My friend texted me their name: ${r.friend_name}. Saved it in my phone.`,'');S.mem.userName=r.friend_name}
+  (Array.isArray(r.remember)?r.remember:[]).slice(0,3).forEach(f=>{f=String(f).slice(0,80);if(f&&!S.mem.facts.includes(f))S.mem.facts.push(f)});S.mem.facts=S.mem.facts.slice(-24);if(r.plan)MIND.lastThought=String(r.plan).slice(0,60);
+  const idx=S.texts.indexOf(pend[0]),prev=idx>0?S.texts[idx-1]:null;if(prev&&prev.from==='him'&&prev.q)prev.qa=1;
+  const outs=[{text:String(r.reply).slice(0,280)}];if(r.follow_up_question&&typeof r.follow_up_question==='string'&&txQOk()){TX.lastQ=Date.now();outs.push({text:String(r.follow_up_question).slice(0,200),extra:{q:'ai'}})}return outs}
+async function mindTextFirst(e){const L=(S.texts||[]).slice(-10);
+  const prompt=`You are Mocha, a small, gentle ghost who lives in a cozy, rainy, Seattle-like city. You have your own phone, and you decide to text your friend (the person who watches over you; they're far away and might be busy). Why you're texting: ${e?txEvWhy(e):'nothing in particular, you just feel like texting your friend'}. Right now you are ${txNow()}.
+
+${context({noTexts:1})}
+
+Your recent texts with your friend (oldest first):
+${L.map(txLine).join('\n')||'(none yet)'}
+
+Write ONE short text in your own voice: lowercase, 1-2 short sentences, cute but genuine, maybe one emoji. It can share a little moment from right now, or ask your friend something about THEM (their day, favorites, opinion, or advice about something you're deciding; you still decide for yourself). Don't repeat what you already texted.${txQOk()?'':' Don\'t ask a question this time; just share something.'} If you'd rather not text right now, set "skip" to true.
+Reply with ONLY JSON: {"text":"...","is_question":true or false,"skip":false}`;
+  const r=await ask(prompt,{modelTier:'quick',cache:false});if(!r||(!r.skip&&!r.text))throw{code:'bad_json'};return r}
+function txPeriodic(type){const now=Date.now(),p=(S.posts||[])[0],opts=[];if(txQOk())opts.push(['q',4]);opts.push(['m',3.5]);
+  if(p&&now-p.t<3*3600e3&&!(S.texts||[]).some(m=>m.pic==='feed:'+p.id)&&(p.kind==='painting'?postArt(p):PHOTOS[p.id]))opts.push(['p',2.5]);
+  let k=type;if(!k){let r=Math.random()*opts.reduce((a,o)=>a+o[1],0);k='m';for(const o of opts){r-=o[1];if(r<=0){k=o[0];break}}}
+  if(k==='q')return txQuestion();if(k==='p'&&p)return{text:p.kind==='painting'?pick(['made this today!! 🎨','posted my painting, what do you think? 🎨']):pick(['posted this earlier, what do you think? 📸','a little selfie for you 📸']),extra:{pic:'feed:'+p.id}};return{text:txMoment()}}
+function txAIok(){return MIND.on&&MIND.api&&Date.now()>MIND.backoff&&Date.now()-TX.lastAI>({chatty:20,normal:30,gentle:60}[SET.pace]||30)*60e3*TX.fast}
+// he texts you first (an event, or now and then just because). Rate limits live in txTick/txCanIni.
+async function txInitiate(e,type){if(TX.job||!S.phone)return false;TX.job=true;let out=null;
+  try{const base=e?txEventText(e):null;
+    if(txAIok()){TX.lastAI=Date.now();TX.typing=true;txRefresh();try{const r=await mindTextFirst(e);if(r.skip)return false;out={text:String(r.text).slice(0,280),extra:Object.assign({},base&&base.extra&&base.extra.pic?{pic:base.extra.pic}:{},r.is_question===true?{q:'ai'}:{})};if(r.is_question===true)TX.lastQ=Date.now()}catch(err){mindError(err)}}
+    if(!out)out=base||txPeriodic(type);if(!out)return false;
+    TX.typing=true;txRefresh();G.phoneT=Math.max(G.phoneT,3);await txWait(clamp(out.text.length/16,1.4,5)*1000*TX.fast);TX.typing=false;txAdd('him',out.text,Date.now(),Object.assign({ini:1},out.extra||{}));G.phoneT=Math.max(G.phoneT,1.2);return true}
+  finally{TX.typing=false;TX.job=false;txRefresh();save()}}
+function txDelay(pend){const now=Date.now();let s;if(now-TX.woke<180e3)s=rand(20,55);else if(now-pend[pend.length-1].t>10*60e3)s=rand(4,8);else if(txState().k==='busy')s=rand(10,28);else s=rand(2,5);return s*1000*TX.fast}
+async function txReply(pend){TX.job=true;TX.dueAt=0;const now=Date.now(),info={woke:pend.some(m=>m.zz),late:now-pend[pend.length-1].t>10*60e3};pend.forEach(m=>{m.read=true;delete m.wait;delete m.zz});
+  G.phoneT=Math.max(G.phoneT,3);TX.typing=true;txRefresh();const t0=Date.now();let outs=null;
+  try{if(MIND.on&&MIND.api&&Date.now()>MIND.backoff){try{outs=await mindText(pend,info)}catch(e){mindError(e)}}
+    if(!outs||!outs.length)outs=txLocalReply(pend,info);
+    for(let i=0;i<outs.length;i++){const o=outs[i],need=clamp(o.text.length/16,1.4,5.5)*1000*TX.fast;if(i){TX.typing=true;txRefresh()}await txWait(Math.max(300*TX.fast,need-(i?0:Date.now()-t0)));TX.typing=false;txAdd('him',o.text,Date.now(),o.extra);G.phoneT=Math.max(G.phoneT,1.5);if(i<outs.length-1){txRefresh();await txWait(700*TX.fast)}}}
+  finally{TX.typing=false;TX.job=false;txRefresh();save()}}
+// you text him (from Messages or the chat bar). It never tells him what to do; he answers when he sees it.
+function sendText(t,via){t=String(t||'').trim().slice(0,280);if(!t||!S.phone)return false;const asl=txAsleep();txAdd('me',t,Date.now(),asl?{wait:1,zz:1}:{wait:1});
+  S.mem.chats++;S.needs.social=clamp(S.needs.social+8,0,100);if(!asl&&!txBlocked())G.phoneT=Math.max(G.phoneT,1.6);if(via==='bar')TX.viaBar=Date.now();
+  if(S.mem.chats%6===0)addEntry('Friends',`Got a text from ${S.mem.userName||'my friend'}: "${t.slice(0,70)}${t.length>70?'…':''}". I read it twice.`,'');save();txRefresh();return true}
+function txCanIni(e){const L=S.texts||[],n=L.length,now=Date.now(),F=TX.fast;if(e&&e.kind==='phone')return true;if(camS.mode==='walk'&&Math.hypot(YOU.x-G.x,YOU.z-G.z)<12)return false;if(L.filter(m=>m.ini&&now-m.t<864e5).length>=8)return false;
+  if(!e&&n&&L[n-1].from==='me'&&now-L[n-1].t<5*60e3*F)return false;if(n&&L[n-1].from==='him'&&now-L[n-1].t<(e?(e.pri>=6?8:15):40)*60e3*F)return false;if(!e&&n>1&&L[n-1].ini&&L[n-2].ini&&L[n-2].from==='him')return false;return true}
+function txTick(){if(!S||!Array.isArray(S.texts))return;const now=Date.now(),asl=txAsleep();if(TX.wasAsleep&&!asl)TX.woke=now;TX.wasAsleep=asl;if(TX.typing)G.phoneT=Math.max(G.phoneT,1.2);txRefresh();
+  if(TX.job||!S.phone)return;const pend=S.texts.filter(m=>m.from==='me'&&m.wait);
+  if(pend.length){if(asl){TX.dueAt=0;return}if(!TX.dueAt)TX.dueAt=now+txDelay(pend);if(now<TX.dueAt)return;if(txBlocked()&&now-pend[pend.length-1].t<180e3*TX.fast)return;txReply(pend);return}TX.dueAt=0;
+  if(asl||txBlocked()||document.visibilityState!=='visible')return;
+  const ob=TX.outbox,i=ob.findIndex(e=>now>=e.due);if(i>=0){const e=ob[i];if(now-e.t>2*3600e3){ob.splice(i,1);return}if(txCanIni(e)){ob.splice(i,1);txInitiate(e)}else e.due=now+5*60e3*TX.fast;return}
+  if(now>=TX.nextAt&&!ob.length){TX.nextAt=now+rand(25,45)*60e3*TX.fast;if(txCanIni(null))txInitiate(null)}}
 function bumpInterest(tag,d){tag=String(tag).toLowerCase().trim().slice(0,24);if(!tag)return null;const before=S.interests[tag]||0;const v=clamp(before+d,-6,30);S.interests[tag]=+v.toFixed(2);
   const keys=Object.keys(S.interests);if(keys.length>40){keys.sort((a,b)=>Math.abs(S.interests[a])-Math.abs(S.interests[b]));delete S.interests[keys[0]]}return[before,v]}
 function hobbyByName(n){return S.hobbies.find(h=>h.name.toLowerCase()===String(n||'').toLowerCase())}
 function addHobby(h,t=Date.now()){if(!h||!h.name||hobbyByName(h.name)||S.hobbies.length>=12)return;const place=byId[h.p]?h.p:'home';
   S.hobbies.push({name:String(h.name).slice(0,40),p:place,s:place==='home'&&h.s&&byId.home.spots[h.s]?h.s:(place==='home'?'couch':null),doing:String(h.doing||h.name).slice(0,40),xp:0,since:t,tag:h.tag||null});
-  addEntry('New hobby',`I think I have a new hobby: ${h.name}. Nobody told me to. I just… really like it.`,'',t,true);toast(`✨ Mocha started a new hobby: ${h.name}`)}
+  addEntry('New hobby',`I think I have a new hobby: ${h.name}. Nobody told me to. I just… really like it.`,'',t,true);toast(`✨ Mocha started a new hobby: ${h.name}`);txEvent('hobby',{name:String(h.name).slice(0,40)},t)}
 function practiceHobby(name,t=Date.now()){const h=hobbyByName(name);if(!h)return;const lv=Math.floor(h.xp/40)+1;h.xp+=Math.round(rand(10,16));const nl=Math.floor(h.xp/40)+1;if(nl>lv)addEntry('Growing',`Getting better at ${h.name}! (level ${nl})`,'',t+2,true)}
 function goalCheck(kind,key,t=Date.now()){const g=S.goal;if(!g||g.kind==='free')return;if(g.kind===kind&&(!g.key||g.key===key)){g.progress++;if(g.progress>=g.target)completeGoal(t)}}
-function completeGoal(t=Date.now()){const g=S.goal;if(!g)return;S.goalsDone++;addEntry('Goal',`Did it! I wanted to ${g.text}, and I did. ✨`,'',t,true);toast(`🎯 Mocha reached his goal: ${g.text}`);S.goal=null;S.xp+=20}
+function completeGoal(t=Date.now()){const g=S.goal;if(!g)return;S.goalsDone++;addEntry('Goal',`Did it! I wanted to ${g.text}, and I did. ✨`,'',t,true);toast(`🎯 Mocha reached his goal: ${g.text}`);txEvent('goal',{text:String(g.text).slice(0,80)},t);S.goal=null;S.xp+=20}
 function localGoal(t=Date.now()){const top=topInterests(3);const opts=[];
   if(PLACES.some(p=>!known(p)))opts.push({text:'find a place nobody told me about',kind:'discover',target:1});
   if(top.length){const tag=pick(top)[0];opts.push({text:`learn more about ${TOPIC_FOR[tag]||tag}`,kind:'research',target:2})}
@@ -1301,7 +1515,7 @@ function research(t,where){const tops=topInterests(4).map(([k])=>TOPIC_FOR[k]).f
   const key=pick(tops.length&&Math.random()<.6?tops:(unseen.length?unseen:Object.keys(FACTS)));const facts=FACTS[key];addLearned(key,facts,t);const f=pick(facts);
   addEntry('Learned',`Looked up ${key} on the ${where==='library'?'library':'my'} computer. Did you know: ${f} I wrote it in my notebook.`,where==='library'?'Emerald Public Library':"Mocha's House",t);goalCheck('research',null,t);bumpInterest(Object.keys(TOPIC_FOR).find(k=>TOPIC_FOR[k]===key)||key,.6)}
 function discover(p,t=Date.now(),live=true){if(known(p))return;S.discovered.push(p.id);S.xp+=25;
-  addEntry('Discovery',`I found somewhere new: ${p.name}! It was just out past the edge of where I usually float. Putting it on my map.`,p.name,t,true);goalCheck('discover',null,t);
+  addEntry('Discovery',`I found somewhere new: ${p.name}! It was just out past the edge of where I usually float. Putting it on my map.`,p.name,t,true);goalCheck('discover',null,t);txEvent('discover',{name:p.name},t);
   if(live){toast(`🧭 Mocha discovered ${p.name}!`);labelFor(p)}}
 function closetChange(t,place){if(!S.owned.length){addEntry('Style','Opened my wardrobe. It\'s empty. Just me, plain and white. Maybe I should go find something I like.',place,t);bumpInterest('fashion',.3);return}
   const wet=WEATHER.kind==='rain'||WEATHER.kind==='drizzle';const bySlot={};S.owned.filter(o=>o.item!=='helmet').forEach(o=>{(bySlot[WEAR[o.item]]=bySlot[WEAR[o.item]]||[]).push(o)});
@@ -1374,7 +1588,7 @@ let awayMs=0;function catchUp(){if(isNew)return 0;const now=Date.now(),away=now-
       addEntry('Rest',fill(pick(['Slept through the night. Dreamed about {dream}.','Slept like a log. A ghostly, floaty log.','Slept in a little. The rain on the roof was too cozy.'])),"Mocha's House",wake);S.needs.energy=100;t=wake+rand(15,40)*60e3;n++;continue}
     const c=localChoose(t);if(c.explore){if(Math.random()<.5)discover(c.explore,t,false);t+=rand(30,60)*60e3;continue}if(c.act.fx==='sleep'){t+=45*60e3;continue}localOutcome(c.act,t,false);t+=rand(40,90)*60e3;n++}
   isQuiet=false;S.diary.sort((a,b)=>b.t-a.t);S.lastSeen=now;return n}
-let awayCount=catchUp();
+let awayCount=catchUp();txAwayFlush();
 if(isNew)addEntry('Moved in','Moved into a little house in a rainy city by the water. It\'s mine! I don\'t know what I like yet. I guess I\'ll have to go find out. I have 150 coins saved up from moving, for something really useful.',"Mocha's House");
 if(S.seedNote){delete S.seedNote;addEntry('Money','Found my moving-day savings tucked inside a box: 150 coins! I\'m going to save them for something really useful.',"Mocha's House")}
 
@@ -1470,7 +1684,7 @@ function arrive(){const a=G.act;if(a.fx==='sleep'&&S.bike&&Math.hypot(BK.x-34.5,
   if(a.fx==='movie'){startMovie(a);const c=byId.cinema;a.face=toWorld(c,0,c.d/2)}if(a.npc){W.busy=999;if(!S.metW){wSay('oh! hello there, neighbor!',3)}else wSay(pick(['mocha! perfect timing','come sit, come sit','i was hoping you\'d stop by']),3)}if(a.fx==='research'&&a.p==='home')setScreen(a.research||pick(Object.keys(FACTS)));G.mode='activity';G.timer=a.fx==='sleep'?(asleepAt(hourAt(Date.now()))?secondsToWake()+5:20*60):a.fx==='ferry'?FERRY.period*.5:a.fx==='movie'?MOVIE_LEN:rand(40,75);G.sleep=a.fx==='sleep'||/nap|sleep/i.test(a.doing||'');
   if(a.fx==='ride')G.ride='wheel';if(a.fx==='ferry')G.ride='ferry';
   if(!a.mind&&!G.sleep&&!a.npc)say(pick([a.doing+'…','ooh','hm hm hm','okay!']),2.5,true)}
-function finishAct(){const a=G.act;if(G.biking)parkBike();if(a&&a.fx==='movie'){MOVIE=null;drawIdleScreen()}if(a&&a.npc){W.busy=0;W.timer=Math.max(W.timer,20);S.friendW=(S.friendW||0)+1;if(!S.metW){S.metW=true;addEntry('Neighbor','Met my neighbor today! His name is Wendell. He\'s a raccoon in a mustard cardigan and little round glasses. He gave me a bottle cap "as a welcome gift." I think we\'re going to be friends.',"Wendell's House",Date.now()-1,true);toast('🦝 Mocha met his neighbor Wendell')}}G.sleep=false;G.ride=null;G.mode='idle';G.timer=rand(2,4);
+function finishAct(){const a=G.act;if(G.biking)parkBike();if(a&&a.fx==='movie'){MOVIE=null;drawIdleScreen()}if(a&&a.npc){W.busy=0;W.timer=Math.max(W.timer,20);S.friendW=(S.friendW||0)+1;if(!S.metW){S.metW=true;addEntry('Neighbor','Met my neighbor today! His name is Wendell. He\'s a raccoon in a mustard cardigan and little round glasses. He gave me a bottle cap "as a welcome gift." I think we\'re going to be friends.',"Wendell's House",Date.now()-1,true);toast('🦝 Mocha met his neighbor Wendell');txEvent('wendell')}}G.sleep=false;G.ride=null;G.mode='idle';G.timer=rand(2,4);
   if(MIND.on&&MIND.ready())mindThink(a);else{if(a.mind)narrateFallback(a);else localOutcome(a);if(Math.random()<.25)thoughtEntry();maybeSelfie(a,byId[a.p].name,a.bought?.55:0)}
   save()}
 function narrateFallback(a){if(['job','phoneshop','bikeshop','bikeride'].includes(a.fx)){localOutcome(a);return}if(a.fx==='movie'||a.fx==='ask'){localOutcome({...(ACTS.find(x=>x.fx===a.fx&&(a.fx!=='ask'||x.keeper===a.keeper))||{}),film:a.film,keeper:a.keeper,p:a.p,s:a.s,tags:a.tags||[],doing:a.doing});return}if(a.npc){localOutcome(ACTS.find(x=>x.npc));return}const tmpl=ACTS.find(x=>x.p===a.p&&(!a.s||x.s===a.s)&&x.fx!=='job')||ACTS.find(x=>x.p===a.p&&x.fx!=='job');if(tmpl)localOutcome({...tmpl,hobby:a.hobby,fx:a.fx==='research'?'research':tmpl.fx});}
@@ -1557,7 +1771,7 @@ function takeSelfie(caption,place,force){if(!S.phone&&!force)return false;try{ca
   const url=c.toDataURL('image/jpeg',.72),pid='p'+Date.now().toString(36);PHOTOS[pid]=url;
   S.posts.unshift({id:pid,t:Date.now(),caption,place:place||'',likes:Math.floor(rand(3,30)),liked:false});S.posts.length=Math.min(S.posts.length,30);savePhotos();
   G.phoneT=2.6;say('*click* 📸',2,true);
-  addEntry('Posted',`Took a selfie${place?' at '+place:''} and posted it: "${caption}"`,place);toast('📸 Mocha posted a photo');
+  addEntry('Posted',`Took a selfie${place?' at '+place:''} and posted it: "${caption}"`,place);toast('📸 Mocha posted a photo');txEvent('selfie',{id:pid});
   if(photoCol)photoCol.doc(pid).set({img:url,t:Date.now()}).catch(()=>{});if(curTab==='feed')renderFeed();return true}catch(e){return false}}
 function maybeSelfie(a,place,boost=0){if(!S.phone||!a||a.fx==='sleep'||G.sleep)return;const ch=.07+Math.max(0,S.interests.photography||0)*.02+boost;if(Math.random()<ch){const opts=[`${place.toLowerCase()} vibes ✨`,`me, a ghost, at ${place} 👻`,WEATHER.kind==='rain'?'rainy day mood 🌧':'out and about ☁️',`${a.doing} 💛`,'just a little guy doing little things'];if(S.pets.length)opts.push(`me and ${S.pets[0].name} 🐾`);takeSelfie(pick(opts),place)}}
 function makeCritter(L){const g=new THREE.Group();const fur=lam(L.fur),light=lam(L.light),dark=lam('#2a2a33'),ap=lam(L.apron);const legs=[],arms=[];
@@ -1586,7 +1800,7 @@ function makeCritter(L){const g=new THREE.Group();const fur=lam(L.fur),light=lam
   if(L.glasses)for(const s of [-1,1]){const gl=new THREE.Mesh(new THREE.TorusGeometry(.065,.01,6,14),lam('#c9a24a'));gl.position.set(s*.1,L.owl?.04:.05,L.owl?.31:.28);head.add(gl)}
   if(L.beret){const b=add(SPH,lam(L.beret),.03,.24,0,.28,.08,.28,head);b.rotation.z=-.2}
   for(const s of [-1,1]){const a=new THREE.Group();a.position.set(s*.36,1.02,0);g.add(a);add(new THREE.CylinderGeometry(.07,.06,.4,8),fur,0,-.18,0,1,1,1,a);add(SPH,(L.frog||L.octo)?fur:dark,0,-.4,0,.06,.06,.06,a);arms.push(a)}
-  const tent=[];if(L.octo)for(const a0 of [.75,2.35,3.95,5.5]){const tg=new THREE.Group();tg.position.set(0,.5,0);tg.rotation.order='YXZ';tg.rotation.y=a0;g.add(tg);for(let k=0;k<4;k++){const r=.075-k*.013;add(SPH,fur,0,-.06-k*.13+(k===3?.08:0),.3+k*.1,r,r,r*1.25,tg)}add(SPH,light,0,-.36,.5,.03,.03,.03,tg);tent.push(tg)}
+  const tent=[];if(L.octo)for(const a0 of [.75,2.35,3.95,5.5]){const tg=new THREE.Group();tg.position.set(0,.5,0);tg.rotation.order='YXZ';tg.rotation.y=a0;g.add(tg);for(let k=0;k<4;k++){const r=.075-k*.013;add(SPH8,fur,0,-.06-k*.13+(k===3?.08:0),.3+k*.1,r,r,r*1.25,tg)}add(SPH,light,0,-.36,.5,.03,.03,.03,tg);tent.push(tg)}
   if(L.tail==='bushy'){const t=add(new THREE.ConeGeometry(.16,.6,10),fur,0,.55,-.38);t.rotation.x=-1.1;add(SPH,light,0,.75,-.62,.09,.09,.09)}
   if(L.tail==='flat'){const t=add(new THREE.BoxGeometry(.3,.06,.5),lam('#4a3a2a'),0,.3,-.45);t.rotation.x=.3}
   if(L.tail==='puff')add(SPH,lam('#ffffff'),0,.55,-.33,.1,.1,.1);if(L.tail==='long'){const t=add(new THREE.CylinderGeometry(.03,.05,.6,6),fur,0,.45,-.45);t.rotation.x=-1}if(L.tail==='short'){const t=add(new THREE.CylinderGeometry(.03,.04,.25,6),fur,0,.7,-.34);t.rotation.x=-.6}
@@ -1634,7 +1848,7 @@ function updateW(dt,t){wGreetT-=dt;
 // ====================================================================
 const MIND={api:null,on:false,busy:false,last:0,backoff:0,lastThought:'',ready(){return!!this.api&&!this.busy&&Date.now()>this.backoff&&Date.now()-this.last>({chatty:35e3,normal:75e3,gentle:180e3}[SET.pace]||75e3)&&document.visibilityState==='visible'}};
 function placeList(){const h=hourAt(Date.now());return PLACES.filter(known).map(p=>{const acts=ACTS.filter(a=>a.p===p.id&&a.fx!=='ask'&&a.fx!=='job'&&(!a.bike||S.bike)).map(a=>a.doing),job=ACTS.find(a=>a.p===p.id&&a.fx==='job');const k=KEEPERS.find(x=>x.shop===p.id);const hr=p.hours?(isOpen(p,h)?` [OPEN ${fmtH(p.hours[0])}–${fmtH(p.hours[1])}`:` [CLOSED now, opens ${fmtH(p.hours[0])}`)+(k?`; run by ${k.name} the ${k.species} (id "${k.id}"), who knows about ${k.topic}`:'')+']':'';const sp=p.spots&&p.id!=='home'?' [spots inside: '+Object.keys(p.spots).filter(k=>k!=='main').join(', ')+']':'';return`${p.id}: ${p.name}${hr}${p.id==='home'?' (his gothic house; spots: kitchen, desk [his computer — he can look up anything], couch [bookshelf, record player], bed, closet [wardrobe], bath, petbed)':sp+(acts.length?' — e.g. '+acts.slice(0,4).join(', '):'')+(job&&isOpen(p,h)?` [odd job here: ${job.doing}, pays about ${job.pay[0]}-${job.pay[1]} coins; to take it set next.job true]`:'')}`}).join('\n')}
-function context(){const d=new Date();const ti=Object.entries(S.interests).sort((a,b)=>b[1]-a[1]);
+function context(o={}){const d=new Date();const ti=Object.entries(S.interests).sort((a,b)=>b[1]-a[1]);
   return`Time: ${d.toLocaleDateString([],{weekday:'long'})} ${d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}. Weather: ${WEATHER.kind}. Season: ${SEASON_KEY}.
 Mocha: a small white ghost, level ${level()}, day ${ageDays()+1} living in the city. Personality: ${traitWords().join(', ')}.
 Needs 0-100 (low = wants it): ${Object.entries(S.needs).map(([k,v])=>k+' '+Math.round(v)).join(', ')}.
@@ -1645,7 +1859,7 @@ Wardrobe he owns: ${S.owned.map(o=>`[${o.id}] ${o.name} (${o.item})`).join(', ')
 Treasures: ${S.items.slice(-6).map(i=>i.name).join(', ')||'none'}. Notebook topics learned: ${S.learned.slice(0,10).map(l=>l.topic).join(', ')||'none'}.
 Current goal: ${S.goal?S.goal.text+(S.goal.target?` (${S.goal.progress}/${S.goal.target})`:''):'none'}.
 His friend (the person watching): ${S.mem.userName||'name unknown'}${S.mem.facts.length?'; things he knows about them: '+S.mem.facts.slice(-8).join('; '):''}.
-Recent diary (newest first):\n${S.diary.slice(0,8).map(e=>'- '+e.text).join('\n')}
+${!o.noTexts&&(S.texts||[]).length?'Latest texts with his friend (newest last): '+S.texts.slice(-4).map(m=>(m.from==='me'?'Friend: ':'Mocha: ')+m.text.slice(0,80)).join(' | ')+'\n':''}Recent diary (newest first):\n${S.diary.slice(0,8).map(e=>'- '+e.text).join('\n')}
 Home: a gothic Victorian house. Fridge/pantry ${Math.round(S.pantry)}% stocked. Home items he bought: ${S.decor.map(d=>DECOR[d]).join(', ')||'none yet'}.
 Today: sunrise ${fmtH(SUN.rise)}, sunset ${fmtH(SUN.set)}. His own sleep schedule: bed around ${fmtH(sched().bed)}, up around ${fmtH(sched().wake)} — he lives a normal day: one night's sleep, no naps unless exhausted.
 His paintings: ${S.paintings.slice(0,6).map(x=>`"${x.title}" (${x.where.startsWith('gift:')?'given to '+x.where.slice(5):x.where})`).join(', ')||'none yet'}.
@@ -1806,7 +2020,7 @@ cv.addEventListener('pointerup',e=>{if(e.pointerId===STICK.id){STICK.end(e);retu
 cv.addEventListener('pointercancel',e=>{if(e.pointerId===STICK.id){STICK.end(e);return}ptrs.delete(e.pointerId);downAt=null;two=null});
 cv.addEventListener('wheel',e=>{e.preventDefault();const zl=zoomLim();ZM.tgt=null;camS.dist=clamp(camS.dist*clamp(1+e.deltaY*(e.ctrlKey?.01:.001),.5,2),zl[0],zl[1])},{passive:false});
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
-addEventListener('keydown',e=>{if(LB.open){const q=e.key;if(q==='Escape'){closeLB();e.preventDefault()}else if(q==='ArrowLeft'){stepLB(-1);e.preventDefault()}else if(q==='ArrowRight'){stepLB(1);e.preventDefault()}return}if(e.target.tagName==='INPUT')return;const k=e.key.toLowerCase();if(k==='+'||k==='='){zoomBy(.8);return}if(k==='-'||k==='_'){zoomBy(1.25);return}if(['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){KEYS_DOWN[k]=1;if(!['q','e'].includes(k)&&camS.mode!=='walk')setCamMode('walk');e.preventDefault()}if(k==='f')setCamMode('follow');if(k==='m')toggleMap()});
+addEventListener('keydown',e=>{if(msgOpen&&!LB.open){if(e.key==='Escape'){closeMsgs();e.preventDefault()}return}if(LB.open){const q=e.key;if(q==='Escape'){closeLB();e.preventDefault()}else if(q==='ArrowLeft'){stepLB(-1);e.preventDefault()}else if(q==='ArrowRight'){stepLB(1);e.preventDefault()}return}if(e.target.tagName==='INPUT')return;const k=e.key.toLowerCase();if(k==='+'||k==='='){zoomBy(.8);return}if(k==='-'||k==='_'){zoomBy(1.25);return}if(['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){KEYS_DOWN[k]=1;if(!['q','e'].includes(k)&&camS.mode!=='walk')setCamMode('walk');e.preventDefault()}if(k==='f')setCamMode('follow');if(k==='m')toggleMap()});
 addEventListener('keyup',e=>{KEYS_DOWN[e.key.toLowerCase()]=0});
 const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
 // tapping never tells Mocha what to do
@@ -1836,7 +2050,7 @@ $('#chatBtn').onclick=()=>{const on=document.body.classList.toggle('chatOpen');i
 // ====================================================================
 const bubble=$('#bubble');let bubbleT=0;
 function say(t,dur=4.5,think){if(!t)return;bubble.textContent=t;bubble.classList.toggle('think',!!think);bubble.classList.add('show');bubbleT=dur;if(!think)G.talk=Math.min(dur,2)}
-let toastT;toast=t=>{if(isQuiet)return;const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),4000)};
+let toastT;toast=t=>{if(isQuiet)return;const el=$('#toast');el.classList.remove('tap');el.onclick=null;el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),4000)};
 const labels=[];labelFor=p=>{if(labels.some(l=>l.p===p))return;const d=document.createElement('div');d.className='lbl'+(p.id==='home'?' home':p.secret?' new':'');d.dataset.base=(p.id==='home'?'🏠 ':p.secret?'✨ ':'')+p.name;d.textContent=d.dataset.base;$('#labels').appendChild(d);labels.push({p,el:d});if(p.walk)p.walk.visible=true};
 PLACES.filter(known).forEach(p=>labelFor(p));
 const v3=new THREE.Vector3();
@@ -1870,7 +2084,7 @@ function renderDiary(){$('#tab-diary').innerHTML=(awayCount?`<p class="muted">�
 function gearHTML(){const w=nextWant(),sw=c=>`<span class="sw" style="background:${esc(c)}"></span>`,gd=k=>(S.gadgets||[]).find(g=>g.k===k);
   const gch=['earbuds','speaker'].filter(gd).map(k=>`<span class="chip">${sw(gd(k).c)}${GADGETS[k].e} ${esc(GADGETS[k].label)}</span>`).join('');
   return`<h4>his money · ${S.coins} coins 🪙</h4><p class="muted" style="margin:2px 0">${S.jobs||0} odd job${S.jobs===1?'':'s'} so far${S.paintings.some(x=>x.where==='sold')?' · sells paintings too':''}${w?` · thinking about ${esc(w.what)} (${w.price})`:''}</p>${w?`<div class="bar" style="height:8px;margin:5px 0 2px"><i style="width:${clamp(S.coins/w.price*100,0,100)}%;background:#f2c14e"></i></div>`:''}
-  <h4>his phone</h4>${S.phone?`<span class="chip">${sw(S.phone.color)}📱 ${esc(S.phone.model)}</span>${S.phone.case?`<span class="chip">${sw(S.phone.case.c)}case${S.phone.case.pat==='solid'?'':' with '+esc(S.phone.case.pat)}</span>`:''}${S.phone.charm?`<span class="chip">${sw(CHARMS[S.phone.charm]||'#fff')}${esc(S.phone.charm)} charm</span>`:''}${gch}`:`<p class="muted">no phone yet — Cascade Mobile sells them, and he needs one for selfies. his call.</p>${gch}`}
+  <h4>his phone</h4>${S.phone?`<p class="muted" style="margin:2px 0 4px">you can text him with the 📱 button${(S.texts||[]).length?` · ${S.texts.length} texts so far`:''}</p><span class="chip">${sw(S.phone.color)}📱 ${esc(S.phone.model)}</span>${S.phone.case?`<span class="chip">${sw(S.phone.case.c)}case${S.phone.case.pat==='solid'?'':' with '+esc(S.phone.case.pat)}</span>`:''}${S.phone.charm?`<span class="chip">${sw(CHARMS[S.phone.charm]||'#fff')}${esc(S.phone.charm)} charm</span>`:''}${gch}`:`<p class="muted">no phone yet — Cascade Mobile sells them, and he needs one for selfies. his call.</p>${gch}`}
   <h4>his bike</h4>${S.bike?`<span class="chip">${sw(S.bike.color)}🚲 “${esc(S.bike.name)}” · ${esc((BIKES[S.bike.type]||BIKES.city).label)}</span><span class="chip">${S.bike.rides||0} ride${S.bike.rides===1?'':'s'}</span>${hasHelmet()?`<span class="chip">${sw(helmetCol())}helmet</span>`:''}${['bell','lights'].filter(gd).map(k=>`<span class="chip">${GADGETS[k].e} ${esc(GADGETS[k].label)}</span>`).join('')}`:'<p class="muted">no bike yet — Spoke & Sprocket has some beauties</p>'}`}
 function renderMe(){const lv=level(),cur=(lv-1)**2*25,nxt=lv**2*25;const ints=Object.entries(S.interests).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);const mx=Math.max(6,...ints.map(([,v])=>v));
   $('#tab-me').innerHTML=`<h4 style="margin-top:4px">level ${lv} · day ${ageDays()+1} in the city</h4><div class="bar" style="height:10px"><i style="width:${clamp((S.xp-cur)/(nxt-cur)*100,0,100)}%;background:var(--accent)"></i></div><p class="muted" style="margin:4px 0">${nxt-S.xp} xp until he grows a little bigger</p>
@@ -1893,7 +2107,7 @@ function renderMe(){const lv=level(),cur=(lv-1)**2*25,nxt=lv**2*25;const ints=Ob
 function renderNotes(){$('#tab-notes').innerHTML=`<p class="muted" style="margin-top:2px">Things Mocha looked up on his computer or at the library.${MIND.on?' He researches whatever he gets curious about.':''}</p>`+(S.learned.length?S.learned.map(l=>`<div class="fact"><b>${esc(l.topic)}</b>${l.facts.map(f=>'• '+esc(f)).join('<br>')}</div>`).join(''):'<p class="muted">empty so far</p>')}
 function renderYou(){const m=S.mem;$('#tab-you').innerHTML=`<h4 style="margin-top:4px">your name</h4>${m.userName?`<span class="chip">${esc(m.userName)}</span>`:'<p class="muted">He doesn\'t know yet — tell him!</p>'}
   <h4>things he remembers about you</h4>${m.facts.length?m.facts.map(f=>`<span class="chip">${esc(f)}</span>`).join(''):'<p class="muted">nothing yet</p>'}
-  <h4>friendship</h4><p class="muted">${m.chats} chats · met ${new Date(m.met).toLocaleDateString()}</p>
+  <h4>friendship</h4><p class="muted">${m.chats} chats${(S.texts||[]).length?' · '+S.texts.length+' texts':''} · met ${new Date(m.met).toLocaleDateString()}</p>
   <h4>his mind</h4><p class="muted">${MIND.on?'Awake: Claude decides what Mocha does, writes his diary, looks things up for him, and answers when you talk to him.':MIND.api?'Asleep: he runs on simple instincts. Tap "let Mocha think for himself" to wake it up.':'Running on simple instincts (his Claude-powered mind isn\'t available here).'}</p>`}
 const thumbCache={};function paintThumb(pt){if(!thumbCache[pt.id])thumbCache[pt.id]=paintCanvas(pt,192,144).toDataURL('image/jpeg',.82);return thumbCache[pt.id]}
 function whereTxt(pt){const w=String(pt.where||'');if(w==='home')return'on his wall';if(w==='sold')return'sold at the market';if(w.startsWith('gift:')){const k=w.slice(5);return'gave to '+(k==='wendell'?'Wendell':(KB[k]||{}).name||'a friend')}return'in his stack'}
@@ -1970,24 +2184,30 @@ function localReply(raw){const m=raw.toLowerCase().trim(),me=S.mem;let k;
   if(/(how are (you|u)|how r u|you ok)/.test(m)){const c=Object.values(S.needs).reduce((a,b)=>a+b)/5;return c>60?'pretty cozy actually 💛':'a little tired, honestly. but happy you\'re here'}
   if(/(what are you doing|wyd|whatcha)/.test(m))return G.mode==='activity'?`${G.act.doing}!`:'just floating around';
   if(/(sleep|nap|tired|bed)/.test(m))return S.needs.energy<40?'honestly… i am getting sleepy 😴':'not sleepy yet! maybe later';
-  const place=PLACES.find(p=>known(p)&&(m.includes(p.id)||m.includes(p.name.toLowerCase().split(' ')[0].replace(/\'s$/,''))));if(place)return pick([`${place.name}? ooh, maybe i'll float over there sometime`,`i like ${place.name}! i'll see how i feel`]);
+  const place=PLACES.find(p=>known(p)&&p.id!=='home'&&(m.includes(p.id)||m.includes(p.name.toLowerCase().split(' ')[0].replace(/\'s$/,''))));if(place)return pick([`${place.name}? ooh, maybe i'll float over there sometime`,`i like ${place.name}! i'll see how i feel`]);
   if(/^(hi|hey|hello|yo|hiya)\b/.test(m))return me.userName?`${me.userName}!! hiii 👻`:'hi!! i\'m mocha 👻 what\'s your name?';
   if(/(bye|goodnight|good night|see you)/.test(m))return'bye!! i\'ll tell you everything i did when you\'re back';
   return pick(['mhm! tell me more','that\'s so interesting','*nods ghostily*','hehe, you\'re funny'])}
-let chatBusy=false;
+let chatBusy=false,msgOpen=false;
+// the chat bar: in person when you're with him (watch mode with no phone, or walking right next to him); a text once he has a phone and you're apart
+function chatMode(){if(camS.mode==='walk'&&Math.hypot(YOU.x-G.x,YOU.z-G.z)<12)return'person';if(S.phone)return'text';return camS.mode==='walk'?'far':'person'}
+function chatPH(){return{person:'talk to Mocha (in person)…',text:'📱 text Mocha…',far:'walk closer to talk to him…'}[chatMode()]}
+const chatIn=()=>msgOpen?$('#msgIn'):$('#say');
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null,micLive=false,sendTimer=null;
-function submitChat(){const f=$('#chat');if(f.requestSubmit)f.requestSubmit();else f.dispatchEvent(new Event('submit',{cancelable:true}))}
-function scheduleSend(ms){clearTimeout(sendTimer);if(!SET.autoSend)return;sendTimer=setTimeout(()=>{if($('#say').value.trim())submitChat()},ms)}
+function submitChat(){const f=msgOpen?$('#msgForm'):$('#chat');if(f.requestSubmit)f.requestSubmit();else f.dispatchEvent(new Event('submit',{cancelable:true}))}
+function scheduleSend(ms){clearTimeout(sendTimer);if(!SET.autoSend)return;sendTimer=setTimeout(()=>{if(chatIn().value.trim())submitChat()},ms)}
 $('#say').addEventListener('input',()=>scheduleSend(2300));
-function updateMicBtn(){const b=$('#micBtn');b.style.display=SR&&SET.mic?'inline-block':'none';b.classList.toggle('on',micLive)}
+function updateMicBtn(){const on=!!(SR&&SET.mic);[$('#micBtn'),$('#msgMic')].forEach(b=>{if(!b)return;b.style.display=on?(b.id==='msgMic'?'flex':'inline-block'):'none';b.classList.toggle('on',micLive)})}
 function startMic(){if(!SR){toast('Voice isn\'t supported here, so use the 🎤 on your keyboard');return}if(micLive)return;try{rec=new SR();rec.continuous=true;rec.interimResults=true;rec.lang=navigator.language||'en-US';
-  rec.onresult=e=>{let fin='',mid='';for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)fin+=r[0].transcript;else mid+=r[0].transcript}const inp=$('#say');if(fin){inp.value=(inp.value+' '+fin).trim();inp.placeholder='say something to Mocha…';scheduleSend(1300)}else if(mid)inp.placeholder='🎙 '+mid};
+  rec.onresult=e=>{let fin='',mid='';for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)fin+=r[0].transcript;else mid+=r[0].transcript}const inp=chatIn();if(fin){inp.value=(inp.value+' '+fin).trim();inp.placeholder=inp.id==='msgIn'?'text Mocha…':chatPH();scheduleSend(1300)}else if(mid)inp.placeholder='🎙 '+mid};
   rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){micLive=false;SET.mic=false;saveSet();updateMicBtn();toast('The mic isn\'t allowed here, so use your keyboard\'s 🎤 (auto-send is on)');SET.autoSend=true;saveSet()}};
   rec.onend=()=>{if(micLive&&SET.mic)setTimeout(()=>{try{rec.start()}catch(_){}},250);else{micLive=false;updateMicBtn()}};rec.start();micLive=true;updateMicBtn()}catch(e){micLive=false;updateMicBtn()}}
 function stopMic(){micLive=false;try{rec&&rec.stop()}catch(_){}updateMicBtn()}
 $('#micBtn').onclick=()=>micLive?stopMic():startMic();updateMicBtn();
 if(SET.mic&&SR)addEventListener('pointerdown',function once(){removeEventListener('pointerdown',once);startMic()});
-$('#chat').addEventListener('submit',async e=>{e.preventDefault();clearTimeout(sendTimer);const inp=$('#say'),t=inp.value.trim();if(TOUCH&&(document.activeElement===inp||e.submitter))inp.focus();if(!t||chatBusy)return;chatBusy=true;inp.value='';showUserMsg(t);say('…',30);
+$('#chat').addEventListener('submit',async e=>{e.preventDefault();clearTimeout(sendTimer);const inp=$('#say'),t=inp.value.trim();if(TOUCH&&(document.activeElement===inp||e.submitter))inp.focus();if(!t)return;
+  {const cm=chatMode();if(cm==='text'){inp.value='';if(sendText(t,'bar'))showUserMsg('📱 '+t);return}if(cm==='far'){toast('👻 Mocha is too far away to hear you. Walk closer (he has no phone yet)');return}}
+  if(chatBusy)return;chatBusy=true;inp.value='';showUserMsg(t);say('…',30);
   S.mem.chats++;S.needs.social=clamp(S.needs.social+12,0,100);S.chatLog.push({who:'you',text:t.slice(0,200)});S.chatLog=S.chatLog.slice(-16);
   let reply;
   if(MIND.on&&MIND.api&&Date.now()>MIND.backoff){try{const r=await mindChat(t);reply=String(r.reply).slice(0,280);
@@ -1998,6 +2218,52 @@ $('#chat').addEventListener('submit',async e=>{e.preventDefault();clearTimeout(s
   chatBusy=false;S.chatLog.push({who:'me',text:reply});say(reply,Math.max(3.5,reply.length/13));
   if(S.mem.chats%6===0)addEntry('Friends',`Talked with ${S.mem.userName||'my friend'} today. They said "${t.slice(0,70)}${t.length>70?'…':''}". I'm keeping that one.`,'');
   save();if(curTab!=='diary')renderTab()});
+// ====================================================================
+//  MESSAGES (texting Mocha's phone)
+// ====================================================================
+const msgEl=$('#msgs'),msgList=$('#msgList'),msgIn=$('#msgIn');let msgCover=false,msgVH=0;
+function msgSheet(){return matchMedia('(max-width:760px)').matches&&!matchMedia('(orientation:landscape) and (max-height:520px)').matches}
+function txUnread(){return(S.texts||[]).filter(m=>m.from==='him'&&!m.read).length}
+function txBadge(pop){const n=txUnread(),b=$('#msgBadge'),btn=$('#msgBtn');const s=n>9?'9+':String(n);if(b.textContent!==s)b.textContent=s;b.style.display=n?'flex':'none';btn.setAttribute('aria-label',n?`messages, ${n} unread`:'messages');
+  if(pop&&n){b.classList.remove('pop');btn.classList.remove('ring');void b.offsetWidth;b.classList.add('pop');btn.classList.add('ring')}}
+function txTime(t){try{return new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}catch(e){return''}}
+function txDay(t){const d=new Date(t),n=new Date(),y=new Date(n);y.setDate(n.getDate()-1);if(d.toDateString()===n.toDateString())return'Today';if(d.toDateString()===y.toDateString())return'Yesterday';try{return d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'})}catch(e){return d.toDateString()}}
+function txPic(pic){if(!pic)return'';const i=String(pic).indexOf(':'),k=String(pic).slice(0,i),id=String(pic).slice(i+1);
+  if(k==='feed'){const p=(S.posts||[]).find(x=>x.id===id);if(!p)return'';if(p.kind==='painting'){const pt=postArt(p);return pt?`<img class="mPic art" src="${paintThumb(pt)}" alt="${esc(pt.title)}" data-lb="feed" data-id="${esc(id)}">`:''}return PHOTOS[id]?`<img class="mPic" src="${PHOTOS[id]}" alt="${esc(p.caption)}" data-lb="feed" data-id="${esc(id)}">`:''}
+  if(k==='paint'){const pt=S.paintings.find(x=>x.id===id);return pt?`<img class="mPic art" src="${paintThumb(pt)}" alt="${esc(pt.title)}" data-lb="paint" data-id="${esc(id)}">`:''}return''}
+function renderMsgs(force){if(!msgOpen)return;const st=txState(),se=$('#msgStat'),sh='<i></i>'+esc(st.t);if(se.className!==st.k)se.className=st.k;if(se.innerHTML!==sh)se.innerHTML=sh;
+  const L=S.texts||[];if(document.visibilityState==='visible')L.forEach(m=>{if(m.from==='him')m.read=true});txBadge();
+  const ph=S.phone?'text Mocha…':'he has no phone yet';if(msgIn.placeholder!==ph&&!msgIn.placeholder.startsWith('🎙'))msgIn.placeholder=ph;msgIn.disabled=$('#msgSend').disabled=!S.phone;
+  const asl=!!S.phone&&txAsleep(),pend=L.some(m=>m.from==='me'&&m.wait),sig=[L.length,L.length&&L[L.length-1].t,TX.typing,!!S.phone,asl&&pend,L.filter(m=>m.from==='me'&&m.read).length,camS.mode].join('|');if(!force&&sig===TX.sig)return;TX.sig=sig;
+  const near=force||msgList.scrollHeight-msgList.scrollTop-msgList.clientHeight<90;let h='';
+  if(!L.length)h=S.phone?`<div class="mEmpty"><div class="big">💬</div><b>Text Mocha</b>He has his own phone now (${esc(phoneDesc())}). Send him a text and he'll write back when he sees it. Sometimes he'll text you first, too.</div>`
+    :`<div class="mEmpty"><div class="big">📵</div><b>Mocha doesn't have a phone yet</b>Maybe he'll get one at Cascade Mobile someday. That's his call; he has ${S.coins} coins saved right now.<br><br>Until then you can talk to him in person: ${camS.mode==='walk'?'walk up close to him and use the chat bar':'just type in the chat bar'} 👻</div>`;
+  else{let lastMine=-1;L.forEach((m,i)=>{if(m.from==='me')lastMine=i});
+    L.forEach((m,i)=>{const p=L[i-1],n=L[i+1],who=m.from==='me'?'me':'him';if(!p||new Date(p.t).toDateString()!==new Date(m.t).toDateString()||m.t-p.t>45*60e3)h+=`<div class="mDay">${txDay(m.t)} · ${txTime(m.t)}</div>`;
+      const pic=txPic(m.pic);h+=`<div class="mRow ${who}"><div class="mB${pic?' hasPic':''}">${pic}${esc(m.text)}</div></div>`;
+      if(!n||n.from!==m.from||n.t-m.t>3*60e3||i===lastMine)h+=`<div class="mMeta ${who}">${txTime(m.t)}${i===lastMine?(m.read?' · Read':' · Delivered'):''}</div>`})}
+  if(TX.typing)h+=`<div class="mRow him"><div class="mB mTyping" role="status" aria-label="Mocha is typing"><i></i><i></i><i></i></div></div>`;
+  if(asl&&pend)h+=`<div class="mNote">🌙 Mocha's asleep. He'll see your text when he wakes up (around ${fmtH(sched().wake)}).</div>`;
+  msgList.innerHTML=h;if(near){msgList.scrollTop=msgList.scrollHeight;msgList.querySelectorAll('img').forEach(im=>{if(!im.complete)im.onload=()=>{msgList.scrollTop=msgList.scrollHeight}})}}
+function fitMsgs(){if(!msgOpen)return;const vv=window.visualViewport;msgCover=msgSheet();const kb=!!(TOUCH&&vv&&innerHeight-vv.height>90);msgEl.classList.toggle('kb',kb);
+  if(TOUCH&&vv&&(msgCover||kb)){const pad=msgCover?0:6;msgEl.style.top=(vv.offsetTop+pad)+'px';msgEl.style.height=(vv.height-pad*2)+'px';msgEl.style.bottom='auto'}else{msgEl.style.top=msgEl.style.height=msgEl.style.bottom=''}
+  const h=vv?vv.height:innerHeight;if(h!==msgVH){msgVH=h;msgList.scrollTop=msgList.scrollHeight}}
+function openMsgs(){if(msgOpen)return;if(LB.open)closeLB();if(mapOpen)toggleMap(false);msgOpen=true;msgEl.classList.remove('hidden');document.body.classList.add('msgOpen');msgVH=0;TX.sig='';renderMsgs(true);fitMsgs();
+  if(!TOUCH)setTimeout(()=>{if(msgOpen&&S.phone)msgIn.focus({preventScroll:true})},60);else try{$('#msgClose').focus({preventScroll:true})}catch(e){}}
+function closeMsgs(){if(!msgOpen)return;msgOpen=false;msgCover=false;msgEl.classList.add('hidden');document.body.classList.remove('msgOpen');try{msgIn.blur()}catch(e){}msgEl.style.top=msgEl.style.height=msgEl.style.bottom='';clearTimeout(sendTimer);try{$('#msgBtn').focus({preventScroll:true})}catch(e){}}
+function showHimMsg(t){const d=document.createElement('div');d.className='msg him';d.textContent='👻 '+t;log.appendChild(d);while(log.children.length>3)log.firstChild.remove();setTimeout(()=>d.style.opacity=0,8000);setTimeout(()=>d.remove(),9200)}
+function chatPHupdate(){const i=$('#say');if(!i.placeholder.startsWith('🎙')){const p=chatPH();if(i.placeholder!==p)i.placeholder=p}const b=$('#sendBtn'),l=chatMode()==='text'?'text':'send';if(b.textContent!==l)b.textContent=l}
+txOnNew=m=>{if(m.from==='him'){if(msgOpen&&document.visibilityState==='visible')m.read=true;else{txBadge(true);if(!isQuiet){toast(`💬 Mocha: ${m.text.length>64?m.text.slice(0,62)+'…':m.text}`);const el=$('#toast');el.classList.add('tap');el.onclick=()=>{el.classList.remove('show','tap');openMsgs()}}
+    if(!msgOpen&&Date.now()-TX.viaBar<5*60e3&&getComputedStyle($('#chatwrap')).display!=='none')showHimMsg(m.text)}}
+  if(msgOpen)renderMsgs()};
+txRefresh=()=>{txBadge();if(msgOpen)renderMsgs();chatPHupdate()};
+$('#msgBtn').onclick=()=>msgOpen?closeMsgs():openMsgs();$('#msgClose').onclick=closeMsgs;
+$('#msgForm').addEventListener('submit',e=>{e.preventDefault();clearTimeout(sendTimer);const t=msgIn.value.trim();if(TOUCH&&(document.activeElement===msgIn||e.submitter))msgIn.focus({preventScroll:true});if(!t||!S.phone)return;msgIn.value='';sendText(t,'app')});
+msgIn.addEventListener('input',()=>scheduleSend(2300));msgIn.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();closeMsgs()}});
+msgList.addEventListener('click',e=>{const b=e.target.closest('[data-lb]');if(b)openLB(b.dataset.lb,b.dataset.id)});
+if(window.visualViewport){visualViewport.addEventListener('resize',fitMsgs);visualViewport.addEventListener('scroll',fitMsgs)}addEventListener('resize',fitMsgs);
+$('#msgMic').onclick=()=>micLive?stopMic():startMic();updateMicBtn();
+setInterval(txTick,1000);txBadge();
 
 // ====================================================================
 //  SAVING TO YOUR ACCOUNT (same Mocha on every device)
@@ -2014,7 +2280,7 @@ async function connect(){if(!window.claude||!window.claude.use)return;
   try{const [db,user]=await Promise.all([window.claude.use('db'),window.claude.use('user')]);if(!db||!user)return;const id=await user.id();if(!id)return;
     const ref=db.doc('data/users/'+id+'/mocha');photoCol=ref.collection('photos');const snap=await Promise.race([ref.get(),new Promise(r=>setTimeout(()=>r(null),10000))]);remoteDoc=ref;
     if(snap&&snap.exists){let rs=null;try{rs=JSON.parse(snap.data().state)}catch(_){}
-      if(rs&&rs.needs&&(rs.lastSeen||0)>(S.lastSeen||0)-2000&&(isNew||(rs.lastSeen||0)>(S.lastSeen||0))){const keepMind=S.mind;S=rs;migrate();setTimeout(applyPaintings,0);S.mind=S.mind||keepMind;isNew=false;awayCount=catchUp();applyOutfit();applyGear();PLACES.filter(known).forEach(p=>labelFor(p));try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}renderTab();hud();if(MIND.api&&S.mind){MIND.on=true;updateMindBtn()}}}
+      if(rs&&rs.needs&&(rs.lastSeen||0)>(S.lastSeen||0)-2000&&(isNew||(rs.lastSeen||0)>(S.lastSeen||0))){const keepMind=S.mind;S=rs;migrate();setTimeout(applyPaintings,0);S.mind=S.mind||keepMind;isNew=false;awayCount=catchUp();txAwayFlush();applyOutfit();applyGear();PLACES.filter(known).forEach(p=>labelFor(p));try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}renderTab();hud();if(MIND.api&&S.mind){MIND.on=true;updateMindBtn()}}}
     pushRemote(true);
     const missing=S.posts.filter(p=>p.kind!=='painting'&&!PHOTOS[p.id]).slice(0,12);for(const p of missing){try{const d=await photoCol.doc(p.id).get();if(d.exists){PHOTOS[p.id]=d.data().img}}catch(_){}}if(missing.length){savePhotos();if(curTab==='feed')renderFeed()}
   }catch(e){}}
@@ -2049,7 +2315,7 @@ function frame(now){const fps=SET.saver?20:TOUCH?30:60;if(now-last<1000/fps-2){r
   if(WEATHER.wet>.02){const a=rain.geometry.attributes.position;for(let i=0;i<RN;i++){let y=a.getY(i)-dt*(WEATHER.kind==='snow'?2.5+i%3:28+i%7);if(y<0)y+=35;a.setY(i,y);if(WEATHER.kind==='snow')a.setX(i,a.getX(i)+Math.sin(T+i)*dt*.6)}a.needsUpdate=true}
   for(let i=0;i<FF;i++){const f=ffD[i];f.a+=dt*.5;ffPos[i*3]=f.x+Math.cos(f.a*1.3)*3;ffPos[i*3+1]=f.y+Math.sin(f.a*2)*.6;ffPos[i*3+2]=f.z+Math.sin(f.a)*3}fireflies.geometry.attributes.position.needsUpdate=true;
   BEND.value.y=Math.max(22,camS.dist*1.15+8);BEND.value.w=T;BENDC.copy(camera.position);camera.updateMatrixWorld();BENDUP.setFromMatrixColumn(camera.matrixWorld,1);
-  if(!LB.open||Math.floor(T*3)!==Math.floor((T-dt)*3)){renderer.setRenderTarget(rt);bendCull=true;renderer.render(scene,camera);bendCull=false;GFX.calls=renderer.info.render.calls;GFX.tris=renderer.info.render.triangles;renderer.setRenderTarget(null);renderer.render(postScene,postCam)}
+  if(!(LB.open||msgCover)||Math.floor(T*3)!==Math.floor((T-dt)*3)){renderer.setRenderTarget(rt);bendCull=true;renderer.render(scene,camera);bendCull=false;GFX.calls=renderer.info.render.calls;GFX.tris=renderer.info.render.triangles;renderer.setRenderTarget(null);renderer.render(postScene,postCam)}
   if(bubbleT>0){bubbleT-=dt;if(bubbleT<=0)bubble.classList.remove('show')}
   if(G.thinking&&bubbleT<=0)say('💭',1.5,true);
   const umb=S.wearing.some(id=>{const o=S.owned.find(x=>x.id===id);return o&&o.item==='umbrella'});
@@ -2066,7 +2332,10 @@ setTimeout(()=>{if(isNew)say('hi! i\'m mocha 👻 i just moved in!',4.5);else sa
 requestAnimationFrame(frame);
 window.__you=()=>({x:+YOU.x.toFixed(1),z:+YOU.z.toFixed(1),yaw:+YOU.yaw.toFixed(2),cam:+camS.yaw.toFixed(2),joy:[+JOY.x.toFixed(2),+JOY.y.toFixed(2)]});window.__mocha={KEEPERS,MOVIE:()=>MOVIE,makePainting,sched,SUN:()=>SUN,asleepAt,hourAt,get S(){return S},G,MIND,localOutcome,ACTS,acquire,wearItem,adoptPet,buyDecor,takeSelfie:(c,p,force=true)=>takeSelfie(c,p,force),buyGear,shopVisit,payJob,mindBuy,applyMind,startAct,localChoose,bikePath,BIKE_LOOPS,BK,makeBike,nextWant,
   gear:()=>({coins:S.coins,phone:S.phone,gadgets:S.gadgets,bike:S.bike,jobs:S.jobs,helmet:hasHelmet(),want:nextWant(),biking:G.biking,route:G.route&&{n:G.route.pts.length,i:G.route.i,mount:G.route.mount,loop:G.route.loop,pts:G.route.pts},bk:{...BK},y:+G.y.toFixed(2),bikeVisible:!!(bikeObj&&bikeObj.visible),phoneVisible:phone.visible,phoneCols:phone.children.map(o=>Array.isArray(o.material)?o.material[0]:o.material).filter(m=>m&&m.color).map(m=>'#'+m.color.getHexString())}),
-  tick:(n=1,dt=.05)=>{for(let i=0;i<n;i++){T+=dt;updateMocha(dt,T)}return{x:+G.x.toFixed(1),z:+G.z.toFixed(1),mode:G.mode,biking:G.biking}},coins:n=>{if(n!=null)S.coins=Math.max(0,Math.round(n));return S.coins},showPhone:(s=4)=>{G.phoneT=s},setCamMode,cam:o=>{if(o)Object.assign(camS,o);return{...camS}},gfx:()=>({...GFX,pr:renderer.getPixelRatio(),adaptDrops:ADAPT.drops,progs:renderer.info.programs.length,geos:renderer.info.memory.geometries,tex:renderer.info.memory.textures}),BEND,post,scene,camera,renderer,weather:k=>{if(k){WEATHER.kind=k;WEATHER.t=600;WEATHER.over={clear:0,cloudy:.45,drizzle:.65,rain:.8,fog:.7,snow:.7}[k]??.5;WEATHER.wet=0}return WEATHER.kind},forceAct:a=>{const w=spotWorld(a.p,a.s);G.x=w.x+3;G.z=w.z+3;startAct(a)},openLB,closeLB,stepLB,lb:()=>({open:LB.open,set:LB.set,i:LB.i,n:LB.items.length,title:$('#lbTitle').textContent,sub:$('#lbSub').textContent,w:lbImg.offsetWidth,h:lbImg.offsetHeight}),postPainting,maybePostPainting,paintBig,zoomBy,ZM,zoomLim,discover:id=>discover(byId[id])};
+  tick:(n=1,dt=.05)=>{for(let i=0;i<n;i++){T+=dt;updateMocha(dt,T)}return{x:+G.x.toFixed(1),z:+G.z.toFixed(1),mode:G.mode,biking:G.biking}},coins:n=>{if(n!=null)S.coins=Math.max(0,Math.round(n));return S.coins},showPhone:(s=4)=>{G.phoneT=s},setCamMode,cam:o=>{if(o)Object.assign(camS,o);return{...camS}},gfx:()=>({...GFX,pr:renderer.getPixelRatio(),adaptDrops:ADAPT.drops,progs:renderer.info.programs.length,geos:renderer.info.memory.geometries,tex:renderer.info.memory.textures}),BEND,post,scene,camera,renderer,weather:k=>{if(k){WEATHER.kind=k;WEATHER.t=600;WEATHER.over={clear:0,cloudy:.45,drizzle:.65,rain:.8,fog:.7,snow:.7}[k]??.5;WEATHER.wet=0}return WEATHER.kind},forceAct:a=>{const w=spotWorld(a.p,a.s);G.x=w.x+3;G.z=w.z+3;startAct(a)},openLB,closeLB,stepLB,lb:()=>({open:LB.open,set:LB.set,i:LB.i,n:LB.items.length,title:$('#lbTitle').textContent,sub:$('#lbSub').textContent,w:lbImg.offsetWidth,h:lbImg.offsetHeight}),postPainting,maybePostPainting,paintBig,zoomBy,ZM,zoomLim,discover:id=>discover(byId[id]),
+  TX,sendText:t=>sendText(t,'app'),openMsgs,closeMsgs,txTick,txEvent,txInitiate,txState:()=>txState(),txAsleep:()=>txAsleep(),chatMode,chatPH,txLocalReply,txQuestion,txAwayFlush,txAdd,renderMsgs:()=>{TX.sig='';renderMsgs(true)},
+  texts:()=>({n:(S.texts||[]).length,unread:txUnread(),typing:TX.typing,job:TX.job,pending:(S.texts||[]).filter(m=>m.from==='me'&&m.wait).length,status:txState(),open:msgOpen,cover:msgCover,outbox:TX.outbox.map(e=>e.kind),badge:$('#msgBadge').style.display==='none'?'':$('#msgBadge').textContent,list:(S.texts||[]).slice(-24).map(m=>({...m})),facts:S.mem.facts.slice()}),
+  textFast:f=>{TX.fast=f;return TX.fast},you:(x,z)=>{if(x!=null){YOU.x=x;YOU.z=z;camS.tx=x;camS.tz=z}return{x:YOU.x,z:YOU.z}},txCanIni,textFirst:type=>txInitiate(null,type)};
 })();
 </script>
 </body>
