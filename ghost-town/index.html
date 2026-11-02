@@ -850,13 +850,13 @@ function fresh(){const tr=()=>+(Math.random()).toFixed(2);return{v:1,born:Date.n
   traits:{curiosity:tr(),coziness:tr(),sociability:tr(),creativity:tr(),adventure:tr()},
   interests:{},hobbies:[],owned:[],wearing:[],favColor:null,items:[],learned:[],
   discovered:[],visits:{},goal:null,goalsDone:0,diary:[],
-  mem:{userName:null,facts:[],chats:0,met:Date.now()},chatLog:[],mind:false,recent:[],lastThought:0,pets:[],decor:[],pantry:60,paintings:[],coins:150,know:{},seen:[],phone:null,gadgets:[],bike:null,jobs:0,seed150:1,texts:[],txQ:[],mail:[],mbox:[],mailSent:[],hol:{},calT:0,careAt:0,mailT:0,trip:null,trips:[],tripLast:0,pins:[],you:{album:[],doors:[]}}}
+  mem:{userName:null,facts:[],chats:0,met:Date.now()},chatLog:[],mind:false,recent:[],lastThought:0,pets:[],decor:[],pantry:60,paintings:[],coins:150,know:{},seen:[],phone:null,gadgets:[],bike:null,jobs:0,seed150:1,texts:[],txQ:[],mail:[],mbox:[],mailSent:[],hol:{},calT:0,careAt:0,mailT:0,trip:null,trips:[],tripLast:0,pins:[],shortcuts:[],you:{album:[],doors:[]}}}
 let S=null;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 let isNew=!S||!S.needs;if(isNew)S=fresh();const seen0=isNew?0:(+S.lastSeen||0);
 function migrate(){S.paintings=S.paintings||[];S.coins=S.coins||0;S.know=S.know||{};S.seen=S.seen||[];S.posts=S.posts||[];S.pets=S.pets||[];S.decor=S.decor||[];if(S.pantry==null)S.pantry=60;
   if(!S.seed150){S.coins=(+S.coins||0)+150;S.seed150=1;S.seedNote=1}S.coins=Math.max(0,Math.round(+S.coins||0));if(S.phone===undefined)S.phone=null;S.gadgets=Array.isArray(S.gadgets)?S.gadgets.slice(-12):[];if(S.bike===undefined)S.bike=null;S.jobs=S.jobs||0;S.texts=Array.isArray(S.texts)?S.texts.filter(m=>m&&m.text&&(m.from==='me'||m.from==='him')).slice(-150):[];S.txQ=Array.isArray(S.txQ)?S.txQ.slice(-30):[];
   S.mail=Array.isArray(S.mail)?S.mail.filter(l=>l&&l.text).slice(0,40):[];S.mbox=Array.isArray(S.mbox)?S.mbox.filter(m=>m&&m.t).slice(-6):[];S.mailSent=Array.isArray(S.mailSent)?S.mailSent.slice(-40):[];if(!S.hol||typeof S.hol!=='object'||Array.isArray(S.hol))S.hol={};S.calT=+S.calT||0;S.careAt=+S.careAt||0;S.mailT=+S.mailT||0;
-  if(!S.trip||typeof S.trip!=='object'||!S.trip.id||!Array.isArray(S.trip.ev))S.trip=null;S.trips=Array.isArray(S.trips)?S.trips.filter(x=>x&&x.id).slice(0,24):[];S.tripLast=+S.tripLast||0;S.pins=Array.isArray(S.pins)?S.pins.filter(x=>typeof x==='string').slice(-12):[];if(!S.you||typeof S.you!=='object'||Array.isArray(S.you))S.you={};if(!Array.isArray(S.you.album))S.you.album=[];if(!Array.isArray(S.you.doors))S.you.doors=[];S.you.doors=S.you.doors.filter(x=>typeof x==='string').slice(-40);S.you.album=S.you.album.slice(-30);
+  if(!S.trip||typeof S.trip!=='object'||!S.trip.id||!Array.isArray(S.trip.ev))S.trip=null;S.trips=Array.isArray(S.trips)?S.trips.filter(x=>x&&x.id).slice(0,24):[];S.tripLast=+S.tripLast||0;S.pins=Array.isArray(S.pins)?S.pins.filter(x=>typeof x==='string').slice(-12):[];if(!S.you||typeof S.you!=='object'||Array.isArray(S.you))S.you={};if(!Array.isArray(S.you.album))S.you.album=[];if(!Array.isArray(S.you.doors))S.you.doors=[];if(!Array.isArray(S.shortcuts))S.shortcuts=[];S.shortcuts=S.shortcuts.filter(x=>typeof x==='string').slice(0,8);S.you.doors=S.you.doors.filter(x=>typeof x==='string').slice(-40);S.you.album=S.you.album.slice(-30);
   (S.hobbies||[]).forEach(h=>{if(!h)return;if(!own(byId,h.p)){h.p='home';h.s='couch'}const sp=byId[h.p].spots;if(h.s&&sp&&!own(sp,h.s))h.s=h.p==='home'?'couch':null})}migrate();
 let dirty=true,hiddenAt=0;
 function save(){if(!hiddenAt)S.lastSeen=Date.now();try{S.now=nowSnap()}catch(_){}dirty=true;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){try{localStorage.removeItem(KEY+'-bak');localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}}}
@@ -1043,8 +1043,8 @@ function makeBike(type,color,o={}){const B=BIKES[type]||BIKES.city,g=new THREE.G
   g.userData={wheels,crank,r,seatY:B.seat+.05,light};return g}
 // merge a static group into a few meshes (fewer draw calls on phones): plain toon parts become one vertex-coloured mesh,
 // textured / special materials are merged per material
-let BAKEM=null;
-function bake(grp,shallow){grp.updateMatrixWorld(true);const inv=new THREE.Matrix4().copy(grp.matrixWorld).invert(),m=new THREE.Matrix4(),nm=new THREE.Matrix3(),v=new THREE.Vector3(),c=new THREE.Color(),groups=new Map(),dead=[];
+let BAKEM=null;var CAPT=null,CAPTG=null;
+function bake(grp,shallow){if(CAPT)capMeshes(grp,CAPT,CAPTG);grp.updateMatrixWorld(true);const inv=new THREE.Matrix4().copy(grp.matrixWorld).invert(),m=new THREE.Matrix4(),nm=new THREE.Matrix3(),v=new THREE.Vector3(),c=new THREE.Color(),groups=new Map(),dead=[];
   (shallow?f=>grp.children.slice().forEach(f):f=>grp.traverse(f))(o=>{if(!o.isMesh||o.isInstancedMesh||Array.isArray(o.material)||o.userData.keep)return;const mt=o.material;const plain=mt.isMeshToonMaterial&&!mt.map&&!mt.transparent&&mt.side===THREE.FrontSide&&!mt.emissiveMap&&mt.emissive.getHex()===0&&!mt.userData.sway&&!mt.vertexColors;
     const key=plain?'vc':mt.uuid;let gp=groups.get(key);if(!gp)groups.set(key,gp={mat:plain?null:mt,list:[]});gp.list.push(o)});
   groups.forEach((gp,key)=>{if(key!=='vc'&&gp.list.length<2)return;const vc=key==='vc',P=[],N=[],U=[],C=[],I=[];
@@ -1052,7 +1052,7 @@ function bake(grp,shallow){grp.updateMatrixWorld(true);const inv=new THREE.Matri
       for(let i=0;i<pa.count;i++){v.fromBufferAttribute(pa,i).applyMatrix4(m);P.push(v.x,v.y,v.z);v.fromBufferAttribute(na,i).applyMatrix3(nm).normalize();N.push(v.x,v.y,v.z);if(!vc)U.push(ua?ua.getX(i):0,ua?ua.getY(i):0);else C.push(c.r,c.g,c.b)}
       if(g.index)for(let i=0;i<g.index.count;i++)I.push(base+g.index.getX(i));else for(let i=0;i<pa.count;i++)I.push(base+i);dead.push(o)});
     const bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.Float32BufferAttribute(P,3));bg.setAttribute('normal',new THREE.Float32BufferAttribute(N,3));if(vc)bg.setAttribute('color',new THREE.Float32BufferAttribute(C,3));else bg.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));bg.setIndex(I);bg.computeBoundingSphere();
-    if(vc&&!BAKEM)BAKEM=new ToonM({color:'#ffffff',vertexColors:true});const mesh=new THREE.Mesh(bg,vc?BAKEM:gp.mat);mesh.castShadow=true;mesh.receiveShadow=true;grp.add(mesh)});
+    if(vc&&!BAKEM)BAKEM=new ToonM({color:'#ffffff',vertexColors:true});const mesh=new THREE.Mesh(bg,vc?BAKEM:gp.mat);mesh.userData.bk=1;mesh.castShadow=true;mesh.receiveShadow=true;grp.add(mesh)});
   dead.forEach(o=>{if(o.parent)o.parent.remove(o)});return grp}
 const INTERIORS={
  cinema(p,g){const zf=p.d/2-.3;const sc=document.createElement('canvas');sc.width=320;sc.height=180;const st=new THREE.CanvasTexture(sc);p.screen={c:sc,t:st};
@@ -1574,8 +1574,17 @@ const B8BLK=[{x:40,z:77,r:18},{x:-48.5,z:47,r:6.5},{x:-14.5,z:27,r:5.5},{x:-18.5
 for(let z=64;z<=88;z+=4)B8BLK.push({x:11.5,z,r:3});for(let z=8;z<=22;z+=4.5)B8BLK.push({x:-22.2,z,r:3});
 // Ferry Green's 3 trees (maples) go in with the seeded scenery
 B8TREES.push([-51.2,44.6,2,.9],[-45.3,45.2,2,.85],[-50,49.6,2,.95]);
-function buildPlace(p){const grp=new THREE.Group();grp.position.set(p.x,0,p.z);grp.rotation.y=p.ry;
-  ({home:dollhouse,npchome,cinema,grocery,petstore:petStore,library,market,needle,wheel,dock,lighthouse,troll,hill,conservatory,gumwall,park,civic:civicB,condo:condoB,cottage:cottageB,cemetery:cemeteryB,lot:lotB,plaza:plazaB}[p.kind]||shop)(p,grp);scene.add(grp);p.obj=grp;doorBuild(p,grp)}
+// B10: furniture capture for interior grids. Runs while a place is being built (bake() calls it before merging) and once more
+// after the keepers' counters are added. Records local AABBs [x0,z0,x1,z1] of meshes in the agent band with a footprint >= .25.
+function capMeshes(root,p,pg){if(!root||!pg||!p||!p.w)return;let a=root;while(a&&a!==pg)a=a.parent;if(!a)return;
+  const B=capMeshes.b||(capMeshes.b=new THREE.Box3()),M=capMeshes.m||(capMeshes.m=new THREE.Matrix4()),I=capMeshes.i||(capMeshes.i=new THREE.Matrix4());
+  pg.updateMatrixWorld(true);I.copy(pg.matrixWorld).invert();const sol=p.sol||(p.sol=[]),sh=new Set(p.shell||[]),fy=p.kind==='home'?.65:.3,W2=p.w/2,D2=p.d/2;
+  root.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||o.userData.bk||sol.length>=600)return;const ms=Array.isArray(o.material)?o.material:[o.material];if(ms.some(m=>sh.has(m)))return;
+    const g=o.geometry;if(!g.boundingBox)g.computeBoundingBox();B.copy(g.boundingBox).applyMatrix4(M.multiplyMatrices(I,o.matrixWorld));if(B.min.y>fy+1.6||B.max.y<fy+.2)return;
+    const sx=B.max.x-B.min.x,sz=B.max.z-B.min.z;if(sx*sz<.25||sx>p.w*.85||sz>p.d*.85||sx*sz>p.w*p.d*.4)return;
+    const x0=Math.max(B.min.x,-W2),x1=Math.min(B.max.x,W2),z0=Math.max(B.min.z,-D2),z1=Math.min(B.max.z,D2);if(x1-x0<.05||z1-z0<.05)return;sol.push([x0,z0,x1,z1])})}
+function buildPlace(p){const grp=new THREE.Group();grp.position.set(p.x,0,p.z);grp.rotation.y=p.ry;CAPT=p;CAPTG=grp;
+  ({home:dollhouse,npchome,cinema,grocery,petstore:petStore,library,market,needle,wheel,dock,lighthouse,troll,hill,conservatory,gumwall,park,civic:civicB,condo:condoB,cottage:cottageB,cemetery:cemeteryB,lot:lotB,plaza:plazaB}[p.kind]||shop)(p,grp);scene.add(grp);p.obj=grp;doorBuild(p,grp);CAPT=CAPTG=null}
 // ====================================================================
 //  B9 DOORS: one 512x1024 door atlas + ONE instanced material for every leaf, OPEN/CLOSED plank, chalkboard, door note and the
 //  bookstore cat (1 draw); doorways = wallTex/gothicTex opts.hole + an instanced jamb "tunnel" (2 draws). Permissions, knocking,
@@ -1795,6 +1804,8 @@ function flipSign(pid,open){const d=DOORS.find(x=>x.pid===pid&&x.plank);if(!d)re
 PLACES.filter(p=>p.kind!=='spot').forEach(buildPlace);
 KEEPERS.forEach(k=>{const p=byId[k.shop];const o=makeCritter(k.look);o.position.set(k.pos[0],.3,k.pos[1]);o.rotation.y=k.pos[2];p.obj.add(o);k.obj=o;if(p.spots)p.spots.counter=k.ask;
   if(k.shop==='bookstore')box(2.2,1,.9,'#5a3a2a',3.6,.8,-2,p.obj);if(k.shop==='library')box(3,1,1.2,'#4a3226',-1,.8,-1.7,p.obj);if(k.shop==='thrift')box(2.2,1,.9,'#7a4a68',1.8,.8,2.9,p.obj);if(k.shop==='arcade')box(1,1.1,2.2,'#2b2350',-5.5,.85,3,p.obj);if(k.shop==='records')box(1.6,1,.8,'#2a1f1a',-2.2,.8,-3.4,p.obj)});
+// B10: capture the rest of each interior (keepers and counters included) for the nav grids
+PLACES.forEach(p=>{if(p.obj&&p.w&&(p.interior||p.kind==='home'||p.kind==='npchome'))capMeshes(p.obj,p,p.obj)});
 // tag meshes that sit fully inside a closed shop (never touches .visible or castShadow)
 {const inv=new THREE.Matrix4(),m=new THREE.Matrix4(),bb=new THREE.Box3();for(const p of PLACES){if(!p.obj||!p.w||!p.interior||p.kind==='home'||p.glass)continue;p.obj.updateMatrixWorld(true);inv.copy(p.obj.matrixWorld).invert();const sh=new Set(p.shell||[]),wl=new Set((p.walls||[]).map(w=>w[0]));p.obj.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||wl.has(o)||(Array.isArray(o.material)?o.material:[o.material]).some(x=>sh.has(x)))return;const g=o.geometry;if(!g.boundingBox)g.computeBoundingBox();bb.copy(g.boundingBox).applyMatrix4(m.multiplyMatrices(inv,o.matrixWorld));if(bb.min.x>.3-p.w/2&&bb.max.x<p.w/2-.3&&bb.min.z>.3-p.d/2&&bb.max.z<p.d/2-.3&&bb.max.y<p.h)o.userData.inP=p})}}
 // ---- paintings Mocha makes ----
@@ -3074,8 +3085,8 @@ function spotWorld(pid,spot){const p=byId[pid];if(p.spots){const s=(own(p.spots,
 function wSpot(){const a=Math.atan2(G.x-W.x,G.z-W.z);return{x:W.x+Math.sin(a)*2.4,z:W.z+Math.cos(a)*2.4}}
 function startAct(act,why){if(!act||G.mode==='trip')return;if(act.hx==='trick')wearCostume();if(S.bike&&BIKE_LOOPS[act.p]&&act.fx!=='bikeride'&&/\bbik(e|ing)|cycl/i.test(act.doing||''))act=Object.assign({},ACTS.find(a=>a.fx==='bikeride'&&a.loop===act.p)||{},act,{fx:'bikeride',loop:act.p,bike:1});
   if(/\{\w+\}/.test(act.doing||''))act={...act,doing:fill(String(act.doing))};
-  const w=act.npc?wSpot():act.at?{x:act.at[0],z:act.at[1]}:act.fx==='bikeride'&&S.bike&&BIKE_LOOPS[act.loop]?{x:BIKE_LOOPS[act.loop][0][0],z:BIKE_LOOPS[act.loop][0][1]}:spotWorld(act.p,act.s);G.target={x:w.x+rand(-.5,.5),z:w.z+rand(-.5,.5)};G.act=act;G.mode='travel';G.trT=0;G.sleep=false;G.ride=null;planRide(act,G.target);if(why)say(why,3.5)}
-function goPoint(x,z,explore){if(G.mode==='trip')return;G.target={x:clamp(x,-219,169),z:clamp(z,-149,149)};G.trT=0;G.act=explore?{explore}:null;G.mode='travel';G.sleep=false;G.ride=null;G.route=null;if(G.biking)parkBike()}
+  const w=act.npc?wSpot():act.at?{x:act.at[0],z:act.at[1]}:act.fx==='bikeride'&&S.bike&&BIKE_LOOPS[act.loop]?{x:BIKE_LOOPS[act.loop][0][0],z:BIKE_LOOPS[act.loop][0][1]}:spotWorld(act.p,act.s);G.target={x:w.x+rand(-.5,.5),z:w.z+rand(-.5,.5)};G.navFor=null;G.act=act;G.mode='travel';G.trT=0;G.sleep=false;G.ride=null;planRide(act,G.target);if(why)say(why,3.5)}
+function goPoint(x,z,explore){if(G.mode==='trip')return;G.target={x:clamp(x,-219,169),z:clamp(z,-149,149)};G.trT=0;G.act=explore?{explore}:null;G.navFor=null;G.mode='travel';G.sleep=false;G.ride=null;G.route=null;if(G.biking)parkBike()}
 // ---- bike trips: he rides on the roads (right-hand lane) for longer trips, then parks and floats in ----
 const BIKE_LOOPS={park:Array.from({length:24},(_,i)=>{const a=Math.PI+i/24*Math.PI*2;return[96+Math.cos(a)*21,22-Math.sin(a)*17.5]}),promenade:(()=>{const o=[];for(let z=40;z>=-50;z-=10)o.push([-58.4,z]);for(let z=-45;z<=35;z+=10)o.push([-57.6,z]);return o})()};
 let NDist=null,NNext=null;
@@ -3106,8 +3117,6 @@ function parkBike(yaw){if(!G.biking)return;G.biking=false;BK.x=G.x;BK.z=G.z;BK.y
 function rideY(){return bikeY(G.x,G.z)+bikeObj.userData.seatY*growScale()/1.3+.5*growScale()-.06}
 function exploreToward(p){const a=Math.atan2(p.z-G.z,p.x-G.x)+rand(-.25,.25),d=Math.hypot(p.x-G.x,p.z-G.z)*rand(.75,.95);goPoint(G.x+Math.cos(a)*d,G.z+Math.sin(a)*d,p)}
 function inHome(x,z){const h=byId.home;return Math.abs(x-h.x)<h.w/2+.5&&Math.abs(z-h.z)<h.d/2+.5}
-function altitudeAt(x,z){let h=2;for(const p of PLACES){if(!p.solid)continue;if(p.kind==='needle'){if(Math.hypot(x-p.x,z-p.z)<8)h=Math.max(h,p.deckY+6);continue}if(p.kind==='wheel'){if(Math.hypot(x-p.x,z-p.z)<5)h=Math.max(h,32);continue}if(p.kind==='station'){if(inBuilding(p,x,z))h=Math.max(h,p.h+5);continue}if(Math.hypot(x-p.x,z-p.z)<p.r+1.5)h=Math.max(h,(p.h||8)+3.5)}
-  if(Math.hypot(x-byId.hill.x,z-byId.hill.z)<16)h=Math.max(h,7.5);return h}
 let musingT=rand(18,30);
 function nextThing(){if(G.mode==='trip')return;if(MIND.on&&MIND.ready()){mindThink(null);return}
   const c=localChoose();if(c.explore){exploreToward(c.explore);say(pick(['what\'s over this way…?','exploring time 🧭','i wonder what\'s past those trees']),3,true)}else startAct(c.act)}
@@ -3163,7 +3172,8 @@ function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;S.pantry=
   if(G.mode==='travel'){if((G.trT=(G.trT||0)+dt)>240){G.act=null;G.route=null;if(G.biking)parkBike();G.mode='idle';G.timer=1}}else G.trT=0;
   if(G.mode==='travel'&&G.act&&G.act.npc){if(!W.visible){G.act=null;G.mode='idle';G.timer=1}else{const w=wSpot();G.target.x=w.x;G.target.z=w.z}}
   if(G.mode==='travel'){let sx=G.target.x,sz=G.target.z;const RT=G.route;if(RT){let q=RT.pts[RT.i];const dq=Math.hypot(q[0]-G.x,q[1]-G.z);if(dq<(G.biking?1.9:1.1)||(dq<5&&(q[0]-G.x)*G.vx+(q[1]-G.z)*G.vz<0)){if(RT.i===0&&RT.mount&&!G.biking)mountBike();RT.i++;if(RT.i>=RT.pts.length){G.route=null;if(!RT.loop)parkBike(RT.yaw)}else q=RT.pts[RT.i]}if(G.route){sx=q[0];sz=q[1]}}
-    const dx=sx-G.x,dz=sz-G.z,ds=Math.max(.001,Math.hypot(dx,dz)),d=G.route?99:Math.max(.001,Math.hypot(G.target.x-G.x,G.target.z-G.z));const sp=G.biking?11*(1+level()*.02):(S.needs.energy<15?4:7)*(1+level()*.02),ac=Math.min(1,dt*(G.biking?3.2:2.2));
+    let nh=false;if(!G.biking&&!G.ride){const st=navMocha(dt);if(st){sx=st.x;sz=st.z;nh=st.hold;if(nh){G.vx*=Math.pow(.01,dt);G.vz*=Math.pow(.01,dt)}}}
+    const dx=sx-G.x,dz=sz-G.z,ds=Math.max(.001,Math.hypot(dx,dz)),d=G.route?99:Math.max(.001,Math.hypot(G.target.x-G.x,G.target.z-G.z));const sp=G.biking?11*(1+level()*.02):(nh?0:S.needs.energy<15?4:8)*(1+level()*.02),ac=Math.min(1,dt*(G.biking?3.2:2.2));
     G.vx+=(dx/ds*sp-G.vx)*ac;G.vz+=(dz/ds*sp-G.vz)*ac;
     for(const p of PLACES)if(p.secret&&!known(p)&&Math.hypot(G.x-p.x,G.z-p.z)<(p.r||8)+18){discover(p);const tm=ACTS.find(a=>a.p===p.id);if(tm)startAct(tm,'whoa… what is this place?!');break}
     if(G.mode==='travel'&&d<.7){G.vx*=.3;G.vz*=.3;if(G.act&&G.act.p)arrive();else{if(G.act&&G.act.explore){say(pick(['nothing here… yet','i\'ll keep looking','so quiet out here']),3,true);S.xp+=3}G.act=null;G.mode='idle';G.timer=rand(2,5)}}
@@ -3180,10 +3190,9 @@ function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;S.pantry=
   const sp=Math.hypot(G.vx,G.vz);
   let fc=null;if(G.mode==='activity'&&G.act&&G.act.face){const f=G.act.face;if(f.obj){f.obj.getWorldPosition(tmpV);fc={x:tmpV.x,z:tmpV.z}}else fc=f}
   const tYaw=sp>.5?Math.atan2(G.vx,G.vz):fc?Math.atan2(fc.x-G.x,fc.z-G.z):Math.atan2(camera.position.x-G.x,camera.position.z-G.z);const df=Math.atan2(Math.sin(tYaw-G.yaw),Math.cos(tYaw-G.yaw)),dyaw=df*Math.min(1,dt*(sp>.5?5:1.4));G.yaw+=dyaw;G.yawV+=(dyaw/Math.max(dt,1e-3)-G.yawV)*Math.min(1,dt*6);
-  const tp=G.act&&G.act.p?byId[G.act.p]:null;const goingIn=G.mode==='travel'&&tp&&tp.interior!==undefined&&(tp.interior||tp.kind==='home')&&Math.hypot(G.target.x-G.x,G.target.z-G.z)<(tp.r||8)+10;
-  const insideB=PLACES.find(q=>(q.interior||q.kind==='home')&&inBuilding(q,G.x,G.z));
-  let alt=ty!=null?ty:(goingIn||(insideB&&(G.mode!=='travel'||tp===insideB)))?2:altitudeAt(G.x,G.z);if(G.sleep&&inHome(G.x,G.z))alt=2.3;
-  G.y+=(alt-G.y)*Math.min(1,dt*(G.ride?8:G.biking?6:2));
+  // B10: no roof flight; he hovers at floor + 1 everywhere (agent.place, from AGENTS, says which building he is in)
+  let alt=ty!=null?ty:navFloor(G.x,G.z)+1+Math.max(0,growScale()-1.5)*.5;if(G.sleep&&inHome(G.x,G.z))alt=2.3;
+  G.y+=(alt-G.y)*Math.min(1,dt*(G.ride?8:G.biking?6:4));
   musingT-=dt;if(musingT<=0&&bubbleT<=0&&!G.sleep&&G.mode!=='trip'){musingT=rand(25,45);const m=muse();if(m){say(m,4,true);if(m.includes('📱'))G.phoneT=3.5}}
   const sc=growScale(),bob=G.biking?Math.abs(Math.sin(t*9))*.035:Math.sin(t*2.2)*(G.sleep?.06:.16)+(G.startle>0?Math.abs(Math.sin(G.startle*14))*.5:0);
   mocha.position.set(G.x,G.y+bob,G.z);mocha.visible=G.mode!=='trip';mocha.rotation.y=G.yaw;mocha.scale.setScalar(sc);
@@ -3281,30 +3290,27 @@ function makeRaccoon(){const g=new THREE.Group();const fur=lam('#8d8d96'),light=
 const whiteM_=lam('#ffffff');
 const wObj=makeRaccoon();scene.add(wObj);
 const W={x:10,z:48.5,yaw:0,path:[],dest:null,doing:'gardening',busy:0,timer:rand(20,50),visible:true};
-const W_SPOTS={yard:{x:10,z:49,doing:'gardening',where:'his garden'},porch:{x:15.2,z:45.6,doing:'reading on his porch',where:'his porch'},cafe:{x:-26,z:5,doing:'having tea at the café',where:'the café'},market:{x:-36,z:-4.5,doing:'browsing the market',where:'the market'},park:{x:80,z:26,doing:'feeding the ducks',where:'Cedar Lake Park'},promenade:{x:-55,z:10,doing:'watching the boats',where:'the waterfront'},grocery:{x:88,z:-4,doing:'grocery shopping',where:'Puget Pantry'},library:{x:26,z:-10.5,doing:'returning library books',where:'the library'}};
+const W_SPOTS={yard:{x:10,z:49,doing:'gardening',where:'his garden'},porch:{x:15.2,z:45.6,doing:'reading on his porch',where:'his porch'},cafe:{x:-26,z:5,doing:'having tea at the café',where:'the café'},market:{x:-36,z:-4.5,doing:'browsing the market',where:'the market',in:'market'},park:{x:80,z:26,doing:'feeding the ducks',where:'Cedar Lake Park'},promenade:{x:-55,z:10,doing:'watching the boats',where:'the waterfront'},grocery:{x:88,z:-4,doing:'grocery shopping',where:'Puget Pantry',in:'grocery'},library:{x:26,z:-10.5,doing:'returning library books',where:'the library',in:'library'}};
 const W_LINES=['these tomatoes won\'t grow themselves','lovely drizzle today','found a shiny bottle cap!','ah, tea weather','hmm hm hm','is it snack o\'clock?','the ducks look well today','one more chapter…'];
 const NODES=[[-55,0],[-30,0],[-5,0],[30,0],[66,0],[96,0],[120,0],[-5,58],[14,58],[40,58],[66,58],[96,58],[-55,-48],[-30,-48],[-5,-48],[30,-48],[66,-48]];
 const NADJ=NODES.map(()=>[]);{const link=(a,b)=>{const d=Math.hypot(NODES[a][0]-NODES[b][0],NODES[a][1]-NODES[b][1]);NADJ[a].push([b,d]);NADJ[b].push([a,d])};
   const line=(f)=>{const ids=NODES.map((n,i)=>i).filter(i=>f(NODES[i]));ids.sort((a,b)=>(NODES[a][0]-NODES[b][0])||(NODES[a][1]-NODES[b][1]));for(let k=1;k<ids.length;k++)link(ids[k-1],ids[k])};
   line(n=>n[1]===0);line(n=>n[1]===58);line(n=>n[1]===-48);line(n=>n[0]===-5);line(n=>n[0]===66)}
 function wAvail(){try{return W.visible&&W.busy<=0}catch(e){return false}}
-function nearestNode(x,z){let b=0,bd=1e9;NODES.forEach((n,i)=>{const d=Math.hypot(n[0]-x,n[1]-z);if(d<bd){bd=d;b=i}});return b}
-function wPath(ax,az,bx,bz){if(Math.hypot(ax-bx,az-bz)<14)return[[bx,bz]];const s0=nearestNode(ax,az),t0=nearestNode(bx,bz);const dist=NODES.map(()=>1e9),prev=NODES.map(()=>-1),done=NODES.map(()=>false);dist[s0]=0;
-  for(;;){let u=-1;dist.forEach((d,i)=>{if(!done[i]&&d<1e9&&(u<0||d<dist[u]))u=i});if(u<0||u===t0)break;done[u]=true;for(const [v,w] of NADJ[u])if(dist[u]+w<dist[v]){dist[v]=dist[u]+w;prev[v]=u}}
-  const out=[];for(let v=t0;v>=0;v=prev[v]){out.unshift(NODES[v]);if(v===s0)break}return out.map(([x,z])=>[x+3.8,z+3.8]).concat([[bx,bz]])}
+function wPath(ax,az,bx,bz){const v=navTo(AG.wendell,ax,az,bx,bz,{}),o=[];for(let i=v.i;i<v.n;i++)o.push([v.P[2*i],v.P[2*i+1]]);return o.length?o:[[bx,bz]]}
 {const d0=wSchedule();W.dest=d0;if(d0==='inside'){W.visible=false;W.x=14;W.z=45;W.doing='inside his house'}else{const sp=W_SPOTS[d0];W.x=sp.x;W.z=sp.z;W.doing=sp.doing}}
 function wSchedule(){const h=new Date().getHours();if(h>=22||h<7)return'inside';{const hs=holsOn().map(x=>x.id);if(hs.includes('halloween')&&h>=17&&h<21)return'porch';if(hs.includes('thanksgiving')&&h>=12&&h<20)return'porch';if(hs.includes('christmas')&&h>=9&&h<18)return pick(['porch','yard'])}if(h<10)return pick(['yard','yard','porch']);if(h<14)return pick(['cafe','market','grocery','yard','library']);if(h<18)return pick(['park','promenade','yard','library']);return pick(['porch','porch','yard'])}
 function wWhere(){return W.visible?(W.path.length?'out walking':(W_SPOTS[W.dest]||{}).where||'around'):'inside his house'}
 const bubble2=$('#bubble2');let wBubT=0;function wSay(t,d=3.5){bubble2.textContent=t;bubble2.classList.add('show');wBubT=d}
 let wGreetT=0;
-function updateW(dt,t){wGreetT-=dt;
+function updateW(dt,t){wGreetT-=dt;if((NAVT.t-=dt)<=0){NAVT.t=1;navTick()}
   if(W.busy>0){W.busy-=dt;const fy=Math.atan2(G.x-W.x,G.z-W.z);W.yaw+=Math.atan2(Math.sin(fy-W.yaw),Math.cos(fy-W.yaw))*Math.min(1,dt*4);if(Math.random()<dt*.18&&wBubT<=0)wSay(pick(['oh, mocha! come in, come in','want some tea?','look at this bottle cap','the garden says hi','you seem cheerful today','tell me everything']),3)}
-  else if(W.path.length){const [px,pz]=W.path[0];const dx=px-W.x,dz=pz-W.z,d=Math.hypot(dx,dz);if(d<.35){W.path.shift();if(!W.path.length){if(W.dest==='inside'){W.visible=false;W.doing='inside his house'}else W.doing=W_SPOTS[W.dest].doing;W.timer=rand(50,110)}}else{const st=Math.min(d,2.3*dt);W.x+=dx/d*st;W.z+=dz/d*st;const ty=Math.atan2(dx,dz);W.yaw+=Math.atan2(Math.sin(ty-W.yaw),Math.cos(ty-W.yaw))*Math.min(1,dt*6);W.doing='out for a stroll'}}
-  else{W.timer-=dt;if(W.timer<=0){const dest=wSchedule();if(dest===W.dest)W.timer=rand(40,80);else{const from={x:W.x,z:W.z};if(!W.visible){from.x=14;from.z=45;W.x=14;W.z=45}W.visible=true;W.dest=dest;const tg=dest==='inside'?{x:14,z:45}:W_SPOTS[dest];W.path=wPath(from.x,from.z,tg.x,tg.z)}}
+  else if(W.path.length){const s=navStep(AG.wendell,W.x,W.z,dt);W.cw=!!(s&&s.cw);if(!s||s.done){W.path.length=0;W.cw=false;if(W.dest==='inside'){W.visible=false;W.doing='inside his house'}else W.doing=W_SPOTS[W.dest].doing;W.timer=rand(50,110)}else{if(!s.hold){const dx=s.x-W.x,dz=s.z-W.z,d=Math.hypot(dx,dz);if(d>.02){const st=Math.min(d,2.3*dt);W.x+=dx/d*st;W.z+=dz/d*st;const ty=Math.atan2(dx,dz);W.yaw+=Math.atan2(Math.sin(ty-W.yaw),Math.cos(ty-W.yaw))*Math.min(1,dt*6)}}W.doing='out for a stroll'}}
+  else{W.timer-=dt;if(W.timer<=0){const dest=wSchedule();if(dest===W.dest)W.timer=rand(40,80);else{const from={x:W.x,z:W.z};if(!W.visible){from.x=14;from.z=41.5;W.x=14;W.z=41.5}W.visible=true;W.dest=dest;const tg=wTarget(dest);W.path=wPath(from.x,from.z,tg.x,tg.z)}}
     else if(Math.random()<dt*.04&&wBubT<=0&&W.visible)wSay((Math.random()<.4&&holLine())||pick(W_LINES),3)}
   if(W.visible&&G.mode==='travel'&&wGreetT<=0&&Math.hypot(G.x-W.x,G.z-W.z)<5&&!(G.act&&G.act.npc)){wGreetT=60;say(pick(['hi wendell!','hey neighbor 👋','wendell!! hi']),2.5);setTimeout(()=>wSay((Math.random()<.5&&holLine())||pick(['evening, mocha!','hello hello!','oh! hi mocha']),2.5),900)}
   wObj.visible=W.visible;wObj.position.set(W.x,floorAt(W.x,W.z),W.z);wObj.rotation.y=W.yaw;const u=wObj.userData,mv=W.path.length&&W.busy<=0;const ph=t*8;
-  u.legs.forEach((l,i)=>l.rotation.x=mv?Math.sin(ph+i*Math.PI)*.6:0);u.arms.forEach((a,i)=>a.rotation.x=mv?-Math.sin(ph+i*Math.PI)*.4:(W.dest==='yard'&&!mv?Math.sin(t*3+i)*.3-.3:0));u.tail.rotation.y=Math.sin(t*1.8)*.35;u.head.rotation.y=mv?0:Math.sin(t*.6)*.3;
+  u.legs.forEach((l,i)=>l.rotation.x=mv?Math.sin(ph+i*Math.PI)*.6:0);u.arms.forEach((a,i)=>a.rotation.x=mv?-Math.sin(ph+i*Math.PI)*.4:(W.dest==='yard'&&!mv?Math.sin(t*3+i)*.3-.3:0));u.tail.rotation.y=Math.sin(t*1.8)*.35;u.head.rotation.y=W.cw?Math.sin(t*7)*.7:mv?0:Math.sin(t*.6)*.3;
   if(wBubT>0){wBubT-=dt;if(wBubT<=0)bubble2.classList.remove('show')}const bp=project(W.x,floorAt(W.x,W.z)+2.6,W.z);bubble2.style.left=bp.x+'px';bubble2.style.top=bp.y+'px';bubble2.style.visibility=W.visible&&bp.vis?'visible':'hidden'}
 // ====================================================================
 //  CLAUDE BRAIN (optional): Mocha thinks for himself
@@ -3477,6 +3483,180 @@ const JOY={x:0,y:0},LOOK={x:0,y:0};let lastLook=-9;
 const PIERS=[[-101,-61,-37,-13],[-99,-61,9,19],[-89,-61,41,51],[-85,-61,-86,-74]];
 function walkable(x,z){return x>=-61||PIERS.some(([a,b,c,d])=>x>=a&&x<=b&&z>=c&&z<=d)}
 function floorAt(x,z){if(inHome(x,z))return .65;if(x>145.1&&x<149.9&&Math.abs(z)<26)return .92;for(const q of PLACES)if(q.interior&&q.kind!=='home'&&inBuilding(q,x,z))return .3;return .12}
+// ====================================================================
+//  B10 NAV: one street graph (sidewalks at road +-4.6, corners, crosswalks, EXTRA_PATHS, door chains), interior grids
+//  (p.grid at .5, A* + string pulling) and the route follower every walker uses (Mocha, Wendell; B22 moves keepers).
+//  NAV={x,z:Float32Array, k:Uint8Array (0 path, 1 approach/outdoor, 2 threshold, 3 inside), pl:[pid], adj:[[to,w,flags,door,sec]]}
+// ====================================================================
+const NF={CROSS:1,COV:2,SCEN:4,SEC:8,DOOR:16,IN:32,CONN:64,CW:128};
+const EXTRA_PATHS=[{id:'alley',f:4,pts:[[-21.5,4.6],[-22.2,8],[-22.2,26.6]]},{id:'ring',f:4,pts:[[-39.4,26.6],[-20.6,26.6],[-20.6,39.4],[-39.4,39.4],[-39.4,26.6]]},
+  {id:'steps',f:0,pts:[[-9.6,27],[-20.6,27]]},{id:'sqwest',f:0,pts:[[-40,4.6],[-40,24],[-39.4,26.6]]},{id:'green',f:4,pts:[[-57,47],[-48.5,47],[-44,43.5],[-39.4,39.4]]},{id:'green2',f:0,pts:[[-48.5,47],[-50,53.4]]},
+  {id:'promenade',f:4,pts:[[-57,-104],[-57,56]]},{id:'pier1',f:4,pts:[[-57,-25],[-81,-25]]},{id:'pier2',f:4,pts:[[-57,14],[-69,14]]},{id:'pierF',f:4,pts:[[-57,46],[-67,46]]},{id:'pier3',f:4,pts:[[-57,-80],[-66,-80]]},
+  {id:'lake',f:4,pts:Array.from({length:17},(_,i)=>{const a=i/16*Math.PI*2;return[96+Math.cos(a)*20,22+Math.sin(a)*16]})},{id:'lakeN',f:0,pts:[[96,4.6],[96,6]]},{id:'lakeW',f:0,pts:[[70.6,22],[76,22]]},{id:'lakeS',f:0,pts:[[96,38],[96,53.4]]},
+  {id:'cemetery',f:4,pts:[[11.5,62.6],[11.5,86.5],[11.5,104]]},{id:'morel',f:4,pts:[[11.5,96],[21.5,96]]},{id:'willa',f:4,pts:[[104,53.4],[106,58],[104,62.6]]},{id:'willa2',f:4,pts:[[106,58],[114,60],[121,62]]}];
+// secret shortcuts: Mocha finds them himself (S.shortcuts), with a diary line
+const SECRETS=[{id:'hedge',name:'a gap in the park hedge',pts:[[70.6,4.6],[81.9,10.7]]},{id:'market',name:'a path behind the market',pts:[[-57,-24],[-51.5,-24],[-21,-24],[-9.6,-24]]}];
+const FOOT=PLACES.filter(p=>(p.w&&p.d&&p.solid)||p.kind==='home'||p.foot).map(p=>{const f=p.foot||[p.x,p.z,p.ry,p.w,p.d];return{p,x:f[0],z:f[1],c:Math.cos(f[2]),s:Math.sin(f[2]),hw:f[3]/2,hd:f[4]/2}});
+function inFoot(x,z,m,sa,sb){for(let i=0;i<FOOT.length;i++){const F=FOOT[i];if(F.p===sa||F.p===sb)continue;const dx=x-F.x,dz=z-F.z;if(Math.abs(dx*F.c-dz*F.s)<F.hw+m&&Math.abs(dx*F.s+dz*F.c)<F.hd+m)return F.p}return null}
+function segClearN(ax,az,bx,bz,sa,sb,m=.2){const L=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.ceil(L/.5));for(let k=0;k<=n;k++){const x=ax+(bx-ax)*k/n,z=az+(bz-az)*k/n;if(!walkable(x,z)||inFoot(x,z,m,sa,sb))return false}return true}
+function navFloor(x,z){let f=floorAt(x,z);if(x<-61)f=Math.max(f,.62);const h=byId.hill,dx=x-h.x,dz=z-h.z,r2=dx*dx+dz*dz;if(r2<256)f=Math.max(f,.35*Math.sqrt(256-r2)+.1);return f}
+const NAV=(()=>{const X=[],Z=[],K=[],PL=[],TD=[],E=[],{CROSS,COV,SCEN,SEC,DOOR,IN,CONN}=NF;
+  const node=(x,z,k=0,pl=null,mg=.35)=>{if(mg>0)for(let i=0;i<X.length;i++)if(K[i]===k&&Math.abs(X[i]-x)<mg&&Math.abs(Z[i]-z)<mg)return i;X.push(x);Z.push(z);K.push(k);PL.push(pl);TD.push(null);return X.length-1};
+  // 1) segment soup: sidewalk lines (ends stretched across T-junctions), mid-block crosswalks, EXTRA_PATHS, secret shortcuts
+  const S=[];
+  for(const [x1,z1,x2,z2] of ROADS){const hz=z1===z2,c=hz?z1:x1;let lo=hz?Math.min(x1,x2):Math.min(z1,z2),hi=hz?Math.max(x1,x2):Math.max(z1,z2);
+    for(const [u1,v1,u2,v2] of ROADS){const h2=v1===v2;if(h2===hz)continue;const c2=h2?v1:u1,a2=h2?Math.min(u1,u2):Math.min(v1,v2),b2=h2?Math.max(u1,u2):Math.max(v1,v2);if(c<a2-1||c>b2+1)continue;if(Math.abs(c2-lo)<6)lo=Math.min(lo,c2-4.6);if(Math.abs(c2-hi)<6)hi=Math.max(hi,c2+4.6)}
+    for(const o of [-4.6,4.6])S.push(hz?[lo,c+o,hi,c+o,0,-1]:[c+o,lo,c+o,hi,0,-1])}
+  S.push([40,53.4,40,62.6,CROSS,-1],[-21.5,-4.6,-21.5,4.6,CROSS,-1],[40,-4.6,40,4.6,CROSS,-1]);
+  for(const P of EXTRA_PATHS)for(let i=1;i<P.pts.length;i++)S.push([P.pts[i-1][0],P.pts[i-1][1],P.pts[i][0],P.pts[i][1],P.f,-1]);
+  SECRETS.forEach((P,si)=>{for(let i=1;i<P.pts.length;i++)S.push([P.pts[i-1][0],P.pts[i-1][1],P.pts[i][0],P.pts[i][1],SEC|SCEN,si])});
+  // 2) T-junctions (an end within .7 of another segment snaps onto it), then proper crossings; split everything there
+  const T=S.map(()=>[0,1]),prj=(s,x,z)=>{const dx=s[2]-s[0],dz=s[3]-s[1],L2=dx*dx+dz*dz||1,t=((x-s[0])*dx+(z-s[1])*dz)/L2;return[t,s[0]+dx*t,s[1]+dz*t]};
+  for(let i=0;i<S.length;i++)for(let j=0;j<S.length;j++){if(i===j)continue;const s=S[j];for(const e of [0,2]){const [t,px,pz]=prj(S[i],s[e],s[e+1]);if(t>.001&&t<.999&&Math.hypot(px-s[e],pz-s[e+1])<.7){s[e]=px;s[e+1]=pz;T[i].push(t)}}}
+  for(let i=0;i<S.length;i++)for(let j=i+1;j<S.length;j++){const a=S[i],b=S[j],rx=a[2]-a[0],rz=a[3]-a[1],sx=b[2]-b[0],sz=b[3]-b[1],den=rx*sz-rz*sx;if(Math.abs(den)<1e-9)continue;
+    const qx=b[0]-a[0],qz=b[1]-a[1],t=(qx*sz-qz*sx)/den,u=(qx*rz-qz*rx)/den;if(t>-.001&&t<1.001&&u>-.001&&u<1.001){T[i].push(clamp(t,0,1));T[j].push(clamp(u,0,1))}}
+  const EK=new Set(),link=(a,b,fl,dr,sec)=>{if(a===b)return;const k=a<b?a+'_'+b:b+'_'+a;if(EK.has(k))return;EK.add(k);E.push([a,b,fl,dr,sec==null?-1:sec])};
+  S.forEach((s,i)=>{const L=Math.hypot(s[2]-s[0],s[3]-s[1]),ts=[...new Set(T[i])].sort((a,b)=>a-b);let prev=-1,pt=-9;
+    for(const t of ts){if(prev>=0&&(t-pt)*L<.3)continue;const n=node(s[0]+(s[2]-s[0])*t,s[1]+(s[3]-s[1])*t);
+      if(prev>=0){const seg=(t-pt)*L,m=Math.ceil(seg/8);let q=prev;for(let k=1;k<m;k++){const tt=pt+(t-pt)*k/m,nn=node(s[0]+(s[2]-s[0])*tt,s[1]+(s[3]-s[1])*tt);link(q,nn,s[4],-1,s[5]);q=nn}link(q,n,s[4],-1,s[5])}prev=n;pt=t}});
+  // 3) attach a node to the nearest path edge (split it), only along a straight line clear of footprints and water
+  const attach=(n,maxD)=>{let best=null,bd=maxD;for(let ei=0;ei<E.length;ei++){const [a,b,fl]=E[ei];if(K[a]>1||K[b]>1||(fl&(DOOR|IN|SEC))||a===n||b===n)continue;
+      const dx=X[b]-X[a],dz=Z[b]-Z[a],L2=dx*dx+dz*dz||1,t=clamp(((X[n]-X[a])*dx+(Z[n]-Z[a])*dz)/L2,0,1),px=X[a]+dx*t,pz=Z[a]+dz*t,dd=Math.hypot(px-X[n],pz-Z[n]);
+      if(dd>=bd||!segClearN(X[n],Z[n],px,pz,null,null,.1))continue;bd=dd;best=[ei,px,pz]}
+    if(!best)return false;const [ei,px,pz]=best,e=E[ei];let m;if(Math.hypot(px-X[e[0]],pz-Z[e[0]])<.6)m=e[0];else if(Math.hypot(px-X[e[1]],pz-Z[e[1]])<.6)m=e[1];
+    else{m=node(px,pz,0,null,0);const b=e[1];e[1]=m;EK.add(Math.min(e[0],m)+'_'+Math.max(e[0],m));link(m,b,e[2],e[3],e[4])}link(n,m,CONN,-1,-1);return true};
+  // 4) door chains: sidewalk -> approach -> threshold (DOOR) -> entry 1.6 inside (deeper behind solid vestibules); a gate sits between yard and walk
+  const ATT=[],ENT={},DI=d=>DOORS.indexOf(d),byPl={};for(const d of DOORS)(byPl[d.pid]||(byPl[d.pid]=[])).push(d);
+  for(const pid in byPl){const L=byPl[pid],gate=L.find(d=>d.kind==='gate'),main=L.filter(d=>d.kind!=='gate'),ents=ENT[pid]=[];
+    main.forEach((d,mi)=>{const ein=(d.s.solid||pid==='home'||pid==='neighbor')?Math.max(1.6,(d.s.dep||.34)+.9):1.6;const t=node(d.wx,d.wz,2,pid,0),e=node(d.wx-d.nx*ein,d.wz-d.nz*ein,3,pid,0);TD[t]=d;link(t,e,DOOR|IN,DI(d));ents.push(e);d.nav={t,e};
+      if(gate&&mi===0&&!d.back){const gt=node(gate.wx,gate.wz,2,pid,0),yd=node((gate.wx+d.wx)/2,(gate.wz+d.wz)/2,1,null,0),go=node(gate.wx+gate.nx*.6,gate.wz+gate.nz*.6,1,null,0);TD[gt]=gate;
+        link(go,gt,DOOR,DI(gate));link(gt,yd,DOOR,DI(gate));link(yd,t,DOOR,DI(d));ATT.push([go,6,gate.id]);gate.nav={t:gt,e:yd};d.nav.a=yd}
+      else{const a=node(d.wx+d.nx*2.4,d.wz+d.nz*2.4,1,null,0);link(a,t,DOOR,DI(d));ATT.push([a,40,d.id]);d.nav.a=a}});
+    if(gate&&!main.length){const gt=node(gate.wx,gate.wz,2,pid,0),go=node(gate.wx+gate.nx*.8,gate.wz+gate.nz*.8,1,null,0),gi=node(gate.wx-gate.nx*1.6,gate.wz-gate.nz*1.6,3,pid,0);TD[gt]=gate;
+      link(go,gt,DOOR,DI(gate));link(gt,gi,DOOR|IN,DI(gate));ATT.push([go,8,gate.id]);ents.push(gi);gate.nav={t:gt,e:gi,a:go}}
+    for(let i=0;i<ents.length;i++)for(let j=i+1;j<ents.length;j++)link(ents[i],ents[j],IN,-1,-1)}
+  // places without doors (lots, park, piers, the needle, secret spots): their approach point joins the network too
+  for(const p of PLACES){if(p.doors||p.dx==null||p.kind==='plaza'||p.kind==='spot'||(p.solid&&inFoot(p.dx,p.dz,0)===p))continue;const a=node(p.dx,p.dz,1,null,.5);p.navA=a;ATT.push([a,70,p.id])}
+  const warn=[];for(const [n,md,id] of ATT)if(!attach(n,md))warn.push(id);
+  // 5) finalize: typed storage, per-edge flags (CROSS on road surface, COV under shop awnings)
+  const N=X.length,adj=Array.from({length:N},()=>[]),onRoad=(x,z)=>ROADS.some(([x1,z1,x2,z2])=>z1===z2?Math.abs(z-z1)<3.6&&x>Math.min(x1,x2)-.5&&x<Math.max(x1,x2)+.5:Math.abs(x-x1)<3.6&&z>Math.min(z1,z2)-.5&&z<Math.max(z1,z2)+.5);
+  const AWN=PLACES.filter(p=>p.awn&&p.w);let ne=0;
+  for(const e of E){const [a,b]=e;if(a===b)continue;let fl=e[2];const mx=(X[a]+X[b])/2,mz=(Z[a]+Z[b])/2;if(!(fl&(DOOR|IN))){if(onRoad(mx,mz))fl|=CROSS;else for(const p of AWN){const c=Math.cos(p.ry),s=Math.sin(p.ry),dx=mx-p.x,dz=mz-p.z,lx=dx*c-dz*s,lz=dx*s+dz*c;if(Math.abs(lx)<p.w/2+.5&&lz>p.d/2-.2&&lz<p.d/2+5.6){fl|=COV;break}}}
+    const w=Math.hypot(X[b]-X[a],Z[b]-Z[a]);adj[a].push([b,w,fl,e[3],e[4]]);adj[b].push([a,w,fl,e[3],e[4]]);ne++}
+  return{N,E:ne,x:Float32Array.from(X),z:Float32Array.from(Z),k:Uint8Array.from(K),pl:PL,td:TD,adj,ent:ENT,warn,cache:new Map(),hits:0,miss:0,sig:0,
+    dist:new Float32Array(N),prev:new Int32Array(N),tc:new Float32Array(N).fill(Infinity),dok:new Uint8Array(Math.max(64,DOORS.length))}})();
+const HP={i:new Int32Array(1<<15),k:new Float32Array(1<<15),n:0,k0:0};
+function hpush(i,k){if(HP.n>=HP.i.length)return;let n=HP.n++;const I=HP.i,K=HP.k;while(n>0){const q=(n-1)>>1;if(K[q]<=k)break;I[n]=I[q];K[n]=K[q];n=q}I[n]=i;K[n]=k}
+function hpop(){const I=HP.i,K=HP.k,top=I[0];HP.k0=K[0];const n=--HP.n;if(n>0){const li=I[n],lk=K[n];let c=0;for(;;){let l=2*c+1;if(l>=n)break;if(l+1<n&&K[l+1]<K[l])l++;if(K[l]>=lk)break;I[c]=I[l];K[c]=K[l];c=l}I[c]=li;K[c]=lk}return top}
+// the place whose doors you must use to get in or out of (x,z): buildings with doors (Mocha's house by inHome), gated lots by their fence box
+const ENCL=PLACES.filter(p=>NAV.ent[p.id]&&NAV.ent[p.id].length);
+function placeOf(x,z){for(const p of ENCL){if(p.kind==='home'?inHome(x,z):p.foot?(()=>{const f=p.foot,c=Math.cos(f[2]),s=Math.sin(f[2]),dx=x-f[0],dz=z-f[1];return Math.abs(dx*c-dz*s)<f[3]/2&&Math.abs(dx*s+dz*c)<f[4]/2})():inBuilding(p,x,z))return p}return null}
+// ---------- interior grids: p.sol (captured furniture) + p.solX (solid()) -> p.grid (Uint8Array, .5 cells, inflated .35) ----------
+function regrid(p,recap){if(typeof p==='string')p=byId[p];if(!p||!p.w)return null;if(recap&&p.obj){p.sol=[];capMeshes(p.obj,p,p.obj)}
+  const gs=.5,gw=Math.ceil(p.w/gs),gd=Math.ceil(p.d/gs),W2=p.w/2,D2=p.d/2,R=.35,wl=.3+R,G=p.grid&&p.grid.length===gw*gd?p.grid:new Uint8Array(gw*gd);G.fill(0);p.grid=G;p.gw=gw;p.gd=gd;
+  for(let j=0;j<gd;j++)for(let i=0;i<gw;i++){const lx=-W2+(i+.5)*gs,lz=-D2+(j+.5)*gs;if(lx<-W2+wl||lx>W2-wl||lz<-D2+wl||lz>D2-wl)G[j*gw+i]=1}
+  const L=(p.sol||[]).concat(p.solX||[]);for(const [x0,z0,x1,z1] of L){const i0=Math.max(0,Math.ceil((x0-R+W2)/gs-.5)),i1=Math.min(gw-1,Math.floor((x1+R+W2)/gs-.5)),j0=Math.max(0,Math.ceil((z0-R+D2)/gs-.5)),j1=Math.min(gd-1,Math.floor((z1+R+D2)/gs-.5));for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++)G[j*gw+i]=1}
+  // doorways stay open: clear a .55 corridor from each threshold to its entry
+  const c=Math.cos(p.ry),s=Math.sin(p.ry),loc=(x,z)=>[(x-p.x)*c-(z-p.z)*s,(x-p.x)*s+(z-p.z)*c];
+  for(const d of DOORS){if(d.pid!==p.id||!d.nav||d.kind==='gate')continue;const [ax,az]=loc(NAV.x[d.nav.t],NAV.z[d.nav.t]),[bx,bz]=loc(NAV.x[d.nav.e],NAV.z[d.nav.e]);
+    for(let j=0;j<gd;j++)for(let i=0;i<gw;i++){const lx=-W2+(i+.5)*gs,lz=-D2+(j+.5)*gs,dx=bx-ax,dz=bz-az,L2=dx*dx+dz*dz||1,t=clamp(((lx-ax)*dx+(lz-az)*dz)/L2,0,1);if(Math.hypot(lx-ax-dx*t,lz-az-dz*t)<.55)G[j*gw+i]=0}}
+  NAV.cache.clear();let nb=0;for(let i=0;i<G.length;i++)nb+=G[i];return{pid:p.id,gw,gd,blocked:nb,solids:L.length}}
+function solid(p,lx,lz,w,d,rot=0){if(typeof p==='string')p=byId[p];if(!p)return -1;const c=Math.abs(Math.cos(rot)),s=Math.abs(Math.sin(rot)),hw=(w*c+d*s)/2,hd=(w*s+d*c)/2;(p.solX||(p.solX=[])).push([lx-hw,lz-hd,lx+hw,lz+hd]);if(p.grid)regrid(p);return p.solX.length-1}
+const AS={g:new Float32Array(8192),came:new Int32Array(8192),st:new Uint8Array(8192)};
+// A* over p.grid (8-way, no corner cutting) + string pulling; calls add(x,z,IN) for each world point after the start, ending at (bx,bz)
+function gridPath(p,ax,az,bx,bz,add){const IN=NF.IN;if(!p.w||p.kind==='lot'){add(bx,bz,IN);return true}if(!p.grid)regrid(p);const G=p.grid,gw=p.gw,gd=p.gd,W2=p.w/2,D2=p.d/2,c=Math.cos(p.ry),s=Math.sin(p.ry),n=gw*gd;if(n>8192){add(bx,bz,IN);return false}
+  const la=[(ax-p.x)*c-(az-p.z)*s,(ax-p.x)*s+(az-p.z)*c],lb=[(bx-p.x)*c-(bz-p.z)*s,(bx-p.x)*s+(bz-p.z)*c],cell=l=>clamp(Math.floor((l[0]+W2)/.5),0,gw-1)+clamp(Math.floor((l[1]+D2)/.5),0,gd-1)*gw;
+  const free=k=>{if(!G[k])return k;const ci=k%gw,cj=(k-ci)/gw;for(let r=1;r<8;r++)for(let dj=-r;dj<=r;dj++)for(let di=-r;di<=r;di++){if(Math.max(Math.abs(di),Math.abs(dj))!==r)continue;const i=ci+di,j=cj+dj;if(i>=0&&j>=0&&i<gw&&j<gd&&!G[j*gw+i])return j*gw+i}return -1};
+  const s0=free(cell(la)),t0=free(cell(lb));if(s0<0||t0<0){add(bx,bz,IN);return false}
+  const g=AS.g,came=AS.came,st=AS.st;g.fill(Infinity,0,n);st.fill(0,0,n);HP.n=0;const ti=t0%gw,tj=(t0-ti)/gw,hh=k=>{const i=k%gw,j=(k-i)/gw,dx=Math.abs(i-ti),dz=Math.abs(j-tj);return Math.max(dx,dz)+.414*Math.min(dx,dz)};
+  g[s0]=0;came[s0]=-1;hpush(s0,hh(s0));let found=s0===t0;
+  while(HP.n&&!found){const u=hpop();if(st[u]===2)continue;st[u]=2;if(u===t0){found=true;break}const ui=u%gw,uj=(u-ui)/gw;
+    for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){if(!di&&!dj)continue;const i=ui+di,j=uj+dj;if(i<0||j<0||i>=gw||j>=gd)continue;const v=j*gw+i;if(G[v]||st[v]===2)continue;if(di&&dj&&(G[uj*gw+i]||G[j*gw+ui]))continue;
+      const ng=g[u]+(di&&dj?1.414:1);if(ng<g[v]){g[v]=ng;came[v]=u;hpush(v,ng+hh(v))}}}
+  if(!found){add(bx,bz,IN);return false}
+  const pts=[];for(let k=t0;k>=0;k=came[k]){const i=k%gw,j=(k-i)/gw;pts.unshift([-W2+(i+.5)*.5,-D2+(j+.5)*.5]);if(k===s0)break}pts[0]=la;pts.push(lb);
+  const los=(a,b)=>{const L=Math.hypot(b[0]-a[0],b[1]-a[1]);for(let t=.45;t<L-.45;t+=.2){const x=a[0]+(b[0]-a[0])*t/L,z=a[1]+(b[1]-a[1])*t/L,i=Math.floor((x+W2)/.5),j=Math.floor((z+D2)/.5);if(i<0||j<0||i>=gw||j>=gd||G[j*gw+i])return false}return true};
+  let k=0;while(k<pts.length-1){let j=pts.length-1;while(j>k+1&&!los(pts[k],pts[j]))j--;if(j<pts.length-1){const w=toWorld(p,pts[j][0],pts[j][1]);add(w.x,w.z,IN)}k=j}add(bx,bz,IN);return true}
+// ---------- routing ----------
+function navMask(a){const m=a&&a.id==='mocha',wk=WEATHER.kind;let k=(wk==='rain'||wk==='drizzle'?1:0)|(m&&S.needs.fun<40?2:0);if(m)SECRETS.forEach((s,i)=>{if(S.shortcuts.includes(s.id))k|=8<<i});return k}
+function navCands(x,z,p,out,mx){out.length=0;if(p){for(const e of NAV.ent[p.id])out.push(e,Math.hypot(NAV.x[e]-x,NAV.z[e]-z)*1.1);return out}
+  const L=[];for(let i=0;i<NAV.N;i++){if(NAV.k[i]>1)continue;const d=Math.hypot(NAV.x[i]-x,NAV.z[i]-z);if(d<45)L.push([d,i])}L.sort((a,b)=>a[0]-b[0]);let tried=0;
+  for(const [d,i] of L){if(out.length>=8||tried>=14)break;tried++;if(segClearN(x,z,NAV.x[i],NAV.z[i],mx,null,.1))out.push(i,d*1.4)}
+  if(!out.length){let b=-1,bd=1e9;for(let i=0;i<NAV.N;i++){if(NAV.k[i]>1)continue;const d=Math.hypot(NAV.x[i]-x,NAV.z[i]-z);if(d<bd){bd=d;b=i}}if(b>=0)out.push(b,bd*3)}return out}
+const NCA=[],NCB=[];
+function navDijk(src,tgt,mask,ag,pa,anyLock){const N=NAV.N,dist=NAV.dist,prev=NAV.prev,tc=NAV.tc,dok=NAV.dok,{CROSS,COV,SCEN,SEC,CONN}=NF,rain=mask&1,low=mask&2;
+  for(let k=0;k<DOORS.length;k++){const d=DOORS[k];dok[k]=anyLock||(pa&&d.pid===pa.id)||doorCan(d,ag||NPC0)?1:0}
+  dist.fill(Infinity);prev.fill(-1);HP.n=0;for(let i=0;i<tgt.length;i+=2)tc[tgt[i]]=Math.min(tc[tgt[i]],tgt[i+1]);for(let i=0;i<src.length;i+=2){const s=src[i];if(src[i+1]<dist[s]){dist[s]=src[i+1];hpush(s,src[i+1])}}
+  let best=Infinity,bt=-1;
+  while(HP.n){const u=hpop(),du=HP.k0;if(du>dist[u])continue;if(du>=best)break;if(tc[u]<Infinity&&du+tc[u]<best){best=du+tc[u];bt=u}
+    const A=NAV.adj[u];for(let q=0;q<A.length;q++){const e=A[q],f=e[2];if(e[3]>=0&&!dok[e[3]])continue;let c=e[1];if(f&SEC){if(!(mask&(8<<e[4])))continue;c*=.9}if(f&CROSS)c*=1.2;if(rain&&(f&COV))c*=.7;if(low&&(f&SCEN))c*=.8;if(f&CONN)c*=1.25;
+      const nd=du+c;if(nd<dist[e[0]]){dist[e[0]]=nd;prev[e[0]]=u;hpush(e[0],nd)}}}
+  for(let i=0;i<tgt.length;i+=2)tc[tgt[i]]=Infinity;if(bt<0)return null;const seq=[];for(let v=bt;v>=0;v=prev[v])seq.unshift(v);return{seq,cost:best}}
+function navBuild(ax,az,bx,bz,ag,o,mask){const {DOOR,IN,CW,CROSS}=NF,pa=placeOf(ax,az),pb=placeOf(bx,bz),pts=[],fl=[],dr=[];let kind='graph',ok=true,cost=Math.hypot(bx-ax,bz-az);
+  const add=(x,z,f,d)=>{const n=fl.length;if(n&&Math.abs(pts[2*n-2]-x)<.05&&Math.abs(pts[2*n-1]-z)<.05){fl[n-1]|=f;if(d)dr[n-1]=d;return}pts.push(x,z);fl.push(f);dr.push(d||null)};
+  add(ax,az,pa?IN:0);
+  if(pa&&pa===pb){gridPath(pa,ax,az,bx,bz,add);kind='inside'}
+  else if(!pa&&!pb&&(o.grass||cost<8)&&segClearN(ax,az,bx,bz,null,null,.2)){add(bx,bz,0);kind='direct'}
+  else{navCands(ax,az,pa,NCA,null);navCands(bx,bz,pb,NCB,null);let r=navDijk(NCA,NCB,mask,ag,pa,false);if(!r){r=navDijk(NCA,NCB,mask,ag,pa,true);if(r)kind='locked'}
+    if(!r){ok=false;kind='none';add(bx,bz,pb?IN:0)}
+    else{const q=r.seq;cost=r.cost;const X=NAV.x,Z=NAV.z,K=NAV.k,trim=(P,a,b)=>{const dx=X[b]-X[a],dz=Z[b]-Z[a],L2=dx*dx+dz*dz||1,t=((P[0]-X[a])*dx+(P[1]-Z[a])*dz)/L2;return t>0&&t<1&&Math.abs((P[0]-X[a])*dz-(P[1]-Z[a])*dx)/Math.sqrt(L2)<2.5};
+      if(!pa&&q.length>1&&K[q[0]]<=1&&K[q[1]]<=1&&trim([ax,az],q[0],q[1]))q.shift();if(!pb&&q.length>1&&K[q[q.length-1]]<=1&&K[q[q.length-2]]<=1&&trim([bx,bz],q[q.length-1],q[q.length-2]))q.pop();
+      if(pa)gridPath(pa,ax,az,X[q[0]],Z[q[0]],add);
+      for(let i=0;i<q.length;i++){const v=q[i];let f=K[v]===3?IN:0,d=null;if(K[v]===2){f|=DOOR;d=NAV.td[v]}if(i+1<q.length){const w=q[i+1];for(const e of NAV.adj[v])if(e[0]===w){if(e[2]&CROSS)f|=CW;break}}add(X[v],Z[v],f,d)}
+      if(pb)gridPath(pb,X[q[q.length-1]],Z[q[q.length-1]],bx,bz,add);else add(bx,bz,0)}}
+  // drop flagless collinear points, cap at 96
+  let n=fl.length;const P2=[],F2=[],D2=[];for(let i=0;i<n;i++){if(i>0&&i<n-1&&!fl[i]&&!fl[i-1]){const ux=pts[2*i]-P2[P2.length-2],uz=pts[2*i+1]-P2[P2.length-1],vx=pts[2*i+2]-pts[2*i],vz=pts[2*i+3]-pts[2*i+1];if(Math.abs(ux*vz-uz*vx)<.03*Math.hypot(ux,uz)*Math.hypot(vx,vz)&&ux*vx+uz*vz>0)continue}P2.push(pts[2*i],pts[2*i+1]);F2.push(fl[i]);D2.push(dr[i])}
+  while(F2.length>96){let bi=-1;for(let i=1;i<F2.length-1;i++)if(!F2[i]){bi=i;break}if(bi<0)bi=F2.length-2;P2.splice(2*bi,2);F2.splice(bi,1);D2.splice(bi,1)}
+  return{n:F2.length,P:Float32Array.from(P2),F:Uint8Array.from(F2),D:D2,cost,ok,kind,pa:pa&&pa.id,pb:pb&&pb.id}}
+// LRU of 64 routes keyed by quantised ends + flag mask + walker; cleared when a lock/hours state, a lot or a grid changes
+function navRoute(ax,az,bx,bz,ag,opt){opt=opt||{};const mask=navMask(ag),key=Math.round(ax*2)+','+Math.round(az*2)+'|'+Math.round(bx*2)+','+Math.round(bz*2)+'|'+mask+'|'+(ag?ag.id:'-')+(opt.grass?'g':'');
+  let c=NAV.cache.get(key);if(c){NAV.cache.delete(key);NAV.cache.set(key,c);NAV.hits++;return c}NAV.miss++;c=navBuild(ax,az,bx,bz,ag,opt,mask);NAV.cache.set(key,c);if(NAV.cache.size>64)NAV.cache.delete(NAV.cache.keys().next().value);return c}
+function navDirty(){NAV.cache.clear()}
+const NAVLOG=[],NAVT={t:1};
+function navLog(o){o.t=Date.now();NAVLOG.push(o);if(NAVLOG.length>80)NAVLOG.shift()}
+DOOREV.on('pass',e=>navLog({ev:'pass',who:e.who,door:e.id,dir:e.dir}));
+// ---------- the follower: per-agent Float32Array(192) path, 1.5 look-ahead, doors request/hold/pass, street manners ----------
+function navTo(a,ax,az,bx,bz,opt){const v=a.nv||(a.nv={P:new Float32Array(192),F:new Uint8Array(96),D:new Array(96).fill(null),n:0,i:0,hold:0,cw:-1,gr:null,bx:0,bz:0,bt:0,blk:0,sideT:0,tx:0,tz:0,lane:a.id==='wendell'?.55:.6,kind:''});
+  const r=navRoute(ax,az,bx,bz,a,opt),n=Math.min(96,r.n);v.P.set(r.P.subarray(0,2*n));v.F.set(r.F.subarray(0,n));for(let i=0;i<96;i++)v.D[i]=i<n?r.D[i]:null;
+  v.P[0]=ax;v.P[1]=az;if(n>1){v.P[2*n-2]=bx;v.P[2*n-1]=bz}v.n=n;v.i=n>1?1:0;v.hold=0;v.cw=-1;v.gr=null;v.blk=0;v.sideT=0;v.tx=bx;v.tz=bz;v.bx=ax;v.bz=az;v.bt=0;v.kind=r.kind;
+  navLog({ev:'route',who:a.id,n,kind:r.kind,ok:r.ok,from:[+ax.toFixed(1),+az.toFixed(1)],to:[+bx.toFixed(1),+bz.toFixed(1)],doors:r.D.filter(Boolean).map(d=>d.id)});return v}
+const NSO={x:0,z:0,hold:false,done:false,cw:false};
+function navPass(a,d,dir,x,z){navLog({ev:'cross',who:a.id,door:d.id,dir});if(d.kind==='gate')return;if(dir==='in'?a.place!==d.pid:a.place===d.pid&&placeAt(x,z)!==d.pid)d.pass(a,dir)}
+function navLocked(a,d){navLog({ev:'locked',who:a.id,door:d.id});NAV.cache.clear();const v=a.nv;
+  if(a.id==='mocha'){say('oh, they just closed',3);const tp=placeOf(v.tx,v.tz),again=v.lk===d&&Date.now()-v.lkT<1e4;v.lk=d;v.lkT=Date.now();if(again||tp&&tp===d.p&&!DOORS.some(q=>q.p===tp&&q!==d&&q.kind!=='gate'&&doorCan(q,a))){v.n=0;G.act=null;G.mode='idle';G.timer=rand(1.5,3)}else G.navFor=null}
+  else if(a.id==='wendell'){const sp=W_SPOTS[W.dest];if(sp&&placeOf(sp.x,sp.z)!==d.p)W.path=wPath(W.x,W.z,sp.x,sp.z);else v.n=0}else v.n=0}
+function navStep(a,x,z,dt){const v=a.nv,o=NSO,{DOOR,IN,CW}=NF;if(!v||!v.n)return null;o.hold=false;o.done=false;o.cw=false;const P=v.P,F=v.F;
+  if(v.hold>0){v.hold-=dt;o.hold=true;o.cw=true;o.x=P[2*v.i-2];o.z=P[2*v.i-1];return o}
+  for(;;){if(v.i>=v.n){o.done=true;o.x=v.tx;o.z=v.tz;v.n=0;return o}const i=v.i,px=P[2*i],pz=P[2*i+1],dx=px-x,dz=pz-z,d=Math.hypot(dx,dz),fl=F[i];
+    if(fl&DOOR){const dr=v.D[i];if(dr){const out=a.place===dr.pid||(i+1<v.n&&!(F[i+1]&IN)&&(F[i-1]&IN));
+        if(v.gr!==dr){if(d<2.6){const r=dr.request(a);if(r.ok||(r.locked&&(out||dr.kind==='gate')&&(dr.req=Date.now(),dr.ang>=1.05)))v.gr=dr;else if(r.locked&&!out&&dr.kind!=='gate'){navLocked(a,dr);o.hold=true;o.x=x;o.z=z;return o}else{o.hold=true;o.x=r.aside?r.aside[0]:x;o.z=r.aside?r.aside[1]:z;if(r.aside)o.hold=false;return o}}}
+        else{dr.req=Date.now();if(d<.6){navPass(a,dr,i+1<v.n&&(F[i+1]&IN)?'in':'out',x,z);v.gr=null;v.i++;continue}}}
+      else if(d<.6){v.i++;continue}break}
+    const rr=i===v.n-1?.35:.95;
+    if(fl&CW&&d<rr&&v.cw!==i){v.cw=i;v.hold=.4;v.i++;o.hold=true;o.cw=true;o.x=px;o.z=pz;return o}
+    if(d<rr||(i<v.n-1&&!(fl&CW)&&d<1.6&&-dx*(P[2*i+2]-px)-dz*(P[2*i+3]-pz)>0)){v.i++;continue}break}
+  // pure pursuit: the carrot rides 1.5 ahead of the walker's projection on the current leg (spilling round the corner), then keeps right
+  const i=v.i,px=P[2*i],pz=P[2*i+1],fl=F[i],d=Math.hypot(px-x,pz-z);let cx=px,cz=pz;
+  if(i>0&&!(fl&DOOR)){const qx=P[2*i-2],qz=P[2*i-1],sx=px-qx,sz=pz-qz,sl=Math.hypot(sx,sz);if(sl>.01){const ux=sx/sl,uz=sz/sl,s=Math.max(.2,(x-qx)*ux+(z-qz)*uz+1.5);
+    if(s<sl){cx=qx+ux*s;cz=qz+uz*s}else if(i+1<v.n&&!(fl&CW)){const nx=P[2*i+2],nz=P[2*i+3],tl=Math.hypot(nx-px,nz-pz)||1,r=Math.min(tl,s-sl);cx=px+(nx-px)/tl*r;cz=pz+(nz-pz)/tl*r}
+    // keep right (+-.6 lane) outdoors, away from doors, crosswalk starts and the final stop; sidestep after 3 s without progress
+    if(!(fl&IN)&&!(F[i-1]&(IN|DOOR))){const k=(v.lane+(v.sideT>0?1.2:0))*Math.min(1,(i===v.n-1||(fl&CW)?d:9)/2.5);cx+=-uz*k;cz+=ux*k}}}
+  // soft separation from the other walkers within .9
+  for(let q=0;q<AGENTS.length;q++){const b=AGENTS[q];if(b===a||b.gone||b.kind==='keeper'||(b.kind==='you'&&camS.mode!=='walk'))continue;const ex=x-b.x,ez=z-b.z,e2=ex*ex+ez*ez;if(e2<.81&&e2>1e-4){const e=Math.sqrt(e2),k=(.9-e)/e*1.5;cx+=ex*k;cz+=ez*k}}
+  if(v.sideT>0)v.sideT-=dt;if((v.bt+=dt)>=1){const mv=Math.hypot(x-v.bx,z-v.bz);v.blk=mv<.25?v.blk+1:0;v.bx=x;v.bz=z;v.bt=0;if(v.blk>=3){v.blk=0;v.sideT=1.5;navLog({ev:'sidestep',who:a.id})}}
+  o.x=cx;o.z=cz;return o}
+// Mocha: G.target stays the final point; walking legs (to the target, or to the parked bike) follow NAV; he never flies over roofs
+function navMocha(dt){const a=AG.mocha,R=G.route;let leg=null;if(R){if(R.i===0&&R.mount&&!G.biking)leg=R.pts[0]}else leg=G.target;if(!leg)return null;
+  const lx=leg.x!==undefined?leg.x:leg[0],lz=leg.x!==undefined?leg.z:leg[1],v=a.nv;
+  if(G.navFor!==leg||(v&&G.act&&G.act.npc&&Math.hypot(v.tx-lx,v.tz-lz)>2.5&&Date.now()-(G.navAt||0)>1000)){G.navFor=leg;G.navAt=Date.now();navTo(a,G.x,G.z,lx,lz,{grass:!G.act||!!G.act.explore})}
+  return navStep(a,G.x,G.z,dt)}
+// 1 Hz: lock/hours signature (clears the cache) and secret shortcut discovery
+function navTick(){let sg=7;for(const d of DOORS){const hr=d.s.hours||d.p.hours;sg=(sg*31+(d.lock===true?1:d.lock===false?2:0)*2+(hr&&isOpen({hours:hr})?1:0))|0}if(sg!==NAV.sig){NAV.sig=sg;NAV.cache.clear()}
+  if(G.mode==='travel'&&!G.biking&&S.shortcuts.length<SECRETS.length)for(const s of SECRETS){if(S.shortcuts.includes(s.id))continue;const e0=s.pts[0],e1=s.pts[s.pts.length-1];
+    if((Math.hypot(G.x-e0[0],G.z-e0[1])<4||Math.hypot(G.x-e1[0],G.z-e1[1])<4)&&Math.random()<.12){S.shortcuts.push(s.id);NAV.cache.clear();say('found a shortcut!',3);addEntry('Shortcut',`found a shortcut! ${s.name[0].toUpperCase()+s.name.slice(1)}. I bet nobody else knows about it.`,'');navLog({ev:'secret',id:s.id});break}}}
+for(const p of ENCL)if(p.w&&p.kind!=='lot')regrid(p);
+function wTarget(dest){if(dest==='inside')return{x:14,z:41.5};const sp=W_SPOTS[dest];if(sp&&sp.in&&isOpen(byId[sp.in])){const q=spotWorld(sp.in,'main');return{x:q.x+.8,z:q.z+.4}}return sp}
+// keepers stay parented to their shops until B22; navRoute/navTo/navStep are ready for them
 function updateYou(dt,t){const k=KEYS_DOWN;let jx=JOY.x+((k.d||k.arrowright)?1:0)-((k.a||k.arrowleft)?1:0),jy=JOY.y+((k.s||k.arrowdown)?1:0)-((k.w||k.arrowup)?1:0);const m=Math.min(1,Math.hypot(jx,jy));
   if(m>.08){const sy=Math.sin(camS.yaw),cy=Math.cos(camS.yaw);const dx=cy*jx+sy*jy,dz=-sy*jx+cy*jy,l=Math.hypot(dx,dz)||1,sp=(m>.85?9:5)*m,nx=clamp(YOU.x+dx/l*sp*dt,-200,165),nz=clamp(YOU.z+dz/l*sp*dt,-145,145);
     if(walkable(nx,nz)){YOU.x=nx;YOU.z=nz}else if(walkable(nx,YOU.z))YOU.x=nx;else if(walkable(YOU.x,nz))YOU.z=nz;
@@ -4083,6 +4263,22 @@ Object.assign(window.__mocha,{CAM,HUD,TABS,openTab,WX,FEAT,HOME_CAPS,TIERS,TIER_
   present:()=>({present:isPresent(),lastInput,idle:Date.now()-lastInput}),
   photos:o=>{if(o&&o.put)Object.assign(PHOTOS,o.put);if(o&&o.save)savePhotos();const K=photoKeep();let chars=0;for(const k in PHOTOS)chars+=PHOTOS[k].length;return{n:Object.keys(PHOTOS).length,chars,budget:PHOTO_BUDGET,keys:Object.keys(PHOTOS),album:(S.you&&S.you.album||[]).length,posts:K.posts.length,pins:K.pins.slice(),keep:K}},
   savePhotos,photoURL,pinPhoto,drawCalls:()=>GFX.calls});
+// B10 hooks: routes, the NAV graph, interior grids, the route log and a fixed-step sim for tests
+Object.assign(window.__mocha,{NAV,NF,EXTRA_PATHS,SECRETS,FOOT,navRoute,navTo,navStep,navDirty,regrid:pid=>regrid(byId[pid]||pid,true),solid,placeOf,navFloor,inFoot,wTarget,
+  route:(ax,az,bx,bz,who='mocha')=>{const t0=performance.now(),r=navRoute(ax,az,bx,bz,who?AG[who]:null,{}),ms=performance.now()-t0,pts=[];for(let i=0;i<r.n;i++)pts.push([+r.P[2*i].toFixed(2),+r.P[2*i+1].toFixed(2)]);
+    return{n:r.n,kind:r.kind,ok:r.ok,cost:+r.cost.toFixed(2),ms,pa:r.pa,pb:r.pb,pts,flags:Array.from(r.F),doors:r.D.filter(Boolean).map(d=>d.id)}},
+  nav:()=>NAV.N,
+  navInfo:()=>({nodes:NAV.N,edges:NAV.E,cache:NAV.cache.size,hits:NAV.hits,miss:NAV.miss,warn:NAV.warn.slice(),kinds:Array.from(NAV.k).reduce((a,k)=>(a[k]++,a),[0,0,0,0]),grids:ENCL.filter(p=>p.grid).map(p=>({id:p.id,gw:p.gw,gd:p.gd,sol:(p.sol||[]).length,blk:p.grid.reduce((a,b)=>a+b,0)})),shortcuts:S.shortcuts.slice()}),
+  navEdges:()=>{const o=[];for(let a=0;a<NAV.N;a++)for(const e of NAV.adj[a])if(e[0]>a)o.push([+NAV.x[a].toFixed(2),+NAV.z[a].toFixed(2),+NAV.x[e[0]].toFixed(2),+NAV.z[e[0]].toFixed(2),e[2]]);return o},
+  navNodes:()=>Array.from({length:NAV.N},(_,i)=>[+NAV.x[i].toFixed(2),+NAV.z[i].toFixed(2),NAV.k[i]]),
+  navLog:()=>NAVLOG.slice(),navLogClear:()=>{NAVLOG.length=0},
+  grid:pid=>{const p=byId[pid];if(!p||!p.grid)return null;return{gw:p.gw,gd:p.gd,g:Array.from(p.grid).join(''),sol:(p.sol||[]).map(b=>b.map(v=>+v.toFixed(2)))}},
+  agentNav:who=>{const v=AG[who]&&AG[who].nv;return v?{n:v.n,i:v.i,kind:v.kind,hold:v.hold,tx:v.tx,tz:v.tz,pts:Array.from(v.P.subarray(0,2*v.n)).map(x=>+x.toFixed(2))}:null},
+  // fixed .05 s steps of Mocha + Wendell + the door tick (no rendering); probe(fn) runs after every step
+  navSim:(sec=1,probe)=>{let t=T;for(let k=0;k<sec/.05;k++){t+=.05;updateMocha(.05,t);updateW(.05,t);doorTick(.05);if(probe&&probe(k)===false)break}if(DIM.dirty){DIM.im.instanceMatrix.needsUpdate=true;DIM.dirty=0}return{x:G.x,y:G.y,z:G.z,mode:G.mode,wx:W.x,wz:W.z,wpath:W.path.length}},
+  wGo:dest=>{const from={x:W.x,z:W.z};if(!W.visible){from.x=14;from.z=41.5;W.x=14;W.z=41.5}W.visible=true;W.dest=dest;W.busy=0;const tg=wTarget(dest);W.path=wPath(from.x,from.z,tg.x,tg.z);return{n:W.path.length,tg:{x:tg.x,z:tg.z}}},
+  wpos:()=>({x:W.x,z:W.z,path:W.path.length,cw:!!W.cw,vis:W.visible,doing:W.doing}),
+  shortcut:id=>{if(id&&!S.shortcuts.includes(id)){S.shortcuts.push(id);NAV.cache.clear()}return S.shortcuts.slice()}});
 // B9: banner + knock chip slots, OCC at boot, hooks
 {BAN.el=document.createElement('div');BAN.el.id='b9ban';BAN.el.className='b9ban';HUD.slot('banner',{el:BAN.el,on:false});
  KNOCK.el=document.createElement('button');KNOCK.el.id='knockBtn';KNOCK.el.className='b9knock';KNOCK.el.textContent='🚪 Knock?';KNOCK.el.onclick=()=>{if(KNOCK.d)doKnock(KNOCK.d.pid)};HUD.slot('knock',{zone:'tc',order:2,prio:8,el:KNOCK.el,on:false,modes:['walk']});
