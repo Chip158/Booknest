@@ -334,7 +334,7 @@
   @media (orientation:landscape) and (max-height:520px){#chatlog{padding:0 0 0 54px}}
   @media (min-width:761px){body.panelOpen #chatlog{padding:0 40px 0 54px}}
   /* toasts are centered in the free area, not under the side panel */
-  @media (min-width:761px) and (min-height:521px){body.panelOpen #near,body.msgOpen #near{left:calc((100vw - min(400px,42vw) - 24px)/2);max-width:calc(100vw - min(400px,42vw) - 60px)}body.panelOpen.wideP #near{left:calc((100vw - min(720px,72vw) - 24px)/2);max-width:calc(100vw - min(720px,72vw) - 60px)}body.panelOpen #toast{left:calc((100vw - min(400px,42vw) - 24px)/2);max-width:calc(100vw - min(400px,42vw) - 60px)}body.panelOpen.wideP #toast{left:calc((100vw - min(720px,72vw) - 24px)/2);max-width:calc(100vw - min(720px,72vw) - 60px)}body.msgOpen #toast,body.msgOpen.panelOpen.wideP #toast{left:calc((100vw - min(400px,42vw) - 24px)/2);max-width:calc(100vw - min(400px,42vw) - 60px)}}
+  @media (min-width:761px) and (min-height:521px){body.panelOpen #near,body.msgOpen #near{top:max(calc(62px + env(safe-area-inset-top)),var(--ltB,0px));left:calc((100vw - min(400px,42vw) - 24px)/2);max-width:calc(100vw - min(400px,42vw) - 60px)}body.panelOpen.wideP #near{left:calc((100vw - min(720px,72vw) - 24px)/2);max-width:calc(100vw - min(720px,72vw) - 60px)}body.panelOpen #toast{left:calc((100vw - min(400px,42vw) - 24px)/2);max-width:calc(100vw - min(400px,42vw) - 60px)}body.panelOpen #toast,body.msgOpen #toast{top:max(76px,var(--ltB,0px))}body.walk.panelOpen #toast,body.walk.msgOpen #toast{top:calc(var(--ltB,88px) + 40px)}body.panelOpen.wideP #toast{left:calc((100vw - min(720px,72vw) - 24px)/2);max-width:calc(100vw - min(720px,72vw) - 60px)}body.msgOpen #toast,body.msgOpen.panelOpen.wideP #toast{left:calc((100vw - min(400px,42vw) - 24px)/2);max-width:calc(100vw - min(400px,42vw) - 60px)}}
   /* bigger touch targets on touch screens (mostly invisible hit-area extenders) */
   @media (pointer:coarse){
     .x,#modeBtn,.mX,.heart,form#chat button{position:relative}
@@ -411,10 +411,11 @@
 </div>
 <div id="bubble"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="three.min.js"></script>
+<script>window.THREE||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>')</script>
 <script>
 (()=>{
-if(!window.THREE){document.getElementById('err').style.display='flex';return}
+if(!window.THREE){const e=document.getElementById('err');e.textContent="Mocha's town couldn't load its 3D engine. Check your connection and reload 👻";e.style.display='flex';return}
 const $=s=>document.querySelector(s);
 const rand=(a,b)=>a+Math.random()*(b-a);
 const pick=a=>a[Math.floor(Math.random()*a.length)];
@@ -1072,7 +1073,7 @@ if(WX_FORCED)rollWeather();else{WEATHER.kind=WX.at(Date.now());WEATHER.t=15;WEAT
 //  THREE: renderer, sky, light, halftone
 // ====================================================================
 const cv=$('#c');
-let renderer;try{renderer=new THREE.WebGLRenderer({canvas:cv,antialias:false,stencil:false})}catch(e){$('#err').style.display='flex';return}
+let renderer;try{renderer=new THREE.WebGLRenderer({canvas:cv,antialias:false,stencil:false})}catch(e){const el=$('#err');el.textContent="Mocha's town needs WebGL (3D graphics), and this browser has it turned off or unavailable. Try Safari or Chrome, or turn off Lockdown Mode 👻";el.style.display='flex';return}
 const PR=SET.saver?1:Math.min(devicePixelRatio||1,TOUCH?1.5:1.75);renderer.setPixelRatio(PR);
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();scene.fog=new THREE.Fog('#c8d3df',90,260);
@@ -3799,6 +3800,22 @@ function updatePets(dt,t){const home=byId.home;petObjs.forEach(pp=>{pp.obj.visib
     if(pp.fly)ty=G.y+.9+Math.sin(t*2+pp.i)*.3;else{if(tx<-60)tx=-59.5;ty=inHome(tx,tz)?.68:.14}}
   const dx=tx-pp.x,dz=tz-pp.z,d=Math.hypot(dx,dz);const mv=d>.35;if(mv){const st=Math.min(d,Math.max(3,d*2.2)*dt);pp.x+=dx/d*st;pp.z+=dz/d*st;pp.obj.rotation.y=Math.atan2(dx,dz)}else if(!pp.fly){const fy=Math.atan2(G.x-pp.x,G.z-pp.z);let df=Math.atan2(Math.sin(fy-pp.obj.rotation.y),Math.cos(fy-pp.obj.rotation.y));pp.obj.rotation.y+=df*Math.min(1,dt*2)}
   pp.y+=(ty-pp.y)*Math.min(1,dt*(pp.fly?3:10));pp.obj.position.set(pp.x,pp.y+(mv&&!pp.fly?Math.abs(Math.sin(t*12))*.08:0),pp.z);animatePet(pp.obj,t,mv||pp.fly)})}
+// travel watchdog (engine safety net, not user input): if his distance to G.target has not improved by .5 for 25 s of game time,
+// re-plan once (fresh NAV route from where he is, and a fresh bike route if he is on one); 15 s later still stuck -> drop the act
+// gracefully. Lifts, the lighthouse climb, rides and thinking are exempt. Per frame it only compares numbers (no allocation);
+// events go to a capped ring (STUCKLOG, 24) that __mocha.stuckLog() returns.
+const TWD={t:0,best:0,ph:0,tg:null,n:0},STUCKLOG=[];
+function stuckNote(ev,d){const a=G.act,nv=AG.mocha&&AG.mocha.nv;STUCKLOG.push({ev,t:Date.now(),x:+G.x.toFixed(1),z:+G.z.toFixed(1),tx:+G.target.x.toFixed(1),tz:+G.target.z.toFixed(1),d:+d.toFixed(1),
+  act:a?(a.p||(a.explore?'explore':'?'))+(a.s?':'+a.s:''):null,doing:a&&a.doing||'',biking:G.biking,route:G.route?G.route.i+'/'+G.route.pts.length:null,nav:nv?nv.i+'/'+nv.n+' '+nv.kind:null});if(STUCKLOG.length>24)STUCKLOG.shift()}
+function travelWatch(dt){if(G.mode!=='travel'||!G.target||G.lift||G.lh||G.ride||G.thinking){TWD.tg=null;return}
+  const d=Math.hypot(G.target.x-G.x,G.target.z-G.z);
+  if(TWD.tg!==G.target){TWD.tg=G.target;TWD.best=d;TWD.t=0;TWD.ph=0;return}
+  if(d<TWD.best-.5){TWD.best=d;TWD.t=0;TWD.ph=0;return}
+  if((TWD.t+=dt)<(TWD.ph?15:25))return;
+  const a=G.act,nv=AG.mocha&&AG.mocha.nv;TWD.t=0;TWD.best=Math.min(TWD.best,d);
+  if(!TWD.ph){TWD.ph=1;TWD.n++;stuckNote('replan',d);NAV.cache.clear();if(nv)nv.n=0;G.navFor=null;if(G.route&&a&&a.p)planRide(a,G.target);return}
+  stuckNote('drop',d);TWD.ph=0;TWD.tg=null;if(G.biking)parkBike();if(a&&a.npc&&a.fx!=='hang')W.busy=0;if(a&&a.fx==='hang'){try{hangEnd(false)}catch(_){}}
+  if(nv)nv.n=0;G.navFor=null;G.route=null;G.act=null;G.mode='idle';G.timer=rand(2,4);G.vx*=.3;G.vz*=.3;G.trT=0;say(pick(['hmm… maybe another time','huh, can\'t get there right now','oh well, next time']),3,true)}
 function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;S.pantry=Math.max(0,S.pantry-dt*.002);updatePets(dt,t);
   const dec={energy:sleeping?-.02:.0016,snack:.0055,social:.0035,fun:.005,curious:.005};if(G.mode!=='trip')for(const k in S.needs)S.needs[k]=clamp(S.needs[k]-dt*dec[k],0,100);
   G.startle=Math.max(0,G.startle-dt);G.talk=Math.max(0,G.talk-dt);
@@ -3806,7 +3823,7 @@ function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;S.pantry=
   if(G.mode==='travel'&&!G.target){G.mode='idle';G.timer=1}
   if(G.mode==='travel'&&!(isFinite(G.target.x)&&isFinite(G.target.z))){G.target=null;G.act=null;G.route=null;G.mode='idle';G.timer=1}
   if(!isFinite(G.x+G.z)){const hw=spotWorld('home','couch');G.x=hw.x;G.z=hw.z;G.vx=G.vz=0}
-  if(G.mode==='travel'){if((G.trT=(G.trT||0)+dt)>240){G.act=null;G.route=null;if(G.biking)parkBike();G.mode='idle';G.timer=1}}else G.trT=0;
+  if(G.mode==='travel'){if((G.trT=(G.trT||0)+dt)>240){G.act=null;G.route=null;if(G.biking)parkBike();G.mode='idle';G.timer=1}}else G.trT=0;travelWatch(dt);
   if(G.mode==='travel'&&G.act&&G.act.npc&&G.act.fx!=='hang'){if(!W.visible||W.inside){G.act=null;G.mode='idle';G.timer=1}else{const w=wSpot();G.target.x=w.x;G.target.z=w.z}}
   if(G.mode==='travel'){let sx=G.target.x,sz=G.target.z;const RT=G.route;if(RT){let q=RT.pts[RT.i];const dq=Math.hypot(q[0]-G.x,q[1]-G.z);if(dq<(G.biking?1.9:1.1)||(dq<5&&(q[0]-G.x)*G.vx+(q[1]-G.z)*G.vz<0)){if(RT.i===0&&RT.mount&&!G.biking)mountBike();RT.i++;if(RT.i>=RT.pts.length){G.route=null;if(!RT.loop)parkBike(RT.yaw)}else q=RT.pts[RT.i]}if(G.route){sx=q[0];sz=q[1]}}
     let nh=false;if(!G.biking&&!G.ride&&!G.lift&&!G.lh){const st=navMocha(dt);if(st){sx=st.x;sz=st.z;nh=st.hold;if(nh){G.vx*=Math.pow(.01,dt);G.vz*=Math.pow(.01,dt)}}}
@@ -4590,7 +4607,8 @@ $('#mapBtn').onclick=()=>toggleMap();$('#mapClose').onclick=()=>toggleMap(false)
 
 const MLAB={energy:'Energy',snack:'Snacky',social:'Social',fun:'Fun',curious:'Curious'},MCOL={energy:'#7fc8b8',snack:'#f2b48a',social:'#f29fb5',fun:'#f2c14e',curious:'#8fb0e0'};
 function statusText(){if(G.mode==='trip'&&S.trip){const T=TRIPS[S.trip.id];return`${T.by==='ferry'?'⛴️':'🚆'} on a trip · ${T.s}`}if(G.thinking)return'💭 thinking…';if(G.startle>0)return'startled!';if(G.mode==='activity')return G.act.doing;if(G.mode==='travel')return G.biking&&G.act&&G.act.p?'🚲 → '+(G.act.p==='home'?'home':byId[G.act.p].name):G.act&&G.act.explore?'exploring 🧭':G.act&&G.act.p?'→ '+(G.act.p==='home'?'home':byId[G.act.p].name):'floating';return'floating'}
-function hud(){$('#lvl').textContent='lv '+level();$('#status').textContent=statusText();awayCard();const mood=Object.values(S.needs).reduce((a,b)=>a+b,0)/5;
+let LTB=0;function ltSync(){const b=document.body;if(!b.classList.contains('panelOpen')&&!b.classList.contains('msgOpen'))return;const L=$('#leftTop').children;let y=0;for(let i=0;i<L.length;i++){const q=L[i].getBoundingClientRect();if(q.height&&q.bottom>y)y=q.bottom}y=Math.round(y)+8;if(y!==LTB){LTB=y;b.style.setProperty('--ltB',y+'px')}}
+function hud(){ltSync();$('#lvl').textContent='lv '+level();$('#status').textContent=statusText();awayCard();const mood=Object.values(S.needs).reduce((a,b)=>a+b,0)/5;
   $('#meters').innerHTML=`<span>Cozy</span><div class="bar"><i style="width:${mood}%;background:#26324a"></i></div>`+Object.keys(MLAB).map(k=>`<span>${MLAB[k]}</span><div class="bar"><i style="width:${S.needs[k]}%;background:${MCOL[k]}"></i></div>`).join('')}
 function ago(t){const s=(Date.now()-t)/1000;if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
 let curTab='diary';
@@ -5041,7 +5059,7 @@ requestAnimationFrame(frame);
 window.__you=()=>({x:+YOU.x.toFixed(1),z:+YOU.z.toFixed(1),yaw:+YOU.yaw.toFixed(2),cam:+camS.yaw.toFixed(2),joy:[+JOY.x.toFixed(2),+JOY.y.toFixed(2)],seat:YOU.seat?{id:YOU.seat.s.id,slot:YOU.seat.i}:null,going:TG.on?{x:TG.x,z:TG.z,why:TG.why}:null,floor:floorType(YOU.x,YOU.z),
   tapGo:(x,z,jog)=>{if(camS.mode!=='walk')setCamMode('walk');return tapGo(x,z,{jog})},tapAt:(sx,sy,jog)=>{if(camS.mode!=='walk')setCamMode('walk');camera.updateMatrixWorld();ndc.set(sx/innerWidth*2-1,-(sy/innerHeight)*2+1);ray.setFromCamera(ndc,camera);return tapWorld(sx,sy,jog)},sit:(id,slot)=>youSit(id,slot),stand:()=>youStand()});window.__mocha={KEEPERS,byId,HOCC,MOVIE:()=>MOVIE,makePainting,sched,SUN:()=>SUN,asleepAt,hourAt,get S(){return S},G,MIND,localOutcome,ACTS,acquire,wearItem,adoptPet,buyDecor,takeSelfie:(c,p,force=true)=>takeSelfie(c,p,force),buyGear,shopVisit,payJob,mindBuy,applyMind,startAct,localChoose,bikePath,BIKE_LOOPS,BK,makeBike,nextWant,
   gear:()=>({coins:S.coins,phone:S.phone,gadgets:S.gadgets,bike:S.bike,jobs:S.jobs,helmet:hasHelmet(),want:nextWant(),biking:G.biking,route:G.route&&{n:G.route.pts.length,i:G.route.i,mount:G.route.mount,loop:G.route.loop,pts:G.route.pts},bk:{...BK},y:+G.y.toFixed(2),bikeVisible:!!(bikeObj&&bikeObj.visible),phoneVisible:phone.visible,phoneCols:phone.children.map(o=>Array.isArray(o.material)?o.material[0]:o.material).filter(m=>m&&m.color).map(m=>'#'+m.color.getHexString())}),
-  tick:(n=1,dt=.05)=>{for(let i=0;i<n;i++){T+=dt;updateMocha(dt,T)}return{x:+G.x.toFixed(1),z:+G.z.toFixed(1),mode:G.mode,biking:G.biking}},coins:n=>{if(n!=null)S.coins=Math.max(0,Math.round(n));return S.coins},showPhone:(s=4)=>{G.phoneT=s},setCamMode,cam:o=>{if(o)Object.assign(camS,o);return{...camS}},gfx:()=>({...GFX,pr:renderer.getPixelRatio(),adaptDrops:ADAPT.drops,progs:renderer.info.programs.length,geos:renderer.info.memory.geometries,tex:renderer.info.memory.textures}),BEND,post,scene,camera,renderer,weather:k=>{if(k){WEATHER.kind=k;WEATHER.t=600;WEATHER.over={clear:0,cloudy:.45,drizzle:.65,rain:.8,fog:.7,snow:.7}[k]??.5;WEATHER.wet=0;WEATHER.slow=0}return WEATHER.kind},forceAct:a=>{const t=ACTS.find(x=>x.p===a.p&&x.fx===a.fx&&(!a.keeper||x.keeper===a.keeper)&&(!a.s||x.s===a.s));a=Object.assign({tags:[],need:{}},t||{},a);const w=spotWorld(a.p,a.s);G.x=w.x+3;G.z=w.z+3;startAct(a)},openLB,closeLB,stepLB,lb:()=>({open:LB.open,set:LB.set,i:LB.i,n:LB.items.length,title:$('#lbTitle').textContent,sub:$('#lbSub').textContent,w:lbImg.offsetWidth,h:lbImg.offsetHeight}),postPainting,maybePostPainting,paintBig,zoomBy,ZM,zoomLim,discover:id=>discover(byId[id]),
+  tick:(n=1,dt=.05)=>{for(let i=0;i<n;i++){T+=dt;updateMocha(dt,T);updateDoors(dt)}return{x:+G.x.toFixed(1),z:+G.z.toFixed(1),mode:G.mode,biking:G.biking}},coins:n=>{if(n!=null)S.coins=Math.max(0,Math.round(n));return S.coins},showPhone:(s=4)=>{G.phoneT=s},setCamMode,cam:o=>{if(o)Object.assign(camS,o);return{...camS}},gfx:()=>({...GFX,pr:renderer.getPixelRatio(),adaptDrops:ADAPT.drops,progs:renderer.info.programs.length,geos:renderer.info.memory.geometries,tex:renderer.info.memory.textures}),BEND,post,scene,camera,renderer,weather:k=>{if(k){WEATHER.kind=k;WEATHER.t=600;WEATHER.over={clear:0,cloudy:.45,drizzle:.65,rain:.8,fog:.7,snow:.7}[k]??.5;WEATHER.wet=0;WEATHER.slow=0}return WEATHER.kind},forceAct:a=>{const t=ACTS.find(x=>x.p===a.p&&x.fx===a.fx&&(!a.keeper||x.keeper===a.keeper)&&(!a.s||x.s===a.s));a=Object.assign({tags:[],need:{}},t||{},a);const w=spotWorld(a.p,a.s);G.x=w.x+3;G.z=w.z+3;startAct(a)},openLB,closeLB,stepLB,lb:()=>({open:LB.open,set:LB.set,i:LB.i,n:LB.items.length,title:$('#lbTitle').textContent,sub:$('#lbSub').textContent,w:lbImg.offsetWidth,h:lbImg.offsetHeight}),postPainting,maybePostPainting,paintBig,zoomBy,ZM,zoomLim,discover:id=>discover(byId[id]),
   TX,sendText:t=>sendText(t,'app'),openMsgs,closeMsgs,txTick,txEvent,txInitiate,txState:()=>txState(),txAsleep:()=>txAsleep(),chatMode,chatPH,txLocalReply,txQuestion,txAwayFlush,txAdd,renderMsgs:()=>{TX.sig='';renderMsgs(true)},
   texts:()=>({n:(S.texts||[]).length,unread:txUnread(),typing:TX.typing,job:TX.job,pending:(S.texts||[]).filter(m=>m.from==='me'&&m.wait).length,status:txState(),open:msgOpen,cover:msgCover,outbox:TX.outbox.map(e=>e.kind),badge:$('#msgBadge').style.display==='none'?'':$('#msgBadge').textContent,list:(S.texts||[]).slice(-24).map(m=>({...m})),facts:S.mem.facts.slice()}),
   textFast:f=>{TX.fast=f;return TX.fast},you:(x,z)=>{if(x!=null){YOU.x=x;YOU.z=z;camS.tx=x;camS.tz=z}return{x:YOU.x,z:YOU.z}},txCanIni,textFirst:type=>txInitiate(null,type),
@@ -5089,7 +5107,7 @@ Object.assign(window.__mocha,{NAV,NF,EXTRA_PATHS,SECRETS,FOOT,navRoute,navTo,nav
   navInfo:()=>({nodes:NAV.N,edges:NAV.E,cache:NAV.cache.size,hits:NAV.hits,miss:NAV.miss,warn:NAV.warn.slice(),kinds:Array.from(NAV.k).reduce((a,k)=>(a[k]++,a),[0,0,0,0]),grids:ENCL.filter(p=>p.grid).map(p=>({id:p.id,gw:p.gw,gd:p.gd,sol:(p.sol||[]).length,blk:p.grid.reduce((a,b)=>a+b,0)})),shortcuts:S.shortcuts.slice()}),
   navEdges:()=>{const o=[];for(let a=0;a<NAV.N;a++)for(const e of NAV.adj[a])if(e[0]>a)o.push([+NAV.x[a].toFixed(2),+NAV.z[a].toFixed(2),+NAV.x[e[0]].toFixed(2),+NAV.z[e[0]].toFixed(2),e[2]]);return o},
   navNodes:()=>Array.from({length:NAV.N},(_,i)=>[+NAV.x[i].toFixed(2),+NAV.z[i].toFixed(2),NAV.k[i]]),
-  navLog:()=>NAVLOG.slice(),navLogClear:()=>{NAVLOG.length=0},
+  navLog:()=>NAVLOG.slice(),navLogClear:()=>{NAVLOG.length=0},stuckLog:o=>{if(o==='clear')STUCKLOG.length=0;return STUCKLOG.slice()},stuckWatch:()=>({t:+TWD.t.toFixed(2),best:+TWD.best.toFixed(2),ph:TWD.ph,on:!!TWD.tg,replans:TWD.n}),
   grid:pid=>{const p=byId[pid];if(!p||!p.grid)return null;return{gw:p.gw,gd:p.gd,g:Array.from(p.grid).join(''),sol:(p.sol||[]).map(b=>b.map(v=>+v.toFixed(2)))}},
   agentNav:who=>{const v=AG[who]&&AG[who].nv;return v?{n:v.n,i:v.i,kind:v.kind,hold:v.hold,tx:v.tx,tz:v.tz,pts:Array.from(v.P.subarray(0,2*v.n)).map(x=>+x.toFixed(2))}:null},
   // fixed .05 s steps of Mocha + Wendell + the door tick (no rendering); probe(fn) runs after every step
