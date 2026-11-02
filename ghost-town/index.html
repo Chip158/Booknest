@@ -3286,7 +3286,7 @@ function localOutcome(act,t=Date.now(),live=true){const p=byId[act.p];const pnam
   S.recent.unshift(act.p+(act.s?'.'+act.s:''));S.recent.length=Math.min(S.recent.length,6)}
 function hourAt(t){const d=new Date(t);return d.getHours()+d.getMinutes()/60}
 function sched(){if(!S.sched){const t=S.traits;const bed=clamp(22.6-t.coziness*.9+t.adventure*.9+rand(-.3,.3),21.3,24.6);S.sched={bed:+bed.toFixed(2),wake:+((bed+8.4)%24).toFixed(2)}}return S.sched}
-function asleepAt(h,t){if(nyeAwake(h,t))return false;const s=sched(),b=s.bed%24,w=s.wake;return b>w?(h>=b||h<w):(h>=b&&h<w)}
+function asleepAt(h,t){if(nyeAwake(h,t))return false;const s=sched(),rm=x=>Math.floor(x)+Math.round((x%1)*60)/60,b=rm(s.bed%24)%24,w=rm(s.wake)%24;return b>w?(h>=b||h<w):(h>=b&&h<w)}
 function secondsToWake(t=Date.now()){const s=sched(),d=new Date(t),w=new Date(d);w.setHours(Math.floor(s.wake),Math.round((s.wake%1)*60),0,0);if(w<=d)w.setDate(w.getDate()+1);return(w-d)/1000}
 function sunTimes(d){const lat=47.6*Math.PI/180,doy=Math.floor((d-new Date(d.getFullYear(),0,0))/864e5),g=2*Math.PI/365*(doy-1);
   const decl=.006918-.399912*Math.cos(g)+.070257*Math.sin(g)-.006758*Math.cos(2*g)+.000907*Math.sin(2*g)-.002697*Math.cos(3*g)+.00148*Math.sin(3*g);
