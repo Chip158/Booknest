@@ -4296,10 +4296,11 @@ function navLocked(a,d){navLog({ev:'locked',who:a.id,door:d.id});NAV.cache.clear
   if(a.id==='mocha'){say('oh, they just closed',3);const tp=placeOf(v.tx,v.tz),again=v.lk===d&&Date.now()-v.lkT<1e4;v.lk=d;v.lkT=Date.now();if(again||tp&&tp===d.p&&!DOORS.some(q=>q.p===tp&&q!==d&&q.kind!=='gate'&&doorCan(q,a))){v.n=0;G.act=null;G.mode='idle';G.timer=rand(1.5,3)}else G.navFor=null}
   else if(a.id==='wendell'){const sp=W_SPOTS[W.dest];if(sp&&placeOf(sp.x,sp.z)!==d.p)W.path=wPath(W.x,W.z,sp.x,sp.z);else v.n=0}else v.n=0}
 // the keep-right lane never steers into a lamp post, planter, rack or fence: the offset lane from beside the walker to 1.6 past the carrot must clear COL (r .5)
-// rejoin: a walker that overshot an outdoor waypoint by more than 1.6 (bike momentum at a dismount, a wide corner) but is already past it
-// and within 2.5 of the next leg takes that leg. Without this the spill-over carrot parks him on the NEXT point (a door never gets
+// rejoin: a walker that overshot an outdoor waypoint by more than 1.6 (bike momentum at a dismount, a wide corner), i.e. is past it along
+// both the leg he was on and the next leg, and is within 2.5 of the next leg, takes that leg (corners are never skipped early). Without this the spill-over carrot parks him on the NEXT point (a door never gets
 // requested, so he hovers at the doorway forever).
-function navOnLeg(P,i,x,z){const ax=P[2*i],az=P[2*i+1],ex=P[2*i+2]-ax,ez=P[2*i+3]-az,L=Math.hypot(ex,ez);return L>.01&&Math.abs((x-ax)*ez-(z-az)*ex)/L<2.5}
+function navOnLeg(P,i,x,z){if(i<1)return false;const ax=P[2*i],az=P[2*i+1];if((x-ax)*(ax-P[2*i-2])+(z-az)*(az-P[2*i-1])<=0)return false;// overshot along the leg he was on
+  const ex=P[2*i+2]-ax,ez=P[2*i+3]-az,L=Math.hypot(ex,ez);return L>.01&&Math.abs((x-ax)*ez-(z-az)*ex)/L<2.5}
 function laneBlk(x,z,ux,uz,k){for(let t=-1.5;t<=1.6;t+=.75)if(COL.hit(x+ux*t-uz*k,z+uz*t+ux*k,.5))return true;return false}
 function navStep(a,x,z,dt){const v=a.nv,o=NSO,{DOOR,IN,CW}=NF;if(!v||!v.n)return null;o.hold=false;o.done=false;o.cw=false;const P=v.P,F=v.F;
   if(v.hold>0){v.hold-=dt;o.hold=true;o.cw=true;o.x=P[2*v.i-2];o.z=P[2*v.i-1];return o}
@@ -4619,7 +4620,9 @@ $('#mapBtn').onclick=()=>toggleMap();$('#mapClose').onclick=()=>toggleMap(false)
 
 const MLAB={energy:'Energy',snack:'Snacky',social:'Social',fun:'Fun',curious:'Curious'},MCOL={energy:'#7fc8b8',snack:'#f2b48a',social:'#f29fb5',fun:'#f2c14e',curious:'#8fb0e0'};
 function statusText(){if(G.mode==='trip'&&S.trip){const T=TRIPS[S.trip.id];return`${T.by==='ferry'?'⛴️':'🚆'} on a trip · ${T.s}`}if(G.thinking)return'💭 thinking…';if(G.startle>0)return'startled!';if(G.mode==='activity')return G.act.doing;if(G.mode==='travel')return G.biking&&G.act&&G.act.p?'🚲 → '+(G.act.p==='home'?'home':byId[G.act.p].name):G.act&&G.act.explore?'exploring 🧭':G.act&&G.act.p?'→ '+(G.act.p==='home'?'home':byId[G.act.p].name):'floating';return'floating'}
-let LTB=0;function ltSync(){const b=document.body;if(!b.classList.contains('panelOpen')&&!b.classList.contains('msgOpen'))return;const L=$('#leftTop').children;let y=0;for(let i=0;i<L.length;i++){const q=L[i].getBoundingClientRect();if(q.height&&q.bottom>y)y=q.bottom}y=Math.round(y)+8;if(y!==LTB){LTB=y;b.style.setProperty('--ltB',y+'px')}}
+// --ltB: bottom of the top-left HUD column (#mochaPill, #sky, #mindBtn) + 8, for #near/#toast on wide screens with a side panel open.
+// Measured when the panel or messages open, when the mind button changes, and every ~2 s from hud() as a fallback (one rect read each).
+var LTB=0,LTT=-1e9;function ltSync(force){const now=performance.now();if(!force&&now-LTT<2000)return;LTT=now;const b=document.body;if(!b.classList.contains('panelOpen')&&!b.classList.contains('msgOpen'))return;const L=$('#leftTop').children;let y=0;for(let i=0;i<L.length;i++){const q=L[i].getBoundingClientRect();if(q.height&&q.bottom>y)y=q.bottom}y=Math.round(y)+8;if(y!==LTB){LTB=y;b.style.setProperty('--ltB',y+'px')}}
 function hud(){ltSync();$('#lvl').textContent='lv '+level();$('#status').textContent=statusText();awayCard();const mood=Object.values(S.needs).reduce((a,b)=>a+b,0)/5;
   $('#meters').innerHTML=`<span>Cozy</span><div class="bar"><i style="width:${mood}%;background:#26324a"></i></div>`+Object.keys(MLAB).map(k=>`<span>${MLAB[k]}</span><div class="bar"><i style="width:${S.needs[k]}%;background:${MCOL[k]}"></i></div>`).join('')}
 function ago(t){const s=(Date.now()-t)/1000;if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
@@ -4825,7 +4828,7 @@ function openTab(id,keep,quiet){let top=id,leaf=null;const al=TABS.alias[id];if(
 TABS.add('diary','diary',renderDiary);TABS.add('feed','📸 feed',renderFeed);TABS.add('mocha','👻 mocha',null,{legacy:'me',subs:[['me',"who he's becoming",renderMe],['notes','📓 notebook',renderNotes]]});
 TABS.add('town','🏘 town<i id="calDot"></i>',null,{legacy:'cal',subs:[['cal','📅 calendar',renderCal]]});TABS.add('you','you',renderYou);TABS.add('settings','⚙︎ settings',renderSet,{leaf:'set',legacy:'set'});openTab('diary',true,true);
 const panel=$('#panel');const isSheet=()=>matchMedia('(max-width:760px)').matches;
-function panelOpen(o){panel.classList.toggle('hidden',!o);document.body.classList.toggle('panelOpen',o);if(o)renderTab();HUD.layout();if(HUD.n)setTimeout(()=>HUD.layout(),420)}
+function panelOpen(o){panel.classList.toggle('hidden',!o);document.body.classList.toggle('panelOpen',o);ltSync(1);if(o)renderTab();HUD.layout();if(HUD.n)setTimeout(()=>HUD.layout(),420)}
 try{if(localStorage.getItem('mocha-meters'))document.body.classList.add('showMeters')}catch(e){}
 // ---------- picture viewer (lightbox): paintings + feed ----------
 const LB={open:false,set:'',items:[],i:0,ret:null};const lbEl=$('#lb'),lbImg=$('#lbImg'),lbStage=$('#lbStage');
@@ -4861,7 +4864,7 @@ $('#expandPanel').onclick=()=>{if(!isSheet()){panel.classList.toggle('wide');doc
 panelOpen(!(innerWidth<760||innerHeight<520));
 setInterval(()=>{labels.forEach(({p,el})=>{if(!p.hours)return;const t=el.dataset.base+(isOpen(p)?'':' · closed');if(el.textContent!==t){el.textContent=t;el._w=0}});KEEPERS.forEach(k=>{k.obj.visible=isOpen(byId[k.shop])})},20000);
 setInterval(()=>document.querySelectorAll('.when').forEach(el=>el.textContent=ago(+el.dataset.t)),15000);
-function updateMindBtn(){const b=$('#mindBtn');if(!MIND.api){b.style.display='none';return}b.style.display='inline-flex';b.classList.toggle('on',MIND.on);b.textContent=MIND.on?'🧠 his mind is awake':'✨ let Mocha think for himself'}
+function updateMindBtn(){const b=$('#mindBtn');if(!MIND.api){b.style.display='none';return}b.style.display='inline-flex';b.classList.toggle('on',MIND.on);b.textContent=MIND.on?'🧠 his mind is awake':'✨ let Mocha think for himself';ltSync(1)}
 $('#mindBtn').onclick=()=>{if(!MIND.api||MIND.on)return;MIND.on=true;S.mind=true;updateMindBtn();save();say('oh! i can… think? 💭',3,true);MIND.last=0;MIND.backoff=0;MIND.woke=false;if(G.mode==='idle'&&!G.thinking&&!MIND.busy&&MIND.allow('next'))mindThink(null);if(curTab==='you')renderYou()};
 
 // ====================================================================
@@ -4942,7 +4945,7 @@ function renderMsgs(force){if(!msgOpen)return;const st=txState(),se=$('#msgStat'
 function fitMsgs(){if(!msgOpen)return;const vv=window.visualViewport;msgCover=msgSheet();const kb=!!(TOUCH&&vv&&innerHeight-vv.height>90);msgEl.classList.toggle('kb',kb);
   if(TOUCH&&vv&&(msgCover||kb)){const pad=msgCover?0:6;msgEl.style.top=(vv.offsetTop+pad)+'px';msgEl.style.height=(vv.height-pad*2)+'px';msgEl.style.bottom='auto'}else{msgEl.style.top=msgEl.style.height=msgEl.style.bottom=''}
   const h=vv?vv.height:innerHeight;if(h!==msgVH){msgVH=h;msgList.scrollTop=msgList.scrollHeight}}
-function openMsgs(){if(msgOpen)return;if(LB.open)closeLB();if(mapOpen)toggleMap(false);msgOpen=true;msgEl.classList.remove('hidden');document.body.classList.add('msgOpen');msgVH=0;TX.sig='';renderMsgs(true);fitMsgs();
+function openMsgs(){if(msgOpen)return;if(LB.open)closeLB();if(mapOpen)toggleMap(false);msgOpen=true;msgEl.classList.remove('hidden');document.body.classList.add('msgOpen');ltSync(1);msgVH=0;TX.sig='';renderMsgs(true);fitMsgs();
   if(!TOUCH)setTimeout(()=>{if(msgOpen&&S.phone)msgIn.focus({preventScroll:true})},60);else try{$('#msgClose').focus({preventScroll:true})}catch(e){}}
 function closeMsgs(){if(!msgOpen)return;msgOpen=false;msgCover=false;msgEl.classList.add('hidden');document.body.classList.remove('msgOpen');try{msgIn.blur()}catch(e){}msgEl.style.top=msgEl.style.height=msgEl.style.bottom='';clearTimeout(sendTimer);try{$('#msgBtn').focus({preventScroll:true})}catch(e){}}
 function showHimMsg(t){const d=document.createElement('div');d.className='msg him';d.textContent='👻 '+t;log.appendChild(d);while(log.children.length>3)log.firstChild.remove();setTimeout(()=>d.style.opacity=0,8000);setTimeout(()=>d.remove(),9200)}
