@@ -448,7 +448,7 @@ const PLACES=[
  {id:'wheel',name:'Waterfront Wheel',x:-84,z:14,ry:Math.PI/2,w:4,d:4,h:30,kind:'wheel'},
  {id:'ferry',name:'Ferry Dock',x:-80,z:46,ry:Math.PI/2,w:6,d:6,h:4,kind:'dock'},
  {id:'park',name:'Cedar Lake Park',x:96,z:22,ry:0,kind:'park'},
- {id:'neighbor',name:"Wendell's House",x:14,z:40,ry:0,w:11,d:9,h:5.5,kind:'npchome',wall:'#e8c27a',roof:'#6b4a3a'},
+ {id:'neighbor',name:"Wendell's House",x:14,z:40,ry:0,w:13,d:10,h:5.5,kind:'npchome',wall:'#e2b558',roof:'#6b4a3a'},
  {id:'promenade',name:'Waterfront Promenade',x:-57,z:-2,ry:-Math.PI/2,kind:'spot'},
  // ---- town plan v2 (B8): civic + districts, new shops, homes, night and nature, vacant lots (front = local +z) ----
  {id:'square',name:'Lantern Square',x:-30,z:33,ry:0,w:22,d:18,kind:'plaza',nopath:1},
@@ -778,9 +778,11 @@ const WX={forDate:d=>wxDay(d),
 function wxKind(t){return Math.abs(t-Date.now())<9e5?WEATHER.kind:WX.at(t)}
 // HOME CAPS: what a home has, and the fallback when it lacks it. hasItem(slot,home) / capSpot(slot,home) -> {p,s,fb} or null.
 const FEAT={nest:false,radio:false};
-const HOME_CAPS={bed:{s:'bed',fb:'blanket',fs:'couch'},stove:{s:'kitchen',fb:null,alt:'cafe'},computer:{s:'desk',fb:'library',fp:'library'},couch:{s:'couch',fb:'cushions',fs:'main'},table:{s:'kitchen',fb:'box',fs:'main'},fridge:{s:'kitchen',fb:'box',fs:'main'},desk:{s:'desk',fb:'box',fs:'main'},player:{s:'couch',fb:'radio',fs:'couch',need:'radio'},radio:{s:'couch',fb:null},tv:{s:'couch',fb:null},lamp:{s:'main',fb:'bulb',fs:'main'},bath:{s:'bath',always:1}};
+const HOME_CAPS={bed:{s:'bed',fb:'blanket',fs:'blanket'},stove:{s:'kitchen',fb:null,alt:'cafe'},computer:{s:'desk',fb:'library',fp:'library'},couch:{s:'couch',fb:'cushions',fs:'floorA',pair:['couchA','couchB'],fpair:['floorA','floorB']},table:{s:'kitchen',fb:'box',fs:'boxA',pair:['teaA','teaB'],fpair:['boxA','boxB']},fridge:{s:'kitchen',fb:'box',fs:'boxA'},desk:{s:'desk',fb:'box',fs:'boxA'},player:{s:'couch',fb:'radio',fs:'couch',need:'radio'},radio:{s:'couch',fb:null},tv:{s:'couch',fb:null},lamp:{s:'main',fb:'bulb',fs:'bulb'},bath:{s:'bath',always:1}};
+// per-home spot names for a slot (B14): Wendell's cottage has armchairs, a tea table and a TV corner
+const HOME_S={neighbor:{bed:'bed',stove:'stove',table:'teaA',couch:'fireA',tv:'tv',radio:'fireA',lamp:'reading',desk:'shelf',computer:null}};
 function hasItem(slot,home='home'){const c=HOME_CAPS[slot];if(!c)return false;if(c.always)return true;if(slot==='radio'&&!FEAT.radio)return false;if(!FEAT.nest)return true;const own=S&&S.homeItems&&S.homeItems[home];return!!(own&&(Array.isArray(own)?own.includes(slot):own[slot]))}
-function capSpot(slot,home='home'){const c=HOME_CAPS[slot];if(!c)return null;if(hasItem(slot,home))return{p:home,s:c.s,fb:null};if(c.fp)return{p:c.fp,s:null,fb:c.fb};if(c.fs&&(!c.need||hasItem(c.need,home)))return{p:home,s:c.fs,fb:c.fb};return null}
+function capSpot(slot,home='home'){const c=HOME_CAPS[slot];if(!c)return null;const hs=HOME_S[home]||{};if(hasItem(slot,home)){const s=hs[slot]!==undefined?hs[slot]:c.s;return s?{p:home,s,fb:null,pair:home==='home'?c.pair||null:null}:null}if(c.fp)return{p:c.fp,s:null,fb:c.fb};if(c.fs&&(!c.need||hasItem(c.need,home)))return{p:home,s:c.fs,fb:c.fb,pair:c.fpair||null};return null}
 // BONDS shim (B28 replaces the body of bondOf with S.bonds)
 const TIERS=[0,10,60,160,320,600],TIER_N=['stranger','acquaintance','regular','friend','close friend','best friend'];
 function bondOf(id){if(!S)return 0;if(id==='wendell')return 12*(+S.friendW||0);if(id==='you')return Math.min(200,2*(+(S.mem&&S.mem.chats)||0));return 6*(+(S.know&&S.know[id])||0)}
@@ -1437,6 +1439,147 @@ Object.assign(LAYOUTS,{
 // per-frame (10 Hz): night-only mushroom glow, cauldron bubbles while the nursery is drawn
 function b13Frame(dt){if((B13.t-=dt)>0)return;B13.t=.1;const ni=nightAmt>.35?1.2*Math.min(1,(nightAmt-.35)/.4):0;if(Math.abs(ni-B13M.mush.emissiveIntensity)>.01)B13M.mush.emissiveIntensity=ni;
   const n=byId.nursery;if(n&&n.inVis){const t=performance.now()/1000;B13.bub.forEach((b,i)=>{const f=(t*.6+i*.37)%1;b.position.y=b.userData.y0+f*.3;b.scale.setScalar(.035+.045*Math.sin(f*Math.PI))})}}
+// ====================================================================
+//  B14 HOMES: cottage(p,grp,style) = a dollhouse cutaway home (floor, back/side walls that hide on the camera side while peeking,
+//  a front wall + bay + porch roof + roof that fade as p.shell). Exterior props ride the PB town batch; the interior is a LAYOUTS
+//  table run by layoutRoom (p.inner, merged per material, culled at 10 Hz). Serves Wendell now; B26 (cabin) and B40 reuse it.
+//  style: {wall,roof,trim,inC,door,floor:[kind,a,b],bay:[x,w],chim:-1|1|0,porch:[x0,x1,dep],swing:[x,z],garden,lay}
+//  Mocha's house: b14Home(p,grp) adds pair spots, the pouf, the note hook, p.rooms and the hidden empty-house set, then merges
+//  the furnished interior into p.inner (was ~140 separate meshes).
+// ====================================================================
+const COTTAGE_STY={wendell:{wall:'#e2b558',roof:'#6b4a3a',trim:'#f4ead8',inC:'#f3e3c4',door:'#3f6f5a',floor:['plank','#a8794e','#8a6040'],bay:[-1,2.4],chim:-1,porch:[-5.6,3.7,2.4],swing:[-3.5,6.4],garden:1,lay:'neighbor'}};
+// rooms: [x0,z0,x1,z1] in local coords, first match wins (B16 lights, B27 placement)
+const HOME_ROOMS={home:{kitchen:[-14,-7,-6,1],living:[-6,-7,4,1],bedroom:[4,-7,10.5,1],bath:[10.5,-7,14,1],hall:[-14,1,14,9.4]},
+  neighbor:{bed:[-6.5,-5,-1.4,-2.6],kitchen:[1.2,-5,6.5,.4],living:[-6.5,-5,.2,5],hall:[.2,-5,6.5,5]}};
+const SPOTCAP={home:{bed:'bed',kitchen:'stove',stove:'stove',desk:'computer',couch:'couch',couchA:'couch',couchB:'couch',teaA:'table',teaB:'table',bath:'bath',blanket:'bed',floorA:'couch',floorB:'couch',boxA:'table',boxB:'table',bulb:'lamp'},
+  neighbor:{bed:'bed',stove:'stove',teaA:'table',teaB:'table',fireA:'couch',fireB:'couch',tv:'tv',reading:'lamp',shelf:'desk'}};
+function cottage(p,grp,style){const S=typeof style==='string'?COTTAGE_STY[style]:style,w=p.w,d=p.d,h=p.h,L=[];p.shell=L;p.interior=true;p.cot=S;
+  const dr=p.door||{x:0,w:1.8,h:2.45,y0:.3},inM=railMat(S.inC,h),roofM=lam(S.roof),T=pbP(p);
+  const side=wallTex(d,h,S.wall,{}),back=wallTex(w,h,S.wall,{front:1,hole:[w*2,.01,.01,0]}),front=shellMat(wallTex(w,h,S.wall,{front:1,door:S.door,trim:S.trim,hole:[dr.x*w/(w-.6),(dr.w+.04)*w/(w-.6),dr.h+.02,dr.y0]}),L);
+  box(w,.3,d,floorMat(S.floor[0],S.floor[1],S.floor[2],w,d),0,.15,0,grp);box(w+.6,.2,d+.6,'#8a8278',0,.05,0,T,false);
+  const bw=box(w,h,.3,[back,back,roofM,roofM,inM,back],0,h/2,-d/2+.15,grp),lw=box(.3,h,d,[inM,side,roofM,roofM,side,side],-w/2+.15,h/2,0,grp),rw=box(.3,h,d,[side,inM,roofM,roofM,side,side],w/2-.15,h/2,0,grp);
+  p.walls=[[bw,'z',-1],[lw,'x',-1],[rw,'x',1]];
+  const fw=new THREE.Group();grp.add(fw);const sw=shellMat(lam(S.wall,{}),L),tr=shellMat(lam(S.trim,{}),L),rM=shellMat(lam(S.roof,{}),L);
+  p.walls.push([box(w-.6,h,.3,[sw,sw,sw,sw,front,shellMat(lam(S.inC,{}),L)],0,h/2,d/2-.15,fw),'z',1]);
+  const r=gable(w,d,3.6,rM);r.position.y=h;fw.add(r);box(w+.5,.25,.35,tr,0,h+.05,d/2+.1,fw,false);
+  // bay reading nook (outside: a window box with its own little roof)
+  if(S.bay){const [bx,bwid]=S.bay,bt=canvasTex(96,72,g=>{g.fillStyle=S.trim;g.fillRect(0,0,96,72);g.fillStyle='#ffd98a';for(let i=0;i<3;i++)g.fillRect(6+i*30,8,24,50);g.fillStyle='rgba(255,255,255,.55)';for(let i=0;i<3;i++){g.fillRect(17+i*30,8,2,50);g.fillRect(6+i*30,30,24,2)}}),
+      be=canvasTex(96,72,g=>{g.fillStyle='#000';g.fillRect(0,0,96,72);g.fillStyle='#ffcf7a';for(let i=0;i<3;i++)g.fillRect(6+i*30,8,24,50)}),bm=shellMat(new ToonM({map:bt,emissive:new THREE.Color('#ffffff'),emissiveMap:be,emissiveIntensity:.2}),L);winMats.push(bm);
+    box(bwid,2.1,.7,[sw,sw,sw,sw,bm,sw],bx,1.75,d/2+.35,fw);const bc=box(bwid+.3,.14,1.0,rM,bx,2.9,d/2+.45,fw,false);bc.rotation.x=.22;box(bwid+.2,.12,.8,tr,bx,.66,d/2+.4,fw,false)}
+  // porch: deck + posts + header beam + joists (PB); the sloped porch roof fades with the shell
+  if(S.porch){const [x0,x1,pd]=S.porch,cx=(x0+x1)/2,pw=x1-x0;box(pw,.2,pd,'#9a7a5a',cx,.1,d/2+pd/2,T);for(let i=0;i<5;i++)box(pw,.01,.04,'#7a5a3a',cx,.205,d/2+.3+i*pd/5,T,false);
+    for(const x of [x0+.15,x1-.15])box(.18,2.85,.18,S.trim,x,1.62,d/2+pd-.15,T);box(pw,.2,.2,S.trim,cx,3.0,d/2+pd-.15,T,false);
+    const pr=box(pw+.5,.14,pd+.5,rM,cx,3.28,d/2+pd/2+.05,fw,false);pr.rotation.x=.14;
+    // string lights under the header beam (bulbs ride the PB 'win' key; halos in GLOWPTS)
+    for(let i=0;i<7;i++){const x=x0+.5+i*(pw-1)/6,y=2.78-Math.sin(i/6*Math.PI)*.18,b=new THREE.Mesh(SPH,lam(['#ffcf80','#f29fb5','#9fd3ff'][i%3]));b.scale.setScalar(.07);b.position.set(x,y,d/2+pd-.12);pbW(b);T.add(b);const q=toWorld(p,x,d/2+pd-.12);glowPt(q.x,y,q.z,['#ffb050','#f2709f','#6fb3ff'][i%3],.9,.6,1,'cottage')}
+    // steps down to the walk in front of the door
+    box(dr.w+.8,.12,.5,'#9a7a5a',dr.x,.06,d/2+pd+.25,T,false)}
+  // porch swing at S.swing (hangs from two joists)
+  if(S.swing){const [sx,sz]=S.swing;for(const k of [-.8,.8]){box(.12,.12,(S.porch?S.porch[2]:2.4)-.1,S.trim,sx+k,2.95,d/2+(S.porch?S.porch[2]:2.4)/2,T,false);box(.03,2.0,.03,'#5a5a5a',sx+k,1.9,sz,T,false)}
+    box(1.75,.1,.55,'#8a5a3a',sx,.86,sz,T);box(1.75,.6,.08,'#8a5a3a',sx,1.2,sz-.26,T,false);box(.5,.25,.18,'#c96f4f',sx-.45,1.05,sz-.15,T,false);box(.5,.25,.18,'#e9c46a',sx+.45,1.05,sz-.15,T,false)}
+  // chimney on the west (-x) wall: stone stack through the eave; p.chimney is where B16 puffs smoke
+  if(S.chim){const cx=S.chim*(w/2+.5);box(1.0,h+3.0,1.3,'#8f857a',cx,(h+3.0)/2,0,T);box(1.25,.3,1.5,'#6f665c',cx,h+3.0,0,T,false);box(.5,.5,.6,'#5a524a',cx,h+3.35,0,T,false);const q=toWorld(p,cx,0);p.chimney={x:q.x,y:h+3.7,z:q.z}}
+  // front garden (round 1's beds, moved off the porch), mailbox + name sign
+  for(const x of [-4.6,-2.8]){box(1.4,.35,3,'#5a4632',x,.18,d/2+4.6,T);for(let k=0;k<5;k++){const v=new THREE.Mesh(ballG(.28),lam(SEASON.snowy?'#dfe6ee':'#5f9f5a'));v.position.set(x+rand(-.4,.4),.5,d/2+3.4+k*.55);T.add(v);if(!SEASON.snowy&&k%2){const f=new THREE.Mesh(SPH,lam(SEASON_KEY==='fall'?'#e8742a':'#e04a3a'));f.scale.setScalar(.1);f.position.set(v.position.x+.15,.7,v.position.z);T.add(f)}}}
+  box(.15,1.2,.15,'#5a4632',4.6,.6,d/2+5,T);box(.8,.5,.5,S.door,4.6,1.3,d/2+5,T);if(p.id==='neighbor')sign('Wendell',1.8,grp,4.6,1.9,d/2+5.3,'#fffaf2',S.door);
+  // back garden: back step, stepping stones, compost bin, a hammock between two firs
+  if(S.garden){box(1.8,.14,.6,'#8f857a',5,.07,-d/2-.3,T,false);for(let i=0;i<4;i++)cyl(.32,.32,.06,'#a39a8e',5-i*1.6,.04,-d/2-1.2-i*.5,T,8);
+    const cb=new THREE.Group();cb.position.set(-4.4,0,-d/2-2.2);T.add(cb);for(let i=0;i<5;i++){box(1.3,.16,.08,'#7a5a3a',0,.14+i*.22,-.6,cb,false);box(1.3,.16,.08,'#7a5a3a',0,.14+i*.22,.6,cb,false);box(.08,.16,1.2,'#7a5a3a',-.62,.14+i*.22,0,cb,false);box(.08,.16,1.2,'#7a5a3a',.62,.14+i*.22,0,cb,false)}box(1.2,.5,1.1,'#4a3a2a',0,.3,0,cb,false);
+    for(const x of [-.6,3.6]){cyl(.22,.3,2.6,'#7a5a3a',x,1.3,-d/2-3.6,T,8);for(let k=0;k<3;k++){const c=new THREE.Mesh(new THREE.ConeGeometry(1.5-k*.35,1.5,9),lam(['#3f8f5f','#367f56','#4a9a63'][k]));c.position.set(x,2.6+k*1.0,-d/2-3.6);T.add(c)}}
+    const hm=box(3.4,.08,.9,'#c96f4f',1.5,1.05,-d/2-3.6,T,false);hm.rotation.z=0;box(3.0,.06,.7,'#e9c46a',1.5,1.08,-d/2-3.6,T,false);for(const [x,y] of [[-.35,1.6],[3.35,1.6]])box(.5,.03,.03,'#d9cfa8',x,y-.2,-d/2-3.6,T,false);
+    const q=toWorld(p,1.5,-d/2-4.4);p.hammock={x:q.x,z:q.z}}
+  pbDone(T);
+  // interior: the layout table (p.inner)
+  const inn=new THREE.Group();inn.name='inner';grp.add(inn);p.inner=inn;const LY=LAYOUTS[S.lay];if(LY)layoutRoom(p,LY);p.rooms=HOME_ROOMS[p.id]||null}
+function npchome(p,grp){cottage(p,grp,'wendell')}
+// ---------- Wendell's layout (room coords: floor top .3, inner faces x +-6.2, z +-4.7; front door at x=2, back door at x=5) ----------
+const B14M={scr:null,cap:null};
+LAYOUTS.neighbor={floor:['plank','#a8794e','#8a6040'],rug:[-4,0,2.8,3.8,'#a34a3a','#e9c46a'],goods:false,
+  spots:{main:[2,2.3],door:[2,3.9],fireA:[-4.2,-1.4,-.96],fireB:[-4.2,1.4,-2.18],fireC:[-3.1,0,-Math.PI/2],teaA:[2.6,-1.8,Math.PI/2],teaB:[4.6,-1.8,-Math.PI/2],bed:[-3.6,-3.55,Math.PI/2],stove:[3.45,-3.5,Math.PI],
+    shelf:[0,-3.7,Math.PI],reading:[-1,4.25,Math.PI],tv:[-4.4,3.1,-Math.PI/2],stand:[-2.6,.6],back:[5,-3.3],porchA:[-3.95,6.4,0],porchB:[-3.05,6.4,0],porchC:[.5,7.15,0],yard:[-1.4,9.6,-Math.PI/2],hammock:[1.5,-9.4,0]},
+  fn(p,g){const G=(k)=>{const q=new THREE.Group();q.userData.kind=k;g.add(q);return q},zb=-p.d/2+.3,xl=-p.w/2+.3,xr=p.w/2-.3,v=(x,z)=>toWorld(p,x,z);
+   // fireplace: hearth, stone surround, fire, mantel with his radio, chimney breast (the painting slot sits on it)
+   {const f=G('fireplace');box(1.0,.12,2.2,'#7a6f66',xl+.5,.36,0,f);box(.7,1.6,2.0,'#9a8f84',xl+.35,1.1,0,f);box(.06,.8,1.0,'#2a1f1a',xl+.71,.78,0,f,false);
+    for(const [z,s] of [[-.22,.8],[.18,1],[0,.7]]){const c=new THREE.Mesh(new THREE.ConeGeometry(.16*s,.5*s,6),B13M.fire);c.position.set(xl+.5,.5+.25*s,z);f.add(c)}box(.5,.08,.7,'#4a3020',xl+.5,.46,0,f,false);
+    box(.5,.12,2.4,'#6a4a32',xl+.35,1.96,0,f);box(.52,3.42,1.6,'#a39689',xl+.27,3.75,0,f);
+    box(.32,.3,.52,'#8a5a3a',xl+.3,2.17,.72,f);box(.02,.18,.3,'#e9dcb8',xl+.47,2.17,.66,f,false);cyl(.04,.04,.02,'#2a2a2a',xl+.47,2.17,.88,f,6).rotation.z=Math.PI/2;
+    box(.14,.22,.1,'#d9b26a',xl+.3,2.13,-.6,f,false);const q=v(xl+.75,0);glowPt(q.x,.9,q.z,'#ff9a40',3.2,.7,0,'cottage');LIGHTSPOTS.push({pid:p.id,lx:xl+.7,ly:.9,lz:0,color:'#ff9a40',kind:'fire'})}
+   // two armchairs angled to the fire, the tea table, his footstool (fireC, a drop-in seat)
+   const chair=(x,z,yaw,c)=>{const a=G('armchair'),q=new THREE.Group();q.position.set(x,0,z);q.rotation.y=yaw;a.add(q);box(1.0,.45,.85,c,0,.52,.05,q);box(1.0,1.05,.22,c,0,1.0,-.36,q);for(const s of [-1,1])box(.18,.62,.85,c,s*.46,.72,.05,q);box(.82,.12,.66,'#f4ead8',0,.8,.1,q,false)};
+   chair(-4.2,-1.4,-.96,'#8a3a3a');chair(-4.2,1.4,-2.18,'#3f5f6a');
+   {const t=G('teatable');cyl(.36,.36,.06,'#6a4a32',-4.65,.9,0,t,14);cyl(.06,.06,.58,'#5a3a22',-4.65,.6,0,t,6);cyl(.22,.26,.04,'#5a3a22',-4.65,.32,0,t,10);cyl(.08,.07,.12,'#f4ead8',-4.55,.99,.08,t,8)}
+   {const s=G('footstool');box(.62,.32,.5,'#6a4a32',-3.1,.46,0,s);box(.58,.08,.46,'#c96f4f',-3.1,.66,0,s,false)}
+   // window seat in the bay (reading nook) + his reading lamp
+   {const s=G('windowseat');s.userData.win=1;box(2.2,.5,.42,'#8a6a4a',-1,.55,4.49,s);box(2.1,.12,.4,'#e9c46a',-1,.86,4.49,s,false);box(.5,.32,.12,'#c96f4f',-1.7,1.06,4.62,s,false);box(.5,.32,.12,'#3f6f5a',-.3,1.06,4.62,s,false);
+    for(let i=0;i<4;i++)box(.12,.4,.3,['#7a2f45','#2f4f55','#b08a3a','#4a3a6a'][i],-.45+i*.14,1.12,4.5,s,false)}
+   {const l=G('lamp');cyl(.22,.26,.06,'#3a2a22',-2.6,.33,3.7,l,10);cyl(.03,.03,1.9,'#3a2a22',-2.6,1.3,3.7,l,6);cyl(.2,.36,.42,B13M.lampA,-2.6,2.4,3.7,l,10);const q=v(-2.6,3.7);glowPt(q.x,2.35,q.z,'#ffcf80',2.2,.5,1,'cottage');LIGHTSPOTS.push({pid:p.id,lx:-2.6,ly:2.4,lz:3.7,color:'#ffcf80',kind:'lamp'})}
+   // the late-show TV: a wood cabinet in the living corner; its 128x96 screen is drawn only while visible (b14Frame)
+   {const t=G('tv');box(.78,.34,1.1,'#6a4a2a',xl+.39,.47,3.15,t);for(const z of [2.7,3.6])box(.06,.2,.06,'#4a3020',xl+.6,.37,z,t,false);box(.78,.86,1.1,'#7a5a32',xl+.39,1.07,3.15,t);box(.04,.66,.84,'#2a2a2a',xl+.79,1.1,3.08,t,false);
+    for(const z of [3.62])cyl(.04,.04,.03,'#d9b26a',xl+.8,.9,z,t,6).rotation.z=Math.PI/2;
+    const c=document.createElement('canvas');c.width=128;c.height=96;const tx=new THREE.CanvasTexture(c);const m=new THREE.Mesh(new THREE.PlaneGeometry(.78,.585),new THREE.MeshBasicMaterial({map:tx}));m.position.set(xl+.815,1.11,3.08);m.rotation.y=Math.PI/2;t.add(m);
+    TV.c=c;TV.t=tx;TV.mesh=m;TV.p=p;const q=v(xl+.82,3.08);TV.x=q.x;TV.z=q.z;tvDraw(false)}
+   // bed nook (back-left) behind a curtain rod at z=-2.6
+   {const b=G('bed');box(2.9,.45,1.75,'#6a4a32',-4.6,.52,-3.8,b);box(2.8,.25,1.65,'#f4ead8',-4.55,.87,-3.8,b,false);box(1.9,.14,1.7,'#c96f4f',-4.1,1.03,-3.8,b,false);for(let i=0;i<3;i++)box(.5,.01,1.7,['#e9c46a','#3f6f5a','#7a2f45'][i],-4.6+i*.6,1.11,-3.8,b,false);
+    box(.62,.18,1.2,'#fffaf2',-5.6,1.06,-3.8,b,false);box(.12,1.1,1.75,'#5a3a22',-6.05,.85,-3.8,b,false)}
+   {const c=G('curtain');cyl(.035,.035,4.6,'#b08a3a',-3.9,3.45,-2.6,c,6).rotation.z=Math.PI/2;box(1.0,2.9,.07,'#8a3a4a',-5.65,1.98,-2.6,c,false);box(.8,2.9,.07,'#8a3a4a',-2.05,1.98,-2.6,c,false)}
+   // bottle-cap display shelf mid back wall (B17 fills p.capShelf with an InstancedMesh)
+   {const s=G('capshelf');box(2.4,1.5,.1,'#6a4a32',0,3.15,zb+.05,s);for(const y of [2.65,3.1,3.55])box(2.3,.04,.16,'#8a6a4a',0,y,zb+.14,s,false);box(2.5,.08,.2,'#5a3a22',0,3.92,zb+.1,s,false);
+    p.capShelf={x0:-1.05,x1:1.05,ys:[2.69,3.14,3.59],z:zb+.16,n:24}}
+   // kitchen: iron stove at the end of the counter, jar shelf above, round table + 2 chairs (teaA/teaB face each other), pendant
+   {const k=G('counter');box(1.4,1.15,.65,'#7a5a3a',2.3,.875,zb+.325,k);box(1.44,.08,.69,'#e8dcc4',2.3,1.49,zb+.345,k);box(.5,.06,.36,'#9aa4ac',2.0,1.5,zb+.33,k,false)}
+   {const s=G('stove');box(.9,1.1,.65,'#2a2a30',3.45,.85,zb+.325,s);for(const x of [3.25,3.65])cyl(.14,.14,.03,'#5a5a66',x,1.415,zb+.3,s,10);cyl(.18,.14,.22,'#c96f4f',3.25,1.54,zb+.3,s,10);box(.6,.04,.04,'#c9d0d8',3.45,.65,zb+.66,s,false)}
+   {const s=G('kshelf');box(2.3,.06,.3,'#7a5a3a',2.75,2.6,zb+.15,s);for(let i=0;i<6;i++)cyl(.09,.09,.24,['#c99a5a','#e9886b','#f4f1ea','#7a4a3a','#e9b949','#3f8f8a'][i],1.85+i*.36,2.75,zb+.15,s,8);box(.5,.3,.05,'#c9d0d8',2.2,1.24,zb+.3,s,false)}
+   {const t=G('table');cyl(.6,.6,.06,'#8a6040',3.6,1.06,-1.8,t,16);cyl(.07,.07,.72,'#6a4a32',3.6,.66,-1.8,t,8);cyl(.3,.34,.05,'#6a4a32',3.6,.33,-1.8,t,10);cyl(.12,.1,.12,'#f4ead8',3.75,1.15,-1.7,t,8);cyl(.06,.06,.1,'#c96f4f',3.45,1.14,-1.95,t,6)}
+   for(const [x,yaw] of [[2.6,Math.PI/2],[4.6,-Math.PI/2]]){const c=G('chair'),q=new THREE.Group();q.position.set(x,0,-1.8);q.rotation.y=yaw;c.add(q);box(.5,.07,.5,'#7a5a3a',0,.78,0,q);for(const sx of [-1,1])for(const sz of [-1,1])box(.05,.48,.05,'#6a4a32',sx*.2,.54,sz*.2,q,false);box(.5,.6,.05,'#7a5a3a',0,1.1,-.23,q,false)}
+   {const l=G('pendant');cyl(.015,.015,1.25,'#2a2a2a',3.6,p.h-.62,-1.8,l,4);cyl(.12,.32,.3,B13M.lampA,3.6,4.1,-1.8,l,10);const q=v(3.6,-1.8);glowPt(q.x,3.95,q.z,'#ffcf80',2.2,.5,1,'cottage');LIGHTSPOTS.push({pid:p.id,lx:3.6,ly:4,lz:-1.8,color:'#ffcf80',kind:'pendant'})}
+   // the back door from inside (the B9 leaf is flush on the outer face)
+   {const b=G('backdoor');b.userData.flat=1;box(1.6,2.45,.05,'#3f6f5a',5,1.53,zb+.03,b,false);box(1.8,.1,.06,S_TRIM,5,2.8,zb+.04,b,false);cyl(.05,.05,.06,'#d9b26a',4.4,1.5,zb+.08,b,6).rotation.x=Math.PI/2}
+   // coat pegs + hat by the front door (right wall), a little tea-towel rail
+   {const s=G('pegs');box(.06,.14,1.3,'#6a4a32',xr-.03,2.3,2.8,s);for(let i=0;i<3;i++)box(.18,.05,.05,'#d9b26a',xr-.1,2.25,2.35+i*.45,s,false);box(.12,.7,.4,'#d9b26a',xr-.12,1.95,2.8,s,false)}
+   // painting-gift slots (applyPaintings hangs Wendell's gifts here, in p.inner)
+   p.gslots=[[xl+.55,3.7,0,Math.PI/2],[xr-.06,3.3,1.2,-Math.PI/2],[xr-.06,3.3,-.8,-Math.PI/2]]}};
+const S_TRIM='#f4ead8';
+// ---------- the late-show TV (Wendell's): 128x96, 5 fps, only while visible + on ----------
+const TV={c:null,t:null,mesh:null,p:null,x:0,z:0,on:false,force:null,n:0,acc:0,film:null,fr:new THREE.Frustum(),pm:new THREE.Matrix4(),v:new THREE.Vector3()};
+function tvDraw(on){if(!TV.c)return;const g=TV.c.getContext('2d');if(!on){g.fillStyle='#1c2024';g.fillRect(0,0,128,96);g.fillStyle='rgba(255,255,255,.08)';g.beginPath();g.ellipse(40,30,34,18,-.4,0,7);g.fill();TV.t.needsUpdate=true;return}
+  const f=TV.film||(TV.film=FILMS[hstr(dkey(Date.now())+'tv')%FILMS.length]),L=MOVIE_LEN,el=(Date.now()/1000)%L;drawFilm({sc:{c:TV.c,t:TV.t},film:f,el,len:L});TV.n++}
+function tvVisible(){const p=TV.p;if(!TV.mesh||!p||!p.inner||!p.inner.visible)return false;const cp=camera.position;if(Math.hypot(cp.x-TV.x,cp.z-TV.z)>70)return false;
+  TV.pm.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);TV.fr.setFromProjectionMatrix(TV.pm);TV.v.set(TV.x,1.1,TV.z);return TV.fr.containsPoint(TV.v)}
+// drop-in seats (tag 'dropin', cap 1): couchC + porchC at Mocha's, fireC + porchC at Wendell's. B17 adds the walker to a hangout scene when seated in one.
+function b14Seats(){const add=(pid,sn,h,y0,view)=>{const p=byId[pid],s=p.spots[sn],q=toWorld(p,s[0],s[1]),yaw=s[2]+p.ry;return seatAdd(pid,q.x,q.z,yaw,view,{tag:'dropin',cap:1,occ:[null],sl:[[0,0,yaw]],b:0,h,y0,spot:sn})};
+  add('home','couchC',.46,.65,'room');add('home','porchC',.03,.65,'street');add('neighbor','fireC',.38,.3,'room');add('neighbor','porchC',.18,.12,'street')}
+// ---------- Mocha's house: pair spots, pouf, note hook, rooms, the hidden empty-house set, then one merge ----------
+const NEST={force:false,on:false,g:null,n:0};
+function b14Home(p,grp,fw,sm){const D=p.d;
+  Object.assign(p.spots,{couchA:[-1,-.3,0],couchB:[1,-.3,0],couchC:[1.9,1.15,Math.PI],teaA:[-10.7,0,Math.PI/2],teaB:[-7.3,0,-Math.PI/2],porchA:[-.55,10.05,0],porchB:[.55,10.05,0],porchC:[1.45,9.95,0],
+    desk2:[-1.55,-4.7,-Math.PI/2],stove:[-12.8,-4.9,Math.PI],door:[0,5.6],blanket:[7.6,4.6,Math.PI/2],boxA:[-9.65,4.2,Math.PI/2],boxB:[-7.55,4.2,-Math.PI/2],floorA:[-1,-3.1,0],floorB:[1,-3.1,0],bulb:[0,-3.1]});
+  p.rooms=HOME_ROOMS.home;
+  // couchC: a velvet pouf (drop-in seat)
+  {const q=new THREE.Group();q.userData.kind='pouf';grp.add(q);cyl(.42,.46,.42,'#b08a3a',1.9,.86,1.15,q,14);cyl(.36,.36,.04,'#c99a4a',1.9,1.08,1.15,q,14)}
+  // note hook beside the lancet door (fades with the bay); B9 hangs Mocha's notes from it (p.noteHook in door space)
+  box(.22,.3,.04,sm('#b08a3a'),1.5,2.6,D/2+2.22,fw,false);const hk=new THREE.Mesh(new THREE.TorusGeometry(.07,.018,6,10,Math.PI),sm('#b08a3a'));hk.position.set(1.5,2.43,D/2+2.27);hk.rotation.z=Math.PI;fw.add(hk);p.noteHook=[1.5,2.08];
+  // the empty-house set (hidden until FEAT.nest && S.v2fresh, B32): blanket by the bedroom window, a moving box as a table, two folded blankets as floor cushions, a bare bulb
+  const ng=new THREE.Group();ng.userData.dyn=1;ng.name='nest';const tmp=new THREE.Group(),y=.65;
+  box(2.2,.06,1.2,'#7a8aa0',7.6,y+.03,4.6,tmp);box(2.0,.04,1.0,'#9fb0c4',7.6,y+.08,4.6,tmp);box(.7,.16,.5,'#f4ead8',8.4,y+.16,4.6,tmp);box(.9,.08,1.1,'#8a9ab0',6.9,y+.12,4.6,tmp).rotation.z=.15;
+  box(1.1,.8,.8,'#c8a272',-8.6,y+.4,4.2,tmp);box(1.12,.04,.2,'#e8dcb8',-8.6,y+.81,4.2,tmp);box(.3,.02,.3,'#f4ead8',-8.4,y+.83,4.1,tmp);cyl(.08,.07,.14,'#f4ead8',-8.85,y+.89,4.25,tmp,8);
+  for(const x of [-1,1]){box(.9,.18,.7,'#6f8a7a',x,y+.09,-3.1,tmp);box(.86,.04,.66,'#8fae9c',x,y+.2,-3.1,tmp)}
+  cyl(.012,.012,1.9,'#2a2a2a',0,p.h+.4-.95,-3.1,tmp,4);cyl(.06,.06,.12,'#5a5a5a',0,p.h+.4-1.96,-3.1,tmp,6);
+  const B=Batcher(Infinity);B.addObj(tmp);B.build({vc:BAKEM||(BAKEM=new ToonM({color:'#ffffff',vertexColors:true}))},false,ng);
+  const bulb=new THREE.Mesh(SPH,lam('#fff2c8',{emissive:'#ffd890',emissiveIntensity:1}));bulb.scale.set(.1,.13,.1);bulb.position.set(0,p.h+.4-2.12,-3.1);ng.add(bulb);
+  ng.traverse(o=>{if(o.isMesh)o.userData.bk=1});ng.visible=false;NEST.g=ng;
+  p.nestBox=[[6.5,4,8.7,5.2,'blanket'],[-9.15,3.8,-8.05,4.6,'box'],[-1.45,-3.45,-.55,-2.75,'floorA'],[.55,-3.45,1.45,-2.75,'floorB']];
+  // merge the furnished interior: every static mesh inside the walls (not the hideW walls, the shell, the floor, the record disc) -> p.inner
+  const R=new THREE.Group();R.name='inner';grp.add(R);p.inner=R;const skip=new Set([p.rp]);(p.hideW||[]).forEach(h=>h[0].forEach(m=>skip.add(m)));const sh=new Set((p.shell||[]).concat(p.roofShell||[])),W2=p.w/2,D2=p.d/2,mv=[],gl=[];
+  for(const o of grp.children.slice()){if(o===R||skip.has(o)||o===fw)continue;const x=o.position.x,z=o.position.z;if(Math.abs(x)>W2-.1||Math.abs(z)>D2-.1)continue;
+    if(o.isSprite){if(o!==p.screenGlow)gl.push(o);continue}if(o.isGroup){mv.push(o);continue}if(!o.isMesh||o.isInstancedMesh)continue;
+    const ms=Array.isArray(o.material)?o.material:[o.material];if(ms.some(m=>sh.has(m)))continue;const gg=o.geometry;if(!gg.boundingBox)gg.computeBoundingBox();if(gg.boundingBox.max.x-gg.boundingBox.min.x>p.w*.8)continue;mv.push(o)}
+  mv.forEach(o=>R.add(o));// same transforms: R sits at the group origin
+  // halos of candles + the floor lamp -> GLOWPTS (one pooled draw instead of a sprite each)
+  gl.forEach(s=>{const q=toWorld(p,s.position.x,s.position.z),m=s.material;glowPt(q.x,s.position.y,q.z,'#'+m.color.getHexString(),s.scale.x,m.opacity,nightGlows.includes(s)?1:0,'home');grp.remove(s)});
+  // identical materials (bubbles, lancet panes, ...) share one, so the merge makes one chunk each
+  const sig=new Map();R.traverse(o=>{if(!o.isMesh)return;const m=o.material;if(Array.isArray(m))return;const k=[m.type,m.color&&m.color.getHex(),m.emissive&&m.emissive.getHex(),m.emissiveIntensity,m.opacity,m.transparent,m.map&&m.map.uuid,m.side,m.alphaTest].join('|');if(sig.has(k))o.material=sig.get(k);else sig.set(k,m)});
+  if(CAPTG){const keep=p.sol;p.sol=[];capMeshes(R,p,CAPTG);p.solB=p.sol;p.sol=keep||[]}R.add(ng);innerMerge(p)}
+
 const INTERIORS={
  // B13: the station's interior is LAYOUTS.station (in p.inner, culled); this builds only what lives outside or on the shell:
  // the clock cupola, the platform out back (canopy, benches, departure board p.board, sign) and the platform door panel
@@ -1608,7 +1751,7 @@ function dollhouse(p,grp){// a gothic Victorian house with an open front so you 
   sign("Mocha's",2.4,grp,2.2,1.7,FZ1+.42,'#e8dff0','#3b3446');
   const roseC=SEASON_KEY==='winter'?'#e8eef4':SEASON_KEY==='spring'?'#f29fb5':'#8a1f3a';for(let i=0;i<16;i++){const x=FX0+1+i*((FX1-FX0-2)/15);if(Math.abs(x)<3)continue;const b=new THREE.Mesh(ballG(.55),phongFlat(SEASON_KEY==='winter'?'#cfd8e2':'#2f4f3a'));b.position.set(x,.5,FZ1-1);grp.add(b);const f=new THREE.Mesh(new THREE.SphereGeometry(.16,6,6),lam(roseC));f.position.set(x+.2,.95,FZ1-.7);grp.add(f)}
   if(SEASON_KEY==='fall')for(const [x,z,s] of [[-1.8,D/2+3.5,1],[1.9,D/2+3.3,.8],[2.4,D/2+4,.6]]){const pk=new THREE.Group();for(const [ox,sc] of [[-.3,.8],[.3,.8],[0,1]]){const m=new THREE.Mesh(new THREE.SphereGeometry(.5,12,8),lam('#e8742a'));m.scale.set(sc*.7,.65,sc*.8);m.position.x=ox;pk.add(m)}cyl(.06,.08,.3,'#4f6a3a',0,.45,0,pk,6);pk.scale.setScalar(s);pk.position.set(x,.35*s+.3,z);grp.add(pk)}
-}
+  b14Home(p,grp,fw,sm)}
 function neighborHouse(x,z,ry,col,roofCol){const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=ry;const w=11,d=9,h=5.5;
   const side=wallTex(w,h,col,{}),front=wallTex(w,h,col,{front:1,door:'#2f3f5f'});box(w,h,d,[side,side,lam(roofCol),lam(roofCol),front,side],0,h/2,0,g);
   const r=gable(w,d,3.6,lam(roofCol));r.position.y=h;g.add(r);box(3,.3,2,'#8a6a4a',0,.15,d/2+1,g);scene.add(g)}
@@ -1618,7 +1761,7 @@ function grocery(p,grp){shop(p,grp);
   box(2,1.2,1,'#e7d8c3',-3.5,.6,p.d/2+2.6,grp);for(let k=0;k<5;k++){const b=new THREE.Mesh(new THREE.SphereGeometry(.25,8,6),lam('#c99a5a'));b.scale.set(1.4,.7,1);b.position.set(-4.2+k*.35,1.35,p.d/2+2.6);grp.add(b)}}
 function petStore(p,grp){shop(p,grp)}
 function drawIdleScreen(){const sc=byId.cinema&&byId.cinema.screen;if(!sc)return;const g=sc.c.getContext('2d');g.fillStyle='#1a1418';g.fillRect(0,0,320,180);g.fillStyle='#7a2f45';g.fillRect(0,0,320,180);g.fillStyle='rgba(0,0,0,.25)';for(let x=0;x<320;x+=16)g.fillRect(x,0,6,180);g.fillStyle='#f2c14e';g.font='800 20px ui-rounded,system-ui';g.textAlign='center';g.fillText('Rain City Cinema',160,84);g.font='600 12px system-ui';g.fillStyle='#fff6e0';g.fillText('classic films · daily',160,106);sc.t.needsUpdate=true}
-function drawFilm(){const c=byId.cinema;if(!c||!c.screen||!MOVIE)return;const g=c.screen.c.getContext('2d'),f=MOVIE.film,el=T-MOVIE.start,L=MOVIE.len,th=f.theme||'generic',W=320,H=180,k=el*.6;g.save();
+function drawFilm(o){const c=byId.cinema,sc=o?o.sc:c&&c.screen,M=o||MOVIE;if(!sc||!M)return;const g=sc.c.getContext('2d'),f=M.film,el=o?o.el:T-MOVIE.start,L=M.len,th=f.theme||'generic',W=320,H=180,k=el*.6;g.save();if(o)g.scale(sc.c.width/W,sc.c.height/H);
   const card=(lines,big)=>{g.fillStyle='#111';g.fillRect(0,0,W,H);g.strokeStyle='#ddd';g.lineWidth=2;g.strokeRect(14,12,W-28,H-24);g.strokeRect(20,18,W-40,H-36);g.fillStyle='#eee';g.textAlign='center';lines.forEach((t,i)=>{g.font=(i===0&&big?'700 22px Georgia,serif':'italic 14px Georgia,serif');g.fillText(t,W/2,H/2-((lines.length-1)*14)+i*28)})};
   if(el<7)card([f.title,f.year?String(f.year):'',f.by?'by '+f.by:''].filter(Boolean),true);
   else if(el>L-6)card(['The End'],true);
@@ -1634,13 +1777,7 @@ function drawFilm(){const c=byId.cinema;if(!c||!c.screen||!MOVIE)return;const g=
     else{for(let i=0;i<6;i++){g.fillStyle='#999';g.beginPath();g.ellipse((k*15+i*60)%W,40+i*10,30,10,0,0,7);g.fill()}g.fillStyle='#333';g.fillRect(0,140,W,40)}
     g.fillStyle='rgba(0,0,0,.65)';g.fillRect(0,H-30,W,30);g.fillStyle='#fff';g.font='italic 13px Georgia,serif';g.textAlign='center';g.fillText(sc[si].slice(0,52),W/2,H-11)}
   g.globalAlpha=.08+Math.random()*.06;g.fillStyle='#fff';g.fillRect(0,0,W,H);g.globalAlpha=1;g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=1;if(Math.random()<.4){const x=Math.random()*W;g.beginPath();g.moveTo(x,0);g.lineTo(x+Math.random()*4,H);g.stroke()}
-  const vg=g.createRadialGradient(W/2,H/2,H*.3,W/2,H/2,W*.65);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.55)');g.fillStyle=vg;g.fillRect(0,0,W,H);g.restore();c.screen.t.needsUpdate=true}
-function npchome(p,grp){const w=p.w,d=p.d,h=p.h;const side=wallTex(w,h,p.wall,{}),front=wallTex(w,h,p.wall,{front:1,door:'#3f6f5a',hole:[0,1.84,2.47,.3]});box(w,h,d,[side,side,lam(p.roof),lam(p.roof),front,side],0,h/2,0,grp);
-  const r=gable(w,d,3.6,lam(p.roof));r.position.y=h;grp.add(r);box(4.5,.3,2.2,'#8a6a4a',0,.15,d/2+1.1,grp);for(const s of [-1,1])box(.18,2.6,.18,'#fffaf2',s*2,1.45,d/2+2,grp);box(4.6,.2,2.4,'#6b4a3a',0,2.8,d/2+1.1,grp);
-  for(let i=0;i<7;i++){const b=new THREE.Mesh(new THREE.SphereGeometry(.07,6,6),lam(['#ffcf80','#f29fb5','#9fd3ff'][i%3],{emissive:['#ffb050','#f2709f','#6fb3ff'][i%3],emissiveIntensity:.9}));b.position.set(-1.8+i*.6,2.62-Math.sin(i/6*Math.PI)*.2,d/2+2.15);grp.add(b)}
-  box(1.6,.3,.6,'#8a6a4a',1.2,.75,d/2+1.5,grp);box(1.6,.6,.12,'#8a6a4a',1.2,1.05,d/2+1.25,grp);
-  for(const x of [-4.6,-2.8]){box(1.4,.35,3,'#5a4632',x,.18,d/2+4,grp);for(let k=0;k<5;k++){const v=new THREE.Mesh(ballG(.28),phongFlat(SEASON.snowy?'#dfe6ee':'#5f9f5a'));v.position.set(x+rand(-.4,.4),.5,d/2+2.8+k*.55);grp.add(v);if(!SEASON.snowy&&k%2){const f=new THREE.Mesh(new THREE.SphereGeometry(.1,6,6),lam(SEASON_KEY==='fall'?'#e8742a':'#e04a3a'));f.position.set(v.position.x+.15,.7,v.position.z);grp.add(f)}}}
-  box(.15,1.2,.15,'#5a4632',4.6,.6,d/2+5,grp);box(.8,.5,.5,'#3f6f5a',4.6,1.3,d/2+5,grp);sign('Wendell',1.8,grp,4.6,1.9,d/2+5.3,'#fffaf2','#3f6f5a')}
+  const vg=g.createRadialGradient(W/2,H/2,H*.3,W/2,H/2,W*.65);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.55)');g.fillStyle=vg;g.fillRect(0,0,W,H);g.restore();sc.t.needsUpdate=true}
 function cinema(p,grp){shop(p,grp);
   const mq=document.createElement('canvas');mq.width=512;mq.height=96;const mt=new THREE.CanvasTexture(mq);p.marquee={c:mq,t:mt};
   const mm=new THREE.Mesh(new THREE.BoxGeometry(11,2,.4),[lam('#2a2a33'),lam('#2a2a33'),lam('#2a2a33'),lam('#2a2a33'),new THREE.MeshBasicMaterial({map:mt}),lam('#2a2a33')]);mm.position.set(0,p.h+1.3,p.d/2+.6);grp.add(mm);
@@ -1900,7 +2037,7 @@ const DOORSPEC={cafe:[{style:'cafe'},{id:'cafe:back',back:1,x:-3,style:'inner',f
   arcade:[{kind:'double',style:'arcade',w:3.2}],bakery:[{style:'bakery'}],threads:[{style:'plum'}],nursery:[{style:'green'}],evergreen:[{kind:'double',style:'pine',w:3.2}],lantern:[{style:'lantern'}],
   townhall:[{kind:'double',style:'civic',w:2.6,h:4.1,y0:1.07,solid:1,dep:2,lamp:0,hours:[8,18]}],fogwell:[{kind:'double',style:'fogwell',w:2.6,h:2.8,y0:.44,flush:1,out:1,lamp:0}],
   home:[{style:'mocha',w:2.1,h:3,y0:.4,z:2.2,dep:2.55,lamp:0},{id:'home:gate',kind:'gate',style:'iron',w:3.6,h:1.95,z:4,tun:0,lamp:0}],
-  neighbor:[{style:'wendell',h:2.45,y0:.3,solid:1,dep:1.9,lamp:0}],willa:[{style:'willa',h:2.9,solid:1,dep:1.9,lamp:0}],cabin:[{id:'cabin',kind:'gate',style:'rail',w:3.2,h:1.25,z:10,tun:0,lamp:0}]};
+  neighbor:[{style:'wendell',x:2,h:2.45,y0:.3,lamp:0},{id:'neighbor:back',back:1,x:5,w:1.6,h:2.45,y0:.3,style:'wendell',flush:1,lamp:0}],willa:[{style:'willa',h:2.9,solid:1,dep:1.9,lamp:0}],cabin:[{id:'cabin',kind:'gate',style:'rail',w:3.2,h:1.25,z:10,tun:0,lamp:0}]};
 PLACES.forEach(p=>{const L=DOORSPEC[p.id];if(!L)return;p.doors=L.map((s,i)=>Object.assign({id:i?p.id+':'+i:p.id,kind:'swing',w:1.8,h:3,x:0,y0:0,z:0,dep:.34,lamp:1,tun:1},s));p.door=p.doors[0]});
 const DOORS=[],DBY={},DPL=[],NPC0={kind:'npc',keys:new Set(),home:null,staffOf:null},DT={acc:0,t1:0,day:''},OPEN_A=1.75,ZM4=new THREE.Matrix4().makeScale(0,0,0);
 const DIM=(()=>{const N=200,geo=new THREE.BoxGeometry(1,1,1),u1=new Float32Array(N*4),u2=new Float32Array(N*4),a1=new THREE.InstancedBufferAttribute(u1,4),a2=new THREE.InstancedBufferAttribute(u2,4);geo.setAttribute('dUv',a1);geo.setAttribute('dUv2',a2);
@@ -1975,11 +2112,11 @@ function occRebuild(){OCC.clear();agRead();for(const a of AGENTS){a.place=agWher
 function mochaHome(){try{return G.mode!=='trip'&&mocha.visible!==false&&(inHome(G.x,G.z)||(G.act&&G.act.p==='home'&&G.mode==='activity'))}catch(e){return false}}
 function mochaAwake(){try{return!G.sleep&&!asleepAt(hourAt(Date.now()))}catch(e){return true}}
 function wHomeAwake(){const h=new Date().getHours();return(W.dest==='inside'||W.dest==='yard'||W.dest==='porch')&&!W.path.length&&!(h>=22||h<7)}
-function agRead(){const h=hourAt(Date.now()),m=AG.mocha;m.x=G.x;m.z=G.z;m.gone=G.mode==='trip';m.awake=mochaAwake();m.act=(G.act&&G.act.doing)||G.mode;m.moving=G.mode==='travel';m.go=G.mode==='travel'&&G.act?G.act.p:null;m.room=G.act&&G.act.p===m.place?(G.act.s||'main'):null;
-  const w=AG.wendell;w.x=W.x;w.z=W.z;w.awake=!(h>=22||h<7);w.act=W.doing;w.moving=W.path.length>0&&W.busy<=0;w.go=W.dest==='inside'&&W.path.length?'neighbor':null;
+function agRead(){const h=hourAt(Date.now()),m=AG.mocha;m.x=G.x;m.z=G.z;m.gone=G.mode==='trip';m.awake=mochaAwake();m.act=(G.act&&G.act.doing)||G.mode;m.moving=G.mode==='travel';m.go=G.mode==='travel'&&G.act?G.act.p:null;m.room=m.place&&byId[m.place]&&byId[m.place].rooms?((G.act&&G.act.p===m.place&&G.act.s&&spotRoom(m.place,G.act.s))||roomAt(m.place,G.x,G.z)):(G.act&&G.act.p===m.place?(G.act.s||'main'):null);
+  const w=AG.wendell;w.x=W.x;w.z=W.z;w.awake=!(h>=22||h<7);w.act=W.doing;w.moving=W.path.length>0&&W.busy<=0;w.go=W.dest==='inside'&&W.path.length?'neighbor':null;w.room=w.place==='neighbor'?((W.spot&&spotRoom('neighbor',W.spot))||roomAt('neighbor',W.x,W.z)):null;
   const y=AG.you;y.x=YOU.x;y.z=YOU.z;y.moving=YOU.moving>0;y.gone=camS.mode!=='walk';y.act=y.gone?'watching':'walking';
   for(const k of KEEPERS){const a=AG[k.id],p=byId[k.shop],o=isOpen(p,h);const wp=toWorld(p,k.pos[0],k.pos[1]);a.x=wp.x;a.z=wp.z;a.room=o?'counter':'back';a.awake=o||!(h>=22||h<6);a.act=o?'minding the shop':'resting in the back room'}}
-function agWhere(a){if(a.kind==='keeper')return a.staffOf;if(a.gone)return null;if(a.kind==='wendell'&&W.dest==='inside'&&!W.visible)return'neighbor';return placeAt(a.x,a.z)}
+function agWhere(a){if(a.kind==='keeper')return a.staffOf;if(a.gone)return null;if(a.kind==='wendell'&&W.inside)return'neighbor';return placeAt(a.x,a.z)}
 function agSync(st){if((AGT.t-=st)>0)return;AGT.t=.25;agRead();for(const a of AGENTS){const pl=agWhere(a);if(pl===a.place)continue;
   if(a.place){const d=DBY[a.place];if(d)d.pass(a,'out');else{occDel(a.place,a.id);a.place=null}}if(pl){const d=DBY[pl];if(d)d.pass(a,'in');else{a.place=pl;occAdd(pl,a.id)}}}notesSync()}
 // ---------- permissions ----------
@@ -2017,7 +2154,7 @@ function notesSync(){const want=[];if(!mochaHome()){const p=G.mode==='trip'?null
   for(const [pid,text] of want){if(NOTES.some(N=>N.pid===pid))continue;const N=NOTES.find(n=>!n.pid),d=DBY[pid];if(!N||!d)continue;N.pid=pid;N.text=text;
     const uv=DATL.cell('note:'+N.k,'note',(g,w,h)=>{g.fillStyle='#fffaf2';g.fillRect(2,4,w-4,h-6);g.fillStyle='rgba(242,193,78,.7)';g.fillRect(w/2-14,0,28,9);g.fillStyle='#3a3a4a';g.textAlign='center';g.textBaseline='middle';
       const L=text.replace(/ -([MW])$/,'\n-$1').split('\n');g.font=`600 15px ${SGF}`;L.forEach((l,i)=>{sgFit(g,l,15,8,w-12,600);g.fillText(l,w/2,L.length>1?24+i*20:34)})});diUV(N.ii,uv,uv);
-    const L0=d.leaves[0];L0.piv.add(N.nd);N.nd.position.set(L0.sg*L0.lw*.5,L0.lh*.48,.08);d.note=N.ii;diShow(N.ii,true)}}
+    const L0=d.leaves[0],hk=d.p.noteHook;if(hk&&d.id===d.p.id){d.fg.add(N.nd);N.nd.position.set(hk[0],hk[1],.1)}else{L0.piv.add(N.nd);N.nd.position.set(L0.sg*L0.lw*.5,L0.lh*.48,.08)}d.note=N.ii;diShow(N.ii,true)}}
 function noteNear(x,z){for(const N of NOTES){if(!N.pid)continue;const d=DBY[N.pid];if(d&&Math.hypot(x-d.wx,z-d.wz)<3)return N.text}return''}
 // ---------- the 20 Hz door tick (from frame) ----------
 function updateDoors(dt){DT.acc+=dt;if(DT.acc<.05)return;const st=Math.min(.3,DT.acc);DT.acc=0;doorTick(st)}
@@ -2090,8 +2227,8 @@ const bigCache=new Map();function paintBig(pt){let u=bigCache.get(pt.id);if(!u){
 function framedPainting(pt,sc=1){const g=new THREE.Group();box(1.75*sc,1.35*sc,.08,'#b08a3a',0,0,0,g,false);const m=new THREE.Mesh(new THREE.PlaneGeometry(1.52*sc,1.12*sc),new ToonM({map:new THREE.CanvasTexture(paintCanvas(pt))}));m.position.z=.05;g.add(m);return g}
 const paintObjs={};
 function applyPaintings(){for(const k in paintObjs){paintObjs[k].parent&&paintObjs[k].parent.remove(paintObjs[k]);delete paintObjs[k]}
-  let slot=0;S.paintings.forEach(pt=>{let o=null;if(pt.where==='home'&&slot<PAINT_SLOTS.length){const [x,y,z,ry]=PAINT_SLOTS[slot++];o=framedPainting(pt,.85);o.position.set(x,y,z);o.rotation.y=ry;byId.home.obj.add(o)}
-    else if(String(pt.where).startsWith('gift:')){const who=pt.where.slice(5);if(who==='wendell'){o=framedPainting(pt,.8);o.position.set(-2.8,3.4,byId.neighbor.d/2+.06);byId.neighbor.obj.add(o)}else if(KB[who]){const p=byId[KB[who].shop];if(!p.giftHung){o=framedPainting(pt,1.3);o.position.set(p.id==='cinema'?5.5:0,p.h-1.9,-p.d/2+.36);p.obj.add(o);p.giftHung=true}}}
+  let slot=0,wg=0;S.paintings.forEach(pt=>{let o=null;if(pt.where==='home'&&slot<PAINT_SLOTS.length){const [x,y,z,ry]=PAINT_SLOTS[slot++];o=framedPainting(pt,.85);o.position.set(x,y,z);o.rotation.y=ry;byId.home.obj.add(o)}
+    else if(String(pt.where).startsWith('gift:')){const who=pt.where.slice(5);if(who==='wendell'){const nb=byId.neighbor,G2=nb.gslots||[[-2.8,3.4,nb.d/2+.06,0]],sl=G2[wg++%G2.length];o=framedPainting(pt,.8);o.position.set(sl[0],sl[1],sl[2]);o.rotation.y=sl[3];(nb.inner||nb.obj).add(o)}else if(KB[who]){const p=byId[KB[who].shop];if(!p.giftHung){o=framedPainting(pt,1.3);o.position.set(p.id==='cinema'?5.5:0,p.h-1.9,-p.d/2+.36);p.obj.add(o);p.giftHung=true}}}
     if(o)paintObjs[pt.id]=o});Object.values(byId).forEach(p=>{p.giftHung=false})}
 function makePainting(subjectTxt,title,t=Date.now(),choice){const fav=S.favColor||pick(PALETTE);const pt={id:'pt'+Date.now().toString(36)+Math.floor(Math.random()*99),title:String(title||'Untitled').slice(0,50),subject:subjectOf(subjectTxt),raw:String(subjectTxt||'').slice(0,60),colors:[fav,pick(PALETTE),pick(PALETTE),pick(PALETTE)],seed:Math.floor(Math.random()*1e9),t,where:'stack'};
   S.paintings.unshift(pt);if(S.paintings.length>24){const old=S.paintings.findIndex((x,i)=>i>8&&x.where==='stack');if(old>0)S.paintings.splice(old,1);else S.paintings.pop()}
@@ -2196,7 +2333,7 @@ function b8World(){const W=pbG();
     postPlaque(T,hu,p.id==='grocery'?-1.6:-2.5,p.d/2+.75,0,.9,.45,1.05);
     if(p.soon)postPlaque(T,SIGN.cell('soon',sgCard({edge:'#6a4a32',bg:'#2f3f3a',fg:'#fffaf2',lh:26,lines:[['coming',20,'#fffaf2'],['soon!',26,'#ffd36b'],['stay tuned',13,'#9fb8a8']]})),0,0,0,1.3,1.3,.6,'#6a4a32')});
   // house-number plaques on Maple Row
-  const plq=(n,x,y,z,ry)=>pbSign(W,.62,.62,SIGN.cell('no:'+n,plaqueDraw(n)),x,y,z,ry);plq('13',37.8,1.85,53.42,0);plq('11',16.3,2.5,44.57,0);plq('18',15.7,2.5,67.43,Math.PI);plq('20',82.3,2.5,48.57,0);
+  const plq=(n,x,y,z,ry)=>pbSign(W,.62,.62,SIGN.cell('no:'+n,plaqueDraw(n)),x,y,z,ry);plq('13',37.8,1.85,53.42,0);plq('11',17.55,2.2,47.36,0);plq('18',15.7,2.5,67.43,Math.PI);plq('20',82.3,2.5,48.57,0);
   // Drizzle Alley: brick lane, string lights between the café and the record shop, a tabby napping on a crate
   box(3.5,.03,18.5,'#b98a74',-22.25,.04,14.75,W,false);const al=[];
   for(const z of [8,11.5,15,18.5]){for(let i=0;i<7;i++){const u=i/6,x=-23.85+u*3.2,y=5.7-Math.sin(u*Math.PI)*.55;const b=new THREE.Mesh(SPH8,lam('#ffe6a0'));b.scale.setScalar(.09);b.position.set(x,y,z+(i%2)*.06);pbW(b);W.add(b);al.push(glowPt(x,y,z,['#ffd36b','#ffb0a0','#ffe6a0'][i%3],1.2,.7,1,'alley'))}box(3.4,.02,.02,'#26262c',-22.25,5.55,z,W,false)}
@@ -2245,7 +2382,7 @@ function b11Props(){const W=pbG(),B=SQUARE.bench,nd=byId.needle;
   for(const a of [-.85,-.28,.28,.85]){const x=96+Math.cos(a)*22.6,z=22+Math.sin(a)*18.3,ry=Math.atan2(96-x,22-z);B(W,x,z,ry);seatAdd('park',x,z,ry,'water')}
   for(const [x,z] of [[-34,21.8],[-30.5,22.3],[-27,21.8]])seatAdd('cafe',x,z,0,'street',{tag:'patio',b:0,sl:[[-.95,0,Math.PI/2],[.95,0,-Math.PI/2]]});
   seatAdd('home',40,52,0,'street',{tag:'porch',b:0,h:.68});
-  B(W,17.4,45.5,0);seatAdd('neighbor',17.4,45.5,0,'street',{tag:'porch'});
+  seatAdd('neighbor',10.5,46.4,0,'street',{tag:'porch',h:.66});
   B(W,45.5,67.6,Math.PI);seatAdd('cabin',45.5,67.6,Math.PI,'street',{tag:'porch'});
   {const y=navFloor(-30,93)-.05,g=pbG(-30,93,Math.PI);g.position.y=y;W.add(g);B(g,0,0,0);seatAdd('hill',-30,93,Math.PI,'sky',{y0:y})}
   for(const sx of [-1,1]){const q=toWorld(nd,sx*2.9,3.6),ry=Math.atan2(sx*2.9,3.6),g=pbG(q.x,q.z,ry);g.position.y=nd.deckY+1.45;W.add(g);B(g,0,0,0);seatAdd('needle',q.x,q.z,ry,'sky',{tag:'deck',y0:nd.deckY+1.45,b:0})}
@@ -2257,7 +2394,7 @@ function b11Props(){const W=pbG(),B=SQUARE.bench,nd=byId.needle;
     for(const s of [-.45,.45]){box(.06,.62,.06,'#3a4a5a',s,.31,-.3,g,false);box(.06,.62,.06,'#3a4a5a',s,.31,.3,g,false);box(.06,.06,.66,'#3a4a5a',s,.62,0,g,false)}box(1.0,.05,.05,'#3a4a5a',0,.12,0,g,false);
     RACKS.push({pid:p.id,x,z,yaw:ry,px:x+D.nx*.55,pz:z+D.nz*.55})}
   pbDone(W)}
-b8World();b11Props();const B8CONV=b8Glows();const PBMESH=PB.build(Object.assign({fogwin:FOGWELL.mat},PBM),{vc:true});
+b8World();b11Props();b14Seats();const B8CONV=b8Glows();const PBMESH=PB.build(Object.assign({fogwin:FOGWELL.mat},PBM),{vc:true});
 // boats: ferry, sailboats, and the occasional orca
 const ferry=new THREE.Group();{box(5,1.6,16,'#f4f1ea',0,.8,0,ferry);box(4.6,1.6,10,'#3f7f5a',0,2.4,0,ferry);box(4.2,1.4,7,'#f4f1ea',0,3.9,0,ferry);cyl(.5,.5,2,'#3f7f5a',0,5.4,0,ferry,8);const fl=glow('#fff3c8',6,.4);fl.position.y=4;ferry.add(fl)}
 scene.add(ferry);const FERRY={dockX:-92,dockZ:46,farX:-300,period:90};
@@ -3185,7 +3322,7 @@ function LW(f,lx,y,lz){const c=Math.cos(f.ry),s=Math.sin(f.ry);return[f.x+lx*c+l
 // storefronts + houses that get decorations: y = light line under the roof edge, fz = its depth, door = front wall, pk = pumpkin x
 function holFronts(){const o=[];PLACES.forEach(p=>{if(!p.obj||!p.w||p.secret)return;if(p.kind&&!['grocery','petstore','cinema','market'].includes(p.kind))return;const gab=p.id==='thrift'||p.id==='bookstore';
     o.push({id:p.id,x:p.x,z:p.z,ry:p.ry,w:p.w,d:p.d,h:p.h,y:gab?p.h-.12:p.h+.2,fz:p.d/2+(gab?.4:.6),door:p.d/2+.07,pk:p.id==='phones'?-2:2,shop:1})});
-  const n=byId.neighbor;o.push({id:'neighbor',x:n.x,z:n.z,ry:n.ry,w:11,d:9,h:5.5,y:5.4,fz:4.95,door:4.56,pk:-1.5,house:1});HOUSES.forEach((h,i)=>o.push({id:'h'+i,x:h.x,z:h.z,ry:h.ry,w:11,d:9,h:5.5,y:5.4,fz:4.95,door:4.56,pk:-1.1,house:1}));return o}
+  const n=byId.neighbor;o.push({id:'neighbor',x:n.x,z:n.z,ry:n.ry,w:13,d:10,h:5.5,y:5.4,fz:5.45,door:5.06,pk:-1.5,house:1});HOUSES.forEach((h,i)=>o.push({id:'h'+i,x:h.x,z:h.z,ry:h.ry,w:11,d:9,h:5.5,y:5.4,fz:4.95,door:4.56,pk:-1.1,house:1}));return o}
 function holString(K,pins,cols,sp=.8,sag=.3){for(let i=0;i<pins.length-1;i++){const a=pins[i],b=pins[i+1],L=Math.hypot(b[0]-a[0],b[2]-a[2]),n=Math.max(2,Math.round(L/sp));for(let j=0;j<n;j++){const u=j/n;K.add(a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u-Math.sin(u*Math.PI)*sag,a[2]+(b[2]-a[2])*u,0,1,1,1,cols[(HOL.ci++)%cols.length])}}const e=pins[pins.length-1];K.add(e[0],e[1],e[2],0,1,1,1,cols[(HOL.ci++)%cols.length])}
 function frontString(K,f,cols,dy=0,sp=.8){const W=f.w-.7,n=Math.max(1,Math.round(W/2.6)),pins=[];for(let i=0;i<=n;i++)pins.push(LW(f,-W/2+W*i/n,f.y+dy,f.fz));holString(K,pins,cols,sp,.3)}
 const HOMEF=()=>{const h=byId.home;return{x:h.x,z:h.z,ry:h.ry}};
@@ -3413,7 +3550,7 @@ function applyDecision(d){if(G.mode==='trip')return;
   if(d.ask&&own(KB,d.ask)){const k=KB[d.ask];if(isOpen(byId[k.shop])&&known(byId[k.shop])){startAct({p:k.shop,s:'counter',doing:String(d.doing||'asking '+k.name+' a question').slice(0,40),tags:['people','learning'],need:{social:30,curious:35},fx:'ask',keeper:k.id,question:d.question?String(d.question).slice(0,120):null,mind:true},d.say);return}}
   if(d.job&&d.place){const j=ACTS.find(a=>a.p===d.place&&a.fx==='job');if(j&&isOpen(byId[j.p])&&known(byId[j.p])){startAct({...j,doing:String(d.doing||j.doing).slice(0,40),mind:true},d.say);return}}
   if(d.place&&own(byId,d.place)&&!isOpen(byId[d.place])){const c=localChoose();if(c.act)startAct(c.act);else exploreToward(c.explore);return}
-  if(d.place==='cinema'&&(d.film||d.spot==='seat'||/movie|film|watch/i.test(d.doing||''))){const f=d.film&&d.film.title?{title:String(d.film.title).slice(0,60),year:+d.film.year||'',by:String(d.film.by||'').slice(0,50),theme:FILM_THEMES.includes(d.film.theme)?d.film.theme:'generic',scenes:(Array.isArray(d.film.scenes)?d.film.scenes:[]).slice(0,6).map(x=>String(x).slice(0,80)),facts:(Array.isArray(d.film.facts)?d.film.facts:[]).slice(0,3).map(x=>String(x).slice(0,220))}:null;startAct({p:'cinema',s:'seat',doing:f?('watching "'+f.title+'"').slice(0,40):'watching a movie',tags:['movies','stories'],need:{fun:45,curious:25},fx:'movie',film:f,mind:true},d.say);return}if((d.place==='wendell'||d.place==='neighbor')&&W.visible&&W.busy<=0){const t=ACTS.find(a=>a.npc);startAct({...t,doing:String(d.doing||t.doing).slice(0,40),mind:true},d.say);return}if(d.place==='wendell'||d.place==='neighbor')d.place='home';if(d.explore){const hidden=PLACES.filter(p=>!known(p));if(hidden.length){exploreToward(pick(hidden));if(d.say)say(d.say,3.5);return}}
+  if(d.place==='cinema'&&(d.film||d.spot==='seat'||/movie|film|watch/i.test(d.doing||''))){const f=d.film&&d.film.title?{title:String(d.film.title).slice(0,60),year:+d.film.year||'',by:String(d.film.by||'').slice(0,50),theme:FILM_THEMES.includes(d.film.theme)?d.film.theme:'generic',scenes:(Array.isArray(d.film.scenes)?d.film.scenes:[]).slice(0,6).map(x=>String(x).slice(0,80)),facts:(Array.isArray(d.film.facts)?d.film.facts:[]).slice(0,3).map(x=>String(x).slice(0,220))}:null;startAct({p:'cinema',s:'seat',doing:f?('watching "'+f.title+'"').slice(0,40):'watching a movie',tags:['movies','stories'],need:{fun:45,curious:25},fx:'movie',film:f,mind:true},d.say);return}if((d.place==='wendell'||d.place==='neighbor')&&W.visible&&!W.inside&&W.busy<=0){const t=ACTS.find(a=>a.npc);startAct({...t,doing:String(d.doing||t.doing).slice(0,40),mind:true},d.say);return}if(d.place==='wendell'||d.place==='neighbor')d.place='home';if(d.explore){const hidden=PLACES.filter(p=>!known(p));if(hidden.length){exploreToward(pick(hidden));if(d.say)say(d.say,3.5);return}}
   const p=own(byId,d.place)?byId[d.place]:null;if(!p||!known(p)){const c=localChoose();if(c.act)startAct(c.act);else exploreToward(c.explore);return}
   const dg=String(d.doing||''),tmpl=(d.place==='home'&&(/calendar/i.test(dg)&&ACTS.find(a=>a.fx==='calendar')||/(writ\w*|send\w*) (back|a letter|to mom|to dad|to my parents)|letter to/i.test(dg)&&ACTS.find(a=>a.fx==='writeback')||(d.spot==='mailbox'||/check\w* (the |my )?mail/i.test(dg))&&ACTS.find(a=>a.fx==='mail')))||ACTS.find(a=>a.p===d.place&&(!d.spot||a.s===d.spot)&&a.fx!=='job')||{};const h=d.hobby&&hobbyByName(d.hobby);
   const spot=p.spots?(own(p.spots,d.spot)&&d.spot!=='main'&&tmpl.fx!=='mail'?d.spot:(tmpl.s||(d.place==='home'?'couch':null))):null;
@@ -3453,7 +3590,7 @@ function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;S.pantry=
   if(G.mode==='travel'&&!(isFinite(G.target.x)&&isFinite(G.target.z))){G.target=null;G.act=null;G.route=null;G.mode='idle';G.timer=1}
   if(!isFinite(G.x+G.z)){const hw=spotWorld('home','couch');G.x=hw.x;G.z=hw.z;G.vx=G.vz=0}
   if(G.mode==='travel'){if((G.trT=(G.trT||0)+dt)>240){G.act=null;G.route=null;if(G.biking)parkBike();G.mode='idle';G.timer=1}}else G.trT=0;
-  if(G.mode==='travel'&&G.act&&G.act.npc){if(!W.visible){G.act=null;G.mode='idle';G.timer=1}else{const w=wSpot();G.target.x=w.x;G.target.z=w.z}}
+  if(G.mode==='travel'&&G.act&&G.act.npc){if(!W.visible||W.inside){G.act=null;G.mode='idle';G.timer=1}else{const w=wSpot();G.target.x=w.x;G.target.z=w.z}}
   if(G.mode==='travel'){let sx=G.target.x,sz=G.target.z;const RT=G.route;if(RT){let q=RT.pts[RT.i];const dq=Math.hypot(q[0]-G.x,q[1]-G.z);if(dq<(G.biking?1.9:1.1)||(dq<5&&(q[0]-G.x)*G.vx+(q[1]-G.z)*G.vz<0)){if(RT.i===0&&RT.mount&&!G.biking)mountBike();RT.i++;if(RT.i>=RT.pts.length){G.route=null;if(!RT.loop)parkBike(RT.yaw)}else q=RT.pts[RT.i]}if(G.route){sx=q[0];sz=q[1]}}
     let nh=false;if(!G.biking&&!G.ride&&!G.lift&&!G.lh){const st=navMocha(dt);if(st){sx=st.x;sz=st.z;nh=st.hold;if(nh){G.vx*=Math.pow(.01,dt);G.vz*=Math.pow(.01,dt)}}}
     const dx=sx-G.x,dz=sz-G.z,ds=Math.max(.001,Math.hypot(dx,dz)),d=G.route?99:Math.max(.001,Math.hypot(G.target.x-G.x,G.target.z-G.z));const sp=G.biking?11*(1+level()*.02):(nh?0:S.needs.energy<15?4:8)*(1+level()*.02),ac=Math.min(1,dt*(G.biking?3.2:2.2));
@@ -3497,8 +3634,8 @@ function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;S.pantry=
   if((occT-=dt)<=0){occT=.2;const wk=camS.mode==='walk',tx=wk?YOU.x:G.x,tz=wk?YOU.z:G.z,ty=wk?floorAt(tx,tz)+1.3:G.y+.6,cp=camera.position;
     for(const q of PLACES){if(!q.interior||q.kind==='home'||!q.w)continue;if(!inBuilding(q,tx,tz)&&occSeg(q,cp.x,cp.y,cp.z,tx,ty,tz))q.occH=1;else q.occH=Math.max(0,(q.occH||0)-.2)}
     {const hm=byId.home;if(!inHome(tx,tz)&&occSeg(HOCC[0],cp.x,cp.y,cp.z,tx,ty,tz))hm.occH=1;else hm.occH=Math.max(0,(hm.occH||0)-.2);if(occSeg(HOCC[1],cp.x,cp.y,cp.z,tx,ty,tz))hm.occT=1;else hm.occT=Math.max(0,(hm.occT||0)-.2)}}
-  b12Frame(dt);
-  for(const q of PLACES){if(!q.interior||q.kind==='home')continue;const peek=inBuilding(q,G.x,G.z)||(camS.mode==='walk'&&inBuilding(q,YOU.x,YOU.z)),occ=q.occH>0,tgt=(peek||occ)?0:1;
+  b12Frame(dt);b14Frame(dt);
+  for(const q of PLACES){if(!q.interior||q.kind==='home')continue;const peek=inBuilding(q,G.x,G.z)||(camS.mode==='walk'&&inBuilding(q,YOU.x,YOU.z))||q.pk>0,occ=q.occH>0,tgt=(peek||occ)?0:1;
     if(q.walls){const c=Math.cos(q.ry),sn=Math.sin(q.ry),dx=camera.position.x-q.x,dz=camera.position.z-q.z,lx=dx*c-dz*sn,lz=dx*sn+dz*c,cin=Math.abs(lx)<q.w/2&&Math.abs(lz)<q.d/2;for(const [m,ax,sg] of q.walls)m.visible=!(((peek||occ)&&(ax==='z'?lz*sg>q.d/2:lx*sg>q.w/2))||(occ&&!peek&&cin))}q.op=q.op==null?1:q.op;if(Math.abs(q.op-tgt)<.002)continue;q.op+=(tgt-q.op)*Math.min(1,dt*3);if(Math.abs(q.op-tgt)<.01)q.op=tgt;
     if(q.shell)q.shell.forEach(m=>{m.opacity=q.op;m.transparent=q.op<.999||!!m.userData.alpha;m.depthWrite=q.op>.9;m.visible=q.op>.04});if(q.glass)q.glass.opacity=.3+q.op*.58}
   const h=byId.home,hIn=inHome(G.x,G.z)||(camS.mode==='walk'&&inHome(YOU.x,YOU.z)),hOcc=h.occH>0;const fade=hIn||hOcc||Math.hypot(camera.position.x-h.x,camera.position.z-h.z)<h.w*.7;
@@ -3574,27 +3711,27 @@ function makeRaccoon(){const g=new THREE.Group();const fur=lam('#8d8d96'),light=
 const whiteM_=lam('#ffffff');
 const wObj=makeRaccoon();scene.add(wObj);
 const W={x:10,z:48.5,yaw:0,path:[],dest:null,doing:'gardening',busy:0,timer:rand(20,50),visible:true};
-const W_SPOTS={yard:{x:10,z:49,doing:'gardening',where:'his garden'},porch:{x:15.2,z:45.6,doing:'reading on his porch',where:'his porch'},cafe:{x:-26,z:5,doing:'having tea at the café',where:'the café'},market:{x:-36,z:-4.5,doing:'browsing the market',where:'the market',in:'market'},park:{x:80,z:26,doing:'feeding the ducks',where:'Cedar Lake Park'},promenade:{x:-55,z:10,doing:'watching the boats',where:'the waterfront'},grocery:{x:88,z:-4,doing:'grocery shopping',where:'Puget Pantry',in:'grocery'},library:{x:26,z:-10.5,doing:'returning library books',where:'the library',in:'library'}};
+const W_SPOTS={yard:{x:12.6,z:49.6,doing:'gardening',where:'his garden'},porch:{x:10.05,z:46.4,doing:'reading on his porch swing',where:'his porch'},cafe:{x:-26,z:5,doing:'having tea at the café',where:'the café'},market:{x:-36,z:-4.5,doing:'browsing the market',where:'the market',in:'market'},park:{x:80,z:26,doing:'feeding the ducks',where:'Cedar Lake Park'},promenade:{x:-55,z:10,doing:'watching the boats',where:'the waterfront'},grocery:{x:88,z:-4,doing:'grocery shopping',where:'Puget Pantry',in:'grocery'},library:{x:26,z:-10.5,doing:'returning library books',where:'the library',in:'library'}};
 const W_LINES=['these tomatoes won\'t grow themselves','lovely drizzle today','found a shiny bottle cap!','ah, tea weather','hmm hm hm','is it snack o\'clock?','the ducks look well today','one more chapter…'];
 const NODES=[[-55,0],[-30,0],[-5,0],[30,0],[66,0],[96,0],[120,0],[-5,58],[14,58],[40,58],[66,58],[96,58],[-55,-48],[-30,-48],[-5,-48],[30,-48],[66,-48]];
 const NADJ=NODES.map(()=>[]);{const link=(a,b)=>{const d=Math.hypot(NODES[a][0]-NODES[b][0],NODES[a][1]-NODES[b][1]);NADJ[a].push([b,d]);NADJ[b].push([a,d])};
   const line=(f)=>{const ids=NODES.map((n,i)=>i).filter(i=>f(NODES[i]));ids.sort((a,b)=>(NODES[a][0]-NODES[b][0])||(NODES[a][1]-NODES[b][1]));for(let k=1;k<ids.length;k++)link(ids[k-1],ids[k])};
   line(n=>n[1]===0);line(n=>n[1]===58);line(n=>n[1]===-48);line(n=>n[0]===-5);line(n=>n[0]===66)}
-function wAvail(){try{return W.visible&&W.busy<=0}catch(e){return false}}
+function wAvail(){try{return W.visible&&!W.inside&&W.busy<=0}catch(e){return false}}
 function wPath(ax,az,bx,bz){const v=navTo(AG.wendell,ax,az,bx,bz,{}),o=[];for(let i=v.i;i<v.n;i++)o.push([v.P[2*i],v.P[2*i+1]]);return o.length?o:[[bx,bz]]}
-{const d0=wSchedule();W.dest=d0;if(d0==='inside'){W.visible=false;W.x=14;W.z=45;W.doing='inside his house'}else{const sp=W_SPOTS[d0];W.x=sp.x;W.z=sp.z;W.doing=sp.doing}}
-function wSchedule(){const h=new Date().getHours();if(h>=22||h<7)return'inside';{const hs=holsOn().map(x=>x.id);if(hs.includes('halloween')&&h>=17&&h<21)return'porch';if(hs.includes('thanksgiving')&&h>=12&&h<20)return'porch';if(hs.includes('christmas')&&h>=9&&h<18)return pick(['porch','yard'])}if(h<10)return pick(['yard','yard','porch']);if(h<14)return pick(['cafe','market','grocery','yard','library']);if(h<18)return pick(['park','promenade','yard','library']);return pick(['porch','porch','yard'])}
-function wWhere(){return W.visible?(W.path.length?'out walking':(W_SPOTS[W.dest]||{}).where||'around'):'inside his house'}
+{const d0=wSchedule();W.dest=d0;if(d0==='inside'){wIn()}else{const sp=W_SPOTS[d0];W.x=sp.x;W.z=sp.z;W.doing=sp.doing}}
+function wSchedule(){const h=new Date().getHours();if(h>=22||h<7)return'inside';if(h>=21&&!holsOn().some(x=>x.id==='halloween'))return'inside';{const hs=holsOn().map(x=>x.id);if(hs.includes('halloween')&&h>=17&&h<21)return'porch';if(hs.includes('thanksgiving')&&h>=12&&h<20)return'porch';if(hs.includes('christmas')&&h>=9&&h<18)return pick(['porch','yard'])}if(h<10)return pick(['yard','yard','porch']);if(h<14)return pick(['cafe','market','grocery','yard','library']);if(h<18)return pick(['park','promenade','yard','library']);return pick(['porch','porch','yard'])}
+function wWhere(){return!W.inside?(W.path.length?'out walking':(W_SPOTS[W.dest]||{}).where||'around'):'inside his house'}
 const bubble2=$('#bubble2');let wBubT=0;function wSay(t,d=3.5){bubble2.textContent=t;bubble2.classList.add('show');wBubT=d}
 let wGreetT=0;
 function updateW(dt,t){wGreetT-=dt;if((NAVT.t-=dt)<=0){NAVT.t=1;navTick()}
   if(W.busy>0){W.busy-=dt;const fy=Math.atan2(G.x-W.x,G.z-W.z);W.yaw+=Math.atan2(Math.sin(fy-W.yaw),Math.cos(fy-W.yaw))*Math.min(1,dt*4);if(Math.random()<dt*.18&&wBubT<=0)wSay(pick(['oh, mocha! come in, come in','want some tea?','look at this bottle cap','the garden says hi','you seem cheerful today','tell me everything']),3)}
-  else if(W.path.length){const s=navStep(AG.wendell,W.x,W.z,dt);W.cw=!!(s&&s.cw);if(!s||s.done){W.path.length=0;W.cw=false;if(W.dest==='inside'){W.visible=false;W.doing='inside his house'}else W.doing=W_SPOTS[W.dest].doing;W.timer=rand(50,110)}else{if(!s.hold){const dx=s.x-W.x,dz=s.z-W.z,d=Math.hypot(dx,dz);if(d>.02){const st=Math.min(d,2.3*dt);W.x+=dx/d*st;W.z+=dz/d*st;const ty=Math.atan2(dx,dz);W.yaw+=Math.atan2(Math.sin(ty-W.yaw),Math.cos(ty-W.yaw))*Math.min(1,dt*6)}}W.doing='out for a stroll'}}
-  else{W.timer-=dt;if(W.timer<=0){const dest=wSchedule();if(dest===W.dest)W.timer=rand(40,80);else{const from={x:W.x,z:W.z};if(!W.visible){from.x=14;from.z=41.5;W.x=14;W.z=41.5}W.visible=true;W.dest=dest;const tg=wTarget(dest);W.path=wPath(from.x,from.z,tg.x,tg.z)}}
+  else if(W.path.length){const s=navStep(AG.wendell,W.x,W.z,dt);W.cw=!!(s&&s.cw);if(!s||s.done){W.path.length=0;W.cw=false;if(W.dest==='inside'){wIn()}else W.doing=W_SPOTS[W.dest].doing;W.timer=rand(50,110)}else{if(!s.hold){const dx=s.x-W.x,dz=s.z-W.z,d=Math.hypot(dx,dz);if(d>.02){const st=Math.min(d,2.3*dt);W.x+=dx/d*st;W.z+=dz/d*st;const ty=Math.atan2(dx,dz);W.yaw+=Math.atan2(Math.sin(ty-W.yaw),Math.cos(ty-W.yaw))*Math.min(1,dt*6)}}W.doing='out for a stroll'}}
+  else{W.timer-=dt;if(W.timer<=0){const dest=wSchedule();if(dest===W.dest)W.timer=rand(40,80);else{const from=wOut();W.visible=true;W.dest=dest;const tg=wTarget(dest);W.path=wPath(from.x,from.z,tg.x,tg.z)}}
     else if(Math.random()<dt*.04&&wBubT<=0&&W.visible)wSay((Math.random()<.4&&holLine())||pick(W_LINES),3)}
   if(W.visible&&G.mode==='travel'&&wGreetT<=0&&Math.hypot(G.x-W.x,G.z-W.z)<5&&!(G.act&&G.act.npc)){wGreetT=60;say(pick(['hi wendell!','hey neighbor 👋','wendell!! hi']),2.5);setTimeout(()=>wSay((Math.random()<.5&&holLine())||pick(['evening, mocha!','hello hello!','oh! hi mocha']),2.5),900)}
-  wObj.visible=W.visible;wObj.position.set(W.x,floorAt(W.x,W.z),W.z);wObj.rotation.y=W.yaw;const u=wObj.userData,mv=W.path.length&&W.busy<=0;const ph=t*8;
-  u.legs.forEach((l,i)=>l.rotation.x=mv?Math.sin(ph+i*Math.PI)*.6:0);u.arms.forEach((a,i)=>a.rotation.x=mv?-Math.sin(ph+i*Math.PI)*.4:(W.dest==='yard'&&!mv?Math.sin(t*3+i)*.3-.3:0));u.tail.rotation.y=Math.sin(t*1.8)*.35;u.head.rotation.y=W.cw?Math.sin(t*7)*.7:mv?0:Math.sin(t*.6)*.3;
+  wObj.visible=W.visible;wObj.position.set(W.x,floorAt(W.x,W.z)+(W.inside?(W.spot==='bed'?.62:.3):0),W.z);wObj.rotation.y=W.yaw;const u=wObj.userData,mv=W.path.length&&W.busy<=0;const ph=t*8;
+  u.legs.forEach((l,i)=>l.rotation.x=mv?Math.sin(ph+i*Math.PI)*.6:W.inside&&W.spot==='fireA'?-1.2:0);u.arms.forEach((a,i)=>a.rotation.x=mv?-Math.sin(ph+i*Math.PI)*.4:(W.dest==='yard'&&!mv?Math.sin(t*3+i)*.3-.3:0));u.tail.rotation.y=Math.sin(t*1.8)*.35;u.head.rotation.y=W.cw?Math.sin(t*7)*.7:mv?0:Math.sin(t*.6)*.3;
   if(wBubT>0){wBubT-=dt;if(wBubT<=0)bubble2.classList.remove('show')}const bp=project(W.x,floorAt(W.x,W.z)+2.6,W.z);bubble2.style.left=bp.x+'px';bubble2.style.top=bp.y+'px';bubble2.style.visibility=W.visible&&bp.vis?'visible':'hidden'}
 // ====================================================================
 //  CLAUDE BRAIN (optional): Mocha thinks for himself
@@ -3630,7 +3767,7 @@ Money: ${S.coins} coins. He earns coins with odd jobs at open shops and by selli
 His things: phone: ${S.phone?phoneDesc():'none yet (he needs one to take selfies)'}; gadgets: ${S.gadgets.map(g=>g.k).join(', ')||'none'}; bike: ${S.bike?bikeDesc()+`, ridden ${S.bike.rides||0} times (he rides it automatically on longer trips)`:'none yet'}${hasHelmet()?'; he has a bike helmet':''}.
 Prices: Cascade Mobile (id "phones") sells phones (${Object.entries(PHONES).map(([k,v])=>k+' '+v.price).join(', ')}), case 15, charm 6, earbuds 30, speaker 35. Spoke & Sprocket (id "bikes") sells bikes (${Object.entries(BIKES).map(([k,v])=>k+' = '+v.label+' '+v.price).join(', ')}), helmet 22, bell 6, lights 12.
 Shopkeepers he's chatted with: ${Object.entries(S.know).map(([k,v])=>KB[k]?KB[k].name+' ×'+v:'').filter(Boolean).join(', ')||'none yet'}.
-Neighbor: Wendell, a gentle raccoon in a mustard cardigan and round glasses who lives next door${S.metW?` (they've hung out ${S.friendW||0} times)`:' (they haven\'t met yet)'}. Right now he's ${W.visible?W.doing+' at '+wWhere():'inside his house'}. To visit him use place "wendell".
+Neighbor: Wendell, a gentle raccoon in a mustard cardigan and round glasses who lives next door${S.metW?` (they've hung out ${S.friendW||0} times)`:' (they haven\'t met yet)'}. Right now he's ${!W.inside?W.doing+' at '+wWhere():W.doing+' inside his house'}. To visit him use place "wendell".
 Pets: ${S.pets.map(p=>`${p.name} the ${PET_TYPES[p.species].label}`).join(', ')||'none'}. (The pet store has a little bat, a miniature red poodle, a hedgehog, a black cat and a baby crow.)
 ${holContext()}
 ${tripContext()}
@@ -3940,7 +4077,7 @@ function navTick(){let sg=7;for(const d of DOORS){const hr=d.s.hours||d.p.hours;
   if(G.mode==='travel'&&!G.biking&&S.shortcuts.length<SECRETS.length)for(const s of SECRETS){if(S.shortcuts.includes(s.id))continue;const e0=s.pts[0],e1=s.pts[s.pts.length-1];
     if((Math.hypot(G.x-e0[0],G.z-e0[1])<4||Math.hypot(G.x-e1[0],G.z-e1[1])<4)&&Math.random()<.12){S.shortcuts.push(s.id);NAV.cache.clear();say('found a shortcut!',3);addEntry('Shortcut',`found a shortcut! ${s.name[0].toUpperCase()+s.name.slice(1)}. I bet nobody else knows about it.`,'');navLog({ev:'secret',id:s.id});break}}}
 for(const p of ENCL)if(p.w&&p.kind!=='lot')regrid(p);
-function wTarget(dest){if(dest==='inside')return{x:14,z:41.5};const sp=W_SPOTS[dest];if(sp&&sp.in&&isOpen(byId[sp.in])){const q=spotWorld(sp.in,'main');return{x:q.x+.8,z:q.z+.4}}return sp}
+function wTarget(dest){if(dest==='inside')return homeSpotW('neighbor','stand');const sp=W_SPOTS[dest];if(sp&&sp.in&&isOpen(byId[sp.in])){const q=spotWorld(sp.in,'main');return{x:q.x+.8,z:q.z+.4}}return sp}
 // keepers stay parented to their shops until B22; navRoute/navTo/navStep are ready for them
 // ====================================================================
 //  B11 WALKER: COL hash (8u cells over PLACES+ROADS+PIERS+6; circles {x,z,r} + wall segments {ax,az,bx,bz,door}, door gaps open
@@ -4727,7 +4864,7 @@ Object.assign(window.__mocha,{NAV,NF,EXTRA_PATHS,SECRETS,FOOT,navRoute,navTo,nav
   agentNav:who=>{const v=AG[who]&&AG[who].nv;return v?{n:v.n,i:v.i,kind:v.kind,hold:v.hold,tx:v.tx,tz:v.tz,pts:Array.from(v.P.subarray(0,2*v.n)).map(x=>+x.toFixed(2))}:null},
   // fixed .05 s steps of Mocha + Wendell + the door tick (no rendering); probe(fn) runs after every step
   navSim:(sec=1,probe)=>{let t=T;for(let k=0;k<sec/.05;k++){t+=.05;updateMocha(.05,t);updateW(.05,t);doorTick(.05);if(probe&&probe(k)===false)break}if(DIM.dirty){DIM.im.instanceMatrix.needsUpdate=true;DIM.dirty=0}return{x:G.x,y:G.y,z:G.z,mode:G.mode,wx:W.x,wz:W.z,wpath:W.path.length}},
-  wGo:dest=>{const from={x:W.x,z:W.z};if(!W.visible){from.x=14;from.z=41.5;W.x=14;W.z=41.5}W.visible=true;W.dest=dest;W.busy=0;const tg=wTarget(dest);W.path=wPath(from.x,from.z,tg.x,tg.z);return{n:W.path.length,tg:{x:tg.x,z:tg.z}}},
+  wGo:dest=>{const from=wOut();W.visible=true;W.dest=dest;W.busy=0;const tg=wTarget(dest);W.path=wPath(from.x,from.z,tg.x,tg.z);return{n:W.path.length,tg:{x:tg.x,z:tg.z}}},
   wpos:()=>({x:W.x,z:W.z,path:W.path.length,cw:!!W.cw,vis:W.visible,doing:W.doing}),
   shortcut:id=>{if(id&&!S.shortcuts.includes(id)){S.shortcuts.push(id);NAV.cache.clear()}return S.shortcuts.slice()}});
 // B11 hooks: collision, seats, tap-to-go, the Needle lift; youSim steps the walker + doors at fixed .05 s (no rendering)
@@ -4747,9 +4884,9 @@ Object.assign(window.__mocha,{COL,SEATS,NEL,TG,RACKS,floorType,youFree,solidWhy,
 //  B12 runtime: layoutLint(), interior culling (10 Hz) and the room camera (CAM 'room', prio 1)
 // ====================================================================
 const LINTP=['cinema','library','records','thrift','petstore','grocery','cafe','market','arcade','studio','bookstore','phones','bikes','station','bakery','threads','nursery','evergreen','lantern'];
-function layoutLint(only){const out=[],ids=only?[].concat(only):LINTP.concat(['home']);
+function layoutLint(only){const out=[],ids=only?[].concat(only):LINTP.concat(['neighbor','home']);
   for(const id of ids){const p=byId[id];if(!p)continue;
-    if(id==='home'){const s=p.stoop;if(!s||s.z1>s.gate-.1)out.push({pid:'home',k:'stoop',z1:s&&s.z1,gate:s&&s.gate});continue}
+    if(id==='home'){homeLint(p,out);continue}
     if(!p.lay){out.push({pid:id,k:'nolayout'});continue}
     const W2=p.w/2,D2=p.d/2,xl=-W2+.3,xr=W2-.3,zb=-D2+.3,zf=D2-.3,dr=p.door||{x:0,w:1.8},sol=p.lay.filter(a=>!a.flat&&!a.dyn&&a.y0<.42&&a.y1-a.y0>=.3&&(a.x1-a.x0)*(a.z1-a.z0)>=.04);
     // 1. overlaps: rasterize floor solids at .25
@@ -4765,7 +4902,7 @@ function layoutLint(only){const out=[],ids=only?[].concat(only):LINTP.concat(['h
     let s0=cell(dr.x,zf-.7);if(g[s0])s0=cell(dr.x,zf-1.2);if(!g[s0]){seen[s0]=1;q.push(s0)}
     while(q.length){const u=q.pop(),ui=u%w,uj=(u-ui)/w;for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){if(!di&&!dj)continue;const i=ui+di,j=uj+dj;if(i<0||j<0||i>=w||j>=d)continue;const v=j*w+i;if(g[v]||seen[v])continue;if(di&&dj&&(g[uj*w+i]||g[j*w+ui]))continue;seen[v]=1;q.push(v)}}
     if(!q.length&&g[s0])out.push({pid:id,k:'entryCell'});
-    for(const [nm,s] of Object.entries(p.spots||{})){if(!Array.isArray(s)||Math.abs(s[0])>W2||Math.abs(s[1])>D2)continue;const c=cell(s[0],s[1]);if(seen[c])continue;if(nm==='t1')continue;const furn=/^(seat|armchair|booth)/.test(nm);let ok=false;
+    for(const [nm,s] of Object.entries(p.spots||{})){if(!Array.isArray(s)||Math.abs(s[0])>W2||Math.abs(s[1])>D2)continue;const c=cell(s[0],s[1]);if(seen[c])continue;if(nm==='t1')continue;const furn=/^(seat|armchair|booth|fire|tea|couch|bed|reading)/.test(nm);let ok=false;
       if(furn){const ci=c%w,cj=(c-ci)/w;for(let dj=-3;dj<=3&&!ok;dj++)for(let di=-3;di<=3;di++){const i=ci+di,j=cj+dj;if(i>=0&&j>=0&&i<w&&j<d&&seen[j*w+i]){ok=true;break}}}
       if(!ok)out.push({pid:id,k:'spot',spot:nm,at:s.slice(0,2)})}
     // 5. keepers face the entrance within 60 degrees
@@ -4784,7 +4921,7 @@ function b12Frame(dt){b13Frame(dt);
   if(RC.pid&&CAM.cur&&CAM.cur.owner==='room'){const p=byId[RC.pid],d=Math.atan2(Math.sin(camS.yaw-p.ry),Math.cos(camS.yaw-p.ry)),lim=1.22;if(Math.abs(d)>lim)camS.yaw-=(Math.abs(d)-lim)*Math.sign(d)*Math.min(1,dt*5);
     if(CAM.cur.k>=1)camS.pitch=clamp(camS.pitch,.55,1.1)}
   if((RC.t-=dt)>0)return;RC.t=.1;const cp=camera.position;
-  for(const q of PLACES){const R=q.inner;if(!R||!R.isObject3D)continue;const dx=cp.x-q.x,dz=cp.z-q.z;let v=(q.op!=null&&q.op<.999)||inBuilding(q,cp.x,cp.z)||(!!q.glass&&dx*dx+dz*dz<2025);
+  for(const q of PLACES){const R=q.inner;if(!R||!R.isObject3D)continue;const dx=cp.x-q.x,dz=cp.z-q.z;let v=(q.op!=null&&q.op<.999)||(q.kind==='home'&&q.shell&&q.shell[0]&&q.shell[0].opacity<.999)||inBuilding(q,cp.x,cp.z)||(!!q.glass&&dx*dx+dz*dz<2025);
     if(!v){const L=q.dObjs||(q.dObjs=DOORS.filter(d=>d.pid===q.id&&d.kind!=='gate'));for(const d of L)if(d.ang>.12&&Math.hypot(d.wx-cp.x,d.wz-cp.z)<30){v=true;break}}
     q.inVis=v;if(R.visible!==v)R.visible=v}
   if(!ROOMP)ROOMP=PLACES.filter(q=>q.interior&&q.w&&q.kind!=='lot');let want=null,who=null;
@@ -4805,6 +4942,42 @@ function b13Info(pid){const one=id=>{const p=byId[id],k=KEEPERS.find(k=>k.shop==
    merged:p.merged||0,inVis:!!p.inVis,spots:Object.keys(p.spots||{})}};return pid?one(pid):B13P.map(one)}
 Object.assign(window.__mocha,{b13Info,B13P,vignettes:()=>(byId.evergreen.vig||[]).map(v=>({id:v.id,x:+v.g.position.x.toFixed(2),z:+v.g.position.z.toFixed(2),meshes:v.g.children.length})),
   datl:()=>({used:DATL.used(),w:DATL.c.width,h:DATL.c.height}),FACTS,FACTSK:keys=>keys.flatMap(k=>FACTS[k]||[]),mushGlow:()=>B13M.mush.emissiveIntensity,b13Tick:(n=1)=>{for(let i=0;i<n;i++){B13.t=0;b13Frame(.1)}return B13M.mush.emissiveIntensity},toWorld});
+// ====================================================================
+//  B14 runtime: rooms + spot->room map, drop-in seats, Wendell visible inside, the cottage cutaway peek, the late-show TV (5 fps,
+//  only while visible), the empty-house set toggle and lint for both homes.
+// ====================================================================
+function roomAt(pid,x,z){const p=byId[pid];if(!p||!p.rooms)return null;const c=Math.cos(p.ry),s=Math.sin(p.ry),lx=(x-p.x)*c-(z-p.z)*s,lz=(x-p.x)*s+(z-p.z)*c;for(const k in p.rooms){const r=p.rooms[k];if(lx>=r[0]&&lx<=r[2]&&lz>=r[1]&&lz<=r[3])return k}return null}
+const SPOTROOM={};for(const pid of ['home','neighbor']){const p=byId[pid],m=SPOTROOM[pid]={};for(const k in p.spots||{}){const s=p.spots[k];if(!Array.isArray(s))continue;const q=toWorld(p,s[0],s[1]);m[k]=roomAt(pid,q.x,q.z)}}
+function spotRoom(pid,s){return(SPOTROOM[pid]&&SPOTROOM[pid][s])||null}
+function homeSpotW(pid,s){const p=byId[pid],a=p&&p.spots&&p.spots[s];if(!a)return null;const q=toWorld(p,a[0],a[1]);return{x:q.x,z:q.z,yaw:a[2]!=null?a[2]+p.ry:null}}
+// ---------- Wendell: inside = visible in his armchair (fireA) while awake, on the bed while asleep ----------
+function wAsleep(){const h=new Date().getHours();return h>=22||h<7}
+function wIn(){const sn=wAsleep()?'bed':'fireA',s=homeSpotW('neighbor',sn);W.inside=true;W.visible=true;W.spot=sn;W.x=s.x;W.z=s.z;W.yaw=s.yaw;W.path=[];W.doing=sn==='bed'?'asleep in his bed nook':TV.on?'watching the late show':'reading by the fire'}
+function wOut(){if(!W.inside)return{x:W.x,z:W.z};const s=homeSpotW('neighbor','stand');W.inside=false;W.spot=null;W.x=s.x;W.z=s.z;return{x:s.x,z:s.z}}
+function wendellSpots(){const p=byId.neighbor,o={};for(const k in p.spots){const s=p.spots[k];if(!Array.isArray(s))continue;const q=toWorld(p,s[0],s[1]);o[k]={l:[s[0],s[1]],x:+q.x.toFixed(2),z:+q.z.toFixed(2),room:spotRoom('neighbor',k)}}
+  const w={};for(const k in W_SPOTS)w[k]={x:W_SPOTS[k].x,z:W_SPOTS[k].z};return{spots:o,W_SPOTS:w,inside:!!W.inside,spot:W.spot||null,vis:W.visible,x:+W.x.toFixed(2),z:+W.z.toFixed(2),capShelf:p.capShelf,chimney:p.chimney,hammock:p.hammock}}
+// ---------- nest (empty-house set) ----------
+function nestWant(){return!!(FEAT.nest&&(S&&S.v2fresh||NEST.force))}
+function nestApply(){const on=nestWant();NEST.on=on;if(NEST.g&&NEST.g.visible!==on){NEST.g.visible=on;NEST.n++}return on}
+function emptyHouse(on){FEAT.nest=!!on;NEST.force=!!on;nestApply();return{on:NEST.on,couch:capSpot('couch'),table:capSpot('table'),bed:capSpot('bed'),lamp:capSpot('lamp'),lint:layoutLint()}}
+// lint for Mocha's house (layoutLint's 'home' branch): stoop, pair + drop-in spots, drop-in SEATS, the empty-house set clear of the captured furniture
+function homeLint(p,out){const s=p.stoop;if(!s||s.z1>s.gate-.1)out.push({pid:'home',k:'stoop',z1:s&&s.z1,gate:s&&s.gate});
+  for(const k of ['couchA','couchB','couchC','teaA','teaB','porchA','porchB','porchC','desk2','blanket','boxA','boxB','floorA','floorB'])if(!p.spots[k])out.push({pid:'home',k:'spot',spot:k});
+  for(const [pid,sn] of [['home','couchC'],['home','porchC'],['neighbor','fireC'],['neighbor','porchC']])if(!SEATS.some(q=>q.p===pid&&q.tag==='dropin'&&q.spot===sn))out.push({pid,k:'dropin',spot:sn});
+  const sol=(p.solB||[]).concat(p.sol||[]);for(const b of p.nestBox||[])for(const a of sol){const ix=Math.min(a[2],b[2])-Math.max(a[0],b[0]),iz=Math.min(a[3],b[3])-Math.max(a[1],b[1]);if(ix>0&&iz>0&&ix*iz>.05){out.push({pid:'home',k:'nest',a:b[4],box:a.map(v=>+v.toFixed(2)),on:NEST.on});break}}
+  if(!p.rooms)out.push({pid:'home',k:'rooms'})}
+// ---------- per frame (from frame(): cutaway peek every frame, TV at 5 fps, rooms + nest at 1 Hz) ----------
+const B14={t:0,acc:0};
+function b14Frame(dt){const nb=byId.neighbor,cp=camera.position,dc=Math.hypot(cp.x-nb.x,cp.z-nb.z);nb.pk=(W.inside&&dc<32)||dc<15?1:0;
+  if((B14.acc+=dt)>=.2){B14.acc=0;const h=new Date().getHours(),on=TV.force!=null?TV.force:!!(W.inside&&!wAsleep()&&(h>=19||h<1));if(on!==TV.on){TV.on=on;tvDraw(false);if(W.inside&&W.spot==='fireA')W.doing=on?'watching the late show':'reading by the fire'}if(on&&tvVisible())tvDraw(true)}
+  if((B14.t-=dt)>0)return;B14.t=1;nestApply()}
+
+Object.assign(window.__mocha,{wendellSpots,rooms:pid=>{const p=byId[pid||'home'];if(!p)return null;const occ=occOf(p.id);return{pid:p.id,rooms:p.rooms||null,spotRoom:SPOTROOM[p.id]||null,occ:occ.ids.map(i=>({id:i,room:AG[i]&&AG[i].room})),room:occ.room}},
+  applyPaintings,capSpot:(slot,home='home')=>{const c=capSpot(slot,home);if(!c)return null;const w=c.s?homeSpotW(c.p,c.s):null;return Object.assign({},c,w?{x:+w.x.toFixed(2),z:+w.z.toFixed(2)}:{})},emptyHouse,roomAt,
+  tv:on=>{if(on!==undefined)TV.force=on;return{on:TV.on,force:TV.force,n:TV.n,film:TV.film&&TV.film.title,vis:tvVisible()}},
+  b14:()=>{const cnt=p=>{let n=0;if(p.inner)p.inner.traverse(o=>{if((o.isMesh||o.isSprite||o.isPoints)&&o.visible!==false){let v=true;for(let a=o;a&&a!==p.inner;a=a.parent)if(!a.visible)v=false;if(v)n++}});return n};
+    return{home:{draws:cnt(byId.home),merged:byId.home.merged,nest:NEST.on,rooms:Object.keys(byId.home.rooms||{})},neighbor:{draws:cnt(byId.neighbor),merged:byId.neighbor.merged,op:byId.neighbor.op,pk:byId.neighbor.pk,inVis:byId.neighbor.inVis},
+      seats:SEATS.filter(s=>s.tag==='dropin').map(s=>({id:s.id,p:s.p,spot:s.spot,x:+s.x.toFixed(2),z:+s.z.toFixed(2)})),W:{inside:!!W.inside,vis:W.visible,spot:W.spot,doing:W.doing,room:AG.wendell.room,place:AG.wendell.place}}}});
 // B9: banner + knock chip slots, OCC at boot, hooks
 {BAN.el=document.createElement('div');BAN.el.id='b9ban';BAN.el.className='b9ban';HUD.slot('banner',{el:BAN.el,on:false});
  KNOCK.el=document.createElement('button');KNOCK.el.id='knockBtn';KNOCK.el.className='b9knock';KNOCK.el.textContent='🚪 Knock?';KNOCK.el.onclick=()=>{if(KNOCK.d)doKnock(KNOCK.d.pid)};HUD.slot('knock',{zone:'tc',order:2,prio:8,el:KNOCK.el,on:false,modes:['walk']});
@@ -4827,7 +5000,7 @@ Object.assign(window.__mocha,{DOORS,DBY,AGENTS,OCC,DIM,TUN,DATL,DOORSPEC,answerK
   doorUI:()=>({banner:BAN.el.innerHTML,bannerOn:!!(HUD.S.banner&&HUD.S.banner.on),knock:!!(HUD.S.knock&&HUD.S.knock.on),knockText:KNOCK.el.textContent,knockDoor:KNOCK.d&&KNOCK.d.id,toast:$('#toast').textContent,toastOn:$('#toast').classList.contains('show'),near:$('#near').textContent,dvis:{...DVIS},chb:{...CHB},atlas:DATL.used()}),
   doorAtlas:()=>DATL.c.toDataURL('image/png'),
   signAuto:on=>{if(on!=null)SIGNAUTO=!!on;return SIGNAUTO},
-  wForce:dest=>{W.dest=dest;W.path=[];W.busy=0;W.timer=600;if(dest==='inside'){W.visible=false;W.x=14;W.z=45;W.doing='inside his house'}else{const sp=W_SPOTS[dest];W.visible=true;W.x=sp.x;W.z=sp.z;W.doing=sp.doing}AGT.t=0;return wHomeAwake()}});
+  wForce:dest=>{W.dest=dest;W.path=[];W.busy=0;W.timer=600;if(dest==='inside'){wIn()}else{const sp=W_SPOTS[dest];W.inside=false;W.spot=null;W.visible=true;W.x=sp.x;W.z=sp.z;W.doing=sp.doing}AGT.t=0;return wHomeAwake()}});
 
 })();
 </script>
