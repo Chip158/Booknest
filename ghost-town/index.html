@@ -3718,7 +3718,7 @@ let __g=null;const G={x:40,z:44,y:2,vx:0,vz:0,yaw:0,mode:'idle',timer:3,target:n
 petsReady=true;syncPets();applyDecor();if(S.trip)tripResume();
 function spotWorld(pid,spot){const p=byId[pid];if(p.spots){const s=(own(p.spots,spot)&&p.spots[spot])||p.spots.main;if(s)return toWorld(p,s[0],s[1])}if(pid==='needle')return toWorld(p,0,5.6);return{x:p.dx,z:p.dz}}
 function wSpot(){const a=Math.atan2(G.x-W.x,G.z-W.z);return{x:W.x+Math.sin(a)*2.4,z:W.z+Math.cos(a)*2.4}}
-function startAct(act,why){if(!act||G.mode==='trip')return;SEATS.release('mocha');if(act.fx==='bench'&&act.seat==null)act=benchPick(act);if(act.hx==='trick')wearCostume();if(S.bike&&BIKE_LOOPS[act.p]&&act.fx!=='bikeride'&&/\bbik(e|ing)|cycl/i.test(act.doing||''))act=Object.assign({},ACTS.find(a=>a.fx==='bikeride'&&a.loop===act.p)||{},act,{fx:'bikeride',loop:act.p,bike:1});
+function startAct(act,why){if(!act||G.mode==='trip')return;if(act.p==='needle'&&!G.lift)act.deckT=null;SEATS.release('mocha');if(act.fx==='bench'&&act.seat==null)act=benchPick(act);if(act.hx==='trick')wearCostume();if(S.bike&&BIKE_LOOPS[act.p]&&act.fx!=='bikeride'&&/\bbik(e|ing)|cycl/i.test(act.doing||''))act=Object.assign({},ACTS.find(a=>a.fx==='bikeride'&&a.loop===act.p)||{},act,{fx:'bikeride',loop:act.p,bike:1});
   if(/\{\w+\}/.test(act.doing||''))act={...act,doing:fill(String(act.doing))};
   if(act.fx==='hang'&&!act.st17){act.st17=1;act=hangStart(act)}
   const w=act.npc&&act.fx!=='hang'?wSpot():act.at?{x:act.at[0],z:act.at[1]}:act.fx==='bikeride'&&S.bike&&BIKE_LOOPS[act.loop]?{x:BIKE_LOOPS[act.loop][0][0],z:BIKE_LOOPS[act.loop][0][1]}:spotWorld(act.p,act.s);G.target={x:w.x+rand(-.5,.5),z:w.z+rand(-.5,.5)};G.navFor=null;G.act=act;G.mode='travel';G.trT=0;G.sleep=false;G.ride=null;planRide(act,G.target);if(why)say(why,3.5)}
@@ -4462,12 +4462,12 @@ function needleStep(dt){const N=NEL;if(N.k!==N.goal)N.k=N.goal>N.k?Math.min(N.go
   if(!G.lift&&N.k===1&&(N.idle+=dt)>12)N.goal=0;
   if(G.mode==='trip'){if(G.lift){G.lift=null;G.ride=null}return null}
   const a=G.act,want=a&&a.p==='needle'&&(G.mode==='travel'||G.mode==='activity'),deck=N.yt+1;let L=G.lift;
-  if(!L){if(!want)return null;if(G.mode==='activity')G.mode='travel';if(!a.deckT){const q=toWorld(N.p,rand(-1.2,1.2),4.2);a.deckT={x:q.x,z:q.z};G.target={x:N.dx,z:N.dz};G.navFor=null}
+  if(!L){if(!want)return null;if(G.mode==='activity')G.mode='travel';if(!a.deckT){const q=toWorld(N.p,rand(-1.2,1.2),4.2);a.deckT={x:q.x,z:q.z};N.da=a;G.target={x:N.dx,z:N.dz};G.navFor=null}
     if(Math.hypot(G.x-N.dx,G.z-N.dz)<1.1){G.lift=L='wait0';G.ride='lift'}else return null}
   if(L==='wait0'){G.vx=G.vz=0;G.x+=(N.dx-G.x)*Math.min(1,dt*3);G.z+=(N.dz-G.z)*Math.min(1,dt*3);N.goal=0;N.idle=0;if(N.k===0){G.lift='up';N.goal=1;N.trips++;G.x=N.cx;G.z=N.cz;return cy+1}return null}
   if(L==='up'||L==='down'){G.vx=G.vz=0;G.x=N.cx;G.z=N.cz;N.idle=0;
     if(L==='up'&&N.k===1){G.lift='deck';G.ride=null;G.x=N.ux;G.z=N.uz;G.target=a&&a.p==='needle'&&a.deckT?a.deckT:toWorld(N.p,0,4.2);G.navFor=null}
-    else if(L==='down'&&N.k===0){G.lift=null;G.ride=null;G.x=N.dx;G.z=N.dz;G.navFor=null;if(a&&a.p==='needle')a.deckT=null;return null}
+    else if(L==='down'&&N.k===0){G.lift=null;G.ride=null;G.x=N.dx;G.z=N.dz;G.navFor=null;if(a&&a.p==='needle')a.deckT=null;if(N.da){N.da.deckT=null;N.da=null}return null}
     return cy+1}
   // on the deck: stay within the rail; leaving means the lift down
   const ex=G.x-N.p.x,ez=G.z-N.p.z,er=Math.hypot(ex,ez);if(er>4.8){G.x=N.p.x+ex/er*4.8;G.z=N.p.z+ez/er*4.8}
