@@ -5700,7 +5700,7 @@ const CHARLOD={L:[],acc:0,max:8,nsh:4,d0:40,dh:85,n:[0,0,0],sh:0,ticks:0,
   tick(){this.ticks++;const cp=camera.position,tx=camS.tx,tz=camS.tz,F=CLV.fr,C=CLV.C,h=hourAt(Date.now());camera.updateMatrixWorld();CLV.pm.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);F.setFromProjectionMatrix(CLV.pm);
     C.length=0;let n1=0,nh=0;
     for(const r of this.L){const g=r.obj,c=r.c;if(c.hours&&!r.pin){const a=c.hours[0],b=c.hours[1],on=a<=b?h>=a&&h<b:h>=a||h<b;if(g.visible!==on)g.visible=on}
-      if(!this.vis(g)||(r.inside&&r.inside())){r.d=1e9;nh++;if(r.lvl!==-1&&g.visible)this.set(r,-1);else r.lvl=-1;continue}
+      if(!this.vis(g)||(r.inside&&!r.pin&&r.inside())){r.d=1e9;nh++;if(r.lvl!==-1&&g.visible)this.set(r,-1);else r.lvl=-1;continue}
       g.getWorldPosition(CLV.v);const dc=CLV.v.distanceTo(cp);r.d=dc;if(dc>this.dh){this.set(r,-1);nh++;continue}
       CLV.sph.center.copy(CLV.v);CLV.sph.center.y+=1;CLV.sph.radius=1.6*(g.scale.y||1);r.k=Math.hypot(CLV.v.x-tx,CLV.v.z-tz)+(F.intersectsSphere(CLV.sph)?0:500);
       if(dc<=this.d0&&r.two)C.push(r);else{this.set(r,1);n1++}}
@@ -8614,12 +8614,13 @@ function youUmbShow(on){const v=visitor,u=v.userData;let m=u.umb;if(!on){if(m)m.
   if(!m){const mat=new THREE.MeshLambertMaterial({color:c,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false}),dome=new THREE.Mesh(new THREE.SphereGeometry(.78,16,6,0,Math.PI*2,0,Math.PI*.42),mat),
       stick=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,1.05,6),new THREE.MeshLambertMaterial({color:'#5a4a3a'}));stick.position.y=-.5;m=new THREE.Group();m.add(dome,stick);dome.position.y=-.2;m.userData.mat=mat;u.umb=m;v.add(m)}
   const sc=v.scale.y||1;m.position.set(.22/sc,2.25/sc,0);if(m.userData.c!==c){m.userData.c=c;m.userData.mat.color.set(c);m.userData.mat.opacity=/clear/i.test(vr.nm||'')?.45:.85}m.visible=true}
-const MB3={fe:null,fs:null,acc:0};
-// 1 Hz from frame() (so it pauses when hidden): the cabin hearth crackles through a B20 'fire' emitter while it burns
-function mb3Frame(dt){if((MB3.acc-=dt)>0)return;MB3.acc=1;try{const H=typeof HEARTHBY==='object'&&HEARTHBY.cabin,lit=!!(H&&H.p&&H.p.hearthLit&&H.p.hearthLit());
-  if(lit&&!MB3.fe&&AUD&&AUD.c&&AUD.crk&&audOn()){const e=audEmitter({type:'fire',x:H.x,z:H.z,pid:'cabin',bus:'amb'});if(e){const c=AUD.c,s=c.createBufferSource(),g=c.createGain();s.buffer=AUD.crk;s.loop=true;g.gain.value=.6;s.connect(g);g.connect(e.in);s.start();MB3.fe=e;MB3.fs=s}}
-  else if(!lit&&MB3.fe){try{MB3.fs.stop()}catch(_){}audDrop(MB3.fe);MB3.fe=MB3.fs=null}}catch(e){}}
-Object.assign(window.__mocha,{lookTry,lookTryEnd,lookOfItem,youWornJacket,youUmb:()=>{const r=youUmb();return r?{nm:r.nm,c:r.c,shown:!!(visitor.userData.umb&&visitor.userData.umb.visible)}:null},hearthSnd:()=>({on:!!MB3.fe})});
+const MB3={F:{},acc:0};
+// 1 Hz from frame() (so it pauses when hidden): the cabin hearth and the yard fire pit crackle through B20 'fire' emitters while they burn
+function mb3Fire(k,lit,x,z,pid){const F=MB3.F[k];if(lit&&!F&&AUD&&AUD.c&&AUD.crk&&audOn()){const e=audEmitter({type:'fire',x,z,pid,bus:'amb'});if(e){const c=AUD.c,s=c.createBufferSource(),g=c.createGain();s.buffer=AUD.crk;s.loop=true;g.gain.value=.6;s.connect(g);g.connect(e.in);s.start(0,Math.random()*1.5);MB3.F[k]={e,s}}}
+  else if(!lit&&F){try{F.s.stop()}catch(_){}audDrop(F.e);delete MB3.F[k]}}
+function mb3Frame(dt){if((MB3.acc-=dt)>0)return;MB3.acc=1;try{const H=typeof HEARTHBY==='object'&&HEARTHBY.cabin;mb3Fire('hearth',!!(H&&H.p&&H.p.hearthLit&&H.p.hearthLit()),H&&H.x,H&&H.z,'cabin');
+  if(typeof CB==='object'&&CB&&CB.pit)mb3Fire('pit',typeof cabPitLit==='function'&&cabPitLit(),CB.pit.x,CB.pit.z,null)}catch(e){}}
+Object.assign(window.__mocha,{lookTry,lookTryEnd,lookOfItem,youWornJacket,youUmb:()=>{const r=youUmb();return r?{nm:r.nm,c:r.c,shown:!!(visitor.userData.umb&&visitor.userData.umb.visible)}:null},hearthSnd:()=>({hearth:!!MB3.F.hearth,pit:!!MB3.F.pit})});
 {const hx=c=>'#'+c.getHexString();
 Object.assign(window.__mocha,{PAL,FAMOF,PATCH,RIM,RIMS,TOONG,TOONC,ToonM,ToonC,rbox,rimify,ghostMat,roadMat,
   grade:()=>({toon:PAL.toon,toonC:PAL.toonC,hemi:{sky:hx(hemi.color),ground:hx(hemi.groundColor),i:+hemi.intensity.toFixed(3)},sky:{top:hx(skyMat.uniforms.top.value),bot:hx(skyMat.uniforms.bot.value)},night:+nightAmt.toFixed(3),gold:+RIMS.gold.toFixed(3),
