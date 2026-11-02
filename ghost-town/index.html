@@ -4288,6 +4288,10 @@ function navLocked(a,d){navLog({ev:'locked',who:a.id,door:d.id});NAV.cache.clear
   if(a.id==='mocha'){say('oh, they just closed',3);const tp=placeOf(v.tx,v.tz),again=v.lk===d&&Date.now()-v.lkT<1e4;v.lk=d;v.lkT=Date.now();if(again||tp&&tp===d.p&&!DOORS.some(q=>q.p===tp&&q!==d&&q.kind!=='gate'&&doorCan(q,a))){v.n=0;G.act=null;G.mode='idle';G.timer=rand(1.5,3)}else G.navFor=null}
   else if(a.id==='wendell'){const sp=W_SPOTS[W.dest];if(sp&&placeOf(sp.x,sp.z)!==d.p)W.path=wPath(W.x,W.z,sp.x,sp.z);else v.n=0}else v.n=0}
 // the keep-right lane never steers into a lamp post, planter, rack or fence: the offset lane from beside the walker to 1.6 past the carrot must clear COL (r .5)
+// rejoin: a walker that overshot an outdoor waypoint by more than 1.6 (bike momentum at a dismount, a wide corner) but is already past it
+// and within 2.5 of the next leg takes that leg. Without this the spill-over carrot parks him on the NEXT point (a door never gets
+// requested, so he hovers at the doorway forever).
+function navOnLeg(P,i,x,z){const ax=P[2*i],az=P[2*i+1],ex=P[2*i+2]-ax,ez=P[2*i+3]-az,L=Math.hypot(ex,ez);return L>.01&&Math.abs((x-ax)*ez-(z-az)*ex)/L<2.5}
 function laneBlk(x,z,ux,uz,k){for(let t=-1.5;t<=1.6;t+=.75)if(COL.hit(x+ux*t-uz*k,z+uz*t+ux*k,.5))return true;return false}
 function navStep(a,x,z,dt){const v=a.nv,o=NSO,{DOOR,IN,CW}=NF;if(!v||!v.n)return null;o.hold=false;o.done=false;o.cw=false;const P=v.P,F=v.F;
   if(v.hold>0){v.hold-=dt;o.hold=true;o.cw=true;o.x=P[2*v.i-2];o.z=P[2*v.i-1];return o}
@@ -4298,7 +4302,7 @@ function navStep(a,x,z,dt){const v=a.nv,o=NSO,{DOOR,IN,CW}=NF;if(!v||!v.n)return
       else if(d<.6){v.i++;continue}break}
     const rr=i===v.n-1?.35:.95;
     if(fl&CW&&d<rr&&v.cw!==i){v.cw=i;v.hold=.4;v.i++;o.hold=true;o.cw=true;o.x=px;o.z=pz;return o}
-    if(d<rr||(i<v.n-1&&!(fl&CW)&&d<1.6&&-dx*(P[2*i+2]-px)-dz*(P[2*i+3]-pz)>0)){v.i++;continue}break}
+    if(d<rr||(i<v.n-1&&!(fl&CW)&&-dx*(P[2*i+2]-px)-dz*(P[2*i+3]-pz)>0&&(d<1.6||!(fl&IN)&&d<8&&navOnLeg(P,i,x,z)))){v.i++;continue}break}
   // pure pursuit: the carrot rides 1.5 ahead of the walker's projection on the current leg (spilling round the corner), then keeps right
   const i=v.i,px=P[2*i],pz=P[2*i+1],fl=F[i],d=Math.hypot(px-x,pz-z);let cx=px,cz=pz;
   if(i>0&&!(fl&DOOR)){const qx=P[2*i-2],qz=P[2*i-1],sx=px-qx,sz=pz-qz,sl=Math.hypot(sx,sz);if(sl>.01){const ux=sx/sl,uz=sz/sl,s=Math.max(.2,(x-qx)*ux+(z-qz)*uz+1.5);
