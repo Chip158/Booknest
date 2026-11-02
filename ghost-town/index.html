@@ -427,6 +427,22 @@ const R=seeded(206);
 // ====================================================================
 //  THE NEIGHBORHOOD  (x = east, z = south; Puget Sound is to the west)
 // ====================================================================
+// ---- B15 Drizzle & Ember art bible: ONE palette, building families (wall/trim/roof), toon ramps, hemisphere, sky keys, rim colors.
+// Rules: <=3 hues + 1 accent per building; saturation only on small things; characters brighter than their background; shadows never below 25%.
+const PAL={grass:{spring:'#8FD06C',summer:'#7CC45E',fall:'#A8C25E',winter:'#EEF3F9'},clover:'#6BB04F',cloverHi:'#C8EB9A',cobble:'#E9D9B8',grout:'#CDBB98',
+ walk:'#F1E6D0',walkEdge:'#D8C8AA',road:'#6E7486',roadWet:'#565C70',dash:'#F6E7B8',curb:'#CFC3AE',shallow:'#6FC7C9',deep:'#3F8FA8',foam:'#E8FBF6',glass:'#6F86A8',glassHi:'#BFD3EA',
+ pumpkin:'#F08A3C',plum:'#8E5BA8',evergreen:'#2F6B4F',berry:'#D9546B',butter:'#FFD36B',
+ fam:{sage:{wall:'#9DB89A',trim:'#F4EEDD',roof:'#4E6B57'},butter:{wall:'#F1D58A',trim:'#FFF7E4',roof:'#B5654A'},plum:{wall:'#7E5A86',trim:'#EADFF0',roof:'#3E3150'},slate:{wall:'#6F8FB0',trim:'#F2F4F7',roof:'#2F3E58'},
+  brick:{wall:'#C9735E',trim:'#F6E7D6',roof:'#5B3A33'},gothic:{wall:'#3B3446',trim:'#E8DFF0',roof:'#2B2836'},log:{wall:'#B07A4A',trim:'#E9D2A6',roof:'#46624A'}},
+ toon:['#7C7A9C','#7C7A9C','#7C7A9C','#9C93B8','#DCCFD0','#FFF6EA','#FFF6EA','#FFF6EA'],toonC:['#B58AA0','#B58AA0','#B58AA0','#E9C2C0','#FFF4EE','#FFF4EE','#FFF4EE','#FFF4EE'],
+ hemi:{day:['#CBD6FF','#A39B7A'],night:['#8A96D8','#2A2A3A']},
+ sky:{night:['#141E4A','#2E3570'],dawn:['#3A4A8A','#F4A8B0'],morning:['#7F9FD6','#F6C39A'],day:['#5DADE9','#D2EEFA'],after:['#62A6E6','#F5E2C0'],golden:['#6A86C8','#FFC27A'],sunset:['#4F58A8','#F29AA8'],blue:['#2B3A80','#6E6AB0']},
+ rim:{day:['#FFF4E0',.25],golden:['#FFB070',.45],night:['#9FB4FF',.35],inside:['#FFC88A',.3]}};
+// place -> [family, awning accent (stripe A; stripe B = the family trim)]; no accent keeps the place's own awning (the arcade's neon)
+const FAMOF={home:['gothic'],cafe:['brick','evergreen'],records:['slate','butter'],bookstore:['sage','berry'],market:['brick'],thrift:['plum','berry'],grocery:['butter','evergreen'],petstore:['sage','berry'],
+ cinema:['plum','butter'],studio:['butter','plum'],phones:['slate','butter'],bikes:['brick','evergreen'],station:['brick','evergreen'],arcade:['plum'],neighbor:['butter'],townhall:['butter'],
+ bakery:['butter','berry'],threads:['plum','butter'],nursery:['sage','evergreen'],evergreen:['log','evergreen'],lantern:['slate','butter'],fogwell:['brick'],willa:['plum'],cabin:['log']};
+const CLOVER=['107,176,79','200,235,154'];
 const PLACES=[
  {id:'home',name:"Mocha's House",x:40,z:42,ry:0,w:28,d:14,h:6,kind:'home',
   spots:{main:[0,2],kitchen:[-9,-3.6],desk:[-3,-4.4],couch:[0,-.2],bed:[7.2,-3.8],closet:[4.8,-4.4],bath:[12.2,-4.4],petbed:[-3.6,2.2],mailbox:[5.0,12.6],porch:[0,9.9],tree:[1.6,4.5]}},
@@ -477,6 +493,8 @@ const PLACES=[
  {id:'gumwall',name:'Bubblegum Alley',x:-50,z:-60,ry:Math.PI/2,kind:'gumwall',secret:1},
 ];
 const byId=Object.fromEntries(PLACES.map(p=>[p.id,p]));
+// B15: every place takes its family's wall/trim/roof (the gothic house keeps its own builder colors, which ARE the gothic family); accents only on awnings
+PLACES.forEach(p=>{const f=FAMOF[p.id],F=f&&PAL.fam[f[0]];if(!F)return;p.fam=f[0];p.trim=F.trim;if(p.wall){p.wall=F.wall;p.roof=F.roof}if(f[1]&&p.awn)p.awn=[PAL[f[1]],F.trim]});
 const own=(o,k)=>o!=null&&typeof k==='string'&&Object.prototype.hasOwnProperty.call(o,k);
 function isOpen(p,h){if(!p||!p.hours)return true;if(h==null){const d=new Date();h=d.getHours()+d.getMinutes()/60}return h>=p.hours[0]&&h<p.hours[1]}
 const fmtH=h=>{const hh=Math.floor(h)%24,m=Math.round((h%1)*60);return`${hh%12||12}${m?':'+String(m).padStart(2,'0'):''}${hh<12?'am':'pm'}`};
@@ -791,6 +809,8 @@ function tierOf(p){let i=0;while(i<TIERS.length-1&&p>=TIERS[i+1])i++;return i}
 function EV(){const L={};return{on(t,f){(L[t]||(L[t]=[])).push(f);return f},off(t,f){const a=L[t];if(a){const i=a.indexOf(f);if(i>=0)a.splice(i,1)}},emit(t,d){const a=L[t];if(a)for(let i=0;i<a.length;i++){try{a[i](d,t)}catch(e){}}}}}
 const DOOREV=EV(),SFXEV=EV();
 // B9: the walker at Mocha's door (feeds the atDoor term), chalkboards he passed (his own +.5 interest), and his own 'say hi at the door' candidate
+const FLK={w:0,back:0,day:'',lit:0,n:0,log:[]},FLICK_ACT={p:'home',s:'porch',doing:'flicking the porch light back at Wendell',tags:['people','cozy'],need:{social:10},flick:1};// B16 goodnight flicks
+const LUXS={si:.88,force:null};
 const DVIS={t:0,pid:null},CHB={},GREET_ACT={p:'home',s:'porch',doing:'popping out to the door to say hi',tags:['people','cozy'],need:{social:25},greet:1,lines:['Someone came by the door, so I floated out to say hi. Visitors make the whole house feel warmer.']};
 function sfx(name,data){SFXEV.emit(name,data);SFXEV.emit('*',{name,data})}
 function emote(obj,id,dur){}
@@ -865,18 +885,148 @@ const HUD={S:{},ready:false,more:{},pop:null,popZ:null,n:0,_ins:null,
     for(const id in L){const s=this.S[id];if(!s)continue;if(on&&!s.el){const e=document.createElement('div');e.className='pill hudStub';e.textContent=L[id];s.el=e;s.stub=true;s.on=true;e.classList.add('hudS');document.body.appendChild(e)}else if(!on&&s.stub){s.el.remove();s.el=null;s.stub=false;s.on=false;s.r=null;s.folded=false}}
     if(!on)this.popZ=null;this.count();this.layout()}};
 // ====================================================================
+//  B17 WENDELL (early, data only; declared above catchUp): parsePlan / planFor / blockAt (B22 reuses them for everyone), wAvailAt,
+//  the S.wend shape, the 12-story bank and HANGOUTS v1 (17 activities). Hoisted helpers; no meshes, no G/W (catchUp runs hangouts
+//  through localOutcome fx:'hang' and simulates only Wendell's mailbox-note invites, 1 a day at most).
+// ====================================================================
+function wendFresh(){return{caps:23,ck:[0,0],puz:0,pi:0,told:0,inv:null,turn:0,mem:[],last:0,li:Date.now(),nd:0,cd:0,nc:0}}
+function wendFix(w){const f=wendFresh();if(!w||typeof w!=='object'||Array.isArray(w))return f;for(const k in f)if(w[k]===undefined)w[k]=f[k];w.caps=Math.max(0,Math.min(999,Math.round(+w.caps||0)));if(!Array.isArray(w.ck)||w.ck.length!==2)w.ck=[0,0];w.ck=w.ck.map(v=>Math.max(0,Math.round(+v||0)));
+  w.puz=Math.max(0,Math.min(99,+w.puz||0));w.told=(+w.told||0)&4095;w.turn=w.turn?1:0;w.mem=Array.isArray(w.mem)?w.mem.filter(Array.isArray).slice(-8):[];if(!w.inv||typeof w.inv!=='object')w.inv=null;for(const k of ['pi','last','li','nd','cd','nc'])w[k]=+w[k]||0;return w}
+// a day's rhythm: 'HHMM-HHMM where verb;...'  where = porch | yard (outside his door), home.<spot> (a room spot inside), ><list> (out on the town)
+const W_RHYTHM='0700-0800 porch tea;0800-1000 yard garden;1000-1400 >errand;1400-1500 home.fireA nap;1500-1700 >stroll;1700-1730 home.fireA read;1730-1900 home.stove cook;1900-2100 home.fireA eve;2100-2200 home.fireA tv;2200-0700 home.bed sleep';
+const PLANS={wendell:{r:W_RHYTHM,home:'neighbor',go:{errand:['cafe','market','grocery','library'],stroll:['park','promenade']}}},PLANC=new Map();
+// parsePlan(str) -> [[h0,h1,kind 'in'|'out'|'go',place,spot,verb]] (pure)
+function parsePlan(str){const o=[];for(const seg of String(str||'').split(';')){const m=/^\s*(\d{4})(?:-(\d{4}))?\s+(\S+)\s*(\S*)/.exec(seg);if(!m)continue;const hh=s=>+s.slice(0,2)+(+s.slice(2))/60,h0=hh(m[1]),h1=m[2]?hh(m[2]):h0+1,w=m[3];let kind='out',place=w,spot=null;
+  if(w[0]==='>'){kind='go';place=w.slice(1)}else if(w.includes('.')){kind='in';[place,spot]=w.split('.')}o.push([h0,h1,kind,place,spot,m[4]||place])}return o}
+// blockAt(plan,hour): the block covering that hour (wraps midnight; later blocks override earlier ones). Pure, so catchUp, lights and talk agree.
+function blockAt(plan,h){let b=null;if(plan)for(const x of plan){const a=x[0],e=x[1];if(a<=e?(h>=a&&h<e):(h>=a||h<e))b=x}return b}
+// planFor(id,date): memoized per dayKey; errands seeded by date; rain cancels gardening + the stroll (WX almanac); evenings vary; 1 night in 3 a 1am snack raid; holidays
+function planFor(id,date=Date.now()){const dk=dkey(+date),k=id+dk;let v=PLANC.get(k);if(v)return v;const P=PLANS[id];if(!P)return[];const r=seeded(wxHash('plan'+k)),d0=+dFromKey(dk),wet=hh=>{try{return WX.wet(d0+hh*36e5)}catch(e){return false}};
+  v=parsePlan(P.r).map(b=>{b=b.slice();if(b[2]==='in'&&b[3]==='home')b[3]=P.home;if(b[2]==='go'){const L=P.go[b[3]]||[b[3]];b[3]=L[Math.floor(r()*L.length)]}return b});
+  for(const b of v){if(b[5]==='garden'&&wet(b[0]+1)){b[2]='in';b[3]=P.home;b[4]='reading';b[5]='rainread'}else if(b[5]==='stroll'&&wet(b[0]+1)){b[2]='in';b[3]=P.home;b[4]='shelf';b[5]='caps'}else if(b[5]==='eve')b[5]=['read','caps','radio'][Math.floor(r()*3)]}
+  if(r()<1/3)v.push([1,1+2/60,'in',P.home,'stove','snack']);
+  try{const hs=holsOn(d0+12*36e5).map(x=>x.id);if(hs.includes('halloween'))v.push([17,21,'out','porch',null,'candy']);if(hs.includes('thanksgiving'))v.push([12,20,'out','porch',null,'holiday']);if(hs.includes('christmas'))v.push([9,18,'out','porch',null,'holiday'])}catch(e){}
+  if(PLANC.size>40)PLANC.delete(PLANC.keys().next().value);PLANC.set(k,v);return v}
+// Wendell is free for a hangout: at home or on his porch/yard, awake, not on an errand, and not within 30 min of his 22:00 bedtime
+function wAvailAt(t=Date.now()){const h=hourAt(t),b=blockAt(planFor('wendell',t),h);return!!b&&h>=7&&h<21.5&&b[2]!=='go'&&!/^(sleep|nap|snack)$/.test(b[5])}
+// caps: +1 every ~2 days from his errands; the newest one gets shown at the next hangout
+function wendCaps(t){const w=S.wend,dn=Math.floor(t/864e5);if(!w.cd){w.cd=dn;return 0}if(dn-w.cd>=2){w.caps=Math.min(999,w.caps+1);w.cd=dn;w.nc=1;return 1}return 0}
+// the story bank: [tier, diary label, his words]. Told once each (S.wend.told bitmask), in tier order.
+const W_STORIES=[[0,'the foggy crossing when the whole ferry sang',"Fog so thick we crossed by foghorn alone. Halfway over, somebody started singing, and by Bainbridge the whole ferry was singing along."],
+ [0,'the orca that followed his boat',"An orca followed my boat clear across the Sound once. Every time I looked back, there she was, puffing a little cloud of spray."],
+ [0,'his 31 years on the boats',"Thirty-one years on the ferries. Coiled a lot of rope. Saw a lot of sunrises. Never once got tired of the water, not once."],
+ [1,'how he met Pearl',"I met Pearl on the 6:10 to Bainbridge. Her umbrella flew right over the rail and she laughed so hard I knew I'd marry her."],
+ [1,'his sister Hazel in Spokane who mails him jam',"My sister Hazel lives in Spokane. Every August she mails me blackberry jam. The lid always arrives a little sticky."],
+ [1,'the night a seal rode the car deck',"One night a harbor seal flopped onto the car deck at Kingston. Rode with us all the way across. Wouldn't even pay the fare."],
+ [2,'the snowstorm when he slept on the boat',"The big snow, years back. Roads shut, so we slept on the boat, all of us, wrapped in life-vest blankets, drinking cocoa."],
+ [2,'his first bottle cap',"My first bottle cap was a root beer one. Found it on the dock the day I started. Kept it in my pocket for good luck. Still do."],
+ [2,"Pearl's tomato soup","Pearl made tomato soup every Sunday. I never got it quite right. Too much patience, she'd say. Or not enough. I forget which."],
+ [3,'the time he steered the ferry',"The captain let me take the wheel once, just for a minute, in flat calm. I was so proud I couldn't speak for an hour."],
+ [3,'why he moved to this street',"After Pearl passed I wanted a little house near the water and a neighbor to wave at. Got the house. Got a ghost. Even better."],
+ [4,'what he wants to do someday',"Someday I'd like to ride the ferry one more time, just as a passenger. Maybe you'll come with me, mocha. Bring a scarf."]];
+function wStoryPick(){const w=S.wend,tier=tierOf(bondOf('wendell'));for(let i=0;i<W_STORIES.length;i++)if(!(w.told&(1<<i))&&W_STORIES[i][0]<=tier)return i;return Math.floor(Math.random()*W_STORIES.length)}
+const W_NOTES=['Tea at 7? Bring nothing but yourself. -W','Kettle\'s on tonight around 7. Come by if you like. -W','Found a new bottle cap. You have to see it. This evening? -W'];
+const W_STARS=['the North Star sits almost straight above Earth\'s north pole, so it hardly moves all night','some of that starlight left its star hundreds of years ago','the Big Dipper is really part of a bigger constellation, the Great Bear','Mars looks a little red because its dust is full of iron oxide. Rust, more or less','the brightest "star" in the evening is often the planet Venus'];
+// HANGOUTS v1: {id, n (doing), w where 'W'|'M'|'P'|'Y'|'E', sp:{W:[wendell,mocha,drop-in],M:[..]}, need:{M,W} HOME_CAPS slots, alt, h:[from,to], mo, wx 'wet'|'dry'|'clear',
+//  dark, tier, len:[s,s], beats 'w:'/'m:' (+ 'yw:'/'ym:' only when you sit in a drop-in seat), prop, out, when (an empty-house fallback), d (diary; {x} = outcome)}
+const HANGOUTS=[
+ {id:'tea',n:'having tea with Wendell',w:'E',sp:{W:['teaA','teaB','fireC'],M:['teaA','teaB','couchC']},alt:'reading',h:[9,21.5],tags:['friends','cozy'],prop:'mugs',out:{story:1},
+  beats:['w:kettle\'s on. sit, sit','m:thank you wendell!','w:ah, that reminds me…','w:{story}','m:whoa. really?','w:true as the tide','m:tell me another one sometime'],yb:['yw:pull up a chair! plenty of tea','ym:*pours you a cup*'],d:'Had tea with Wendell. {x}'},
+ {id:'checkers',n:'playing checkers with Wendell',w:'W',sp:{W:['fireA','fireB','fireC'],M:['couchA','couchB','couchC']},h:[13,21.5],tags:['friends','gaming'],prop:'board',out:{ck:1},
+  beats:['w:red or black?','m:black! always black','w:learned that double jump on the 2am ferry','m:hey!! that\'s sneaky','w:ah, now you\'re thinking','m:king me!!','w:well I\'ll be','m:hehe'],
+  yb:['yw:pull up a chair! you can be the referee','yw:see, jump diagonal like this… two for one','ym:referee, was that legal??'],yd:'{you} dropped in for checkers. Wendell let them pick the next move. It was a bad move. We loved it.',d:'Played checkers by Wendell\'s fire. {x}'},
+ {id:'jigsaw',n:'doing the jigsaw at Wendell\'s',w:'W',sp:{W:['teaA','teaB','fireC']},h:[10,21.5],tags:['friends','cozy'],prop:'puzzle',out:{puz:1},
+  beats:['w:found an edge piece!','m:this one is sky. this one is also sky','w:it\'s all sky, that\'s the trouble','m:the corner! i found the corner!','w:one piece is always missing, you know','m:noooo'],yb:['yw:you\'ve got good eyes. try that blue one'],d:'Worked on the never-ending jigsaw on Wendell\'s table. {x}'},
+ {id:'supper',n:'cooking supper with Wendell',w:'W',sp:{W:['stove','teaB','teaA']},need:{W:['stove']},h:[16.5,20],tags:['friends','cooking'],prop:'pot',out:{pantry:15},
+  beats:['w:rinse first. old raccoon habit','m:can i stir?','w:gently now, gently','m:it smells so good','w:{dish}','m:can i have the recipe?','w:secret is a pinch of patience'],yb:['yw:grab a bowl, there\'s plenty'],d:'Cooked supper with Wendell: {dishn}. He rinsed everything first, very seriously. He sent me home with leftovers.'},
+ {id:'movie',n:'watching a movie with Wendell',w:'M',sp:{M:['couchA','couchB','couchC'],W:['fireA','fireB','fireC']},need:{M:['computer'],W:['tv']},alt:'gofish',h:[17,21.5],tags:['friends','movies'],prop:'popcorn',
+  beats:['m:popcorn is ready!','w:ooh, {film}! a classic','m:shhh it\'s starting','w:I saw this one on a date with Pearl','m:aww','w:here comes the good part'],yb:['ym:*passes you the popcorn*','yw:pull up a chair, you\'re just in time'],d:'Movie night with Wendell: {film}{where}. He knew all the good parts and whispered them a second early.'},
+ {id:'radio',n:'listening to the radio with Wendell',w:'E',sp:{M:['couchA','couchB','couchC'],W:['fireA','fireB','fireC']},need:{M:['radio'],W:['radio']},alt:'reading',h:[18,21.5],tags:['friends','music'],
+  beats:['w:hm hm hmm… oh, I love this one','m:you know all the words!','w:we played this on the night boats','m:dance break!','w:my knees say no, my heart says yes','m:hehe'],yb:['yw:you know this one? sing along!'],d:'Listened to the radio with Wendell. He hummed along to every single song.'},
+ {id:'reading',n:'reading side by side with Wendell',w:'E',sp:{M:['couchA','couchB','couchC'],W:['fireA','fireB','fireC']},h:[10,21.5],tags:['friends','reading'],
+  beats:['m:…','w:…','m:hehe','w:what\'s funny?','m:nothing! just a good part','w:…'],yb:['yw:spare book on the shelf, help yourself'],d:'Read side by side with Wendell. Nobody said anything for a whole hour. It was perfect.'},
+ {id:'portrait',n:'painting Wendell\'s portrait',w:'W',sp:{W:['fireA','fireB','fireC']},h:[10,19],tier:2,tags:['friends','art'],out:{paint:1},
+  beats:['m:hold still!','w:like this? my good side is the left','m:perfect. don\'t move','w:my nose itches','m:almost done…','w:well I\'ll be. that\'s me!'],yb:['yw:what do you think? does it look like me?'],d:'Painted Wendell\'s portrait by his fire. He hung it over the mantel right away.'},
+ {id:'garden',n:'gardening with Wendell',w:'Y',sp:{W:['yard','yard2','porchC']},h:[8,18],wx:'dry',tags:['friends','nature'],
+  beats:['w:pull the little ones, leave the big ones','m:is this a weed?','w:that\'s a carrot, dear','m:oops','w:the slugs are the real gardeners here','m:i\'m naming this worm gerald'],yb:['yw:mind the tomatoes!'],d:'Helped Wendell in his garden. I pulled up one carrot by accident. He said the carrot had it coming.'},
+ {id:'stars',n:'stargazing on the porch with Wendell',w:'P',sp:{W:['porchA','porchB','porchC'],M:['porchA','porchB','porchC']},h:[18,21.5],wx:'clear',dark:1,tags:['friends','nature'],
+  beats:['w:clear night. rare as a dry March','m:so many stars','w:did you know {fact}?','m:whoa','w:on the boats we checked them now and then','m:i\'m wishing on that one'],yb:['yw:find any good ones?'],d:'Stargazed on the porch with Wendell. He told me {factd}. True!'},
+ {id:'rainwatch',n:'watching the rain with Wendell',w:'P',sp:{W:['porchA','porchB','porchC'],M:['porchA','porchB','porchC']},h:[9,21.5],wx:'wet',tags:['friends','cozy'],
+  beats:['w:listen to that','m:it sounds like popcorn on the roof','w:the Sound gets a good drink tonight','m:i love it when it\'s cozy like this','w:me too, mocha. me too'],yb:['yw:pull up a chair, rain\'s better with company'],d:'Watched the rain from the porch with Wendell. We counted the drips off the gutter and lost count twice.'},
+ {id:'caps',n:'sorting bottle caps with Wendell',w:'W',sp:{W:['teaA','teaB','fireC']},h:[10,21.5],tags:['friends','collecting'],out:{caps:1},
+  beats:['w:look at this one! {cap}','m:ooh, shiny','w:found it by the ferry dock','m:can we sort them by color?','w:by color, then by year. naturally','m:this one has a tiny boat on it!'],yb:['yw:you can sort the blues'],d:'Sorted bottle caps with Wendell. {x}'},
+ {id:'gofish',n:'playing Go Fish with Wendell',w:'E',sp:{W:['teaA','teaB','fireC'],M:['teaA','teaB','couchC']},alt:'reading',h:[10,21.5],tags:['friends','gaming'],prop:'cards',
+  beats:['m:got any sevens?','w:go fish!','m:aw','w:got any queens?','m:…go fish','w:hah! I\'m terrible at this, aren\'t I','m:you\'re winning!'],yb:['yw:deal you in?'],d:'Played Go Fish with Wendell. He asked for queens six times in a row.'},
+ {id:'game',n:'playing a computer game with Wendell',w:'M',sp:{M:['desk','desk2','couchC']},need:{M:['computer']},alt:'gofish',h:[10,21.5],tags:['friends','gaming'],
+  beats:['m:press this button to jump','w:which one? oh dear','m:you fell in the lava again','w:I\'m terrible! I love it!','m:one more try!','w:again! again!'],yb:['yw:you try, I\'ll cheer'],d:'Showed Wendell a game on my computer. He is terrible at it. He was so delighted.'},
+ {id:'picnic',n:'having a floor picnic with Wendell',w:'M',sp:{M:['floorA','floorB','couchC']},h:[11,21],when:'nocouch',tags:['friends','cozy'],prop:'cloth',
+  beats:['w:best seat in the house is the floor, I always say','m:i made sandwiches!','w:cut in triangles. very fancy','m:the floor is a picnic now','w:a picnic with a roof. even better'],yb:['yw:there\'s room on the blanket!'],d:'Floor picnic with Wendell! Checked cloth, triangle sandwiches. He says the floor is the best seat in the house.'},
+ {id:'boxtea',n:'having tea on the moving box with Wendell',w:'M',sp:{M:['teaA','teaB','couchC']},h:[9,21.5],when:'notable',tags:['friends','cozy'],prop:'mugs',
+  beats:['m:the table is a box today','w:a fine box. sturdy','m:two mugs fit perfectly','w:best tea I\'ve had all week','m:hehe really?','w:really truly'],yb:['yw:there\'s a third mug in here somewhere'],d:'Tea with Wendell on my moving box. Two mugs, one box, zero spills. A new record.'},
+ {id:'flashlight',n:'telling flashlight stories with Wendell',w:'M',sp:{M:['couchA','couchB','couchC']},h:[19,21.5],dark:1,when:'nolamp',tags:['friends','stories'],prop:'light',out:{joke:1},
+  beats:['w:it was a foggy night on the ferry…','m:*flashlight under chin*','w:and through the fog… a ghost!','m:i\'m literally a ghost','w:…well I\'ll be','m:hehehe','w:you\'re not scary. you\'re sweet'],yb:['yw:scoot in, it\'s story time'],d:'Flashlight stories with Wendell. He told a ghost story. I reminded him I am literally a ghost. He said "well I\'ll be." Now it\'s our joke.'}];
+const WD={t:0,zt:4,verb:{tea:'having tea on his porch with the paper',garden:'gardening',nap:'napping in his armchair',read:'reading by the fire',rainread:'reading in his window seat (too wet to garden)',caps:'sorting his bottle caps',radio:'listening to the radio',tv:'watching the late show',cook:'cooking supper',sleep:'asleep in his bed nook',snack:'raiding the fridge for a midnight snack',candy:'handing out candy on his porch',holiday:'sitting out on his porch'}};
+const HBY={};HANGOUTS.forEach(h=>HBY[h.id]=h);
+// hangout state (runtime; declared early so every caller is safe): HS={on,a,h,host,p,sp,ph (Mocha: door|knock|seat|sat),wph (Wendell: wait|seat|esc|come|knockM|sat|home),n bubbles,t,len,y (you dropped in),mc (MIND calls)}
+const HS={on:false,a:null,h:null,host:'W',p:'neighbor',sp:null,ph:'',wph:'',i:0,n:0,t:0,len:0,log:[],mc:0,q:[],qt:0,y:0,yb:0,story:0,done:0};
+const W_HAS=['bed','stove','table','couch','tv','radio','lamp','desk','bath'];
+function hangHas(slot,home){return home==='neighbor'?W_HAS.includes(slot):hasItem(slot,home)}
+// Mocha's pair spots fall back through capSpot: couch -> floor cushions, table -> the moving box (nobody sits on air)
+const HSEAT={couchA:['couch',0],couchB:['couch',1],teaA:['table',0],teaB:['table',1]};
+function hangSeat(sn,home){const m=home==='home'&&HSEAT[sn];if(!m||hasItem(m[0],'home'))return sn;const c=capSpot(m[0],'home');return c&&c.pair?c.pair[m[1]]:sn}
+function hangWhen(h){const w=h.when;return!w||(w==='nocouch'?!hasItem('couch')||!hasItem('table'):w==='notable'?!hasItem('table'):w==='nolamp'?!hasItem('lamp'):true)}
+// where it happens: the preferred house, then the other house, then alt. -> {h,host 'W'|'M',p,sp:[wendell,mocha,drop-in]}
+function hangResolve(h,where,depth=0){if(!h)return null;const turn=S.wend&&S.wend.turn,pref=where||(h.w==='E'||h.w==='P'?(turn?'M':'W'):h.w==='M'?'M':'W');
+  for(const k of [pref,pref==='M'?'W':'M']){const sp=h.sp[k];if(!sp)continue;const home=k==='M'?'home':'neighbor';if(((h.need&&h.need[k])||[]).every(s=>hangHas(s,home)))return{h,host:k,p:home,sp:sp.map(s=>hangSeat(s,home))}}
+  return depth<2&&h.alt?hangResolve(HBY[h.alt],null,depth+1):null}
+function hangTrad(h,at){const d=new Date(at).getDay();return tierOf(bondOf('wendell'))>=3&&((d===5&&h.id==='movie')||(d===0&&h.id==='tea'))?4:0}
+function hangFits(h,at){const hr=hourAt(at),mo=new Date(at).getMonth()+1;if(hr<h.h[0]||hr>=h.h[1]||(h.mo&&!h.mo.includes(mo)))return false;if(h.tier&&tierOf(bondOf('wendell'))<h.tier)return false;
+  let wk='cloudy';try{wk=wxKind(at)}catch(e){try{wk=WX.at(at)}catch(_){}}const wet=/rain|drizzle|snow/.test(wk);if(h.wx==='wet'&&!wet||h.wx==='dry'&&(wk==='rain'||wk==='snow')||h.wx==='clear'&&wk!=='clear')return false;
+  if(h.dark){let dk=hr>=19.5||hr<6;try{dk=isDark(hr)}catch(e){}if(!dk)return false}return hangWhen(h)}
+function hangPick(at,where,rnd=Math.random,ok){const L=[];let tot=0;const dn=Math.floor(at/864e5);for(const h of HANGOUTS){if(!hangFits(h,at)||(ok&&!ok(h)))continue;const r=hangResolve(h,where);if(!r||(where&&r.host!==where))continue;
+    let w=1+(h.tags||[]).reduce((a,k)=>a+Math.max(-1,(S.interests[k]||0)),0)*.12;if(S.wend.mem.some(m=>m[0]===h.id&&dn-m[1]<2))w*=.3;if(h.when)w+=2;w=Math.max(.1,w+hangTrad(h,at));L.push([r,w]);tot+=w}
+  if(!L.length)return null;let x=rnd()*tot;for(const [r,w] of L){x-=w;if(x<=0)return r}return L[0][0]}
+function hangHrs(at){return S.wend.last?Math.max(0,(at-S.wend.last)/36e5):36}
+function hangBedOk(at){const h=hourAt(at),b=sched().bed%24,tb=((b-h)+24)%24;return h>=7&&h<21.5&&tb>.5}
+// Mocha's hangout score: social need, bond tier, the evening, wet weather, time since the last one, sociability, a pending invite (+3), a tradition (+4)
+function hangScore(at,h){const tr=S.traits,hr=hourAt(at),tier=tierOf(bondOf('wendell'));let wk='cloudy';try{wk=wxKind(at)}catch(e){}const iv=S.wend.inv;
+  return 1+(100-S.needs.social)/25+tier*.4+(hr>=17&&hr<21?1.5:0)+(/rain|drizzle|snow/.test(wk)?1:0)+Math.min(8,Math.max(0,(hangHrs(at)-8)/2))+(tr.sociability-.5)*2+(iv&&(iv.k==='note'||iv.k==='later')&&iv.d===dkey(at)&&hr>=16?3:0)+(h?hangTrad(h,at):0)}
+function hangAct(r,hs){const h=r.h;return{p:r.p,s:r.sp[1],doing:h.n,tags:(h.tags||['friends']).concat('people'),need:{social:45,fun:15},fx:'hang',hang:h.id,host:r.host,sp:r.sp.slice(),npc:1,hs:hs||0}}
+// one hangout candidate for localChoose (only when Wendell's plan says he is home and awake, and nobody is near bedtime)
+function hangCands(at){try{if(!S.wend||!hangBedOk(at)||!wAvailAt(at))return[];try{if(W.busy>0||W.inv||W.hang)return[]}catch(e){}const r=hangPick(at);return r?[hangAct(r,hangScore(at,r.h))]:[]}catch(e){return[]}}
+// a mailbox note from Wendell (round-1 S.mail): "Tea at 7?" -> a pending invite (+3) for this evening
+function wNote(t){const w=S.wend;w.li=t;w.nd=dkey(t);w.inv={k:'note',t,d:dkey(t),h:19};S.mail=Array.isArray(S.mail)?S.mail:[];S.mail.unshift({id:'w'+Math.round(t).toString(36),h:'wendell',k:'wnote-'+dkey(t),t,from:'Wendell',text:pick(W_NOTES),gift:'',reply:null,seen:0});S.mail.length=Math.min(S.mail.length,40)}
+// Wendell misses him: miss = hours since the last hangout * (0.04 + tier*0.02) (derived, never saved)
+function wMiss(t){return hangHrs(t)*(.04+tierOf(bondOf('wendell'))*.02)}
+// catchUp: only mailbox-note invites are simulated (1 a day at most), plus his caps
+function wendSim(t){try{const w=S.wend;wendCaps(t);const h=hourAt(t);if(h<16||h>=20||w.nd===dkey(t)||t-w.li<20*36e5||!wAvailAt(t)||wMiss(t)<1)return 0;wNote(t);return 1}catch(e){return 0}}
+// a hangout's outcome (localOutcome fx:'hang'; data only, so it works in catchUp): S.wend, the friendship, a diary line from the template
+function hangOutcome(act,t=Date.now(),live=true){const w=S.wend,h=HBY[act.hang]||HBY.tea,o=h.out||{},dn=Math.floor(t/864e5),host=act.host||'W',place=host==='M'?"Mocha's House":"Wendell's House";
+  w.last=t;w.turn=host==='M'?0:1;w.mem.push([h.id,dn]);if(w.mem.length>8)w.mem.splice(0,w.mem.length-8);if(w.inv&&w.inv.k!=='knock')w.inv=null;S.metW=true;S.friendW=(+S.friendW||0)+1;let x='';
+  if(o.ck){const p=clamp(.32+Math.max(0,S.interests.gaming||0)*.05,.2,.75),mw=Math.random()<p;w.ck[mw?0:1]++;const n=w.ck[0]+w.ck[1];x=(mw?'I won! He said I\'m getting sneaky with the double jump.':'Wendell won. He did the double jump again.')+(n%5===0?` That makes ${w.ck[0]} to ${w.ck[1]} all time.`:'')}
+  if(o.puz){w.puz+=8+Math.floor(Math.random()*7);if(w.puz>=100){w.puz=0;w.pi++;x='We FINISHED it! The last piece was in his cardigan pocket the whole time. It\'s getting a frame on his wall, and he already opened a new one.'}else x=`It's ${Math.round(w.puz)}% done. One piece is missing, as always.`}
+  if(o.caps){const k=1+Math.floor(Math.random()*3);w.caps=Math.min(999,w.caps+k);x=`He gave the shelf ${k} new one${k>1?'s':''}. ${w.caps} bottle caps now. He has a story for every single one.`}
+  if(o.pantry)S.pantry=Math.min(100,(+S.pantry||0)+o.pantry);
+  if(o.story){const i=act.story>=0?act.story:wStoryPick();w.told|=(1<<i);x=`He told me about ${W_STORIES[i][1]}.`}
+  if(o.joke&&!w.mem.some(m=>m[0]==='jk'))w.mem.push(['jk',dn,'i\'m literally a ghost']);
+  if(o.paint&&live){try{makePainting('wendell','Wendell by the Fire',t,'give:wendell');const e0=S.diary[0];if(e0&&e0.tag==='Art')S.diary.shift()}catch(e){}}
+  w.nc=0;const mo=new Date(t).getMonth()+1,cob=mo>=7&&mo<=9,f=act.film||'';
+  let txt=h.d.replace('{x}',x).replace('{dishn}',cob?'blackberry cobbler':'tomato soup').replace('{film}',f?`"${f}"`:'an old movie').replace('{where}',host==='W'?' on his cabinet TV, "the late show"':' on my computer').replace('{factd}',act.fact||W_STARS[0]);
+  if(act.you){const nm=S.mem.userName||'My visitor';txt+=' '+(h.yd||`{you} dropped in and pulled up a chair. Wendell made them a cup of tea.`).replace('{you}',nm)}
+  addEntry('Wendell',txt,place,t);return S.diary[0]}
+// ====================================================================
 //  STATE
 // ====================================================================
 const KEY='mocha-seattle-v1';
-function fresh(){const tr=()=>+(Math.random()).toFixed(2);return{v:1,born:Date.now(),lastSeen:Date.now(),xp:0,
+function fresh(){const tr=()=>+(Math.random()).toFixed(2);return{v:1,wend:wendFresh(),born:Date.now(),lastSeen:Date.now(),xp:0,
   needs:{energy:75,snack:60,social:55,fun:60,curious:80},
   traits:{curiosity:tr(),coziness:tr(),sociability:tr(),creativity:tr(),adventure:tr()},
   interests:{},hobbies:[],owned:[],wearing:[],favColor:null,items:[],learned:[],
   discovered:[],visits:{},goal:null,goalsDone:0,diary:[],
-  mem:{userName:null,facts:[],chats:0,met:Date.now()},chatLog:[],mind:false,recent:[],lastThought:0,pets:[],decor:[],pantry:60,paintings:[],coins:150,know:{},seen:[],phone:null,gadgets:[],bike:null,jobs:0,seed150:1,texts:[],txQ:[],mail:[],mbox:[],mailSent:[],hol:{},calT:0,careAt:0,mailT:0,trip:null,trips:[],tripLast:0,pins:[],shortcuts:[],you:{album:[],doors:[]}}}
+  mem:{userName:null,facts:[],chats:0,met:Date.now()},chatLog:[],mind:false,recent:[],lastThought:0,pets:[],decor:[],pantry:60,paintings:[],coins:150,know:{},seen:[],phone:null,gadgets:[],bike:null,jobs:0,seed150:1,texts:[],txQ:[],mail:[],mbox:[],mailSent:[],hol:{},calT:0,careAt:0,mailT:0,trip:null,trips:[],tripLast:0,pins:[],shortcuts:[],you:{album:[],doors:[]},lite:{v:0,lw:0,fw:0,ld:'',fd:''}}}
 let S=null;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 let isNew=!S||!S.needs;if(isNew)S=fresh();const seen0=isNew?0:(+S.lastSeen||0);
-function migrate(){S.paintings=S.paintings||[];S.coins=S.coins||0;S.know=S.know||{};S.seen=S.seen||[];S.posts=S.posts||[];S.pets=S.pets||[];S.decor=S.decor||[];if(S.pantry==null)S.pantry=60;
+function migrate(){S.wend=wendFix(S.wend);S.lite=Object.assign({v:0,lw:0,fw:0,ld:'',fd:''},S.lite&&typeof S.lite==='object'?S.lite:{});S.paintings=S.paintings||[];S.coins=S.coins||0;S.know=S.know||{};S.seen=S.seen||[];S.posts=S.posts||[];S.pets=S.pets||[];S.decor=S.decor||[];if(S.pantry==null)S.pantry=60;
   if(!S.seed150){S.coins=(+S.coins||0)+150;S.seed150=1;S.seedNote=1}S.coins=Math.max(0,Math.round(+S.coins||0));if(S.phone===undefined)S.phone=null;S.gadgets=Array.isArray(S.gadgets)?S.gadgets.slice(-12):[];if(S.bike===undefined)S.bike=null;S.jobs=S.jobs||0;S.texts=Array.isArray(S.texts)?S.texts.filter(m=>m&&m.text&&(m.from==='me'||m.from==='him')).slice(-150):[];S.txQ=Array.isArray(S.txQ)?S.txQ.slice(-30):[];
   S.mail=Array.isArray(S.mail)?S.mail.filter(l=>l&&l.text).slice(0,40):[];S.mbox=Array.isArray(S.mbox)?S.mbox.filter(m=>m&&m.t).slice(-6):[];S.mailSent=Array.isArray(S.mailSent)?S.mailSent.slice(-40):[];if(!S.hol||typeof S.hol!=='object'||Array.isArray(S.hol))S.hol={};S.calT=+S.calT||0;S.careAt=+S.careAt||0;S.mailT=+S.mailT||0;
   if(!S.trip||typeof S.trip!=='object'||!S.trip.id||!Array.isArray(S.trip.ev))S.trip=null;S.trips=Array.isArray(S.trips)?S.trips.filter(x=>x&&x.id).slice(0,24):[];S.tripLast=+S.tripLast||0;S.pins=Array.isArray(S.pins)?S.pins.filter(x=>typeof x==='string').slice(-12):[];if(!S.you||typeof S.you!=='object'||Array.isArray(S.you))S.you={};if(!Array.isArray(S.you.album))S.you.album=[];if(!Array.isArray(S.you.doors))S.you.doors=[];if(!Array.isArray(S.shortcuts))S.shortcuts=[];S.shortcuts=S.shortcuts.filter(x=>typeof x==='string').slice(0,8);S.you.doors=S.you.doors.filter(x=>typeof x==='string').slice(-40);S.you.album=S.you.album.slice(-30);
@@ -903,10 +1053,10 @@ function savePhotos(){if(S.you&&Array.isArray(S.you.album)&&S.you.album.length>3
   try{localStorage.setItem('mocha-photos',JSON.stringify(PHOTOS))}catch(e){const k=drop.find(k=>PHOTOS[k]&&!pr.has(k))||Object.keys(PHOTOS).find(k=>!pr.has(k));if(k){delete PHOTOS[k];savePhotos()}}}
 const WEATHER={kind:'cloudy',t:0,wet:0,over:.5};
 const SEASONS={
- spring:{label:'🌸 spring',maple:['#f6b8cc','#f29fb5','#fbd3e0','#f7c6d6','#ffffff'],fall:['#f9c9d8','#f4a7bf','#ffffff','#fbe0ea'],grass:'#82c068',dots:['70,150,60','210,240,160'],fl:['#ffffff','#ffd6e6','#ffe27a','#f4a8c8'],leaf:'petal',litter:220},
- summer:{label:'☀️ summer',maple:['#5fa04a','#4f8f3f','#79b35a','#6aa84f'],fall:['#6aa84f','#8fbf5a'],grass:'#74b85b',dots:['50,130,50','190,235,140'],fl:['#ffffff','#ffe27a','#ffb0c8'],leaf:'leaf',litter:0,few:1},
- fall:{label:'🍂 fall',maple:['#e07a3a','#d4553a','#f2b13e','#c9683a','#e89a4a','#b8452f'],fall:['#e07a3a','#d4553a','#f2b13e','#c9683a','#e8a03a','#a8422c'],grass:'#8fb85c',dots:['90,140,50','225,215,120'],fl:['#ffe27a','#ffffff','#f2a65a'],leaf:'leaf',litter:520},
- winter:{label:'❄️ winter',maple:['#e3e9f0','#d5dde6','#eef2f6'],fall:['#ffffff'],grass:'#edf2f8',dots:['200,212,232','255,255,255'],fl:[],leaf:'snow',litter:0,bare:1,snowy:1}};
+ spring:{label:'🌸 spring',maple:['#f6b8cc','#f29fb5','#fbd3e0','#f7c6d6','#ffffff'],fall:['#f9c9d8','#f4a7bf','#ffffff','#fbe0ea'],grass:PAL.grass.spring,dots:CLOVER,fl:['#ffffff','#ffd6e6','#ffe27a','#f4a8c8'],leaf:'petal',litter:220},
+ summer:{label:'☀️ summer',maple:['#5fa04a','#4f8f3f','#79b35a','#6aa84f'],fall:['#6aa84f','#8fbf5a'],grass:PAL.grass.summer,dots:CLOVER,fl:['#ffffff','#ffe27a','#ffb0c8'],leaf:'leaf',litter:0,few:1},
+ fall:{label:'🍂 fall',maple:['#e07a3a','#d4553a','#f2b13e','#c9683a','#e89a4a','#b8452f'],fall:['#e07a3a','#d4553a','#f2b13e','#c9683a','#e8a03a','#a8422c'],grass:PAL.grass.fall,dots:CLOVER,fl:['#ffe27a','#ffffff','#f2a65a'],leaf:'leaf',litter:520},
+ winter:{label:'❄️ winter',maple:['#e3e9f0','#d5dde6','#eef2f6'],fall:['#ffffff'],grass:PAL.grass.winter,dots:['200,212,232','255,255,255'],fl:[],leaf:'snow',litter:0,bare:1,snowy:1}};
 function seasonKey(){const h=(location.hash||'').slice(1).toLowerCase();if(SEASONS[h])return h;const m=new Date().getMonth();return m<2||m===11?'winter':m<5?'spring':m<8?'summer':'fall'}
 const SEASON_KEY=seasonKey(),SEASON=SEASONS[SEASON_KEY];addEventListener('hashchange',()=>{const h=(location.hash||'').slice(1);if(SEASONS[h]||h==='')location.reload()});
 function rollWeather(){const r=Math.random();WEATHER.kind=r<.3?'clear':r<.58?'cloudy':r<.82?'drizzle':r<.94?'rain':'fog';if(SEASON_KEY==='winter'&&(WEATHER.kind==='drizzle'||WEATHER.kind==='rain')&&Math.random()<.65)WEATHER.kind='snow';try{if(SEASON_KEY==='winter'&&WEATHER.kind!=='snow'&&WEATHER.kind!=='fog'){const th=holTheme(),dk=dkey(Date.now())%10000;if((th==='winter'||th==='newyear')&&Math.random()<(dk===1224||dk===1225?.6:.2))WEATHER.kind='snow'}}catch(e){}WEATHER.t=rand(180,420)}
@@ -924,22 +1074,42 @@ const PR=SET.saver?1:Math.min(devicePixelRatio||1,TOUCH?1.5:1.75);renderer.setPi
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();scene.fog=new THREE.Fog('#c8d3df',90,260);
 const camera=new THREE.PerspectiveCamera(50,1,1,1200);
-// ---------- cozy toon look: stepped light ramp + gently rolling world ----------
-const TOONG=(()=>{const v=[112,112,112,150,212,255,255,255],d=new Uint8Array(32);v.forEach((x,i)=>d.set([x,x,x,255],i*4));const t=new THREE.DataTexture(d,8,1,THREE.RGBAFormat);t.minFilter=t.magFilter=THREE.NearestFilter;t.generateMipmaps=false;t.needsUpdate=true;return t})();
+// ---------- cozy toon look (B15): colored ramps (r128 MeshToonMaterial reads gradientMap.rgb): lavender shade -> warm cream light; TOONC = the softer plum-pink ramp for characters ----------
+const rampTex=cs=>{const d=new Uint8Array(cs.length*4);cs.forEach((c,i)=>{const k=new THREE.Color(c);d.set([k.r,k.g,k.b].map(v=>Math.round(v*255)).concat(255),i*4)});const t=new THREE.DataTexture(d,cs.length,1,THREE.RGBAFormat);t.minFilter=t.magFilter=THREE.NearestFilter;t.generateMipmaps=false;t.needsUpdate=true;return t};
+const TOONG=rampTex(PAL.toon),TOONC=rampTex(PAL.toonC);
 class ToonM extends THREE.MeshToonMaterial{constructor(o){o=Object.assign({},o||{});delete o.flatShading;delete o.shininess;delete o.specular;super(o);this.gradientMap=TOONG}}
+class ToonC extends ToonM{constructor(o){super(o);this.gradientMap=TOONC}}
 // world bends down with distance in view space (x=strength, y=flat radius, z=sideways factor, w=time for tree sway). Depth/shadow passes stay unbent.
 const BEND={value:new THREE.Vector4(.0013,30,.6,0)},BENDC=new THREE.Vector3(),BENDUP=new THREE.Vector3(0,1,0);let bendCull=false;
 const BEND_GLSL='\n#ifndef NO_BEND\n{float bd=max(0.,length(vec2(mvPosition.z,mvPosition.x*bendP.z))-bendP.y);mvPosition.y-=bendP.x*bd*bd;}\n#endif\n';
-THREE.Material.prototype.onBeforeCompile=function(sh){if(this.isShaderMaterial||this.isMeshDepthMaterial||this.isMeshDistanceMaterial||this.userData.noBend)return;let v=sh.vertexShader;
-  if(v.includes('#include <project_vertex>'))v=v.replace('#include <project_vertex>',(this.userData.sway?'transformed.x+=sin(bendP.w*.9+transformed.x*.035+transformed.z*.045)*.03*max(0.,transformed.y-1.5);\n':'')+'vec4 mvPosition=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\nmvPosition=instanceMatrix*mvPosition;\n#endif\nmvPosition=modelViewMatrix*mvPosition;'+BEND_GLSL+'gl_Position=projectionMatrix*mvPosition;');
-  else if(this.isSpriteMaterial&&v.includes('gl_Position = projectionMatrix * mvPosition;'))v=v.replace('gl_Position = projectionMatrix * mvPosition;',BEND_GLSL+'gl_Position = projectionMatrix * mvPosition;');else return;
-  sh.uniforms.bendP=BEND;sh.vertexShader='uniform vec4 bendP;\n'+v};
-THREE.Material.prototype.customProgramCacheKey=function(){return this.userData.noBend?'nb':this.userData.sway?'sw':'bend'};
+// B15 PATCH pipeline: ordered {id,test(m),apply(sh,m)}; every material compiles the patches whose test passes, and the program cache key lists exactly those ids.
+// bend = all lit materials + sprites (as round 1); sway = userData.sway (trees); rim = userData.rim (Mocha, pets; B18 characters, B25 goods); win = userData.win (B16 fills apply); wind = B41 (WIND into sway at /*WIND*/)
+const RIM={col:{value:new THREE.Color(PAL.rim.day[0])},amt:{value:PAL.rim.day[1]}};
+const bendOK=m=>!(m.isShaderMaterial||m.isMeshDepthMaterial||m.isMeshDistanceMaterial||m.userData.noBend);
+const PATCH=[
+ {id:'b',test:bendOK,apply(sh,m){let v=sh.vertexShader;
+   if(v.includes('#include <project_vertex>'))v=v.replace('#include <project_vertex>','/*SWAY*/vec4 mvPosition=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\nmvPosition=instanceMatrix*mvPosition;\n#endif\nmvPosition=modelViewMatrix*mvPosition;'+BEND_GLSL+'gl_Position=projectionMatrix*mvPosition;');
+   else if(m.isSpriteMaterial&&v.includes('gl_Position = projectionMatrix * mvPosition;'))v=v.replace('gl_Position = projectionMatrix * mvPosition;',BEND_GLSL+'gl_Position = projectionMatrix * mvPosition;');else return;
+   sh.uniforms.bendP=BEND;sh.vertexShader='uniform vec4 bendP;\n'+v}},
+ {id:'s',test:m=>!!m.userData.sway&&bendOK(m),apply(sh){sh.vertexShader=sh.vertexShader.replace('/*SWAY*/','transformed.x+=sin(bendP.w*.9+transformed.x*.035+transformed.z*.045)*.03*max(0.,transformed.y-1.5);\n/*WIND*/')}},
+ {id:'r',test:m=>!!m.userData.rim&&!!(m.isMeshToonMaterial||m.isMeshPhongMaterial||m.isMeshStandardMaterial),apply(sh){sh.uniforms.rimCol=RIM.col;sh.uniforms.rimAmt=RIM.amt;
+   sh.fragmentShader='uniform vec3 rimCol;uniform float rimAmt;\n'+sh.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );','outgoingLight+=pow(1.-max(dot(normal,normalize(vViewPosition)),0.),2.5)*rimAmt*rimCol;\ngl_FragColor = vec4( outgoingLight, diffuseColor.a );')}},
+ {id:'w',test:m=>!!m.userData.win,apply(sh,m){}},
+ {id:'x',test:m=>!!(m.userData.wind&&m.userData.sway),apply(sh,m){}}];
+const PATCHI=Object.fromEntries(PATCH.map(p=>[p.id,p]));
+THREE.Material.prototype.onBeforeCompile=function(sh){for(const p of PATCH)if(p.test(this))p.apply(sh,this)};
+THREE.Material.prototype.customProgramCacheKey=function(){let k='';for(const p of PATCH)if(p.test(this))k+=p.id;return k};
+// rim-flagged clones of shared (lam-cached) materials, one per source, so flagging a pet never lights up the town
+const RIMC=new Map();function rimify(o,ramp){o.traverse(q=>{if(!q.isMesh||!q.material||Array.isArray(q.material))return;const m=q.material;if(!m.isMeshToonMaterial||m.userData.rim)return;let c=RIMC.get(m);if(!c){c=m.clone();c.userData.rim=1;if(ramp)c.gradientMap=ramp;RIMC.set(m,c)}q.material=c});return o}
+// rounded box (cached ExtrudeGeometry, centred) for new counters, tables, planters, signs and door frames
+const RBOXC=new Map();function rbox(w,h,d,r=.12,bev=.04){const key=[w,h,d,r,bev].map(v=>(+v).toFixed(3)).join('|');let g=RBOXC.get(key);if(g)return g;const b=Math.max(0,Math.min(bev,d/2-.002,w/4,h/4)),iw=w-2*b,ih=h-2*b,rr=Math.max(.001,Math.min(r-b,iw/2-.001,ih/2-.001)),x=-iw/2,y=-ih/2,s=new THREE.Shape();
+  s.moveTo(x+rr,y);s.lineTo(x+iw-rr,y);s.quadraticCurveTo(x+iw,y,x+iw,y+rr);s.lineTo(x+iw,y+ih-rr);s.quadraticCurveTo(x+iw,y+ih,x+iw-rr,y+ih);s.lineTo(x+rr,y+ih);s.quadraticCurveTo(x,y+ih,x,y+ih-rr);s.lineTo(x,y+rr);s.quadraticCurveTo(x,y,x+rr,y);
+  g=new THREE.ExtrudeGeometry(s,{depth:Math.max(.001,d-2*b),bevelEnabled:b>0,bevelThickness:b,bevelSize:b,bevelSegments:2,curveSegments:4});g.translate(0,0,-Math.max(.001,d-2*b)/2);g.computeVertexNormals();g.userData.keep=true;RBOXC.set(key,g);return g}
 {const fis=THREE.Frustum.prototype.intersectsSphere,cs=new THREE.Sphere();THREE.Frustum.prototype.intersectsSphere=function(sp){if(this.flat||!bendCull)return fis.call(this,sp);const d=sp.center.distanceTo(BENDC)-BEND.value.y;if(d<=0)return fis.call(this,sp);const dr=BEND.value.x*d*d;cs.center.copy(sp.center).addScaledVector(BENDUP,-dr);cs.radius=sp.radius+dr*.25;return fis.call(this,cs)}}
 {const io=THREE.Frustum.prototype.intersectsObject;THREE.Frustum.prototype.intersectsObject=function(o){const p=o.userData.inP;if(p&&bendCull&&(p.inner&&p.inner.isObject3D?!p.inVis:(p.op==null||p.op>=.999))&&!(inBuilding(p,BENDC.x,BENDC.z)&&BENDC.y<p.h+1))return false;return io.call(this,o)}}
 const noBend=m=>{m.userData.noBend=true;return m};
 const ballG=r=>new THREE.SphereGeometry(r,10,8);
-const hemi=new THREE.HemisphereLight('#dfe8ff','#5a5a4a',.8);scene.add(hemi);
+const hemi=new THREE.HemisphereLight(PAL.hemi.day[0],PAL.hemi.day[1],.8);scene.add(hemi);
 const sun=new THREE.DirectionalLight('#fff1dc',.8);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-50,right:50,top:50,bottom:-50,near:1,far:200});sun.shadow.bias=-.0015;sun.shadow.normalBias=.06;scene.add(sun,sun.target);sun.shadow.getFrustum().flat=true;
 const skyMat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{top:{value:new THREE.Color()},bot:{value:new THREE.Color()}},
  vertexShader:'varying vec3 vP;void main(){vP=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
@@ -970,7 +1140,32 @@ function cyl(rt,rb,h,m,x=0,y=0,z=0,parent,seg=16){const b=new THREE.Mesh(new THR
 const glowTex=canvasTex(64,64,g=>{const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.35,'rgba(255,255,255,.4)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64)});
 const nightGlows=[];
 function glow(color,s,op=.6,night=true){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color,transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false}));sp.scale.set(s,s,1);sp.userData.op=op;if(night)nightGlows.push(sp);return sp}
-const winMats=[];const SPH=new THREE.SphereGeometry(1,12,10),SPH8=new THREE.SphereGeometry(1,8,6);
+const winMats=[];winMats.push=function(...a){for(const m of a){if(m&&m.userData&&!m.userData.wpid)m.userData.wpid=CAPT?CAPT.id:null;Array.prototype.push.call(this,m)}return this.length};const SPH=new THREE.SphereGeometry(1,12,10),SPH8=new THREE.SphereGeometry(1,8,6);
+// ====================================================================
+//  B16 WLT (early): the Window Light Table. Every lit window's emissive canvas stores rgb(slot, mask with a hot centre, variant);
+//  one 256x1 LUT (winLUT) says what each slot shows. Slot 0 = off. Slots are 'pid:room' keys; WLT.tick (B16 runtime) fills the bytes.
+//  The B15 'w' patch replaces emissivemap_fragment with the LUT lookup. Variants (wid.b): 0 plain, 1 cabin candle (B31), 2-4 holiday silhouettes (B41).
+// ====================================================================
+const WLT=(()=>{const N=256,d=new Uint8Array(N*4),lut=new THREE.DataTexture(d,N,1,THREE.RGBAFormat);lut.minFilter=lut.magFilter=THREE.NearestFilter;lut.generateMipmaps=false;lut.needsUpdate=true;
+  return{N,d,lut,u:{lut:{value:lut},on:{value:1},v:{value:new THREE.Vector4(1,1,1,1)}},S:[null],by:{},sc:0,drv:[],nwin:0,ticks:0,writes:0,brk:{},res:{},force:{}}})();
+function wltHash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function wltSlot(key){let i=WLT.by[key];if(i!=null)return i;i=WLT.S.length;if(i>=WLT.N)return 0;const r=seeded(wltHash(key)),c=key.indexOf(':');
+  WLT.S.push({i,key,pid:c>0?key.slice(0,c):key,room:c>0?key.slice(c+1):'',thr:.34+r()*.28,ease:60+r()*60,home:18.2+(r()-.5)*1.6,bed:23+(r()-.5)*2.4,off:22+r()*3.5,all:r()<.1,nk:-1,lv:0,c:[0,0,0],tl:0,tc:[0,0,0],fl:0,fs:r()*50});WLT.by[key]=i;return i}
+// bake encoded windows: shapes are rasterised as a white coverage mask first, then quantised per pixel (no blended slot ids at the edges).
+// list items [x,y,w,h,slot,variant,shape(g)?]; mask = 150 at the edge, 255 in the hot centre
+function wemBake(g,W,H,list){g.fillStyle='#000';g.fillRect(0,0,W,H);g.fillStyle='#fff';for(const L of list)if(L[4]){if(L[6])L[6](g);else g.fillRect(L[0],L[1],L[2],L[3])}
+  const src=g.getImageData(0,0,W,H),a=src.data,out=g.createImageData(W,H),o=out.data;for(let i=3;i<o.length;i+=4)o[i]=255;
+  for(const L of list){const s=L[4];if(!s)continue;const x0=Math.max(0,Math.floor(L[0])),y0=Math.max(0,Math.floor(L[1])),x1=Math.min(W,Math.ceil(L[0]+L[2])),y1=Math.min(H,Math.ceil(L[1]+L[3])),cx=L[0]+L[2]/2,cy=L[1]+L[3]/2,hw=L[2]*.3,hh=L[3]*.32;
+    for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const k=(y*W+x)*4;if(a[k+1]<128)continue;o[k]=s;o[k+1]=Math.abs(x+.5-cx)<=hw&&Math.abs(y+.5-cy)<=hh?255:185;o[k+2]=L[5]||0}}
+  g.putImageData(out,0,0)}
+function wemTex(t){t.minFilter=t.magFilter=THREE.NearestFilter;t.generateMipmaps=false;t.anisotropy=1;t.wlt=1;return t}
+// wallTex windows -> slot: a shop's ground row = sales floor (side walls alternate with the back room), upper rows = upstairs; homes = rooms (cottage() re-encodes); no place = a seeded 'sched' house
+function wltDef(L,o,sch){const p=CAPT;if(!p)return L[4]?sch:0;if(p.hours){if(L[5]>0)return wltSlot(p.id+':up');if(L[6]===-1||L[6]===-3)return wltSlot(p.id+':sec');if(o.front||L[6]<0)return wltSlot(p.id+':main');return wltSlot(p.id+(L[6]%2?':back':':main'))}return L[4]||o.front?wltSlot(p.id+':main'):0}
+function wltEm(g,W,H,lit,fn){wemBake(g,W,H,lit.map(L=>[L[0],L[1],L[2],L[3],fn(L),0]))}
+// re-encode a wallTex material's windows with a new slot fn; clone=true returns a copy (same map, new em canvas) for walls that share a material
+function wltRe(m,fn,clone){const I=m.userData.wl;if(!I)return m;const t=wemTex(canvasTex(I.W,I.H,g=>wltEm(g,I.W,I.H,I.lit,fn)));const n=clone?m.clone():m;if(!clone&&n.emissiveMap)n.emissiveMap.dispose();n.emissiveMap=t;n.userData=Object.assign({},m.userData);if(clone)winMats.push(n);n.needsUpdate=true;return n}
+PATCHI.w.apply=(sh)=>{sh.uniforms.winLUT=WLT.u.lut;sh.uniforms.winOn=WLT.u.on;sh.uniforms.winVar=WLT.u.v;
+  sh.fragmentShader='uniform sampler2D winLUT;uniform float winOn;uniform vec4 winVar;\n'+sh.fragmentShader.replace('#include <emissivemap_fragment>','#ifdef USE_EMISSIVEMAP\n{vec4 wid=texture2D(emissiveMap,vUv);vec4 wl=texture2D(winLUT,vec2((floor(wid.r*255.+.5)+.5)/256.,.5));float wv=floor(wid.b*255.+.5);totalEmissiveRadiance*=wl.rgb*wid.g*winOn*2.*mix(1.,dot(vec4(equal(vec4(wv),vec4(1.,2.,3.,4.))),winVar),step(.5,wv));}\n#endif')};
 
 // ---------- ground, water, roads ----------
 const grassTex=canvasTex(512,512,(g,w,h)=>{const r=seeded(77),D=SEASON.dots;g.fillStyle=SEASON.grass;g.fillRect(0,0,w,h);
@@ -983,13 +1178,13 @@ const grassTex=canvasTex(512,512,(g,w,h)=>{const r=seeded(77),D=SEASON.dots;g.fi
 grassTex.wrapS=grassTex.wrapT=THREE.RepeatWrapping;grassTex.repeat.set(25,29);
 const groundMat=lam('#ffffff',{map:grassTex});
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(600,700,30,35),groundMat);ground.rotation.x=-Math.PI/2;ground.position.x=239;ground.receiveShadow=true;scene.add(ground);
-const waterTex=canvasTex(256,256,(g,w,h)=>{g.fillStyle='#3f90c2';g.fillRect(0,0,w,h);g.strokeStyle='rgba(225,247,255,.4)';g.lineWidth=2;for(let i=0;i<60;i++){const x=R()*w,y=R()*h;g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+8,y-3,x+16,y);g.stroke()}});
+const waterTex=canvasTex(256,256,(g,w,h)=>{g.fillStyle=PAL.deep;g.fillRect(0,0,w,h);g.strokeStyle='rgba(232,251,246,.42)';g.lineWidth=2;for(let i=0;i<60;i++){const x=R()*w,y=R()*h;g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+8,y-3,x+16,y);g.stroke()}});
 waterTex.wrapS=waterTex.wrapT=THREE.RepeatWrapping;waterTex.repeat.set(40,40);
 const waterMat=new ToonM({map:waterTex,color:'#ffffff',emissive:'#1d4f7a',emissiveIntensity:.18});
 const water=new THREE.Mesh(new THREE.PlaneGeometry(900,900,36,36),waterMat);water.rotation.x=-Math.PI/2;water.position.set(-511,-.4,0);water.receiveShadow=true;scene.add(water);
 box(3,1.4,500,'#b3aa9c',-61.5,-.2,0,scene,false);
-box(8,.12,175,lam('#eadcc2'),-57,.06,-20,scene,false);
-const roadMat=lam('#76809a'),dashMat=lam('#fbe08a'),walkMat=lam('#efe5cf'),DASHB=Batcher(36),DASHG=new THREE.BoxGeometry(.25,.04,2.6);
+box(8,.12,175,lam(PAL.walkEdge),-57,.06,-20,scene,false);
+const roadMat=new ToonM({color:PAL.road}),dashMat=lam(PAL.dash),walkMat=lam(PAL.walk),DASHB=Batcher(36),DASHG=new THREE.BoxGeometry(.25,.04,2.6);
 ROADS.forEach(([x1,z1,x2,z2])=>{const len=Math.hypot(x2-x1,z2-z1),ang=Math.atan2(x2-x1,z2-z1),mx=(x1+x2)/2,mz=(z1+z2)/2;
   const sw=new THREE.Mesh(new THREE.BoxGeometry(11,.14,len+11,1,1,Math.ceil(len/8)),walkMat);sw.position.set(mx,.07,mz);sw.rotation.y=ang;scene.add(sw);
   const rd=new THREE.Mesh(new THREE.BoxGeometry(7,.12,len+7,1,1,Math.ceil(len/8)),roadMat);rd.position.set(mx,.24,mz);rd.rotation.y=ang;scene.add(rd);
@@ -1005,13 +1200,16 @@ function wallTex(w,h,wall,o={}){const ppu=16,W=Math.round(w*ppu),H=Math.round(h*
     else{g.fillStyle='rgba(255,255,255,.07)';for(let y=0;y<H;y+=9)g.fillRect(0,y,W,2)}
     const cols=Math.max(2,Math.floor(w/3.6)),rows=Math.max(1,Math.floor((h-3.4)/3.6));
     for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){if(o.front&&r===0&&(o.shop||Math.abs(c-(cols-1)/2)<1.1))continue;
-      const x=(c+.5)*W/cols-15,y=H-((r+1)*3.6+.3)*ppu;const on=R()<.7;lit.push([x,y,on]);
-      g.fillStyle='#fff6e6';g.fillRect(x-3,y-3,36,42);g.fillStyle=on?'#ffd98a':'#43506a';g.fillRect(x,y,30,36);g.fillStyle='rgba(255,255,255,.6)';g.fillRect(x+14,y,2,36);g.fillRect(x,y+17,30,2)}
-    if(o.front){if(o.shop){g.fillStyle='#ffe2a8';g.fillRect(16,H-56,W/2-46,46);g.fillRect(W/2+30,H-56,W/2-46,46);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(16,H-56,W/2-46,4)}
+      const x=(c+.5)*W/cols-15,y=H-((r+1)*3.6+.3)*ppu;const on=R()<.7;lit.push([x,y,30,36,on,r,c]);
+      g.fillStyle=o.trim||'#fff6e6';g.fillRect(x-3,y-3,36,42);glassPane(g,x,y,30,36);g.fillStyle='rgba(255,255,255,.6)';g.fillRect(x+14,y,2,36);g.fillRect(x,y+17,30,2)}
+    if(o.front){if(o.shop){glassPane(g,16,H-56,W/2-46,46);glassPane(g,W/2+30,H-56,W/2-46,46);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(16,H-56,W/2-46,4)}
       if(o.hole){const [hx,hw,hh,hy=0]=o.hole,x0=Math.round((hx+w/2-hw/2)*ppu),y1=H-Math.round(hy*ppu),y0=y1-Math.round(hh*ppu),ww=Math.round(hw*ppu);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(x0-6,y0-8,ww+12,y1-y0+8);g.fillStyle=o.trim||'#f4ead8';g.fillRect(x0-4,y0-6,ww+8,y1-y0+6);g.clearRect(x0,y0,ww,y1-y0)}
       else{g.fillStyle=o.door||'#3a3a4a';g.fillRect(W/2-22,H-62,44,62);g.fillStyle='#ffd98a';g.fillRect(W/2-14,H-54,28,22);g.fillStyle='#f2c14e';g.beginPath();g.arc(W/2+14,H-24,3,0,7);g.fill()}}});
-  const em=canvasTex(W,H,g=>{g.fillStyle='#000';g.fillRect(0,0,W,H);g.fillStyle='#ffcf7a';for(const [x,y,on] of lit)if(on)g.fillRect(x,y,30,36);if(o.front){if(o.shop){g.fillRect(16,H-56,W/2-46,46);g.fillRect(W/2+30,H-56,W/2-46,46)}if(!o.hole)g.fillRect(W/2-14,H-54,28,22)}});
-  const m=new ToonM({map,emissive:new THREE.Color('#ffffff'),emissiveMap:em,emissiveIntensity:.15});if(o.hole)m.alphaTest=.05;winMats.push(m);return m}
+  if(o.front){if(o.shop)lit.push([16,H-56,W/2-46,46,1,0,-1],[W/2+30,H-56,W/2-46,46,1,0,-2]);if(!o.hole)lit.push([W/2-14,H-54,28,22,1,0,-3])}const sch=CAPT?0:wltSlot('sched:'+(WLT.sc++%12)),fn=o.slot||(L=>wltDef(L,o,sch));
+  const em=wemTex(canvasTex(W,H,g=>wltEm(g,W,H,lit,fn)));
+  const m=new ToonM({map,emissive:new THREE.Color('#ffffff'),emissiveMap:em,emissiveIntensity:.5});m.userData.win=1;m.userData.wl={W,H,lit};if(o.hole)m.alphaTest=.05;winMats.push(m);return m}
+function glassPane(g,x,y,w,h){g.fillStyle=PAL.glass;g.fillRect(x,y,w,h);const gr=g.createLinearGradient(x,y,x,y+h);gr.addColorStop(0,'rgba(214,236,250,.55)');gr.addColorStop(.55,'rgba(214,236,250,0)');g.fillStyle=gr;g.fillRect(x,y,w,h);
+  g.fillStyle='rgba(236,246,255,.4)';g.beginPath();g.moveTo(x+w*.12,y+h);g.lineTo(x+w*.5,y);g.lineTo(x+w*.7,y);g.lineTo(x+w*.32,y+h);g.fill()}
 function signTex(text,bg='#fffaf2',fg='#26324a'){return canvasTex(512,96,g=>{g.fillStyle=bg;g.beginPath();g.moveTo(48,6);g.arcTo(506,6,506,90,42);g.arcTo(506,90,6,90,42);g.arcTo(6,90,6,6,42);g.arcTo(6,6,506,6,42);g.fill();g.fillStyle=fg;let fs=46;g.font=`800 ${fs}px ui-rounded,Nunito,system-ui,sans-serif`;while(g.measureText(text).width>470&&fs>20){fs-=2;g.font=`800 ${fs}px ui-rounded,Nunito,system-ui,sans-serif`}g.textAlign='center';g.textBaseline='middle';g.fillText(text,256,52)})}
 function sign(text,w,parent,x,y,z,bg,fg){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,w*96/512),new THREE.MeshBasicMaterial({map:signTex(text,bg,fg),transparent:true}));m.position.set(x,y,z);parent.add(m);return m}
 function stripeTex(a,b){return canvasTex(64,16,g=>{for(let i=0;i<8;i++){g.fillStyle=i%2?b:a;g.fillRect(i*8,0,8,16)}})}
@@ -1020,7 +1218,7 @@ function gable(w,d,h,mat,overhang=1){const s=new THREE.Shape();s.moveTo(-d/2-ove
 // ---------- building builders ----------
 function shellMat(m,list,alpha){m.transparent=!!alpha;m.userData.alpha=!!alpha;list.push(m);return m}
 function shop(p,grp){const brick=p.id==='bookstore'||p.id==='market'||p.id==='station';const L=[];p.shell=L;p.interior=true;const roofC=p.roof||'#3c4a5a',inC=p.inC||'#efe4d2',LY=LAYOUTS[p.id];
-  const side=wallTex(p.w,p.h,p.wall,{brick}),front=shellMat(wallTex(p.w,p.h,p.wall,{front:1,shop:1,brick,hole:p.door&&!p.door.flush&&!p.door.glass?[p.door.x*p.w/(p.w-.6),(p.door.w+.04)*p.w/(p.w-.6),p.door.h+.02,p.door.y0]:null}),L);const inM=LY?railMat(inC,p.h):lam(inC),roofM=lam(roofC);
+  const side=wallTex(p.w,p.h,p.wall,{brick,trim:p.trim}),front=shellMat(wallTex(p.w,p.h,p.wall,{front:1,shop:1,brick,trim:p.trim,hole:p.door&&!p.door.flush&&!p.door.glass?[p.door.x*p.w/(p.w-.6),(p.door.w+.04)*p.w/(p.w-.6),p.door.h+.02,p.door.y0]:null}),L);const inM=LY?railMat(inC,p.h):lam(inC),roofM=lam(roofC);
   box(p.w,.3,p.d,LY&&LY.floor?floorMat(LY.floor[0],LY.floor[1],LY.floor[2],p.w,p.d):(p.floor||'#b89a7a'),0,.15,0,grp);
   const bw=box(p.w,p.h,.3,[side,side,roofM,roofM,inM,side],0,p.h/2,-p.d/2+.15,grp);
   const lw=box(.3,p.h,p.d,[inM,side,roofM,roofM,side,side],-p.w/2+.15,p.h/2,0,grp);
@@ -1447,8 +1645,9 @@ function b13Frame(dt){if((B13.t-=dt)>0)return;B13.t=.1;const ni=nightAmt>.35?1.2
 //  Mocha's house: b14Home(p,grp) adds pair spots, the pouf, the note hook, p.rooms and the hidden empty-house set, then merges
 //  the furnished interior into p.inner (was ~140 separate meshes).
 // ====================================================================
-const COTTAGE_STY={wendell:{wall:'#e2b558',roof:'#6b4a3a',trim:'#f4ead8',inC:'#f3e3c4',door:'#3f6f5a',floor:['plank','#a8794e','#8a6040'],bay:[-1,2.4],chim:-1,porch:[-5.6,3.7,2.4],swing:[-3.5,6.4],garden:1,lay:'neighbor'}};
+const COTTAGE_STY={wendell:{wall:PAL.fam.butter.wall,roof:PAL.fam.butter.roof,trim:PAL.fam.butter.trim,inC:'#f3e3c4',door:'#3f6f5a',floor:['plank','#a8794e','#8a6040'],bay:[-1,2.4],chim:-1,porch:[-5.6,3.7,2.4],swing:[-3.5,6.4],garden:1,lay:'neighbor'}};
 // rooms: [x0,z0,x1,z1] in local coords, first match wins (B16 lights, B27 placement)
+const HOME_WIN={neighbor:['bed','living','hall','kitchen']};// B16: cottage side-wall windows -> rooms [left back, left front, right front, right back]
 const HOME_ROOMS={home:{kitchen:[-14,-7,-6,1],living:[-6,-7,4,1],bedroom:[4,-7,10.5,1],bath:[10.5,-7,14,1],hall:[-14,1,14,9.4]},
   neighbor:{bed:[-6.5,-5,-1.4,-2.6],kitchen:[1.2,-5,6.5,.4],living:[-6.5,-5,.2,5],hall:[.2,-5,6.5,5]}};
 const SPOTCAP={home:{bed:'bed',kitchen:'stove',stove:'stove',desk:'computer',couch:'couch',couchA:'couch',couchB:'couch',teaA:'table',teaB:'table',bath:'bath',blanket:'bed',floorA:'couch',floorB:'couch',boxA:'table',boxB:'table',bulb:'lamp'},
@@ -1459,12 +1658,13 @@ function cottage(p,grp,style){const S=typeof style==='string'?COTTAGE_STY[style]
   box(w,.3,d,floorMat(S.floor[0],S.floor[1],S.floor[2],w,d),0,.15,0,grp);box(w+.6,.2,d+.6,'#8a8278',0,.05,0,T,false);
   const bw=box(w,h,.3,[back,back,roofM,roofM,inM,back],0,h/2,-d/2+.15,grp),lw=box(.3,h,d,[inM,side,roofM,roofM,side,side],-w/2+.15,h/2,0,grp),rw=box(.3,h,d,[side,inM,roofM,roofM,side,side],w/2-.15,h/2,0,grp);
   p.walls=[[bw,'z',-1],[lw,'x',-1],[rw,'x',1]];
+  {const RM=HOME_WIN[p.id]||['living','living','living','living'],sl=k=>wltSlot(p.id+':'+k);wltRe(side,L=>sl(L[6]?RM[1]:RM[0]));rw.material[0]=wltRe(side,L=>sl(L[6]?RM[3]:RM[2]),true)}
   const fw=new THREE.Group();grp.add(fw);const sw=shellMat(lam(S.wall,{}),L),tr=shellMat(lam(S.trim,{}),L),rM=shellMat(lam(S.roof,{}),L);
   p.walls.push([box(w-.6,h,.3,[sw,sw,sw,sw,front,shellMat(lam(S.inC,{}),L)],0,h/2,d/2-.15,fw),'z',1]);
   const r=gable(w,d,3.6,rM);r.position.y=h;fw.add(r);box(w+.5,.25,.35,tr,0,h+.05,d/2+.1,fw,false);
   // bay reading nook (outside: a window box with its own little roof)
-  if(S.bay){const [bx,bwid]=S.bay,bt=canvasTex(96,72,g=>{g.fillStyle=S.trim;g.fillRect(0,0,96,72);g.fillStyle='#ffd98a';for(let i=0;i<3;i++)g.fillRect(6+i*30,8,24,50);g.fillStyle='rgba(255,255,255,.55)';for(let i=0;i<3;i++){g.fillRect(17+i*30,8,2,50);g.fillRect(6+i*30,30,24,2)}}),
-      be=canvasTex(96,72,g=>{g.fillStyle='#000';g.fillRect(0,0,96,72);g.fillStyle='#ffcf7a';for(let i=0;i<3;i++)g.fillRect(6+i*30,8,24,50)}),bm=shellMat(new ToonM({map:bt,emissive:new THREE.Color('#ffffff'),emissiveMap:be,emissiveIntensity:.2}),L);winMats.push(bm);
+  if(S.bay){const [bx,bwid]=S.bay,bt=canvasTex(96,72,g=>{g.fillStyle=S.trim;g.fillRect(0,0,96,72);for(let i=0;i<3;i++)glassPane(g,6+i*30,8,24,50);g.fillStyle='rgba(255,255,255,.55)';for(let i=0;i<3;i++){g.fillRect(17+i*30,8,2,50);g.fillRect(6+i*30,30,24,2)}}),
+      be=wemTex(canvasTex(96,72,g=>wemBake(g,96,72,[0,1,2].map(i=>[6+i*30,8,24,50,wltSlot(p.id+':living'),0])))),bm=shellMat(new ToonM({map:bt,emissive:new THREE.Color('#ffffff'),emissiveMap:be,emissiveIntensity:.2}),L);winMats.push(bm);
     box(bwid,2.1,.7,[sw,sw,sw,sw,bm,sw],bx,1.75,d/2+.35,fw);const bc=box(bwid+.3,.14,1.0,rM,bx,2.9,d/2+.45,fw,false);bc.rotation.x=.22;box(bwid+.2,.12,.8,tr,bx,.66,d/2+.4,fw,false)}
   // porch: deck + posts + header beam + joists (PB); the sloped porch roof fades with the shell
   if(S.porch){const [x0,x1,pd]=S.porch,cx=(x0+x1)/2,pw=x1-x0;box(pw,.2,pd,'#9a7a5a',cx,.1,d/2+pd/2,T);for(let i=0;i<5;i++)box(pw,.01,.04,'#7a5a3a',cx,.205,d/2+.3+i*pd/5,T,false);
@@ -1601,7 +1801,7 @@ const INTERIORS={
   {const bw=p.walls[0][0];box(2.2,3.2,.12,'#2f4f4a',0,-p.h/2+1.6,-.2,bw,false);box(1.3,1.1,.13,'#cfe9f2',0,-p.h/2+2.35,-.2,bw,false)}
   bake(P);Object.assign(p.spots||(p.spots={}),{board:[-3,pz+.5],platform:[2,pz-.4]})},
 };
-function market(p,grp){p.roof='#3c4a5a';shop(p,grp);
+function market(p,grp){p.roof=p.roof||'#3c4a5a';shop(p,grp);
   const sg=canvasTex(512,128,g=>{g.fillStyle='#2a2a2a';g.fillRect(0,0,512,128);g.font='900 64px ui-rounded,system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';g.shadowColor='#ff4b3e';g.shadowBlur=18;g.fillStyle='#ff6b5e';g.fillText('PUBLIC MARKET',256,66)});
   const sm=new THREE.Mesh(new THREE.PlaneGeometry(14,3.5),new THREE.MeshBasicMaterial({map:sg}));sm.position.set(0,p.h+3,p.d/2-1);grp.add(sm);box(.3,3.6,.3,'#222222',-6,p.h+1.5,p.d/2-1.1,grp);box(.3,3.6,.3,'#222222',6,p.h+1.5,p.d/2-1.1,grp);
   const ng=glow('#ff5040',16,.35);ng.position.set(0,p.h+3,p.d/2);grp.add(ng);
@@ -1659,11 +1859,11 @@ function gothicTex(w,h,o={}){const ppu=16,W=Math.round(w*ppu),H=Math.round(h*ppu
   const lancet=(g,x,y,ww,hh)=>{g.beginPath();g.moveTo(x,y+hh);g.lineTo(x,y+ww*.55);g.quadraticCurveTo(x,y,x+ww/2,y-ww*.4);g.quadraticCurveTo(x+ww,y,x+ww,y+ww*.55);g.lineTo(x+ww,y+hh);g.closePath()};
   const draw=(g,em)=>{g.fillStyle=em?'#000':(o.wall||'#3b3446');g.fillRect(0,0,W,H);
     if(!em){g.fillStyle='rgba(255,255,255,.05)';for(let x=0;x<W;x+=12)g.fillRect(x,0,2,H);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(0,H-10,W,10);g.fillStyle='#e8dff0';g.fillRect(0,0,W,5)}
-    (o.windows||[]).forEach(([cx,cy,ww,hh])=>{const x=(cx+w/2)*ppu-ww/2,y=cy*ppu;if(!em){g.fillStyle='#e8dff0';lancet(g,x-5,y-4,ww+10,hh+9);g.fill()}
+    (o.windows||[]).forEach(([cx,cy,ww,hh],wi)=>{const x=(cx+w/2)*ppu-ww/2,y=cy*ppu;if(em){EL.push([x,y-ww*.4,ww,hh+ww*.4,(o.slots||[])[wi]||0,0,g2=>{lancet(g2,x,y,ww,hh);g2.fill()}]);return}if(!em){g.fillStyle='#e8dff0';lancet(g,x-5,y-4,ww+10,hh+9);g.fill()}
       g.fillStyle=em?'#ffb860':'#ffcf80';lancet(g,x,y,ww,hh);g.fill();if(!em){g.fillStyle='rgba(150,40,90,.45)';g.fillRect(x+ww/2-1.5,y-ww*.35,3,hh+ww*.35);g.fillRect(x,y+hh*.42,ww,3);g.fillStyle='rgba(90,40,120,.25)';g.fillRect(x,y+hh*.42+3,ww/2-1.5,hh*.58-3)}});
-    if(o.door){const [cx,dw,dh]=o.door;const x=(cx+w/2)*ppu-dw/2,y=H-dh;if(!em){g.fillStyle='#e8dff0';lancet(g,x-6,y-4,dw+12,dh+4);g.fill();g.fillStyle='#6a1f2e';lancet(g,x,y,dw,dh);g.fill();g.fillStyle='#3a0f18';g.fillRect(x+dw/2-1,y-dw*.3,2,dh);g.fillStyle='#f2c14e';g.beginPath();g.arc(x+dw/2-6,y+dh*.6,3,0,7);g.arc(x+dw/2+6,y+dh*.6,3,0,7);g.fill()}else{g.fillStyle='#ffb860';lancet(g,x+dw*.3,y+6,dw*.4,dh*.18);g.fill()}}};
+    if(o.door){const [cx,dw,dh]=o.door;const x=(cx+w/2)*ppu-dw/2,y=H-dh;if(!em){g.fillStyle='#e8dff0';lancet(g,x-6,y-4,dw+12,dh+4);g.fill();g.fillStyle='#6a1f2e';lancet(g,x,y,dw,dh);g.fill();g.fillStyle='#3a0f18';g.fillRect(x+dw/2-1,y-dw*.3,2,dh);g.fillStyle='#f2c14e';g.beginPath();g.arc(x+dw/2-6,y+dh*.6,3,0,7);g.arc(x+dw/2+6,y+dh*.6,3,0,7);g.fill()}else EL.push([x+dw*.3,y+6-dw*.16,dw*.4,dh*.18+dw*.16,o.dslot||0,0,g2=>{lancet(g2,x+dw*.3,y+6,dw*.4,dh*.18);g2.fill()}])}};const EL=[];
   const cut=g=>{if(o.hole){const [hx,hw,hh]=o.hole;g.clearRect(Math.round((hx+w/2-hw/2)*ppu),H-Math.round(hh*ppu),Math.round(hw*ppu),Math.round(hh*ppu))}};
-  return{map:canvasTex(W,H,g=>{draw(g,false);cut(g)}),em:canvasTex(W,H,g=>{draw(g,true);cut(g)})}}
+  return{map:o.emOnly?null:canvasTex(W,H,g=>{draw(g,false);cut(g)}),em:wemTex(canvasTex(W,H,g=>{EL.length=0;draw(g,true);wemBake(g,W,H,EL);cut(g)}))}}
 function wallpaperTex(c){const t=canvasTex(64,64,g=>{g.fillStyle=c;g.fillRect(0,0,64,64);g.fillStyle='rgba(255,230,200,.1)';for(let y=0;y<64;y+=16)for(let x=0;x<64;x+=16){const ox=(y/16%2)*8;g.beginPath();g.moveTo(x+ox+8,y+1);g.lineTo(x+ox+13,y+8);g.lineTo(x+ox+8,y+15);g.lineTo(x+ox+3,y+8);g.fill()}});t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,2);return t}
 function dollhouse(p,grp){// a gothic Victorian house with an open front so you can watch him inside
   const W=p.w,D=p.d,H=p.h,wallOut='#3b3446',trim='#e8dff0',roofC='#2b2836';
@@ -1672,12 +1872,12 @@ function dollhouse(p,grp){// a gothic Victorian house with an open front so you 
   const scaleTex=canvasTex(64,64,scaleDraw);scaleTex.wrapS=scaleTex.wrapT=THREE.RepeatWrapping;scaleTex.repeat.set(7,3);
   box(W+2,.6,D+2,'#6a6570',0,.15,0,grp);box(W,.4,D,lam('#ffffff',{map:floorTex}),0,.45,0,grp);
   box(2.4,.08,7,'#8d8a96',0,.04,D/2+5.5,grp,false);
-  const ext=gothicTex(W,H,{wall:wallOut,windows:[[-9,1.1,28,46],[-1,1.1,28,46],[7.2,1.1,28,46]]});const extM=lam('#ffffff',{map:ext.map,emissive:'#ffffff',emissiveMap:ext.em,emissiveIntensity:.2});winMats.push(extM);
-  const extS=gothicTex(D,H,{wall:wallOut,windows:[[0,1.1,28,46]]});const extSM=lam('#ffffff',{map:extS.map,emissive:'#ffffff',emissiveMap:extS.em,emissiveIntensity:.2});winMats.push(extSM);
+  const HS=k=>wltSlot('home:'+k),ext=gothicTex(W,H,{wall:wallOut,windows:[[-9,1.1,28,46],[-1,1.1,28,46],[7.2,1.1,28,46]],slots:[HS('bedroom'),HS('living'),HS('kitchen')]});const extM=lam('#ffffff',{map:ext.map,emissive:'#ffffff',emissiveMap:ext.em,emissiveIntensity:.2});winMats.push(extM);
+  const extS=gothicTex(D,H,{wall:wallOut,windows:[[0,1.1,28,46]],slots:[HS('kitchen')]});const extSM=lam('#ffffff',{map:extS.map,emissive:'#ffffff',emissiveMap:extS.em,emissiveIntensity:.2});winMats.push(extSM);const extSR=lam('#ffffff',{map:extS.map,emissive:'#ffffff',emissiveMap:gothicTex(D,H,{windows:[[0,1.1,28,46]],slots:[HS('bath')],emOnly:1}).em,emissiveIntensity:.2});winMats.push(extSR);
   const wallIn='#2e2733',plain=lam(wallOut);const bwL=[];
   bwL.push(box(W,H,.4,[plain,plain,plain,plain,lam(wallIn),extM],0,H/2+.4,-D/2,grp));
   const lwH=box(.4,H,D,[lam(wallIn),extSM,plain,plain,plain,plain],-W/2,H/2+.4,0,grp);
-  const rwH=box(.4,H,D,[extSM,lam(wallIn),plain,plain,plain,plain],W/2,H/2+.4,0,grp);p.hideW=[[bwL,'z',-1,false],[[lwH],'x',-1,false],[[rwH],'x',1,false]];
+  const rwH=box(.4,H,D,[extSR,lam(wallIn),plain,plain,plain,plain],W/2,H/2+.4,0,grp);p.hideW=[[bwL,'z',-1,false],[[lwH],'x',-1,false],[[rwH],'x',1,false]];
   [[-10,8,'#7a4a5a'],[-1,10,'#3f6a6a'],[7.25,6.5,'#5e4a7a'],[12.25,3.5,'#5f7f86']].forEach(([x,w,c])=>{bwL.push(box(w-.1,H-.2,.05,lam('#ffffff',{map:wallpaperTex(c)}),x,H/2+.4,-D/2+.23,grp,false),box(w-.1,1.6,.12,'#3a2a22',x,1.45,-D/2+.27,grp,false))});
   for(const x of [-6,4,10.5]){box(.3,H,8,'#3a2a22',x,H/2+.4,-3,grp);box(.36,.3,8.04,'#b08a3a',x,H+.25,-3,grp,false)}
   const lanTex=canvasTex(64,96,g=>{g.fillStyle='#ffcf80';g.beginPath();g.moveTo(4,96);g.lineTo(4,36);g.quadraticCurveTo(4,6,32,0);g.quadraticCurveTo(60,6,60,36);g.lineTo(60,96);g.fill();g.fillStyle='rgba(150,40,90,.5)';g.fillRect(30,0,4,96);g.fillRect(4,52,56,4)});
@@ -1717,9 +1917,9 @@ function dollhouse(p,grp){// a gothic Victorian house with an open front so you 
   const il=new THREE.PointLight('#ffcf9a',.6,26,2);il.position.set(0,5,0);grp.add(il);p.innerLight=il;
   // ---- the shell (front wall, bay, roofs) fades when he's inside ----
   const shellMats=[],roofMats=[];let toRoof=false;const sm=(c,o)=>{const m=lam(c,Object.assign({opacity:1},o||{}));(toRoof?roofMats:shellMats).push(m);return m};
-  const fr=gothicTex(W,H,{wall:wallOut,windows:[[-11,1.1,26,44],[-7,1.1,26,44],[7,1.1,26,44],[11,1.1,26,44]],hole:[0,2.14,3.02]});const frM=sm('#ffffff',{map:fr.map,emissive:'#ffffff',emissiveMap:fr.em,emissiveIntensity:.2,alphaTest:.05});winMats.push(frM);
+  const fr=gothicTex(W,H,{wall:wallOut,windows:[[-11,1.1,26,44],[-7,1.1,26,44],[7,1.1,26,44],[11,1.1,26,44]],slots:[HS('kitchen'),HS('kitchen'),HS('bedroom'),HS('bath')],hole:[0,2.14,3.02]});const frM=sm('#ffffff',{map:fr.map,emissive:'#ffffff',emissiveMap:fr.em,emissiveIntensity:.2,alphaTest:.05});winMats.push(frM);
   const fw=new THREE.Group();grp.add(fw);box(W,H,.3,[sm(wallOut),sm(wallOut),sm(wallOut),sm(wallOut),frM,sm(wallIn)],0,H/2+.4,D/2,fw);
-  const bayT=gothicTex(8,H,{wall:wallOut,windows:[[0,.5,24,26]],door:[0,46,56],hole:[0,2.14,3.02]});const bayM=sm('#ffffff',{map:bayT.map,emissive:'#ffffff',emissiveMap:bayT.em,emissiveIntensity:.2,alphaTest:.05});winMats.push(bayM);const bs=sm(wallOut);
+  const bayT=gothicTex(8,H,{wall:wallOut,windows:[[0,.5,24,26]],slots:[HS('living')],dslot:HS('hall'),door:[0,46,56],hole:[0,2.14,3.02]});const bayM=sm('#ffffff',{map:bayT.map,emissive:'#ffffff',emissiveMap:bayT.em,emissiveIntensity:.2,alphaTest:.05});winMats.push(bayM);const bs=sm(wallOut);
   box(8,H,2.2,[bs,bs,bs,bs,bayM,bs],0,H/2+.4,D/2+1.1,fw);
   toRoof=true;const rs=canvasTex(64,64,scaleDraw);rs.wrapS=rs.wrapT=THREE.RepeatWrapping;rs.repeat.set(7,3);const roofM=sm('#ffffff',{map:rs});
   const roof=gable(W,D,7,roofM,1.2);roof.position.y=H+.4;fw.add(roof);
@@ -1735,7 +1935,7 @@ function dollhouse(p,grp){// a gothic Victorian house with an open front so you 
   toRoof=false;if(SEASON_KEY==='winter'){const wr=new THREE.Mesh(new THREE.TorusGeometry(.5,.16,8,20),sm('#2f6f4a'));wr.position.set(0,2.9,D/2+2.32);fw.add(wr);box(.3,.25,.1,sm('#c94f4f'),0,2.45,D/2+2.4,fw,false)}
   p.shell=shellMats;p.roofShell=roofMats;p.interior=true;
   // ---- turret (stays solid; it's at the back corner) ----
-  const tt=gothicTex(18,14,{wall:wallOut,windows:[[-6,2,24,44],[0,2,24,44],[6,2,24,44],[-3,7.5,22,36],[3,7.5,22,36]]});const tM=lam('#ffffff',{map:tt.map,emissive:'#ffffff',emissiveMap:tt.em,emissiveIntensity:.2});winMats.push(tM);
+  const tt=gothicTex(18,14,{wall:wallOut,windows:[[-6,2,24,44],[0,2,24,44],[6,2,24,44],[-3,7.5,22,36],[3,7.5,22,36]],slots:Array(5).fill(HS('turret'))});const tM=lam('#ffffff',{map:tt.map,emissive:'#ffffff',emissiveMap:tt.em,emissiveIntensity:.2});winMats.push(tM);
   const tx=W/2+2.6,tz=-D/2+1.5;const tw1=cyl(2.8,2.9,14,tM,tx,7.4,tz,grp,20),tw2=cyl(3.05,3.05,.35,trim,tx,14.4,tz,grp,20);
   const sp=new THREE.Mesh(new THREE.ConeGeometry(3.3,9,20),lam('#ffffff',{map:scaleTex}));sp.position.set(tx,19.1,tz);sp.castShadow=true;grp.add(sp);
   const tf=new THREE.Mesh(new THREE.ConeGeometry(.12,1.6,8),lam('#b08a3a'));tf.position.set(tx,24.3,tz);grp.add(tf);const tb=new THREE.Mesh(new THREE.SphereGeometry(.2,8,6),lam('#b08a3a'));tb.position.set(tx,23.6,tz);grp.add(tb);p.tower=[tw1,tw2,sp,tf,tb];p.towerHid=false;
@@ -1843,7 +2043,7 @@ function drawClock(){if(!TCLK.c)return;const g=TCLK.c.getContext('2d'),d=new Dat
   for(let i=0;i<12;i++){const a=i/12*P2;g.lineWidth=i%3?1.5:3;g.beginPath();g.moveTo(32+Math.sin(a)*22,32-Math.cos(a)*22);g.lineTo(32+Math.sin(a)*27,32-Math.cos(a)*27);g.stroke()}
   const ha=(h+mi/60)/12*P2,ma=mi/60*P2;g.lineCap='round';g.lineWidth=3.6;g.beginPath();g.moveTo(32,32);g.lineTo(32+Math.sin(ha)*14,32-Math.cos(ha)*14);g.stroke();g.lineWidth=2.2;g.beginPath();g.moveTo(32,32);g.lineTo(32+Math.sin(ma)*21,32-Math.cos(ma)*21);g.stroke();
   g.fillStyle='#b08a3a';g.beginPath();g.arc(32,32,2.6,0,7);g.fill();TCLK.tex.needsUpdate=true;TCLK.m=Math.floor(Date.now()/60000)}
-function civicB(p,grp){const W=p.w,D=p.d,H=p.h,stone=p.wall,trim='#f4ecdc',roofC=p.roof;const side=wallTex(D,H,stone,{brick:1}),front=wallTex(W,H,stone,{front:1,door:'#4a2f22',hole:[0,2.64,4.12,1.07],trim:'#f4ecdc'}),rM=lam(roofC);
+function civicB(p,grp){const W=p.w,D=p.d,H=p.h,stone=p.wall,trim=p.trim||'#f4ecdc',roofC=p.roof;const side=wallTex(D,H,stone,{brick:1,trim}),front=wallTex(W,H,stone,{front:1,door:'#4a2f22',hole:[0,2.64,4.12,1.07],trim}),rM=lam(roofC);
   box(W,H,D,[side,side,rM,rM,front,side],0,H/2,0,grp);const T=pbP(p);
   box(W+.7,.5,D+.7,trim,0,H+.25,0,T);box(W+.2,.5,D+.2,roofC,0,H+.75,0,T);
   for(let i=0;i<3;i++)box(7.6-i*.5,.3,1.1,'#bdb3a2',0,.15+i*.3,D/2+2.75-i*.85,T);box(6.6,.25,1.9,'#cfc5b2',0,.97,D/2+.95,T);
@@ -1859,15 +2059,14 @@ function civicB(p,grp){const W=p.w,D=p.d,H=p.h,stone=p.wall,trim='#f4ecdc',roofC
 // ---------- The Fogwell (condo): brick + a per-unit window canvas (B16 lights units through FOGWELL.light) ----------
 const FOGWELL={cells:[],c:null,tex:null,mapC:null};
 function condoB(p,grp){const W=p.w,D=p.d,H=p.h,ppu=8,cw=W*ppu,ch=H*ppu,FH=4.4,units='ABCD';
-  const brick=(c,w,h,win)=>{const g=c.getContext('2d');g.fillStyle='#8c4b3b';g.fillRect(0,0,w,h);g.fillStyle='rgba(0,0,0,.13)';for(let y=0;y<h;y+=5){for(let x=(y/5%2)*6;x<w;x+=12)g.fillRect(x,y,1,5);g.fillRect(0,y,w,1)}g.fillStyle='rgba(255,255,255,.05)';for(let i=0;i<60;i++)g.fillRect((i*53)%w,(i*29)%h,6,4);
+  const brick=(c,w,h,win)=>{const g=c.getContext('2d');g.fillStyle=PAL.fam.brick.wall;g.fillRect(0,0,w,h);g.fillStyle='rgba(0,0,0,.13)';for(let y=0;y<h;y+=5){for(let x=(y/5%2)*6;x<w;x+=12)g.fillRect(x,y,1,5);g.fillRect(0,y,w,1)}g.fillStyle='rgba(255,255,255,.05)';for(let i=0;i<60;i++)g.fillRect((i*53)%w,(i*29)%h,6,4);
     g.fillStyle='#2b2a33';for(let f=1;f<5;f++)g.fillRect(0,h-f*FH*ppu-3,w,4);g.fillRect(0,0,w,6);win&&win(g)};
   const mapC=document.createElement('canvas'),emC=document.createElement('canvas');mapC.width=emC.width=cw;mapC.height=emC.height=ch;
   const cells=FOGWELL.cells;cells.length=0;const ug=W/4;for(let f=1;f<5;f++)for(let u=0;u<4;u++)for(let k=0;k<2;k++){const cx=(-W/2+ug*u+ug*(k?.72:.28)),x=(cx+W/2)*ppu-6,y=ch-(f*FH+FH*.72)*ppu,w=12,h=18;cells.push({unit:(f+1)+units[u],floor:f+1,k,x,y,w,h,lx:cx,ly:f*FH+FH*.5})}
   brick(mapC,cw,ch,g=>{cells.forEach(q=>{g.fillStyle='#e8dccb';g.fillRect(q.x-2,q.y-2,q.w+4,q.h+4);g.fillStyle='#3a4560';g.fillRect(q.x,q.y,q.w,q.h);g.fillStyle='rgba(255,255,255,.4)';g.fillRect(q.x+q.w/2-.5,q.y,1,q.h);g.fillRect(q.x,q.y+q.h/2-.5,q.w,1)});
     g.fillStyle='#2b2a33';g.fillRect(cw/2-18,ch-30,36,30);g.fillStyle='#e8dccb';for(const sx of [-1,1])g.fillRect(cw/2+sx*34-9,ch-26,18,18)});
-  const eg=emC.getContext('2d');eg.fillStyle='#000';eg.fillRect(0,0,cw,ch);const rr=seeded(4242);FOGWELL.lit={};cells.forEach(q=>{if(q.k===0)FOGWELL.lit[q.unit]=rr()<.5});cells.forEach(q=>{if(FOGWELL.lit[q.unit]){eg.fillStyle='#ffcf7a';eg.fillRect(q.x,q.y,q.w,q.h)}});
-  eg.fillStyle='#ffcf7a';for(const sx of [-1,1])eg.fillRect(cw/2+sx*34-9,ch-26,18,18);
-  const mapT=new THREE.CanvasTexture(mapC),emT=new THREE.CanvasTexture(emC);mapT.anisotropy=4;const fm=new ToonM({map:mapT,emissive:'#ffffff',emissiveMap:emT,emissiveIntensity:.15});winMats.push(fm);
+  const eg=emC.getContext('2d');eg.fillStyle='#000';eg.fillRect(0,0,cw,ch);const rr=seeded(4242);FOGWELL.lit={};cells.forEach(q=>{if(q.k===0)FOGWELL.lit[q.unit]=rr()<.5});wemBake(eg,cw,ch,cells.map(q=>[q.x,q.y,q.w,q.h,q.slot=wltSlot('fogwell:'+q.unit+(q.k?'b':'a')),0]).concat([-1,1].map(sx=>[cw/2+sx*34-9,ch-26,18,18,wltSlot('fogwell:lobby'),0])));
+  const mapT=new THREE.CanvasTexture(mapC),emT=wemTex(new THREE.CanvasTexture(emC));mapT.anisotropy=4;const fm=new ToonM({map:mapT,emissive:'#ffffff',emissiveMap:emT,emissiveIntensity:.15});winMats.push(fm);
   const sc=document.createElement('canvas');sc.width=D*ppu;sc.height=ch;brick(sc,D*ppu,ch,g=>{for(let f=1;f<5;f++)for(let i=0;i<3;i++){const x=(i+.5)*D*ppu/3-6,y=ch-(f*FH+FH*.72)*ppu;g.fillStyle='#e8dccb';g.fillRect(x-2,y-2,16,22);g.fillStyle='#3a4560';g.fillRect(x,y,12,18)}});
   const sm=new ToonM({map:new THREE.CanvasTexture(sc)}),rM=lam('#3a3640');box(W,H,D,[sm,sm,rM,rM,fm,sm],0,H/2,0,grp);
   Object.assign(FOGWELL,{c:emC,tex:emT,mapC,mat:fm,p});
@@ -1886,9 +2085,9 @@ function condoB(p,grp){const W=p.w,D=p.d,H=p.h,ppu=8,cw=W*ppu,ch=H*ppu,FH=4.4,un
   // lobby double door, canopy and name
   pbW(box(2.8,.7,.05,'#ffe2a8',0,3.6,D/2+.09,T,false));box(4.6,.3,2,'#2f4a44',0,4.15,D/2+1,T);for(const sx of [-2.1,2.1])cyl(.05,.05,4,iron,sx,2.05,D/2+1.9,T,6);
   pbSign(T,3.6,.9,SIGN.strip('st:fogwell',sgStrip('THE FOGWELL','#2b2a33','#e8dccb')),0,4.15,D/2+2.02);for(let i=0;i<2;i++)box(3.6-i*.6,.22,.8,'#9a948a',0,.11+i*.22,D/2+.45+(1-i)*.5,T);pbDone(T)}
-FOGWELL.light=(unit,on)=>{const F=FOGWELL;if(!F.c)return false;const g=F.c.getContext('2d');g.fillStyle=on?'#ffcf7a':'#000';let n=0;F.cells.forEach(q=>{if(q.unit===unit){g.fillRect(q.x,q.y,q.w,q.h);n++}});F.lit[unit]=!!on;F.tex.needsUpdate=true;return n>0};
+FOGWELL.light=(unit,on)=>{const F=FOGWELL;if(!F.c)return false;const n=F.cells.filter(q=>q.unit===unit).length;if(on==null)delete WLT.force['fogwell:'+unit];else{F.lit[unit]=!!on;WLT.force['fogwell:'+unit]=!!on}if(typeof wltTick==='function')wltTick(0,1);return n>0};// B16: a forced unit (null = back to its schedule) through the WLT
 // ---------- Willa's crooked cottage ----------
-function cottageB(p,grp){const W=p.w,D=p.d,H=p.h,wall=p.wall,roofC=p.roof;const side=wallTex(D,H,wall,{}),front=wallTex(W,H,wall,{front:1,door:'#3a2a4a',hole:[0,1.84,2.92,0]}),rM=lam(roofC);box(W,H,D,[side,side,rM,rM,front,side],0,H/2,0,grp);
+function cottageB(p,grp){const W=p.w,D=p.d,H=p.h,wall=p.wall,roofC=p.roof;const side=wallTex(D,H,wall,{trim:p.trim}),front=wallTex(W,H,wall,{front:1,trim:p.trim,door:'#3a2a4a',hole:[0,1.84,2.92,0]}),rM=lam(roofC);box(W,H,D,[side,side,rM,rM,front,side],0,H/2,0,grp);
   const T=pbP(p);const r=gable(W,D,4.6,rM,.8);r.position.set(0,H,0);r.rotation.z=.06;T.add(r);
   {const g2=new THREE.Mesh(new THREE.CylinderGeometry(1,1,1,3),lam(roofC));g2.scale.set(1.6,3.2,1.4);g2.rotation.set(-Math.PI/2,.1,0);g2.position.set(-1.2,H+.7,D/2-.6);T.add(g2)}
   {const ch=box(.9,3.2,.9,'#6a5a6a',W/2-1.8,H+2.6,-1.6,T);ch.rotation.z=-.12}box(3.2,.3,1.8,'#7a6a5a',0,.15,D/2+.9,T);for(const sx of [-1.4,1.4])cyl(.08,.08,2.8,'#3a2a2a',sx,1.4,D/2+1.6,T,6);box(3.4,.18,2,roofC,0,2.9,D/2+1.1,T,false);
@@ -1938,7 +2137,7 @@ function plaqueDraw(n,street='MAPLE ROW'){return(g,w,h)=>{g.fillStyle='#fffaf2';
 // ---------- Lantern Square (plaza) ----------
 const SQUARE={treeSlot:{x:-30,z:27.5},board:null,jukebox:null,lamps:[[-37.5,25.2],[-22.5,25.2],[-25,41],[-33,41.2],[-17,24.6]]};
 function plazaB(p,grp){const W=p.w,D=p.d;
-  const cob=canvasTex(256,256,g=>{const r=seeded(31);g.fillStyle='#a99f92';g.fillRect(0,0,256,256);for(let y=0;y<256;y+=16)for(let x=(y/16%2)*10;x<266;x+=20){const s=170+Math.floor(r()*40);g.fillStyle=`rgb(${s+18},${s+8},${s-6})`;sgRR(g,x-9,y+1,18,14,5);g.fill()}});cob.wrapS=cob.wrapT=THREE.RepeatWrapping;cob.repeat.set(W/6,D/6);
+  const cob=canvasTex(256,256,g=>{const r=seeded(31);g.fillStyle=PAL.grout;g.fillRect(0,0,256,256);for(let y=0;y<256;y+=16)for(let x=(y/16%2)*10;x<266;x+=20){const s=Math.floor(r()*26)-18;g.fillStyle=`rgb(${233+s},${217+s},${184+s})`;sgRR(g,x-9,y+1,18,14,5);g.fill()}});cob.wrapS=cob.wrapT=THREE.RepeatWrapping;cob.repeat.set(W/6,D/6);
   const pl=new THREE.Mesh(new THREE.PlaneGeometry(W,D),lam('#ffffff',{map:cob}));pl.rotation.x=-Math.PI/2;pl.position.y=.05;pl.receiveShadow=true;grp.add(pl);
   const T=pbG(),st='#b8b0a4',st2='#9a948a';
   // two-tier fountain (spray: B36)
@@ -1954,7 +2153,7 @@ function plazaB(p,grp){const W=p.w,D=p.d;
     const c=document.createElement('canvas');c.width=256;c.height=192;const tex=new THREE.CanvasTexture(c);const face=new THREE.Mesh(new THREE.PlaneGeometry(3.5,2.62),lam('#ffffff',{map:tex}));face.position.set(-30-p.x,1.95,25.58-p.z);grp.add(face);SQUARE.board={c,tex,face,draw:boardDraw};boardDraw()}
   // LANTERN SQUARE arch off Needle Way + its cobble path
   {const a=pbG(-14.5,27,Math.PI/2);T.add(a);for(const sx of [-2.7,2.7]){box(.6,4.9,.6,'#2f4a44',sx,2.45,0,a);box(.8,.3,.8,'#2f4a44',sx,4.95,0,a,false)}const ar=new THREE.Mesh(new THREE.TorusGeometry(2.7,.16,5,18,Math.PI),lam('#2f4a44'));ar.position.y=4.9;a.add(ar);box(4.9,1.15,.12,'#2f4a44',0,5.6,0,a,false);
-    pbSign(a,4.6,1.05,SIGN.strip('st:square',sgStrip('LANTERN SQUARE','#2f4a44','#ffe2a8')),0,5.6,.07,0,.14);box(4.2,.04,8.6,'#b3a99a',0,.06,-.25,a,false)}
+    pbSign(a,4.6,1.05,SIGN.strip('st:square',sgStrip('LANTERN SQUARE','#2f4a44','#ffe2a8')),0,5.6,.07,0,.14);box(4.2,.04,8.6,PAL.cobble,0,.06,-.25,a,false)}
   // the jukebox at (-38,40), facing the fountain (B21 makes it play)
   {const jx=-38,jz=40,ry=Math.atan2(-30-jx,33-jz),j=pbG(jx,jz,ry);T.add(j);box(1.5,1.7,.85,'#7a2f45',0,.85,0,j);const tp=cyl(.75,.75,.85,'#7a2f45',0,1.7,0,j,16);tp.rotation.x=Math.PI/2;
     const ar=new THREE.Mesh(new THREE.TorusGeometry(.6,.09,6,18,Math.PI),lam('#ffb0e0'));ar.position.set(0,1.62,.44);pbW(ar);j.add(ar);pbW(box(1.05,.55,.05,'#ffe2a8',0,1.15,.44,j,false));for(const sx of [-.45,.45])pbW(box(.12,.95,.05,'#9fe0ff',sx,.5,.44,j,false));
@@ -2113,7 +2312,7 @@ function mochaHome(){try{return G.mode!=='trip'&&mocha.visible!==false&&(inHome(
 function mochaAwake(){try{return!G.sleep&&!asleepAt(hourAt(Date.now()))}catch(e){return true}}
 function wHomeAwake(){const h=new Date().getHours();return(W.dest==='inside'||W.dest==='yard'||W.dest==='porch')&&!W.path.length&&!(h>=22||h<7)}
 function agRead(){const h=hourAt(Date.now()),m=AG.mocha;m.x=G.x;m.z=G.z;m.gone=G.mode==='trip';m.awake=mochaAwake();m.act=(G.act&&G.act.doing)||G.mode;m.moving=G.mode==='travel';m.go=G.mode==='travel'&&G.act?G.act.p:null;m.room=m.place&&byId[m.place]&&byId[m.place].rooms?((G.act&&G.act.p===m.place&&G.act.s&&spotRoom(m.place,G.act.s))||roomAt(m.place,G.x,G.z)):(G.act&&G.act.p===m.place?(G.act.s||'main'):null);
-  const w=AG.wendell;w.x=W.x;w.z=W.z;w.awake=!(h>=22||h<7);w.act=W.doing;w.moving=W.path.length>0&&W.busy<=0;w.go=W.dest==='inside'&&W.path.length?'neighbor':null;w.room=w.place==='neighbor'?((W.spot&&spotRoom('neighbor',W.spot))||roomAt('neighbor',W.x,W.z)):null;
+  const w=AG.wendell;w.x=W.x;w.z=W.z;w.awake=!(h>=22||h<7)||W.st==='snack';w.act=W.doing;w.moving=W.path.length>0&&W.busy<=0;w.go=W.dest==='inside'&&W.path.length?'neighbor':null;w.room=w.place==='neighbor'?((W.spot&&spotRoom('neighbor',W.spot))||roomAt('neighbor',W.x,W.z)):null;
   const y=AG.you;y.x=YOU.x;y.z=YOU.z;y.moving=YOU.moving>0;y.gone=camS.mode!=='walk';y.act=y.gone?'watching':'walking';
   for(const k of KEEPERS){const a=AG[k.id],p=byId[k.shop],o=isOpen(p,h);const wp=toWorld(p,k.pos[0],k.pos[1]);a.x=wp.x;a.z=wp.z;a.room=o?'counter':'back';a.awake=o||!(h>=22||h<6);a.act=o?'minding the shop':'resting in the back room'}}
 function agWhere(a){if(a.kind==='keeper')return a.staffOf;if(a.gone)return null;if(a.kind==='wendell'&&W.inside)return'neighbor';return placeAt(a.x,a.z)}
@@ -2148,7 +2347,7 @@ function doorBanner(d){if(!BAN.el||isQuiet)return;const p=d.p,o=occOf(p.id),who=
   const sv=S.you.doors||(S.you.doors=[]),first=!sv.includes(p.id);if(first){sv.push(p.id);if(sv.length>40)sv.splice(0,sv.length-40)}
   BAN.el.innerHTML=esc(parts.join(' · '))+(first?' <b>✨ first visit!</b>':'');BAN.el.classList.toggle('first',first);$('#toast').classList.remove('show');HUD.show('banner',true);clearTimeout(BAN.t);BAN.t=setTimeout(()=>HUD.show('banner',false),2500)}
 // ---------- door notes (pool of 4, atlas cells, readable in the near pill) ----------
-function notesSync(){const want=[];if(!mochaHome()){const p=G.mode==='trip'?null:byId[G.act&&G.act.p];want.push(['home',G.mode==='trip'?'off on a little trip! back soon -M':`out at ${p&&p.id!=='home'?p.name.replace(/^the /i,''):'the neighborhood'} -M`])}
+function notesSync(){const want=[];for(const k in WLT.brk){const b=WLT.brk[k];if(Date.now()<b.until)want.push([k,b.label])}if(!mochaHome()){const p=G.mode==='trip'?null:byId[G.act&&G.act.p];want.push(['home',G.mode==='trip'?'off on a little trip! back soon -M':`out at ${p&&p.id!=='home'?p.name.replace(/^the /i,''):'the neighborhood'} -M`])}
   if(!(W.dest==='inside'||W.dest==='yard'||W.dest==='porch'))want.push(['neighbor',`out at ${wWhere().replace(/^out walking$/,'a stroll')} -W`]);
   for(const N of NOTES){const w=want.find(x=>x[0]===N.pid);if(!w||w[1]!==N.text){if(N.pid){const d=DBY[N.pid];if(d)d.note=-1}diShow(N.ii,false);N.pid=null;N.text=''}}
   for(const [pid,text] of want){if(NOTES.some(N=>N.pid===pid))continue;const N=NOTES.find(n=>!n.pid),d=DBY[pid];if(!N||!d)continue;N.pid=pid;N.text=text;
@@ -2253,7 +2452,7 @@ neighborHouse(80,44,0,'#9fb6d8','#3c4a5a');neighborHouse(18,72,Math.PI,'#d98a8a'
 let p_mtn=null;const p_olym=[],p_sky=[],p_snow=[];
 const hazeM=c=>noBend(new THREE.MeshBasicMaterial({color:c,fog:false}));
 const hazeFade=m=>{m.onBeforeCompile=sh=>{sh.uniforms.hzC={value:scene.fog.color};sh.vertexShader='varying float vHz;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvHz=uv.y;');sh.fragmentShader='uniform vec3 hzC;varying float vHz;\n'+sh.fragmentShader.replace('#include <fog_fragment>','gl_FragColor.rgb=mix(hzC,gl_FragColor.rgb,smoothstep(.3,.85,vHz));')};m.customProgramCacheKey=()=>'hz';return m};
-{const skyWin=canvasTex(64,128,g=>{g.fillStyle='#000';g.fillRect(0,0,64,128);g.fillStyle='#ffd98a';for(let y=4;y<128;y+=8)for(let x=4;x<64;x+=8)if(Math.random()<.35)g.fillRect(x,y,4,4)});
+{const skyWin=canvasTex(64,128,g=>{g.fillStyle='#000';g.fillRect(0,0,64,128);const L=[];for(let y=4;y<128;y+=8)for(let x=4;x<64;x+=8)if(Math.random()<.35)L.push([x,y,4,4,wltSlot('sky:'+((x*7+y*3>>2)%16)),0]);wemBake(g,64,128,L)});wemTex(skyWin);
  for(let i=0;i<26;i++){const w=rand(6,12),h=rand(14,36),x=rand(-110,90),z=rand(-215,-165);const sc=pick(['#8fa0b8','#a7b3c4','#7f8fa8','#b8c0cc']),m=new ToonM({color:sc,emissive:'#ffffff',emissiveMap:skyWin,emissiveIntensity:0,fog:false});p_sky.push([m,sc]);winMats.push(m);box(w,h+70,w*.8,m,x,h/2-35,z,scene,false)}
  const mtn=new THREE.Group();mtn.position.set(330,0,330);scene.add(mtn);const base=new THREE.Mesh(new THREE.ConeGeometry(260,180,7),hazeM('#9aa8c4'));base.position.y=0;mtn.add(base);const snow=new THREE.Mesh(new THREE.ConeGeometry(52,37,7),hazeM('#f4f6fb'));snow.position.y=71.5;mtn.add(snow);p_mtn=[base.material,snow.material];
  for(let i=0;i<9;i++){const hh=rand(26,48);const c=new THREE.Mesh(new THREE.ConeGeometry(rand(34,56)*3,hh*3,6),hazeFade(hazeM('#8a9ab8')));c.position.set(-420+rand(-30,30),hh-4-hh*1.5,-200+i*55);scene.add(c);p_olym.push(c.material);const cap=new THREE.Mesh(new THREE.ConeGeometry(c.geometry.parameters.radius*.13,hh*.39,6),hazeM('#f4f6fb'));cap.position.set(c.position.x,hh-4-hh*.195,c.position.z);cap.rotation.y=0;scene.add(cap);p_snow.push(cap.material)}}
@@ -2420,7 +2619,7 @@ const prof=[new THREE.Vector2(.66,-.5),new THREE.Vector2(.63,-.2),new THREE.Vect
 for(let i=0;i<=12;i++){const a=i/12*Math.PI/2;prof.push(new THREE.Vector2(Math.max(.001,Math.cos(a)*.57),.42+Math.sin(a)*.6))}
 const SEG=40,ghostGeo=new THREE.LatheGeometry(prof,SEG),gPos=ghostGeo.attributes.position,P=prof.length;
 const hemIdx=[],hemBase=[];for(let i=0;i<=SEG;i++)for(let j=0;j<2;j++){const idx=i*P+j;hemIdx.push([idx,i/SEG*Math.PI*2,j]);hemBase.push([gPos.getX(idx),gPos.getY(idx),gPos.getZ(idx)])}
-const ghostMat=new ToonM({color:'#ffffff',emissive:'#8a90b0',emissiveIntensity:.35,side:THREE.DoubleSide,transparent:true,opacity:.96});
+const ghostMat=new ToonC({color:'#ffffff',emissive:'#8a90b0',emissiveIntensity:.35,side:THREE.DoubleSide,transparent:true,opacity:.96});ghostMat.userData.rim=1;
 const shell=new THREE.Mesh(ghostGeo,ghostMat);shell.castShadow=true;body.add(shell);
 const black=new THREE.MeshBasicMaterial({color:'#26324a'}),white=new THREE.MeshBasicMaterial({color:'#ffffff'});
 const eyes=[-1,1].map(s=>{const e=new THREE.Group();const m=new THREE.Mesh(new THREE.SphereGeometry(.075,12,10),black);m.scale.set(1,1.4,.5);const h=new THREE.Mesh(new THREE.SphereGeometry(.025,8,6),white);h.position.set(.025,.04,.035);e.add(m,h);e.position.set(s*.19,.64,.53);body.add(e);return e});
@@ -2483,7 +2682,7 @@ function makePet(sp){const g=new THREE.Group();const u=g.userData;u.sp=sp;u.legs
   else if(sp==='crow'){const c=lam('#1e1e28'),bk=lam('#5a5a62');add(SPH,c,0,0,0,.17,.16,.26);add(SPH,c,0,.14,.19,.13,.12,.12);add(new THREE.ConeGeometry(.045,.16,6),bk,0,.12,.35).rotation.x=Math.PI/2;
     for(const s of [-1,1]){add(SPH,whiteM,s*.065,.18,.28,.03,.03,.02);add(SPH,eyeM,s*.068,.18,.295,.016,.02,.01);const wg=new THREE.Group();wg.position.set(s*.12,.04,0);g.add(wg);add(SPH,c,s*.17,0,-.02,.2,.03,.13,wg);u.wings.push(wg)}
     add(new THREE.ConeGeometry(.08,.22,4),c,0,0,-.3).rotation.x=-Math.PI/2;u.fly=true}
-  return g}
+  return rimify(g,TOONC)}
 function animatePet(g,t,mv){const u=g.userData;const ph=t*(mv?11:3);u.legs.forEach((l,i)=>l.rotation.x=mv?Math.sin(ph+(i%2?Math.PI:0)+(i>1?Math.PI:0))*.6:0);
   if(u.wings.length){const f=u.hang||u.perch?.05:Math.sin(t*(u.sp==='bat'?15:9))*.7;u.wings.forEach((w,i)=>w.rotation.z=(i?-1:1)*(u.hang?.9:u.perch?0:f))}
   if(u.tail)u.tail.rotation.y=Math.sin(t*(u.sp==='poodle'?12:2))*(u.sp==='poodle'?.6:.3);if(u.head&&!mv)u.head.rotation.y=Math.sin(t*.7+g.id)*.35}
@@ -2844,7 +3043,7 @@ const LETTERS={
  care:['Dear Mocha, just a little care package because we were thinking about you. The fog rolled in thick this morning and Dad said "Mocha would love this." Eat your vegetables (smell them, at least). Love, Mom & Dad.','Hello from the lighthouse! Nothing special, we just miss you. Mom found something on the beach that made her think of you. Dad says to tell you a joke: what do you call a ghost who stays up all night? A night-owl-oooo. (Sorry.)','Our dear boo, a few things for you from the coast. Are you sleeping enough? Making friends? Mom says hi, Dad says hi louder.']};
 function letterText(m){const L=LETTERS[m.h]||LETTERS.care;let s=pick(L);if(m.h==='anniv'){const y=+String(m.k||'').split('-')[1]||new Date(m.t||Date.now()).getFullYear();s=s.replace('{YRS}',annivW(annivN(new Date(y,11,31).getTime())))}if(!/love, mom & dad/i.test(s))s+=' Love, Mom & Dad.';return s}
 function mailWaiting(t=Date.now()){return(S.mbox||[]).filter(m=>m.t<=t)}
-function mailUnanswered(t=Date.now()){return(S.mail||[]).find(l=>l.from!=='me'&&!l.reply&&t-l.t<14*864e5&&t>=l.t)}
+function mailUnanswered(t=Date.now()){return(S.mail||[]).find(l=>l.from!=='me'&&l.from!=='Wendell'&&!l.reply&&t-l.t<14*864e5&&t>=l.t)}
 // put due packages in his mailbox. first run (fresh Mocha or first time with this feature): only what's due right now
 function mailDeliver(now=Date.now()){if(!S)return[];const first=!S.mailT,last=S.mailT||now,got=[],y=new Date(now).getFullYear();
   const add=(k,h,t,hold)=>{if(S.mailSent.includes(k))return;S.mailSent.push(k);if(S.mailSent.length>40)S.mailSent.splice(0,S.mailSent.length-40);const it={id:'m'+Math.round(t).toString(36)+Math.floor(Math.random()*999),k,h,t,g:mailGift(h),hold:hold||0};S.mbox.push(it);if(S.mbox.length>6)S.mbox.shift();got.push(it)};
@@ -3047,7 +3246,7 @@ function localAcquire(act,t,placeName){const pool=act.pool||[];if(!pool.length)r
   const it=acquire(item,color,null,placeName,t);if(!it)return;addEntry('Style',`Found a ${it.name} at ${placeName}. ${pick(['It just felt like me.','I didn\'t plan to, but I couldn\'t leave without it.','Is this… my style? Maybe this is my style.'])}`,placeName,t+1);
   toast(`🧣 Mocha picked out a ${it.name}`);if(Math.random()<.75)wearItem(it.id)}
 const TAGNAME={gadgets:'Gadgets',bikes:'Bikes',helping:'Work',movies:'Movies',stories:'Movies',friends:'Friends',animals:'Pets','home decor':'Home',cooking:'Food',coffee:'Coffee',tea:'Home',reading:'Reading',music:'Music',gaming:'Games',art:'Art',nature:'Outside',birds:'Outside',ocean:'Outside',fashion:'Style',cozy:'Home',people:'People',heights:'Views',rides:'Fun',stars:'Night',plants:'Plants',mystery:'Mystery',photography:'Views',writing:'Writing',learning:'Learned'};
-function localOutcome(act,t=Date.now(),live=true){const p=byId[act.p];const pname=p.name;const tr=S.traits;if(act.fx==='trip'||act.fx==='tripback'||act.fx==='away'){S.xp+=4;S.recent.unshift(act.p+(act.s?'.'+act.s:''));S.recent.length=Math.min(S.recent.length,6);return}if(act.fx==='unpack'&&S.trips&&S.trips[0])S.trips[0].up=1;
+function localOutcome(act,t=Date.now(),live=true){const p=byId[act.p];const pname=p.name;const tr=S.traits;if(act.flick){flickBack(t);return}if(act.fx==='trip'||act.fx==='tripback'||act.fx==='away'){S.xp+=4;S.recent.unshift(act.p+(act.s?'.'+act.s:''));S.recent.length=Math.min(S.recent.length,6);return}if(act.fx==='unpack'&&S.trips&&S.trips[0])S.trips[0].up=1;
   let e=.4+rand(-.55,.6);(act.tags||[]).forEach(k=>{e+=(S.interests[k]||0)*.04;if(k==='cozy')e+=(tr.coziness-.5)*.4;if(k==='people')e+=(tr.sociability-.5)*.5;if(k==='art'||k==='writing')e+=(tr.creativity-.5)*.4;if(k==='heights'||k==='rides')e+=(tr.adventure-.5)*.4});e=clamp(e,-1,1);
   for(const n in act.need||{})S.needs[n]=clamp(S.needs[n]+act.need[n],0,100);if(act.fx==='sleep')S.needs.energy=100;S.xp+=10;S.visits[p.id]=(S.visits[p.id]||0)+1;
   if(S.visits[p.id]===1&&p.id!=='home')goalCheck('new',null,t);
@@ -3061,6 +3260,7 @@ function localOutcome(act,t=Date.now(),live=true){const p=byId[act.p];const pnam
   if(act.p==='studio'&&(act.fx==='paint'||/paint/i.test(act.doing||''))){const subj=pick([...topInterests(3).map(([k])=>k),'the sound at sunset','a rainy street','my house','the mountain','autumn trees','wendell','myself','the night sky']);const ptN=makePainting(subj,pick(['Untitled #'+(S.paintings.length+1),'Rainy Mood','Little Light','Gray, But Specific','Hello, '+subj,'A Quiet Moment','Drizzle Study']),t);maybePostPainting(ptN,e,t);if(Math.random()<.15)localAcquire({...act,pool:['beret','apron']},t,pname);}
   if(act.fx==='research')research(t,p.id);
   else if(act.hx)holOutcome(act,t,live);
+  else if(act.fx==='hang')hangOutcome(act,t,live);
   else if(act.fx==='mail')openMail(t,live);else if(act.fx==='writeback')writeBack(t);else if(act.fx==='calendar')calCheck(t);
   else if(act.fx==='closet')closetChange(t,pname);
   else if(act.fx==='job')payJob(act,t,live,pname);
@@ -3096,13 +3296,13 @@ function localChoose(at=Date.now()){const tr=S.traits,h=hourAt(at),asleep=asleep
   if(asleep)return{act:ACTS.find(a=>a.fx==='sleep')};{const up=tripUnpack(at);if(up&&Math.random()<.55+tr.coziness*.35)return{act:up}}const s0=sched(),toBed=((s0.bed-h)+24)%24;
   const hidden=PLACES.filter(p=>!known(p));
   if(hidden.length&&!night&&Math.random()<.07+tr.curiosity*.1+(S.needs.curious<35?.1:0)+(S.goal&&S.goal.kind==='discover'?.15:0))return{explore:pick(hidden)};
-  const cands0=1;const cands=ACTS.filter(a=>known(byId[a.p])&&(!a.night||night)&&(!a.pet||S.pets.length)&&(!a.bike||S.bike)&&(!a.npc||wAvail())&&isOpen(byId[a.p],h)&&(a.fx!=='sleep'||S.needs.energy<8)&&(a.fx!=='mail'||mailWaiting(at).length)&&(a.fx!=='writeback'||mailUnanswered(at)));
-  S.hobbies.forEach(hb=>{if(!hobbyOk(hb)||(byId[hb.p]&&!isOpen(byId[hb.p],hourAt(at))))return;cands.push({p:hb.p,s:hb.s,doing:hb.doing,tags:hb.tag?[hb.tag]:[],need:{fun:30},hobby:hb.name})});holCands(at).forEach(a=>cands.push(a));{const bj=benchJoinCand(at);if(bj)cands.push(bj)}if(DVIS.t&&DVIS.pid==='home'&&at-DVIS.t>=0&&at-DVIS.t<6e4)cands.push(GREET_ACT);{const tc=tripCand(at);if(tc&&known(byId[tc.p]))cands.push(tc);const up=tripUnpack(at);if(up)cands.push(up)}
+  const cands0=1;const cands=ACTS.filter(a=>known(byId[a.p])&&(!a.night||night)&&(!a.pet||S.pets.length)&&(!a.bike||S.bike)&&!a.npc&&isOpen(byId[a.p],h)&&(a.fx!=='sleep'||S.needs.energy<8)&&(a.fx!=='mail'||mailWaiting(at).length)&&(a.fx!=='writeback'||mailUnanswered(at)));
+  S.hobbies.forEach(hb=>{if(!hobbyOk(hb)||(byId[hb.p]&&!isOpen(byId[hb.p],hourAt(at))))return;cands.push({p:hb.p,s:hb.s,doing:hb.doing,tags:hb.tag?[hb.tag]:[],need:{fun:30},hobby:hb.name})});holCands(at).forEach(a=>cands.push(a));hangCands(at).forEach(a=>cands.push(a));{const bj=benchJoinCand(at);if(bj)cands.push(bj)}if(DVIS.t&&DVIS.pid==='home'&&at-DVIS.t>=0&&at-DVIS.t<6e4)cands.push(GREET_ACT);if(FLK.w&&!FLK.back&&at-FLK.w>=0&&at-FLK.w<18e4)cands.push(FLICK_ACT);{const tc=tripCand(at);if(tc&&known(byId[tc.p]))cands.push(tc);const up=tripUnpack(at);if(up)cands.push(up)}
   if(cands.length>1)for(let i=cands.length-1;i>=0;i--)if(cands.length>1&&ubVeto(cands[i]))cands.splice(i,1);UBX.at=at;UBX.h=h;
   const sc=cands.map(a=>{let s=1;for(const n in a.need||{})s+=(100-S.needs[n])/30*(a.need[n]/40);a.tags.forEach(k=>s+=Math.max(-1.5,(S.interests[k]||0))*.35);
     if(a.hobby)s+=2.5;if(a.hw)s+=a.hw;if(a.fx==='trip'||a.fx==='unpack')s+=a.tw;if(a.fx==='calendar')s+=calScore(at);if(a.fx==='mail')s+=4.5+Math.min(2,mailWaiting(at).length);if(a.fx==='writeback')s+=1.2+tr.sociability;const key=a.p+(a.s?'.'+a.s:'');if(S.recent.slice(0,2).includes(key))s-=3;if(!S.visits[a.p])s+=1.2+tr.curiosity*2;
     const indoors=a.p==='home'||byId[a.p].solid;if(wet)s+=indoors?1:-(1-tr.adventure);if(toBed<1.5)s+=a.p==='home'?3:-1;if(night)s+=a.p==='home'?.8:-.3;if(a.fx==='sleep')s+=10;if(a.fx==='movie')s+=1;if(a.fx==='ask')s+=.4+(tr.curiosity-.5)+(tr.sociability-.5)-Math.min(1.4,(S.know[a.keeper]||0)*.2);
-    if(a.p==='home')s+=tr.coziness*.8;if(a.doing==='cooking'&&S.pantry<12)s-=4;if(a.fx==='groceries')s+=S.pantry<30?3+(100-S.needs.snack)/30:-1.5;if(a.pet)s+=1.5;if(a.npc)s+=(S.metW?.5:2)+(S.friendW||0)*.05;if(a.tags.includes('people'))s+=(tr.sociability-.5)*1.5;s+=gearScore(a,at);
+    if(a.p==='home')s+=tr.coziness*.8;if(a.doing==='cooking'&&S.pantry<12)s-=4;if(a.fx==='groceries')s+=S.pantry<30?3+(100-S.needs.snack)/30:-1.5;if(a.pet)s+=1.5;if(a.fx==='hang')s+=a.hs;else if(a.npc)s+=(S.metW?.5:2)+(S.friendW||0)*.05;if(a.tags.includes('people'))s+=(tr.sociability-.5)*1.5;s+=gearScore(a,at);
     const g=S.goal;if(g&&g.kind==='hobby'&&a.hobby===g.key)s+=2;if(g&&g.kind==='research'&&a.fx==='research')s+=2;if(g&&g.kind==='new'&&!S.visits[a.p])s+=2;
     if(a.fx==='bench')s+=benchScore(a,h,tr);s+=userBias(a,UBX);if(CHB[a.p]&&at-CHB[a.p]>=0&&at-CHB[a.p]<18e5)s+=.5;return Math.max(.05,s)});
   let r=Math.random()*sc.reduce((a,b)=>a+b*b,0);for(let i=0;i<cands.length;i++){r-=sc[i]*sc[i];if(r<=0)return{act:cands[i]}}return{act:cands[0]}}
@@ -3245,8 +3445,8 @@ function tripContext(){const now=Date.now();if(S.trip){const T=TRIPS[S.trip.id];
   return`Trips (his own choice, at most one every few days): by train from Rain City Station (open 6am–11pm, a train every 5 minutes) or by ferry from the Ferry Dock. ${last!=null?`His last trip was ${last} days ago.`:'He has never been on a trip.'} To go, set next.trip to a destination id.\n${L.join('\n')}`}
 
 if(S.trip&&!TRIPS[S.trip.id])S.trip=null;S.trips=(S.trips||[]).filter(x=>TRIPS[x.id]);
-let awayMs=0;function catchUp(){if(isNew)return 0;const now=Date.now(),away=now-S.lastSeen;awayMs=away;if(away<8*60e3)return 0;isQuiet=true;mailDeliver(now);let t=S.lastSeen,n=0;if(S.trip){n+=Math.min(3,tripAdvance(now,false));if(!S.trip&&S.trips[0])t=Math.max(t,S.trips[0].t1+rand(10,25)*60e3)}
-  while(!S.trip&&t<now-6*60e3&&n<14){if(asleepAt(hourAt(t),t)){const wake=t+secondsToWake(t)*1000;if(wake>now){addEntry('Rest','Went to bed. The old house creaked softly and I drifted off.',"Mocha's House",t);n++;break}
+let awayMs=0;function catchUp(){if(isNew)return 0;const now=Date.now(),away=now-S.lastSeen;awayMs=away;if(away<8*60e3)return 0;isQuiet=true;mailDeliver(now);let t=S.lastSeen,n=0;const NC=Math.min(44,14+10*Math.floor(away/864e5));if(S.trip){n+=Math.min(3,tripAdvance(now,false));if(!S.trip&&S.trips[0])t=Math.max(t,S.trips[0].t1+rand(10,25)*60e3)}
+  while(!S.trip&&t<now-6*60e3&&n<NC){wendSim(t);if(asleepAt(hourAt(t),t)){const wake=t+secondsToWake(t)*1000;if(wake>now){addEntry('Rest','Went to bed. The old house creaked softly and I drifted off.',"Mocha's House",t);n++;break}
       addEntry('Rest',fill(pick(['Slept through the night. Dreamed about {dream}.','Slept like a log. A ghostly, floaty log.',(WX.wet(wake-36e5)?'Slept in a little. The rain on the roof was too cozy.':'Slept in a little. The morning was too still and cozy to get up.')])),"Mocha's House",wake);S.needs.energy=100;t=wake+rand(15,40)*60e3;n++;continue}
     const c=localChoose(t);if(c.explore){if(Math.random()<.5)discover(c.explore,t,false);t+=rand(30,60)*60e3;continue}if(c.act.fx==='sleep'){t+=45*60e3;continue}if(c.act.fx==='trip'){if(tripBegin(c.act.trip,Math.min(t+rand(8,20)*60e3,now-60e3),false)){n+=Math.min(3,tripAdvance(now,false));if(S.trip)break;t=S.trips[0].t1+rand(15,40)*60e3;continue}t+=20*60e3;continue}localOutcome(c.act,t,false);t+=rand(40,90)*60e3;n++}
   try{const wr=away>4*36e5&&!WX_FORCED?WX.recap(now-away,now):'';if(wr)addEntry('Weather',wr[0].toUpperCase()+wr.slice(1)+'.','',now-6e4)}catch(e){}isQuiet=false;S.diary.sort((a,b)=>b.t-a.t);S.lastSeen=now;return n}
@@ -3260,8 +3460,15 @@ if(S.seedNote){delete S.seedNote;addEntry('Money','Found my moving-day savings t
 let KEYS=[[0,'#1a2a5e','#4a4f86',.55,.24],[5.5,'#2f3d78','#9a7fa8',.55,.28],[7,'#6f8fc8','#f6c9a8',.7,.55],[10,'#7fb4e6','#e2ecf4',.9,.88],[16,'#7aa4dc','#f6d8b0',.85,.78],[18.5,'#5560b0','#f6a8a8',.7,.5],[20,'#2a3a78','#7a6a9e',.58,.28],[24,'#1a2a5e','#4a4f86',.55,.24]];
 const cA=new THREE.Color(),cB=new THREE.Color(),cT=new THREE.Color(),grey=new THREE.Color('#a3b4c8'),greyB=new THREE.Color('#d3dbe4'),nightGrey=new THREE.Color('#1a2236'),wetC=new THREE.Color('#7f8fa0');
 let nightAmt=0,skyLabelT=0,keysDay=-1,keysTz=0;
-function buildKeys(){const d=new Date();SUN=sunTimes(d);keysDay=d.getDate();keysTz=d.getTimezoneOffset();const r=SUN.rise,st=SUN.set,N1='#1a2a5e',N2='#4a4f86';
-  const k=[[0,N1,N2,.55,.24],[r-1.1,N1,N2,.55,.24],[r-.35,'#3a4a8a','#c88aa8',.58,.3],[r+.4,'#7f9fd6','#f6c39a',.72,.6],[r+2,'#5dade9','#d2eefa',.9,.88],[st-2.2,'#62a6e6','#f5e2c0',.86,.82],[st-.5,'#6a86c8','#f6c08a',.78,.62],[st+.25,'#4f58a8','#f29aa8',.62,.38],[st+1,'#26357a','#6e5f9a',.56,.25],[24,N1,N2,.55,.24]];
+// B15: hemisphere day/night colors, wet road, and the shared RIM uniform following the sky (day, golden hour, night) and Mocha being indoors
+const HEMC=[...PAL.hemi.day,...PAL.hemi.night].map(c=>new THREE.Color(c)),ROADC=[new THREE.Color(PAL.road),new THREE.Color(PAL.roadWet)],RIMK=['day','golden','night','inside'].map(k=>new THREE.Color(PAL.rim[k][0])),RIMS={t:0,want:0,in:0,gold:0};
+function bmp(h,c,w){return Math.max(0,1-Math.abs(h-c)/w)}
+function rimSky(dt,h){RIMS.gold=Math.max(bmp(h,SUN.set-.45,1.25),.8*bmp(h,SUN.rise+.45,1))*(1-nightAmt);
+  if((RIMS.t-=dt)<=0){RIMS.t=.25;RIMS.want=inHome(G.x,G.z)||PLACES.some(q=>q.interior&&q.kind!=='home'&&inBuilding(q,G.x,G.z))?1:0}
+  RIMS.in+=(RIMS.want-RIMS.in)*Math.min(1,dt*2);const P=PAL.rim;RIM.col.value.copy(RIMK[0]).lerp(RIMK[1],RIMS.gold).lerp(RIMK[2],nightAmt).lerp(RIMK[3],RIMS.in);
+  RIM.amt.value=lerp(lerp(lerp(P.day[1],P.golden[1],RIMS.gold),P.night[1],nightAmt),P.inside[1],RIMS.in)}
+function buildKeys(){const d=new Date();SUN=sunTimes(d);keysDay=d.getDate();keysTz=d.getTimezoneOffset();const r=SUN.rise,st=SUN.set,K=PAL.sky,N1=K.night[0],N2=K.night[1];
+  const k=[[0,N1,N2,.55,.24],[r-1.1,N1,N2,.55,.24],[r-.35,...K.dawn,.58,.3],[r+.4,...K.morning,.72,.6],[r+2,...K.day,.9,.88],[st-2.2,...K.after,.86,.82],[st-.5,...K.golden,.78,.62],[st+.25,...K.sunset,.62,.38],[st+1,...K.blue,.56,.25],[24,N1,N2,.55,.24]];
   KEYS=k.filter((x,i)=>i===0||x[0]>k[i-1][0])}
 buildKeys();
 function updateSky(dt){const d=new Date();if(d.getDate()!==keysDay||d.getTimezoneOffset()!==keysTz)buildKeys();const h=d.getHours()+d.getMinutes()/60;let i=0;while(i<KEYS.length-2&&KEYS[i+1][0]<=h)i++;const a=KEYS[i],b=KEYS[i+1],t=(h-a[0])/(b[0]-a[0]);
@@ -3270,13 +3477,13 @@ function updateSky(dt){const d=new Date();if(d.getDate()!==keysDay||d.getTimezon
   const day=1-nightAmt;cA.lerp(day>.3?grey:nightGrey,o*.62);cB.lerp(day>.3?greyB:nightGrey,o*.55);
   skyMat.uniforms.top.value.copy(cA);skyMat.uniforms.bot.value.copy(cB);scene.fog.color.copy(cB);
   scene.fog.near=WEATHER.kind==='fog'?20:80;scene.fog.far=WEATHER.kind==='fog'?140:240;
-  hemi.intensity=(hi*(1-o*.2)+.15)*lerp(.62,.78,nightAmt);hemi.color.set(nightAmt>.5?'#c8d4ff':'#eef2ff');sun.intensity=si*(1-o*.6)*lerp(.64,.42,nightAmt);hemi.groundColor.set(day>.3?'#9a9478':'#2a2a3a');
+  hemi.intensity=(hi*(1-o*.2)+.15)*lerp(.62,.78,nightAmt)*lerp(1.1,1.22,nightAmt);hemi.color.copy(HEMC[0]).lerp(HEMC[2],nightAmt);sun.intensity=si*(1-o*.6)*lerp(.64,.42,nightAmt);hemi.groundColor.copy(HEMC[1]).lerp(HEMC[3],nightAmt);rimSky(dt,h);
   const sa=clamp((h-SUN.rise)/(SUN.set-SUN.rise),0,1)*Math.PI;sun.position.set(camS.tx+Math.cos(sa)*60,20+Math.max(.15,Math.sin(sa))*60,camS.tz+30);sun.target.position.set(camS.tx,0,camS.tz);{const se=Math.min(90,Math.max(50,Math.round(camS.dist*1.3/5)*5)),sc=sun.shadow.camera;if(sc.right!==se){sc.left=sc.bottom=-se;sc.right=sc.top=se;sc.updateProjectionMatrix();sun.shadow.needsUpdate=true}}sun.color.set(nightAmt>.5?'#b4c6ff':h<9||h>16?'#ffd6b0':'#fff4e6');
-  nightAmt=clamp((.62-si)/.4,0,1);post.uniforms.night.value=nightAmt;{const frz=nightAmt>=.85;sun.shadow.autoUpdate=!frz;if(frz&&Math.floor(T*2)!==Math.floor((T-dt)*2))sun.shadow.needsUpdate=true}winMats.forEach(m=>m.emissiveIntensity=.12+nightAmt*(m.userData.nightK??.9));nightGlows.forEach(g=>g.material.opacity=g.userData.op*(.15+nightAmt*.85));
+  nightAmt=clamp((.62-si)/.4,0,1);post.uniforms.night.value=nightAmt;{const frz=nightAmt>=.85;sun.shadow.autoUpdate=!frz;if(frz&&Math.floor(T*2)!==Math.floor((T-dt)*2))sun.shadow.needsUpdate=true}LUXS.si=si;nightGlows.forEach(g=>g.material.opacity=g.userData.op*(.15+nightAmt*.85));
   stars.material.opacity=nightAmt*(1-o);moon.material.opacity=nightAmt*(1-o*.8)+.05;fireflies.material.opacity=nightAmt*.8*(WEATHER.kind==='rain'?.2:1);
   clouds.forEach(c=>{c.m.opacity=.45+o*.45;c.m.color.set(day>.3?(o>.5?'#d5dbe3':'#ffffff'):'#4b5577');c.m.emissiveIntensity=day>.3?.5:.04});
   if(p_mtn){p_mtn[0].color.set(day>.3?'#9aa8c4':'#2e3656').lerp(cB,.35);p_mtn[1].color.set(day>.3?'#f4f6fb':'#8a94b4').lerp(cB,.2)}p_olym.forEach(m=>m.color.set(day>.3?'#86a0c4':'#28304e').lerp(cB,.5));p_snow.forEach(m=>m.color.set(day>.3?'#f4f6fb':'#6a7496').lerp(cB,.3));p_sky.forEach(([m,c])=>m.color.set(day>.3?c:'#2a3152').lerp(cB,day>.3?.68:.4));
-  groundMat.color.set('#ffffff').lerp(wetC,WEATHER.kind==='snow'?0:WEATHER.wet*.35);
+  groundMat.color.set('#ffffff').lerp(wetC,WEATHER.kind==='snow'?0:WEATHER.wet*.35);roadMat.color.copy(ROADC[0]).lerp(ROADC[1],WEATHER.kind==='snow'?0:WEATHER.wet);
   const snowing=WEATHER.kind==='snow';const wantWet=WEATHER.kind==='rain'?1:WEATHER.kind==='drizzle'?.5:snowing?.9:0;WEATHER.wet+=(wantWet-WEATHER.wet)*Math.min(1,dt*(WEATHER.slow?.008:.15));if(WEATHER.slow&&Math.abs(over-WEATHER.over)<.02&&Math.abs(wantWet-WEATHER.wet)<.02)WEATHER.slow=0;rain.material.opacity=WEATHER.wet*(snowing?.95:.75);if(rain.material.map!==(snowing?snowTex:rainTex)){rain.material.map=snowing?snowTex:rainTex;rain.material.size=snowing?.55:.9;rain.material.needsUpdate=true}
   wxTick(dt);WIND+=(clamp(WXW[WEATHER.kind]+(WEATHER.dw||0)*.5+Math.sin(T*.11)*.06+Math.sin(T*.37)*.04,0,1)-WIND)*Math.min(1,dt*.3);
   skyLabelT-=dt;if(skyLabelT<=0){skyLabelT=1;$('#sky').textContent=`${holLabel()||SEASON.label} · ${({clear:nightAmt>.5?'🌙 clear':'☀️ clear',cloudy:'☁️ cloudy',drizzle:'🌦 drizzle',rain:'🌧 rain',fog:'🌫 foggy',snow:'❄️ snow'})[WEATHER.kind]} · ${d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`}}
@@ -3505,7 +3712,8 @@ function spotWorld(pid,spot){const p=byId[pid];if(p.spots){const s=(own(p.spots,
 function wSpot(){const a=Math.atan2(G.x-W.x,G.z-W.z);return{x:W.x+Math.sin(a)*2.4,z:W.z+Math.cos(a)*2.4}}
 function startAct(act,why){if(!act||G.mode==='trip')return;SEATS.release('mocha');if(act.fx==='bench'&&act.seat==null)act=benchPick(act);if(act.hx==='trick')wearCostume();if(S.bike&&BIKE_LOOPS[act.p]&&act.fx!=='bikeride'&&/\bbik(e|ing)|cycl/i.test(act.doing||''))act=Object.assign({},ACTS.find(a=>a.fx==='bikeride'&&a.loop===act.p)||{},act,{fx:'bikeride',loop:act.p,bike:1});
   if(/\{\w+\}/.test(act.doing||''))act={...act,doing:fill(String(act.doing))};
-  const w=act.npc?wSpot():act.at?{x:act.at[0],z:act.at[1]}:act.fx==='bikeride'&&S.bike&&BIKE_LOOPS[act.loop]?{x:BIKE_LOOPS[act.loop][0][0],z:BIKE_LOOPS[act.loop][0][1]}:spotWorld(act.p,act.s);G.target={x:w.x+rand(-.5,.5),z:w.z+rand(-.5,.5)};G.navFor=null;G.act=act;G.mode='travel';G.trT=0;G.sleep=false;G.ride=null;planRide(act,G.target);if(why)say(why,3.5)}
+  if(act.fx==='hang'&&!act.st17){act.st17=1;act=hangStart(act)}
+  const w=act.npc&&act.fx!=='hang'?wSpot():act.at?{x:act.at[0],z:act.at[1]}:act.fx==='bikeride'&&S.bike&&BIKE_LOOPS[act.loop]?{x:BIKE_LOOPS[act.loop][0][0],z:BIKE_LOOPS[act.loop][0][1]}:spotWorld(act.p,act.s);G.target={x:w.x+rand(-.5,.5),z:w.z+rand(-.5,.5)};G.navFor=null;G.act=act;G.mode='travel';G.trT=0;G.sleep=false;G.ride=null;planRide(act,G.target);if(why)say(why,3.5)}
 function goPoint(x,z,explore){if(G.mode==='trip')return;G.target={x:clamp(x,-219,169),z:clamp(z,-149,149)};G.trT=0;G.act=explore?{explore}:null;G.navFor=null;G.mode='travel';G.sleep=false;G.ride=null;G.route=null;if(G.biking)parkBike()}
 // ---- bike trips: he rides on the roads (right-hand lane) for longer trips, then parks and floats in ----
 const BIKE_LOOPS={park:Array.from({length:24},(_,i)=>{const a=Math.PI+i/24*Math.PI*2;return[96+Math.cos(a)*21,22-Math.sin(a)*17.5]}),promenade:(()=>{const o=[];for(let z=40;z>=-50;z-=10)o.push([-58.4,z]);for(let z=-45;z<=35;z+=10)o.push([-57.6,z]);return o})()};
@@ -3550,7 +3758,7 @@ function applyDecision(d){if(G.mode==='trip')return;
   if(d.ask&&own(KB,d.ask)){const k=KB[d.ask];if(isOpen(byId[k.shop])&&known(byId[k.shop])){startAct({p:k.shop,s:'counter',doing:String(d.doing||'asking '+k.name+' a question').slice(0,40),tags:['people','learning'],need:{social:30,curious:35},fx:'ask',keeper:k.id,question:d.question?String(d.question).slice(0,120):null,mind:true},d.say);return}}
   if(d.job&&d.place){const j=ACTS.find(a=>a.p===d.place&&a.fx==='job');if(j&&isOpen(byId[j.p])&&known(byId[j.p])){startAct({...j,doing:String(d.doing||j.doing).slice(0,40),mind:true},d.say);return}}
   if(d.place&&own(byId,d.place)&&!isOpen(byId[d.place])){const c=localChoose();if(c.act)startAct(c.act);else exploreToward(c.explore);return}
-  if(d.place==='cinema'&&(d.film||d.spot==='seat'||/movie|film|watch/i.test(d.doing||''))){const f=d.film&&d.film.title?{title:String(d.film.title).slice(0,60),year:+d.film.year||'',by:String(d.film.by||'').slice(0,50),theme:FILM_THEMES.includes(d.film.theme)?d.film.theme:'generic',scenes:(Array.isArray(d.film.scenes)?d.film.scenes:[]).slice(0,6).map(x=>String(x).slice(0,80)),facts:(Array.isArray(d.film.facts)?d.film.facts:[]).slice(0,3).map(x=>String(x).slice(0,220))}:null;startAct({p:'cinema',s:'seat',doing:f?('watching "'+f.title+'"').slice(0,40):'watching a movie',tags:['movies','stories'],need:{fun:45,curious:25},fx:'movie',film:f,mind:true},d.say);return}if((d.place==='wendell'||d.place==='neighbor')&&W.visible&&!W.inside&&W.busy<=0){const t=ACTS.find(a=>a.npc);startAct({...t,doing:String(d.doing||t.doing).slice(0,40),mind:true},d.say);return}if(d.place==='wendell'||d.place==='neighbor')d.place='home';if(d.explore){const hidden=PLACES.filter(p=>!known(p));if(hidden.length){exploreToward(pick(hidden));if(d.say)say(d.say,3.5);return}}
+  if(d.place==='cinema'&&(d.film||d.spot==='seat'||/movie|film|watch/i.test(d.doing||''))){const f=d.film&&d.film.title?{title:String(d.film.title).slice(0,60),year:+d.film.year||'',by:String(d.film.by||'').slice(0,50),theme:FILM_THEMES.includes(d.film.theme)?d.film.theme:'generic',scenes:(Array.isArray(d.film.scenes)?d.film.scenes:[]).slice(0,6).map(x=>String(x).slice(0,80)),facts:(Array.isArray(d.film.facts)?d.film.facts:[]).slice(0,3).map(x=>String(x).slice(0,220))}:null;startAct({p:'cinema',s:'seat',doing:f?('watching "'+f.title+'"').slice(0,40):'watching a movie',tags:['movies','stories'],need:{fun:45,curious:25},fx:'movie',film:f,mind:true},d.say);return}if((d.hang&&own(HBY,d.hang))||d.place==='wendell'||d.place==='neighbor'){const at=Date.now(),r=W.busy<=0&&!W.hang&&!W.inv&&wAvailAt(at)&&hangBedOk(at)?(d.hang&&own(HBY,d.hang)?hangResolve(HBY[d.hang],null):hangPick(at)):null;if(r){startAct(Object.assign(hangAct(r,0),{mind:true}),d.say);return}}if(d.place==='wendell'||d.place==='neighbor')d.place='home';if(d.explore){const hidden=PLACES.filter(p=>!known(p));if(hidden.length){exploreToward(pick(hidden));if(d.say)say(d.say,3.5);return}}
   const p=own(byId,d.place)?byId[d.place]:null;if(!p||!known(p)){const c=localChoose();if(c.act)startAct(c.act);else exploreToward(c.explore);return}
   const dg=String(d.doing||''),tmpl=(d.place==='home'&&(/calendar/i.test(dg)&&ACTS.find(a=>a.fx==='calendar')||/(writ\w*|send\w*) (back|a letter|to mom|to dad|to my parents)|letter to/i.test(dg)&&ACTS.find(a=>a.fx==='writeback')||(d.spot==='mailbox'||/check\w* (the |my )?mail/i.test(dg))&&ACTS.find(a=>a.fx==='mail')))||ACTS.find(a=>a.p===d.place&&(!d.spot||a.s===d.spot)&&a.fx!=='job')||{};const h=d.hobby&&hobbyByName(d.hobby);
   const spot=p.spots?(own(p.spots,d.spot)&&d.spot!=='main'&&tmpl.fx!=='mail'?d.spot:(tmpl.s||(d.place==='home'?'couch':null))):null;
@@ -3561,13 +3769,13 @@ const MOVIE_LEN=150;let MOVIE=null;
 function keeperAt(pid){return KEEPERS.find(k=>k.shop===pid&&k.obj.visible)}
 let kBub=null;function kSay(k,t,d=3.5){const b=$('#bubble3');b.textContent=t;b.classList.add('show');kBub={k,t:d}}
 function startMovie(a){const recent=S.seen.slice(-5);const f=a.film&&a.film.title?a.film:pick(FILMS.filter(x=>!recent.includes(x.title)))||pick(FILMS);a.film=f;MOVIE={film:f,start:T,len:MOVIE_LEN};setMarquee(f.title)}
-function arrive(){const a=G.act;if(a.p==='needle'&&G.lift!=='deck')return;if(a.p==='lighthouse'&&!G.lh){G.lh={ph:'up',t:5};say('98 steps…',5,true)}if(a.fx==='sleep'&&S.bike&&Math.hypot(BK.x-34.5,BK.z-54.1)>30){BK.x=34.5;BK.z=54.1;BK.yaw=Math.PI/2;BK.y=bikeY(BK.x,BK.z)}if(a.fx==='bikeride'){if(S.bike&&bikeObj&&!G.biking)mountBike();G.loopI=1}
+function arrive(){const a=G.act;if(a.fx==='hang'&&hangArrive(a))return;if(a.p==='needle'&&G.lift!=='deck')return;if(a.p==='lighthouse'&&!G.lh){G.lh={ph:'up',t:5};say('98 steps…',5,true)}if(a.fx==='sleep'&&S.bike&&Math.hypot(BK.x-34.5,BK.z-54.1)>30){BK.x=34.5;BK.z=54.1;BK.yaw=Math.PI/2;BK.y=bikeY(BK.x,BK.z)}if(a.fx==='bikeride'){if(S.bike&&bikeObj&&!G.biking)mountBike();G.loopI=1}
   {const k=keeperAt(a.p);if(k&&(a.hx==='trick'||a.hx==='vgive'))a.face=k;if(k&&a.hx==='trick'){setTimeout(()=>say(pick(['trick or treat! 🎃','trick or treat!! 👻🎃']),2.5),200);setTimeout(()=>kSay(k,pick(['happy halloween! here you go 🍬','ooh, spooky! take two! 🍬','what a costume! 🎃🍬'])),1400)}else if(k&&a.hx==='vgive'){setTimeout(()=>say('happy valentine\'s day! 💌',2.5),200);setTimeout(()=>kSay(k,pick(['aww, for me?! 💕','you\'re so sweet, mocha 💌'])),1400)}else if(k&&a.fx!=='ask'&&Math.random()<.7)setTimeout(()=>kSay(k,kHi(k)),600);if(k&&a.fx==='ask'){a.face=k;setTimeout(()=>say(a.question||pick(['can i ask you something?','i was wondering…','quick question!']),3),300)}}
   if(a.fx==='movie'){startMovie(a);const c=byId.cinema;a.face=toWorld(c,0,-c.d/2)}if(a.npc){W.busy=999;if(a.hx==='trick'){say('trick or treat! 🎃',2.5);setTimeout(()=>wSay(pick(['happy halloween, mocha! 🍬','a ghost! how spooky! 🎃']),3),1300)}else if(a.hx==='tgdinner')wSay('happy thanksgiving! come in, come in 🦃',3);else if(a.hx==='givew')wSay('for me?! oh, mocha 🎁',3);else if(!S.metW){wSay('oh! hello there, neighbor!',3)}else wSay(pick(['mocha! perfect timing','come sit, come sit','i was hoping you\'d stop by']),3)}if(a.fx==='trip')a.face={x:tripVia(a.trip)==='ferry'?G.x-20:G.x+20,z:G.z};if(a.fx==='mail')a.face={x:MBX.x,z:MBX.z};if(a.fx==='calendar'&&a.p==='home')setCalScreen();if(a.fx==='research'&&a.p==='home')setScreen(a.research||pick(Object.keys(FACTS)));G.mode='activity';G.timer=a.fx==='sleep'?(asleepAt(hourAt(Date.now()))?secondsToWake()+5:20*60):a.fx==='trip'?1e9:a.fx==='tripback'?rand(6,10):(a.hx==='trick'||a.hx==='vgive')?rand(14,24):a.fx==='mail'?rand(10,16):a.fx==='ferry'?FERRY.period*.5:a.fx==='movie'?MOVIE_LEN:rand(40,75);G.sleep=a.fx==='sleep'||/nap|sleep/i.test(a.doing||'');
   if(a.fx==='ride')G.ride='wheelq';if(a.fx==='ferry')G.ride='ferryq';if(a.fx==='bench'||a.fx==='benchjoin')benchArrive(a);
   if(!a.mind&&!G.sleep&&!a.npc)say(pick([a.doing+'…','ooh','hm hm hm','okay!']),2.5,true)}
-function finishAct(){const a=G.act;SEATS.release('mocha');if(G.biking)parkBike();if(a&&a.fx==='movie'){MOVIE=null;drawIdleScreen()}if(a&&a.npc){W.busy=0;W.timer=Math.max(W.timer,20);S.friendW=(S.friendW||0)+1;if(!S.metW){S.metW=true;addEntry('Neighbor','Met my neighbor today! His name is Wendell. He\'s a raccoon in a mustard cardigan and little round glasses. He gave me a bottle cap "as a welcome gift." I think we\'re going to be friends.',"Wendell's House",Date.now()-1,true);toast('🦝 Mocha met his neighbor Wendell');txEvent('wendell')}}G.sleep=false;G.ride=null;G.mode='idle';G.timer=rand(2,4);
-  if(MIND.on&&MIND.ready())mindThink(a);else{if(a.mind)narrateFallback(a);else localOutcome(a);if(Math.random()<.25)thoughtEntry();maybeSelfie(a,byId[a.p].name,a.bought?.55:0)}
+function finishAct(){const a=G.act;SEATS.release('mocha');if(G.biking)parkBike();if(a&&a.fx==='movie'){MOVIE=null;drawIdleScreen()}if(a&&a.fx==='hang')hangEnd(true);if(a&&a.npc){if(a.fx!=='hang'){W.busy=0;W.timer=Math.max(W.timer,20);S.friendW=(S.friendW||0)+1}if(!S.metW){S.metW=true;addEntry('Neighbor','Met my neighbor today! His name is Wendell. He\'s a raccoon in a mustard cardigan and little round glasses. He gave me a bottle cap "as a welcome gift." I think we\'re going to be friends.',"Wendell's House",Date.now()-1,true);toast('🦝 Mocha met his neighbor Wendell');txEvent('wendell')}}G.sleep=false;G.ride=null;G.mode='idle';G.timer=rand(2,4);
+  if(a&&a.fx==='hang')hangFinish(a);else if(MIND.on&&MIND.ready())mindThink(a);else{if(a.mind)narrateFallback(a);else localOutcome(a);if(Math.random()<.25)thoughtEntry();maybeSelfie(a,byId[a.p].name,a.bought?.55:0)}
   save()}
 function narrateFallback(a){if(['job','phoneshop','bikeshop','bikeride','mail','writeback','calendar','hol','tripback'].includes(a.fx)){localOutcome(a);return}if(a.fx==='movie'||a.fx==='ask'){localOutcome({...(ACTS.find(x=>x.fx===a.fx&&(a.fx!=='ask'||x.keeper===a.keeper))||{}),film:a.film,keeper:a.keeper,p:a.p,s:a.s,tags:a.tags||[],doing:a.doing});return}if(a.npc){localOutcome(ACTS.find(x=>x.npc));return}const tmpl=ACTS.find(x=>x.p===a.p&&(!a.s||x.s===a.s)&&x.fx!=='job')||ACTS.find(x=>x.p===a.p&&x.fx!=='job');if(tmpl)localOutcome({...tmpl,hobby:a.hobby,fx:a.fx==='research'?'research':tmpl.fx});}
 function thoughtEntry(){if(Date.now()-(S.lastThought||0)<120e3)return;S.lastThought=Date.now();const n=S.mem.userName||'my visitor',o=[];const ti=topInterests(3);
@@ -3590,10 +3798,10 @@ function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;S.pantry=
   if(G.mode==='travel'&&!(isFinite(G.target.x)&&isFinite(G.target.z))){G.target=null;G.act=null;G.route=null;G.mode='idle';G.timer=1}
   if(!isFinite(G.x+G.z)){const hw=spotWorld('home','couch');G.x=hw.x;G.z=hw.z;G.vx=G.vz=0}
   if(G.mode==='travel'){if((G.trT=(G.trT||0)+dt)>240){G.act=null;G.route=null;if(G.biking)parkBike();G.mode='idle';G.timer=1}}else G.trT=0;
-  if(G.mode==='travel'&&G.act&&G.act.npc){if(!W.visible||W.inside){G.act=null;G.mode='idle';G.timer=1}else{const w=wSpot();G.target.x=w.x;G.target.z=w.z}}
+  if(G.mode==='travel'&&G.act&&G.act.npc&&G.act.fx!=='hang'){if(!W.visible||W.inside){G.act=null;G.mode='idle';G.timer=1}else{const w=wSpot();G.target.x=w.x;G.target.z=w.z}}
   if(G.mode==='travel'){let sx=G.target.x,sz=G.target.z;const RT=G.route;if(RT){let q=RT.pts[RT.i];const dq=Math.hypot(q[0]-G.x,q[1]-G.z);if(dq<(G.biking?1.9:1.1)||(dq<5&&(q[0]-G.x)*G.vx+(q[1]-G.z)*G.vz<0)){if(RT.i===0&&RT.mount&&!G.biking)mountBike();RT.i++;if(RT.i>=RT.pts.length){G.route=null;if(!RT.loop)parkBike(RT.yaw)}else q=RT.pts[RT.i]}if(G.route){sx=q[0];sz=q[1]}}
     let nh=false;if(!G.biking&&!G.ride&&!G.lift&&!G.lh){const st=navMocha(dt);if(st){sx=st.x;sz=st.z;nh=st.hold;if(nh){G.vx*=Math.pow(.01,dt);G.vz*=Math.pow(.01,dt)}}}
-    const dx=sx-G.x,dz=sz-G.z,ds=Math.max(.001,Math.hypot(dx,dz)),d=G.route?99:Math.max(.001,Math.hypot(G.target.x-G.x,G.target.z-G.z));const sp=G.biking?11*(1+level()*.02):(nh?0:S.needs.energy<15?4:8)*(1+level()*.02),ac=Math.min(1,dt*(G.biking?3.2:2.2));
+    const dx=sx-G.x,dz=sz-G.z,ds=Math.max(.001,Math.hypot(dx,dz)),d=G.route?99:Math.max(.001,Math.hypot(G.target.x-G.x,G.target.z-G.z));const sp=G.biking?11*(1+level()*.02):(nh?0:G.act&&G.act.slow?2.5:S.needs.energy<15?4:8)*(1+level()*.02),ac=Math.min(1,dt*(G.biking?3.2:2.2));
     G.vx+=(dx/ds*sp-G.vx)*ac;G.vz+=(dz/ds*sp-G.vz)*ac;
     for(const p of PLACES)if(p.secret&&!known(p)&&Math.hypot(G.x-p.x,G.z-p.z)<(p.r||8)+18){discover(p);const tm=ACTS.find(a=>a.p===p.id);if(tm)startAct(tm,'whoa… what is this place?!');break}
     if(G.mode==='travel'&&d<.7){G.vx*=.3;G.vz*=.3;if(G.act&&G.act.p)arrive();else{if(G.act&&G.act.explore){say(pick(['nothing here… yet','i\'ll keep looking','so quiet out here']),3,true);S.xp+=3}G.act=null;G.mode='idle';G.timer=rand(2,5)}}
@@ -3720,18 +3928,21 @@ const NADJ=NODES.map(()=>[]);{const link=(a,b)=>{const d=Math.hypot(NODES[a][0]-
 function wAvail(){try{return W.visible&&!W.inside&&W.busy<=0}catch(e){return false}}
 function wPath(ax,az,bx,bz){const v=navTo(AG.wendell,ax,az,bx,bz,{}),o=[];for(let i=v.i;i<v.n;i++)o.push([v.P[2*i],v.P[2*i+1]]);return o.length?o:[[bx,bz]]}
 {const d0=wSchedule();W.dest=d0;if(d0==='inside'){wIn()}else{const sp=W_SPOTS[d0];W.x=sp.x;W.z=sp.z;W.doing=sp.doing}}
-function wSchedule(){const h=new Date().getHours();if(h>=22||h<7)return'inside';if(h>=21&&!holsOn().some(x=>x.id==='halloween'))return'inside';{const hs=holsOn().map(x=>x.id);if(hs.includes('halloween')&&h>=17&&h<21)return'porch';if(hs.includes('thanksgiving')&&h>=12&&h<20)return'porch';if(hs.includes('christmas')&&h>=9&&h<18)return pick(['porch','yard'])}if(h<10)return pick(['yard','yard','porch']);if(h<14)return pick(['cafe','market','grocery','yard','library']);if(h<18)return pick(['park','promenade','yard','library']);return pick(['porch','porch','yard'])}
+function wSchedule(){return wDest(wBlock())}
 function wWhere(){return!W.inside?(W.path.length?'out walking':(W_SPOTS[W.dest]||{}).where||'around'):'inside his house'}
 const bubble2=$('#bubble2');let wBubT=0;function wSay(t,d=3.5){bubble2.textContent=t;bubble2.classList.add('show');wBubT=d}
 let wGreetT=0;
-function updateW(dt,t){wGreetT-=dt;if((NAVT.t-=dt)<=0){NAVT.t=1;navTick()}
-  if(W.busy>0){W.busy-=dt;const fy=Math.atan2(G.x-W.x,G.z-W.z);W.yaw+=Math.atan2(Math.sin(fy-W.yaw),Math.cos(fy-W.yaw))*Math.min(1,dt*4);if(Math.random()<dt*.18&&wBubT<=0)wSay(pick(['oh, mocha! come in, come in','want some tea?','look at this bottle cap','the garden says hi','you seem cheerful today','tell me everything']),3)}
-  else if(W.path.length){const s=navStep(AG.wendell,W.x,W.z,dt);W.cw=!!(s&&s.cw);if(!s||s.done){W.path.length=0;W.cw=false;if(W.dest==='inside'){wIn()}else W.doing=W_SPOTS[W.dest].doing;W.timer=rand(50,110)}else{if(!s.hold){const dx=s.x-W.x,dz=s.z-W.z,d=Math.hypot(dx,dz);if(d>.02){const st=Math.min(d,2.3*dt);W.x+=dx/d*st;W.z+=dz/d*st;const ty=Math.atan2(dx,dz);W.yaw+=Math.atan2(Math.sin(ty-W.yaw),Math.cos(ty-W.yaw))*Math.min(1,dt*6)}}W.doing='out for a stroll'}}
-  else{W.timer-=dt;if(W.timer<=0){const dest=wSchedule();if(dest===W.dest)W.timer=rand(40,80);else{const from=wOut();W.visible=true;W.dest=dest;const tg=wTarget(dest);W.path=wPath(from.x,from.z,tg.x,tg.z)}}
+function updateW(dt,t){wGreetT-=dt;if((NAVT.t-=dt)<=0){NAVT.t=1;navTick()}if((WD.t-=dt)<=0){WD.t=1;wTick1()}
+  if(W.hang)hangW(dt);else if(W.inv)invW(dt);
+  else if(W.busy>0){W.busy-=dt;const fy=Math.atan2(G.x-W.x,G.z-W.z);W.yaw+=Math.atan2(Math.sin(fy-W.yaw),Math.cos(fy-W.yaw))*Math.min(1,dt*4);if(Math.random()<dt*.18&&wBubT<=0)wSay(pick(['oh, mocha! come in, come in','want some tea?','look at this bottle cap','the garden says hi','you seem cheerful today','tell me everything']),3)}
+  else if(W.path.length){if(wWalk(dt)){if(W.dest==='inside')wIn(W.wsn);else{W.sit=false;W.doing=wDoing()}W.timer=rand(6,12)}else{W.sit=false;W.doing=W.inside?'pottering around his cottage':'out for a stroll'}}
+  else{W.timer-=dt;if(W.timer<=0)wPlanStep();
+    else if(W.sit&&/^(nap|sleep)$/.test(W.st||'')){if((WD.zt-=dt)<=0){WD.zt=rand(6,9);if(wBubT<=0)wSay('z z z',3)}}
     else if(Math.random()<dt*.04&&wBubT<=0&&W.visible)wSay((Math.random()<.4&&holLine())||pick(W_LINES),3)}
+  hangTick(dt);
   if(W.visible&&G.mode==='travel'&&wGreetT<=0&&Math.hypot(G.x-W.x,G.z-W.z)<5&&!(G.act&&G.act.npc)){wGreetT=60;say(pick(['hi wendell!','hey neighbor 👋','wendell!! hi']),2.5);setTimeout(()=>wSay((Math.random()<.5&&holLine())||pick(['evening, mocha!','hello hello!','oh! hi mocha']),2.5),900)}
-  wObj.visible=W.visible;wObj.position.set(W.x,floorAt(W.x,W.z)+(W.inside?(W.spot==='bed'?.62:.3):0),W.z);wObj.rotation.y=W.yaw;const u=wObj.userData,mv=W.path.length&&W.busy<=0;const ph=t*8;
-  u.legs.forEach((l,i)=>l.rotation.x=mv?Math.sin(ph+i*Math.PI)*.6:W.inside&&W.spot==='fireA'?-1.2:0);u.arms.forEach((a,i)=>a.rotation.x=mv?-Math.sin(ph+i*Math.PI)*.4:(W.dest==='yard'&&!mv?Math.sin(t*3+i)*.3-.3:0));u.tail.rotation.y=Math.sin(t*1.8)*.35;u.head.rotation.y=W.cw?Math.sin(t*7)*.7:mv?0:Math.sin(t*.6)*.3;
+  wObj.visible=W.visible;wObj.position.set(W.x,floorAt(W.x,W.z)+(W.sit&&!W.path.length?(W.spot==='bed'?.62:.3):0),W.z);wObj.rotation.y=W.yaw;const u=wObj.userData,mv=W.path.length&&(W.busy<=0||W.hang||W.inv);const ph=t*8;
+  u.legs.forEach((l,i)=>l.rotation.x=mv?Math.sin(ph+i*Math.PI)*.6:W.sit&&W.spot!=='bed'?-1.2:0);u.arms.forEach((a,i)=>a.rotation.x=mv?-Math.sin(ph+i*Math.PI)*.4:(W.dest==='yard'&&!mv?Math.sin(t*3+i)*.3-.3:0));u.tail.rotation.y=Math.sin(t*1.8)*.35;u.head.rotation.y=W.cw?Math.sin(t*7)*.7:mv?0:Math.sin(t*.6)*.3;
   if(wBubT>0){wBubT-=dt;if(wBubT<=0)bubble2.classList.remove('show')}const bp=project(W.x,floorAt(W.x,W.z)+2.6,W.z);bubble2.style.left=bp.x+'px';bubble2.style.top=bp.y+'px';bubble2.style.visibility=W.visible&&bp.vis?'visible':'hidden'}
 // ====================================================================
 //  CLAUDE BRAIN (optional): Mocha thinks for himself
@@ -4417,7 +4628,7 @@ function renderCal(){const el=$('#tab-cal');if(!el)return;const now=new Date(),t
   const up=holUpcoming(Date.now(),120,7),nb=up.find(o=>o.days>=0&&(o.h.big||o.h.id==='bday')),plan=nb?calPrep(nb.h,Date.now()):'';
   const upH=up.map(o=>`<button class="up" data-go="${dkey(o.h.date)}"><span class="e">${o.h.e}</span><b>${esc(o.h.n)}</b><span class="uw">${o.days<=0?'today!':o.days===1?'tomorrow':`${o.h.date.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'})} · ${o.days} days`}</span></button>`).join('');
   const mw=mailWaiting(),ls=(S.mail||[]).slice(0,24);
-  const letters=ls.map(l=>`<div class="letter${l.from==='me'?' out':''}${l.seen||l.from==='me'?'':' new'}" data-lt="${esc(l.id)}" role="button" tabindex="0"><div class="lh"><b>${l.from==='me'?'✉️ he wrote to '+esc(l.to||'Mom & Dad'):'💌 from Mom & Dad'}</b><span>${new Date(l.t).toLocaleDateString([],{month:'short',day:'numeric'})}</span></div><p>${esc(l.text)}</p>${l.card&&TRIPS[l.card.d]?`<img class="lcard" src="${cardImg(l.card.d,l.card.s,l.card.x,false)}" alt="postcard from ${esc(TRIPS[l.card.d].s)}" data-lb="cards" data-id="${esc(l.cid||'')}">`:''}${l.from!=='me'&&l.gift?`<div class="lg">${l.wrapped?'🎁 a wrapped present: he\'s saving it for Christmas morning':'📦 '+esc(l.gift)}</div>`:''}${l.reply?`<div class="lr">✉️ he wrote back: “${esc(l.reply)}”</div>`:''}</div>`).join('');
+  const letters=ls.map(l=>`<div class="letter${l.from==='me'?' out':''}${l.seen||l.from==='me'?'':' new'}" data-lt="${esc(l.id)}" role="button" tabindex="0"><div class="lh"><b>${l.from==='me'?'✉️ he wrote to '+esc(l.to||'Mom & Dad'):'💌 from '+esc(l.from||'Mom & Dad')}</b><span>${new Date(l.t).toLocaleDateString([],{month:'short',day:'numeric'})}</span></div><p>${esc(l.text)}</p>${l.card&&TRIPS[l.card.d]?`<img class="lcard" src="${cardImg(l.card.d,l.card.s,l.card.x,false)}" alt="postcard from ${esc(TRIPS[l.card.d].s)}" data-lb="cards" data-id="${esc(l.cid||'')}">`:''}${l.from!=='me'&&l.gift?`<div class="lg">${l.wrapped?'🎁 a wrapped present: he\'s saving it for Christmas morning':'📦 '+esc(l.gift)}</div>`:''}${l.reply?`<div class="lr">✉️ he wrote back: “${esc(l.reply)}”</div>`:''}</div>`).join('');
   el.innerHTML=`<div class="calHd"><button class="calNav" data-cm="-1" aria-label="previous month">‹</button><b>${monthName(m)} ${y}</b><button class="calNav" data-cm="1" aria-label="next month">›</button></div>
    <div class="calGrid">${g}</div>${(y!==now.getFullYear()||m!==now.getMonth())?'<button class="calToday" data-today="1">back to today</button>':''}${day}
    <h4>coming up</h4>${upH}${plan?`<p class="plan">💭 “${esc(plan)}”</p>`:''}
@@ -4758,9 +4969,8 @@ function frame(now){const fps=SET.saver?20:TOUCH?30:60;if(now-last<1000/fps-2){r
   {const cin=byId.cinema;if(MOVIE&&Math.floor(T*8)!==Math.floor((T-dt)*8))drawFilm();if(cin.beam)cin.beam.material.opacity=MOVIE?.07+Math.random()*.02:0}
   for(const k of KEEPERS){if(!k.obj.visible)continue;const u=k.obj.userData,serving=G.mode==='activity'&&G.act&&G.act.p===k.shop;u.head.rotation.y=serving?Math.sin(T*.8)*.15:Math.sin(T*.5+k.pos[0])*.35;u.arms[1].rotation.x=serving&&G.act.fx==='ask'?-1.2+Math.sin(T*3)*.25:Math.sin(T*1.2+k.pos[1])*.08;u.arms[0].rotation.x=Math.sin(T*1.1)*.06;if(u.tent&&u.tent.length)u.tent.forEach((t,i)=>t.rotation.x=Math.sin(T*1.7+i*1.3)*.22)}
   if(kBub){kBub.t-=dt;const b=$('#bubble3');kBub.k.obj.getWorldPosition(tmpV);const pp=project(tmpV.x,tmpV.y+2.7,tmpV.z);b.style.left=pp.x+'px';b.style.top=pp.y+'px';b.style.visibility=pp.vis?'visible':'hidden';if(kBub.t<=0){b.classList.remove('show');kBub=null}}
-  if(camS.mode==='walk'&&!kBub&&Math.random()<dt*.15){for(const k of KEEPERS){if(!k.obj.visible)continue;k.obj.getWorldPosition(tmpV);if(Math.hypot(tmpV.x-YOU.x,tmpV.z-YOU.z)<6){kSay(k,kHi(k),3);break}}}updateSky(dt);updateLeaves(dt,T);holFrame(dt,T);trainFrame(dt);b8Frame();
+  if(camS.mode==='walk'&&!kBub&&Math.random()<dt*.15){for(const k of KEEPERS){if(!k.obj.visible)continue;k.obj.getWorldPosition(tmpV);if(Math.hypot(tmpV.x-YOU.x,tmpV.z-YOU.z)<6){kSay(k,kHi(k),3);break}}}updateSky(dt);updateLeaves(dt,T);holFrame(dt,T);trainFrame(dt);b8Frame();b16Frame(dt);
   byId.petstore.display.forEach((d,i)=>{animatePet(d,T+i,false);if(d.userData.sp==='poodle'||d.userData.sp==='hedgehog')d.position.y=.6+Math.max(0,Math.sin(T*2+i*1.7))**8*.25});
-  if(byId.home.innerLight)byId.home.innerLight.intensity=.35+nightAmt*.7;
   const wl=byId.wheel;wl.wheel.rotation.x+=dt*.08;wl.gond.forEach(g=>{const a=g.userData.a;g.position.set(.6,Math.sin(a)*13,Math.cos(a)*13);g.rotation.x=-wl.wheel.rotation.x});
   if(byId.records.spin)byId.records.spin.rotation.y+=dt*1.5;
   const ph=(T%FERRY.period)/FERRY.period;const k=ph<.1?0:ph<.5?(ph-.1)/.4:ph<.6?1:1-(ph-.6)/.4;const ke=k*k*(3-2*k);ferry.position.set(lerp(FERRY.dockX,FERRY.farX,ke),Math.sin(T*1.2)*.12,FERRY.dockZ-Math.sin(ke*Math.PI)*40);ferry.rotation.y=Math.PI/2+(ph<.5?0:Math.PI)+Math.sin(T*.8)*.02;
@@ -4952,7 +5162,7 @@ function spotRoom(pid,s){return(SPOTROOM[pid]&&SPOTROOM[pid][s])||null}
 function homeSpotW(pid,s){const p=byId[pid],a=p&&p.spots&&p.spots[s];if(!a)return null;const q=toWorld(p,a[0],a[1]);return{x:q.x,z:q.z,yaw:a[2]!=null?a[2]+p.ry:null}}
 // ---------- Wendell: inside = visible in his armchair (fireA) while awake, on the bed while asleep ----------
 function wAsleep(){const h=new Date().getHours();return h>=22||h<7}
-function wIn(){const sn=wAsleep()?'bed':'fireA',s=homeSpotW('neighbor',sn);W.inside=true;W.visible=true;W.spot=sn;W.x=s.x;W.z=s.z;W.yaw=s.yaw;W.path=[];W.doing=sn==='bed'?'asleep in his bed nook':TV.on?'watching the late show':'reading by the fire'}
+function wIn(sn){const b=wBlock();sn=sn||(b&&b[2]==='in'&&b[4])||(wAsleep()?'bed':'fireA');const s=homeSpotW('neighbor',sn)||homeSpotW('neighbor','fireA');W.inside=true;W.visible=true;W.spot=sn;W.x=s.x;W.z=s.z;if(s.yaw!=null)W.yaw=s.yaw;W.path=[];W.dest='inside';W.st=b&&b[2]==='in'?b[5]:(sn==='bed'?'sleep':'read');W.sit=!/stove|shelf|stand|back/.test(sn);W.doing=wDoing()}
 function wOut(){if(!W.inside)return{x:W.x,z:W.z};const s=homeSpotW('neighbor','stand');W.inside=false;W.spot=null;W.x=s.x;W.z=s.z;return{x:s.x,z:s.z}}
 function wendellSpots(){const p=byId.neighbor,o={};for(const k in p.spots){const s=p.spots[k];if(!Array.isArray(s))continue;const q=toWorld(p,s[0],s[1]);o[k]={l:[s[0],s[1]],x:+q.x.toFixed(2),z:+q.z.toFixed(2),room:spotRoom('neighbor',k)}}
   const w={};for(const k in W_SPOTS)w[k]={x:W_SPOTS[k].x,z:W_SPOTS[k].z};return{spots:o,W_SPOTS:w,inside:!!W.inside,spot:W.spot||null,vis:W.visible,x:+W.x.toFixed(2),z:+W.z.toFixed(2),capShelf:p.capShelf,chimney:p.chimney,hammock:p.hammock}}
@@ -4969,7 +5179,7 @@ function homeLint(p,out){const s=p.stoop;if(!s||s.z1>s.gate-.1)out.push({pid:'ho
 // ---------- per frame (from frame(): cutaway peek every frame, TV at 5 fps, rooms + nest at 1 Hz) ----------
 const B14={t:0,acc:0};
 function b14Frame(dt){const nb=byId.neighbor,cp=camera.position,dc=Math.hypot(cp.x-nb.x,cp.z-nb.z);nb.pk=(W.inside&&dc<32)||dc<15?1:0;
-  if((B14.acc+=dt)>=.2){B14.acc=0;const h=new Date().getHours(),on=TV.force!=null?TV.force:!!(W.inside&&!wAsleep()&&(h>=19||h<1));if(on!==TV.on){TV.on=on;tvDraw(false);if(W.inside&&W.spot==='fireA')W.doing=on?'watching the late show':'reading by the fire'}if(on&&tvVisible())tvDraw(true)}
+  if((B14.acc+=dt)>=.2){B14.acc=0;const h=new Date().getHours(),on=TV.force!=null?TV.force:!!(W.inside&&!wAsleep()&&W.st==='tv'&&!W.hang&&h>=0);if(on!==TV.on){TV.on=on;tvDraw(false);if(W.inside&&W.spot==='fireA'&&!W.hang)W.doing=wDoing()}if(on&&tvVisible())tvDraw(true)}
   if((B14.t-=dt)>0)return;B14.t=1;nestApply()}
 
 Object.assign(window.__mocha,{wendellSpots,rooms:pid=>{const p=byId[pid||'home'];if(!p)return null;const occ=occOf(p.id);return{pid:p.id,rooms:p.rooms||null,spotRoom:SPOTROOM[p.id]||null,occ:occ.ids.map(i=>({id:i,room:AG[i]&&AG[i].room})),room:occ.room}},
@@ -4978,6 +5188,333 @@ Object.assign(window.__mocha,{wendellSpots,rooms:pid=>{const p=byId[pid||'home']
   b14:()=>{const cnt=p=>{let n=0;if(p.inner)p.inner.traverse(o=>{if((o.isMesh||o.isSprite||o.isPoints)&&o.visible!==false){let v=true;for(let a=o;a&&a!==p.inner;a=a.parent)if(!a.visible)v=false;if(v)n++}});return n};
     return{home:{draws:cnt(byId.home),merged:byId.home.merged,nest:NEST.on,rooms:Object.keys(byId.home.rooms||{})},neighbor:{draws:cnt(byId.neighbor),merged:byId.neighbor.merged,op:byId.neighbor.op,pk:byId.neighbor.pk,inVis:byId.neighbor.inVis},
       seats:SEATS.filter(s=>s.tag==='dropin').map(s=>({id:s.id,p:s.p,spot:s.spot,x:+s.x.toFixed(2),z:+s.z.toFixed(2)})),W:{inside:!!W.inside,vis:W.visible,spot:W.spot,doing:W.doing,room:AG.wendell.room,place:AG.wendell.place}}}});
+// ====================================================================
+//  B16 LIVING LIGHTS runtime. Fixed rig (never changes after boot): hemi, sun, L0 = mLight, L1 = the home innerLight re-parented to
+//  the scene, L2 = new at boot (0 in LOW). The 2 best LIGHTSPOTS (on*base/(1+d^2/100) from the camera target) are assigned every .5 s with
+//  a .3 s fade out / move / fade in. Interior exposure, hearths (cones + embers; the light and the hearth's WLT window share ONE noise
+//  sample), porches (porch(pid,level,pattern)), chimney smoke + sunbeams + dust (one Points + one additive mesh), WLT.tick at 4 Hz
+//  (1 Hz LOW) from occOf(), the lamplighting wave from Lantern Square, and lights as messages (his lantern for you, goodnight flicks).
+// ====================================================================
+const LX={lux:.88,dark:0,dk:0,t:0,tA:0,n0:0},HOMEP={home:'mocha',neighbor:'wendell',cabin:'you'},NLROOM={home:'bedroom',neighbor:'bed',cabin:'bed'};
+const WC={warm:[1,.706,.353],shop:[1,.886,.659],nl:[1,.702,.757],tv:[.561,.722,1],paint:[1,.945,.839],fireA:[1,.478,.18],fireB:[1,.69,.29],candle:[1,.69,.38],cool:[.86,.9,1],sec:[1,.86,.66]};
+function luxNow(){return LUXS.force!=null?LUXS.force:LUXS.si*(1-.5*WEATHER.over)}
+function siAt(h){h=(h%24+24)%24;let i=0;while(i<KEYS.length-2&&KEYS[i+1][0]<=h)i++;const a=KEYS[i],b=KEYS[i+1];return lerp(a[4],b[4],(h-a[0])/((b[0]-a[0])||1))}
+function lightsAwake(pid,h,o){if(pid==='neighbor')return!(h>=23||h<7);// Wendell reads in bed for an hour after 22:00, then lights out
+  const a=AG[HOMEP[pid]];return a?a.awake:o.awake}
+// ---------- the rig ----------
+const RIG=(()=>{const h=byId.home,L1=h.innerLight,wp=new THREE.Vector3();h.obj.updateMatrixWorld(true);L1.getWorldPosition(wp);scene.add(L1);L1.position.copy(wp);Object.assign(L1,{distance:14,decay:2,intensity:0,name:'L1'});
+  const L2=new THREE.PointLight('#ffcf9a',0,14,2);L2.name='L2';L2.position.copy(wp);scene.add(L2);mLight.name='L0';
+  return{L:[L1,L2],st:[{s:null,k:0,want:null},{s:null,k:0,want:null}],t:0,cut:0,cutT:0,cutP:null,hk:1,sk:1}})();
+const LBASE={fire:1.4,hearth:1.4,pendant:1,lampwall:.9,lamp:1,ceil:1.1,mushroom:.5,cauldron:.8},LSP=[],HEARTH=[],HEARTHBY={};
+if(!LIGHTSPOTS.some(l=>l.pid==='home'))LIGHTSPOTS.push({pid:'home',lx:0,ly:5,lz:-2,color:'#ffcf9a',kind:'ceil'},{pid:'home',lx:-9,ly:4,lz:-3,color:'#ffcf80',kind:'lamp'},{pid:'home',lx:7,ly:4,lz:-3,color:'#ffb3c1',kind:'lamp'});
+for(const l of LIGHTSPOTS){const p=byId[l.pid];if(!p)continue;const q=toWorld(p,l.lx,l.lz),sp={l,p,x:q.x,y:l.ly,z:q.z,c:new THREE.Color(l.color),b:LBASE[l.kind]||1,on:0};LSP.push(sp);
+  if((l.kind==='fire'||l.kind==='hearth')&&!HEARTHBY[p.id]){const H={p,sp,x:q.x,y:Math.max(.35,l.ly-.45),z:q.z,room:roomAt(p.id,q.x,q.z)||'main',lit:false,n:.5,f:1,seed:HEARTH.length*7.3+1.1};HEARTH.push(H);HEARTHBY[p.id]=H}}
+function hearthLit(H,h){const p=H.p;if(p.hearthLit)return!!p.hearthLit(h);if(p.hours)return isOpen(p,h);const o=occOf(p.id),rid=HOMEP[p.id];if(!rid||!o.ids.includes(rid)||!lightsAwake(p.id,h,o)||(p.id==='neighbor'&&h>=22))return false;const m=new Date().getMonth();return h>=16||h<9||m>=9||m<=3}
+function fireN(t,s){return .5+.5*(.53*Math.sin(t*1.7+s)+.27*Math.sin(t*4.3+s*2.1)+.13*Math.sin(t*9.7+s*3.3)+.07*Math.sin(t*19.3+s*1.7))}
+function lspOn(sp,h){const l=sp.l,p=sp.p,k=l.kind;if(k==='mushroom')return LX.dark>.5?1:0;if(k==='cauldron')return .8;if(k==='fire'||k==='hearth'){const H=HEARTHBY[p.id];return H&&H.lit?1:0}
+  if(p.hours){if(WLT.brk[p.id]&&Date.now()<WLT.brk[p.id].until)return .5;return isOpen(p,h)?1:(h>=p.hours[0]-.5&&h<p.hours[0]?.5:0)}
+  const o=occOf(p.id);if(!o.ids.length)return 0;if(!lightsAwake(p.id,h,o))return k==='lamp'&&p.id==='home'&&l.lx>0?.15:0;return LX.dark>.5?1:.8}
+function rigAssign(h){const tx=camS.tx,tz=camS.tz,NL=SET.saver?1:2;let b0=null,b1=null,s0=0,s1=0;
+  for(const sp of LSP){sp.on=lspOn(sp,h);if(!sp.on)continue;const d2=(sp.x-tx)**2+(sp.z-tz)**2;if(d2>4900)continue;const p=sp.p,vis=(p.inVis||(p.op!=null&&p.op<.9)||(p.id==='home'&&RIG.hcut>.1))?2:1,sc=sp.on*sp.b*vis/(1+d2/100);
+    if(sc>s0){b1=b0;s1=s0;b0=sp;s0=sc}else if(sc>s1){b1=sp;s1=sc}}
+  const want=[b0,b1].slice(0,NL).filter(Boolean),free=[];for(let j=0;j<NL;j++){const i=want.indexOf(RIG.st[j].want);if(i>=0)want.splice(i,1);else free.push(j)}for(const j of free)RIG.st[j].want=want.shift()||null}
+function rigFrame(dt){for(let j=0;j<2;j++){const st=RIG.st[j],L=RIG.L[j];if(st.s!==st.want){st.k-=dt/.3;if(st.k<=0){st.k=0;st.s=st.want;if(st.s){L.position.set(st.s.x,st.s.y,st.s.z);L.color.copy(st.s.c)}}}else if(st.s&&st.k<1)st.k=Math.min(1,st.k+dt/.3);
+  let I=0;if(st.s){I=st.s.on*st.s.b*(.45+.75*nightAmt)*st.k;const H=HEARTHBY[st.s.p.id];if(H&&(st.s.l.kind==='fire'||st.s.l.kind==='hearth'))I*=H.f}if(SET.saver&&j===1)I=0;L.intensity=I}
+  RIG.cut+=(RIG.cutT-RIG.cut)*Math.min(1,dt*3);RIG.hk=(1-.35*RIG.cut)*(1+.1*RIG.cut*(1-nightAmt));RIG.sk=1-.5*RIG.cut;hemi.intensity*=RIG.hk;sun.intensity*=RIG.sk;if(RIG.cut>.01&&nightAmt<.6)hemi.color.lerp(WARMB,.1*RIG.cut*(1-nightAmt))}
+const WARMB=new THREE.Color('#ffd9a8');
+// ---------- FX: one additive mesh (hearth cones x3 + sunbeams x3) + one Points (48 smoke, 18 embers, 20 dust) ----------
+const FXM=(()=>{const tpl=[],cc=[[1,.35,.1],[1,.6,.22],[1,.85,.45]];for(const [r,hh,y] of [[.26,.42,0],[.18,.6,.05],[.1,.78,.12]]){const g=new THREE.ConeGeometry(r,hh,7,1,true).toNonIndexed();g.translate(0,y+hh/2,0);tpl.push([g.attributes.position.array,hh+y]);g.dispose()}
+  const cv=tpl.reduce((a,t)=>a+t[0].length/3,0),nv=cv*3+18,pos=new Float32Array(nv*3),col=new Float32Array(nv*3),g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));
+  const m=new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}),mesh=new THREE.Mesh(g,m);mesh.frustumCulled=false;mesh.renderOrder=3;mesh.visible=false;mesh.name='b16fx';scene.add(mesh);return{tpl,cc,cv,nv,pos,col,g,m,mesh,beam:0}})();
+const FXP=(()=>{const N=86,P=new Float32Array(N*3),C=new Float32Array(N*4),Z=new Float32Array(N),g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setAttribute('fcol',new THREE.BufferAttribute(C,4));g.setAttribute('fsize',new THREE.BufferAttribute(Z,1));
+  const m=new THREE.ShaderMaterial({uniforms:{bendP:BEND,uScale:GLOWPTS.u.uScale,uMax:GLOWPTS.u.uMax},transparent:true,depthWrite:false,
+    vertexShader:'uniform vec4 bendP;uniform float uScale;uniform float uMax;attribute vec4 fcol;attribute float fsize;varying vec4 vC;\nvoid main(){vec4 mvPosition=modelViewMatrix*vec4(position,1.);'+BEND_GLSL+'float d=max(.5,-mvPosition.z);vC=fcol;gl_PointSize=fcol.a<.003?0.:min(uMax,fsize*uScale/d);gl_Position=projectionMatrix*mvPosition;}',
+    fragmentShader:'varying vec4 vC;void main(){float r=length(gl_PointCoord-.5)*2.;if(r>1.)discard;gl_FragColor=vec4(vC.rgb,vC.a*(1.-r*r));}'});
+  const pts=new THREE.Points(g,m);pts.frustumCulled=false;pts.renderOrder=3;pts.visible=false;pts.name='b16pts';scene.add(pts);
+  return{N,P,C,Z,g,m,pts,age:new Float32Array(48).fill(99),life:new Float32Array(48),ci:new Int8Array(48).fill(-1),ea:new Float32Array(18),da:new Float32Array(20),act:0}})();
+const CHIM=[];PLACES.forEach(p=>{if(p.chimney)CHIM.push({p,x:p.chimney.x,y:p.chimney.y,z:p.chimney.z,lit:false})});
+function fxFrame(dt){const lowQ=SET.saver;let any=false;const F=FXM,pos=F.pos,col=F.col,cp=camera.position;
+  // hearth cones: up to 3 lit hearths whose interior is showing
+  let hi=0;if(!lowQ)for(const H of HEARTH){if(hi>=3)break;const show=H.lit&&(!H.p.inner||H.p.inner.visible)&&(H.p.inVis||H.p.op==null||H.p.op<.6)&&Math.hypot(cp.x-H.x,cp.z-H.z)<70;if(!show)continue;
+    const sy=.8+.35*H.n,sx=.9+.12*(1-H.n),b=.55+.45*H.f*.87;let o=hi*F.cv*3;for(let c=0;c<3;c++){const [a,top]=F.tpl[c],cc=F.cc[c];for(let k=0;k<a.length;k+=3){pos[o]=H.x+a[k]*sx;pos[o+1]=H.y+a[k+1]*sy;pos[o+2]=H.z+a[k+2]*sx;const fall=1-.75*a[k+1]/top;col[o]=cc[0]*b*fall;col[o+1]=cc[1]*b*fall;col[o+2]=cc[2]*b*fall;o+=3}}hi++;any=true}
+  for(let i=hi;i<3;i++){const o=i*F.cv*3;if(col[o]||col[o+1])col.fill(0,o,o+F.cv*3)}
+  // sunbeams: day, a cutaway open, not heavy weather
+  const bp=RIG.cutP,beamOn=!lowQ&&bp&&RIG.cut>.5&&nightAmt<.35&&WEATHER.over<.7&&bp.w;const bo=F.cv*9;F.beam+=((beamOn?1:0)-F.beam)*Math.min(1,dt*1.5);
+  if(F.beam>.01&&bp){const n=Math.min(3,Math.max(1,Math.round(bp.w/5))),a=.10*F.beam*(1-WEATHER.over*.6),sx=sun.position.x>camS.tx?-.8:.8;for(let i=0;i<3;i++){const o=bo+i*18;if(i>=n){col.fill(0,o,o+18);continue}
+      const lx=(n===1?0:-bp.w/4+i*bp.w/(2*(n-1)))*.9,top=toWorld(bp,lx,bp.d/2-.6),bot=toWorld(bp,lx+sx*2.2,bp.d/2-4.2),hh=(bp.h||5)-.8,ww=.55,c=Math.cos(bp.ry),s=Math.sin(bp.ry);
+      const V=[[top.x-ww*c,hh,top.z+ww*s,1],[top.x+ww*c,hh,top.z-ww*s,1],[bot.x+ww*1.6*c,.35,bot.z-ww*1.6*s,0],[top.x-ww*c,hh,top.z+ww*s,1],[bot.x+ww*1.6*c,.35,bot.z-ww*1.6*s,0],[bot.x-ww*1.6*c,.35,bot.z+ww*1.6*s,0]];
+      for(let k=0;k<6;k++){const v=V[k],q=o+k*3,t=v[3]?a:a*.15;pos[q]=v[0];pos[q+1]=v[1];pos[q+2]=v[2];col[q]=t;col[q+1]=t*.92;col[q+2]=t*.72}}any=true}else if(col[bo]||col[bo+18]||col[bo+36])col.fill(0,bo,bo+54);
+  F.mesh.visible=any;if(any){F.g.attributes.position.needsUpdate=true;F.g.attributes.color.needsUpdate=true}
+  // points: smoke (lit chimneys within 120), embers (shown hearths), dust (in the beams)
+  const P=FXP,PP=P.P,C=P.C,Z=P.Z;let pany=false;const lit=lowQ?[]:CHIM.filter(c=>c.lit&&Math.hypot(c.x-camS.tx,c.z-camS.tz)<120).slice(0,3),dx=.15+WIND*1.1,dz=-(.08+WIND*.4),gr=nightAmt>.5?.55:.82;
+  for(let i=0;i<48;i++){P.age[i]+=dt;if(P.age[i]>=P.life[i]||(P.ci[i]<0&&lit.length)){if(lit.length){const c=lit[i%lit.length];P.ci[i]=CHIM.indexOf(c);P.age[i]=-Math.random()*6;P.life[i]=5+Math.random()*2.5}else{P.ci[i]=-1;P.age[i]=0;P.life[i]=1e9}}
+    const c=CHIM[P.ci[i]],q=i*3,a=P.age[i];if(!c||a<0||!c.lit){C[i*4+3]=0;continue}const u=a/P.life[i];PP[q]=c.x+dx*a+Math.sin(a*1.3+i)*.15;PP[q+1]=c.y+.7*a+.04*a*a;PP[q+2]=c.z+dz*a;C[i*4]=C[i*4+1]=gr;C[i*4+2]=gr+.04;C[i*4+3]=.42*Math.sin(Math.PI*u)*(1-WEATHER.wet*.4);Z[i]=.7+a*.45;pany=true}
+  let e=0;if(!lowQ)for(const H of HEARTH){if(e>=3)break;const show=FXM.mesh.visible&&H.lit&&(!H.p.inner||H.p.inner.visible)&&(H.p.inVis||H.p.op==null||H.p.op<.6);for(let k=0;k<6;k++){const i=48+e*6+k,j=e*6+k;if(!show){C[i*4+3]=0;continue}P.ea[j]+=dt*(.5+k*.07);if(P.ea[j]>1)P.ea[j]-=1;const u=P.ea[j],q=i*3;
+      PP[q]=H.x+Math.sin(k*2.1+u*5)*.18;PP[q+1]=H.y+.3+u*1.7;PP[q+2]=H.z+Math.cos(k*1.7+u*4)*.15;C[i*4]=1;C[i*4+1]=.55+.3*(1-u);C[i*4+2]=.18;C[i*4+3]=(1-u)*.95;Z[i]=.07;pany=true}e++}
+  for(let i=48+e*6;i<66;i++)C[i*4+3]=0;
+  for(let k=0;k<20;k++){const i=66+k;if(F.beam<.02||!bp){C[i*4+3]=0;continue}P.da[k]+=dt*.05;const u=(P.da[k]+k*.137)%1,lx=((k*.618)%1-.5)*bp.w*.6,lz=bp.d/2-1-u*3,q=toWorld(bp,lx,lz);PP[i*3]=q.x;PP[i*3+1]=.6+((k*.377+u*.3)%1)*((bp.h||5)-1.5);PP[i*3+2]=q.z;C[i*4]=1;C[i*4+1]=.96;C[i*4+2]=.82;C[i*4+3]=.5*F.beam*Math.sin(Math.PI*u);Z[i]=.06;pany=true}
+  P.pts.visible=pany;if(pany){P.g.attributes.position.needsUpdate=true;P.g.attributes.fcol.needsUpdate=true;P.g.attributes.fsize.needsUpdate=true}}
+// ---------- porches: porch(pid,level,pattern); level null = the house rules; pattern 'flick2' (off,on,off,on over 1.2 s) or 'candle' ----------
+const PORCH={};
+function porchReg(pid,o){const P=PORCH[pid]=Object.assign({pid,glow:[],pool:[],mats:[],lv:0,want:0,user:null,pat:null,pt:0,rule:null,forYou:false,card:false,flicks:0,plog:[]},o);P.ga=P.glow.map(i=>GLOWPTS.A[i]);P.mb=P.mats.map(m=>m.emissiveIntensity);P.cur=-1;return P}
+function porch(pid,level,pattern){const P=PORCH[pid];if(!P)return null;if(level!==undefined)P.user=level==null?null:clamp(+level,0,1);if(pattern){P.pat=pattern;P.pt=0;P.plog=[];if(pattern==='flick2')P.flicks++}return porchInfo(pid)}
+function porchInfo(pid){const P=PORCH[pid];if(!P)return null;return{pid,level:+P.lv.toFixed(3),want:+P.want.toFixed(3),user:P.user,pattern:P.pat,flicks:P.flicks,forYou:!!P.forYou,card:!!P.card,glows:P.glow.length,pools:P.pool.length,mats:P.mats.length,log:P.plog.slice(-12)}}
+function forYou(){return Date.now()-(S.lite.v||0)<3*864e5||tierOf(bondOf('you'))>=3}
+function porchRule(pid,h){const dk=LX.dk;if(pid==='home'){const o=occOf('home'),home=o.ids.includes('mocha'),aw=AG.mocha.awake,fy=forYou();PORCH.home.forYou=fy;if(!dk)return 0;if(!home||aw)return 1;return fy?.6:.3}
+  if(pid==='neighbor'){if(!dk)return 0;const o=occOf('neighbor');if(!o.ids.includes('wendell'))return 1;return lightsAwake('neighbor',h,o)?1:0}
+  const P=PORCH[pid];return P&&P.rule?P.rule(h,dk):0}
+function porchFrame(dt){for(const k in PORCH){const P=PORCH[k];let v;P.lv+=((P.user!=null?P.user:P.want)-P.lv)*Math.min(1,dt*4);v=P.lv;
+    if(P.pat){P.pt+=dt;if(P.pat==='flick2'){if(P.pt>=1.2)P.pat=null;else v=[0,1,0,1][Math.floor(P.pt/.3)]*Math.max(.6,P.want||1)}else if(P.pat==='candle')v=P.lv*(.8+.2*fireN(T*1.6,3))}
+    if(P.pat&&P.plog.length<60&&P.plog[P.plog.length-1]!==+v.toFixed(2))P.plog.push(+v.toFixed(2));// distinct steps
+    if(Math.abs(v-P.cur)<.004)continue;P.cur=v;P.glow.forEach((g,i)=>glowSet(g,P.ga[i]*v));P.pool.forEach(i=>poolSet(i,v));P.mats.forEach((m,i)=>m.emissiveIntensity=P.mb[i]*(.12+.88*v))}
+  const Q=PORCH.home;if(Q&&Q.cardI!=null){const on=Q.forYou&&LX.dk>0;if(on!==Q.card){Q.card=on;diShow(Q.cardI,on)}}}
+{const h=byId.home,D=h.d,G=GLOWPTS,near=(x,y,z)=>{const o=[];for(let i=0;i<G.n;i++)if(Math.hypot(G.P[i*3]-x,G.P[i*3+2]-z)<.7&&Math.abs(G.P[i*3+1]-y)<1.2)o.push(i);return o},gl=[],pl=[],mats=new Set();
+  for(const [lx,y,lz] of [[-2.3,2.8,D/2+2.8],[2.3,2.8,D/2+2.8],[-2.2,2.9,11],[2.2,2.9,11]]){const q=toWorld(h,lx,lz);gl.push(...near(q.x,y,q.z));if(lz===11)pl.push(poolAdd(q.x,q.z,2.4,'#ffb860',0))}
+  h.obj.traverse(o=>{if(o.isMesh&&!Array.isArray(o.material)&&o.material.emissive&&o.material.emissive.getHexString()==='ffb050')mats.add(o.material)});
+  const P=porchReg('home',{glow:[...new Set(gl)],pool:pl,mats:[...mats]});
+  // the tiny ghost-shaped card on the lantern hook ("light's on for you"): one DIM instance on the door atlas, 0 draws
+  try{const uv=DATL.cell('b16card','small',(g,w,hh)=>{g.fillStyle='#fffaf2';g.fillRect(0,0,w,hh);g.strokeStyle='#c9a24a';g.lineWidth=2;g.strokeRect(1,1,w-2,hh-2);g.fillStyle='#e9eef8';g.beginPath();g.arc(16,13,8,Math.PI,0);g.lineTo(24,25);for(let i=0;i<4;i++)g.lineTo(22-i*4,i%2?23:26);g.lineTo(8,13);g.fill();g.fillStyle='#26324a';g.fillRect(13,11,2,3);g.fillRect(18,11,2,3);g.fillStyle='#e9886b';g.font='900 11px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('♥',44,16)});
+    const nd=new THREE.Object3D();nd.position.set(2.3+.32,2.2,D/2+2.8+.05);nd.scale.set(.42,.21,.02);h.obj.add(nd);P.cardI=diAdd(nd,uv,uv);if(P.cardI>=0){DIM.on[P.cardI]=true;diShow(P.cardI,false)}}catch(e){}
+  const nb=byId.neighbor,d=DOORS.find(x=>x.pid==='neighbor'&&!x.back);if(d){const y=(d.y0||0)+d.h+.35,x=d.wx+d.nx*.35+d.nz*1.05,z=d.wz+d.nz*.35-d.nx*1.05;porchReg('neighbor',{glow:[glowPt(x,y,z,'#FFD86B',1.9,.8,0,'porch')],pool:[poolAdd(d.wx+d.nx*1.4,d.wz+d.nz*1.4,2.3,'#FFD86B',0)]})}}
+// ---------- WLT.tick: who is home, room by room ----------
+function wltEval(s,h,now){s.fl=0;s.occ=0;s.tc=WC.warm;const f=WLT.force[s.key];if(f!=null){s.tl=+f;return}const pid=s.pid,p=byId[pid],hh=h<12?h+24:h;
+  if(pid==='sky'){s.tl=(s.all||hh<s.off||hh>=30.5)?.85:0;return}
+  if(pid==='night'){s.tl=1;return}
+  if(pid==='fogwell'){if(s.room==='lobby'){s.tl=.7;return}const u=s.room.slice(0,2),b=s.room[2]==='b',A=WLT.S[WLT.by['fogwell:'+u+'a']]||s,R=WLT.res[u],fu=WLT.force['fogwell:'+u];
+    if(fu!=null){s.tl=fu?(b?.6:1):0;return}if(R&&R.col)s.tc=R.c||(R.c=(()=>{const c=new THREE.Color(R.col);return[c.r,c.g,c.b]})());const home=R&&R.home!=null?R.home:A.home,bed=R&&R.bed!=null?R.bed:A.bed;
+    if(R&&R.all){s.tl=b?.5:1;return}s.tl=b?(hh>=bed-.6&&hh<bed?.9:0):(hh>=home&&hh<bed?1:0);s.occ=s.tl>0;return}
+  if(pid==='sched'||!p){s.tl=hh>=s.home&&hh<s.bed?(s.room==='0'?1:.9):0;return}
+  if(HOMEP[pid]){const o=occOf(pid);if(!o.ids.length){s.tl=0;return}const aw=lightsAwake(pid,h,o),room=o.room||'';
+    if(!aw){if(s.room===NLROOM[pid]){s.tl=.12;s.tc=WC.nl}else s.tl=0;return}
+    if(s.room==='turret'){s.tl=.5;s.tc=WC.candle;s.fl=3;return}
+    const act=String(o.act||'');if(s.room===room){s.tl=1;s.occ=1;if(/\btv\b|late show|movie|film|computer|game|looking things up/i.test(act)){s.tc=WC.tv;s.fl=1;s.tl=.85}else if(/paint|draw|sketch/i.test(act))s.tc=WC.paint}else s.tl=s.room==='main'?.6:.3;
+    if(s.room==='kitchen'&&/cook|tea|bak|soup/i.test(act))s.tl=1;const H=HEARTHBY[pid];if(H&&H.lit&&s.room===H.room&&s.fl!==1){s.fl=2;s.tl=Math.max(s.tl,.85)}return}
+  if(p.hours){const open=isOpen(p,h),pt=s.room,B=WLT.brk[pid];if(B&&now<B.until){s.tl=pt==='sec'?.6:0;return}s.tc=WC.shop;
+    if(pt==='main'||pt==='sec'){if(open){s.tl=1;s.occ=1;s.cs=0}else{if(s.wo&&!s.cs&&LX.t>0)s.cs=now;const e=s.cs?(now-s.cs)/1e3:99;s.tl=e<5?1:e<10?.7:e<15?.45:e<20?.3:0;if(pt==='sec'&&e>=15){s.tl=.25;s.tc=WC.sec}}s.wo=open;return}// closing: 20 s of steps, leaving one .25 security light (the 'sec' pane)
+    if(pt==='back'){s.tl=open?.6:(h>=p.hours[0]-.5&&h<p.hours[0]?1:0);s.occ=open;return}
+    const k=KEEPERS.find(k=>k.shop===pid),a=k&&AG[k.id];s.tc=WC.warm;s.tl=open?.3:a&&a.awake?.9:k?0:(hh>=s.home&&hh<s.bed?.9:0);return}
+  s.tl=hh>=s.home&&hh<s.bed?.9:0}
+const WFL=[];WLT.res['5B']={name:'Vesper',col:'#C0485A',all:1};// placeholder resident until B39 moves the real ones in
+function wltTick(dt,inst){const now=Date.now(),d=new Date(),h=d.getHours()+d.getMinutes()/60;LX.lux=luxNow();LX.dark=clamp((.5-LX.lux)/.16,0,1);LX.dk=LX.lux<.45?1:0;
+  if(WLT.scan!==winMats.length)wltScan();for(const H of HEARTH)H.lit=hearthLit(H,h);for(const c of CHIM){const H=HEARTHBY[c.p.id];c.lit=H?H.lit:!!(c.p.hearthLit&&c.p.hearthLit(h))}
+  WFL.length=0;let homeLit=0;const D=WLT.d;let ch=0;
+  for(let i=1;i<WLT.S.length;i++){const s=WLT.S[i];wltEval(s,h,now);const dk=LX.lux<s.thr?1:0;if(s.nk<0||inst)s.nk=dk;else s.nk+=clamp(dk-s.nk,-dt/s.ease,dt/s.ease);
+    const L=s.tl*s.nk+(1-s.nk)*(s.occ?.08:0),k=s.nk<0||inst?1:Math.min(1,dt*3);s.lv+=(L-s.lv)*k;for(let j=0;j<3;j++)s.c[j]+=(s.tc[j]-s.c[j])*k;if(s.pid==='home'&&s.tl>=.3&&s.room!=='turret')homeLit=1;
+    if(s.fl)WFL.push(s);else ch|=wltPut(s,1)}
+  if(ch){WLT.lut.needsUpdate=true;WLT.writes++}for(const [m,si,k] of WLT.drv){const s=WLT.S[si];m.emissiveIntensity=.12+k*(s?s.lv:0)}
+  // lights as messages: Mocha's window first lights after dusk -> Wendell flicks his porch light twice (once a night)
+  const day=d.toDateString(),dkN=LX.dark>.5;if(homeLit&&dkN&&!FLK.lit){FLK.lit=1;const o=occOf('neighbor');if(S.lite.fd!==day&&o.ids.includes('wendell')&&lightsAwake('neighbor',h,o)){S.lite.fd=day;FLK.n++;FLK.at=performance.now()+800}}else if(!homeLit||!dkN)FLK.lit=homeLit&&dkN?1:0;
+  for(const k in PORCH)PORCH[k].want=porchRule(k,h);
+  // his lantern burns for you; a weekly line when he goes to sleep with it on
+  if(PORCH.home&&PORCH.home.forYou&&LX.dk&&!AG.mocha.awake&&occOf('home').ids.includes('mocha')&&now-(S.lite.lw||0)>7*864e5&&!isQuiet){S.lite.lw=now;addEntry('Porch','Left the porch light on, just in case.',"Mocha's House",now)}
+  if(camS.mode==='walk'&&isPresent()&&Math.hypot(YOU.x-byId.home.x,YOU.z-byId.home.z)<16&&now-(S.lite.v||0)>6e4)S.lite.v=now;
+  // exposure target: the most-open cutaway near the camera
+  let cut=0,cp=null;for(const q of PLACES){if(!q.interior||q.kind==='home'||q.op==null||q.op>.98)continue;if(Math.hypot(q.x-camS.tx,q.z-camS.tz)>60)continue;if(1-q.op>cut){cut=1-q.op;cp=q}}
+  {const hm=byId.home,o=hm.shell&&hm.shell[0]?1-hm.shell[0].opacity:0;RIG.hcut=o;if(o>cut&&Math.hypot(hm.x-camS.tx,hm.z-camS.tz)<60){cut=o;cp=hm}}RIG.cutT=cut;RIG.cutP=cp;
+  lampTick(h);LX.t++;WLT.ticks++}
+function wltPut(s,f){const D=WLT.d,o=s.i*4,v=clamp(s.lv*f,0,1.6)*255,r=Math.min(255,Math.round(s.c[0]*v)),g=Math.min(255,Math.round(s.c[1]*v)),b=Math.min(255,Math.round(s.c[2]*v));if(D[o]===r&&D[o+1]===g&&D[o+2]===b)return 0;D[o]=r;D[o+1]=g;D[o+2]=b;D[o+3]=255;return 1}
+function wltScan(){for(let i=WLT.scanI||0;i<winMats.length;i++){const m=winMats[i];if(m.emissiveMap&&m.emissiveMap.wlt){if(!m.userData.win){m.userData.win=1;m.needsUpdate=true}m.emissiveIntensity=.5;if(m.emissive)m.emissive.set('#ffffff');WLT.nwin++;continue}
+    const pid=m.userData.wpid,key=m===PBM.win?'night:str':pid&&byId[pid]?pid+':main':'night:all';WLT.drv.push([m,wltSlot(key),m.userData.nightK??.9])}WLT.scanI=winMats.length;WLT.scan=winMats.length}
+// per frame: flickering slots (TV ~6 Hz, hearth 1/f with the SAME sample as its light, Mocha's turret candle)
+function wltFx(){let ch=0;for(const s of WFL){let f=1;if(s.fl===1){const q=Math.sin(Math.floor(T*6)*12.9898+s.fs)*43758.5453;f=.65+.35*(q-Math.floor(q))}else if(s.fl===2){const H=HEARTHBY[s.pid];if(H){f=H.f;const u=H.n;for(let j=0;j<3;j++)s.c[j]=WC.fireA[j]+(WC.fireB[j]-WC.fireA[j])*u;s.ff=f}}else if(s.fl===3)f=.82+.18*fireN(T*1.3,s.fs);s.lf=f;ch|=wltPut(s,f)}if(ch){WLT.lut.needsUpdate=true;WLT.writes++}}
+// ---------- the lamplighting wave (B8 instanced lamps): lux crosses .42 (hysteresis .40/.45) -> on from Lantern Square outward at ~6 u/s; off 15 min before sunrise ----------
+const LWV=(()=>{const N=LAMPS.pts.length,cx=-30,cz=33,d=new Float32Array(N);for(let i=0;i<N;i++)d[i]=Math.hypot(LAMPS.pts[i][0]-cx,LAMPS.pts[i][1]-cz);return{N,cx,cz,d,max:Math.max(0,...d),k:new Float32Array(N).fill(-1),tOn:new Float32Array(N).fill(-1),tk:new Uint8Array(N),on:-1,dir:0,t0:0,run:false,tinks:0,waves:0,col:new THREE.Color('#FFC46B'),off:new THREE.Color('#5b5446'),dirty:0,last:null}})();
+function lampK(i,k){if(Math.abs(LWV.k[i]-k)<.004)return;LWV.k[i]=k;LAMPS.heads.setColorAt(i,_gc.copy(LWV.off).lerp(LWV.col,k));glowSet(LAMPS.halo[i],.68*k);poolSet(LAMPS.pool[i],k);LWV.dirty=1}
+const LPROF=t=>t<=0?0:t<.167?t/.167*.6:t<.333?.6-(t-.167)/.166*.4:t<.5?.2+(t-.333)/.167*.8:1;
+function lampWave(dir){LWV.dir=dir;LWV.t0=performance.now()/1e3;LWV.run=true;LWV.tk.fill(0);if(dir>0)LWV.tOn.fill(-1);LWV.waves++;LWV.last={dir,at:Date.now()};
+  if(dir>0&&!isQuiet&&G.mode!=='trip'&&!inHome(G.x,G.z)&&!PLACES.some(q=>q.interior&&q.kind!=='home'&&inBuilding(q,G.x,G.z))){const day=new Date().toDateString();if(S.lite.ld!==day){S.lite.ld=day;if(Math.random()<.6)addEntry('Lamps',"The lamps came on all at once. I'll never get tired of that.",'',Date.now())}}}
+function lampTick(h){const lux=LX.lux,morning=h>=SUN.rise-.25&&h<13,want=morning?0:LWV.on===1?(lux>.45?0:1):(lux<.40?1:0);
+  if(LWV.on===-1){const w0=morning?0:lux<.42?1:0;LWV.on=w0;const prev=LUXS.force!=null?1:siAt(h-1/6)*(1-.5*WEATHER.over);if(w0&&prev>=.42&&LUXS.force==null){for(let i=0;i<LWV.N;i++)lampK(i,0);lampWave(1)}else for(let i=0;i<LWV.N;i++)lampK(i,w0);return}
+  if(want!==LWV.on){LWV.on=want;lampWave(want?1:-1)}}
+function lampFrame(){if(!LWV.run)return;const el=performance.now()/1e3-LWV.t0;for(let i=0;i<LWV.N;i++){const lt=el-LWV.d[i]/6;let k;if(LWV.dir>0){k=LPROF(lt);if(lt>=0&&!LWV.tk[i]){LWV.tk[i]=1;LWV.tOn[i]=el;LWV.tinks++;SFXEV.emit('tink',{x:LAMPS.pts[i][0],z:LAMPS.pts[i][1],i})}}else k=1-clamp(lt/.6,0,1);lampK(i,k)}
+  if(el>LWV.max/6+.7)LWV.run=false}
+// ---------- back soon: a shop on break (B22) leaves one warm light, a door note and a small glow ----------
+function shopBreak(pid,until,label){const p=byId[pid];if(!p||!p.hours)return null;if(!until){delete WLT.brk[pid];return null}const d=new Date(until);WLT.brk[pid]={until:+until,label:label||`back at ${((d.getHours()+11)%12)+1}:${String(d.getMinutes()).padStart(2,'0')} :)`};
+  const dr=DOORS.find(x=>x.pid===pid&&!x.back);if(dr&&p.brkG==null)p.brkG=glowPt(dr.wx+dr.nx*.25,(dr.y0||0)+1.45,dr.wz+dr.nz*.25,'#ffcf80',1.1,0,0,'brk');wltTick(0,0);return WLT.brk[pid]}
+// ---------- the flick back (Mocha's own weighted candidate FLICK_ACT; this is its outcome) ----------
+function flickBack(t){FLK.back=1;porch('home',undefined,'flick2');if(t-(S.lite.fw||0)>7*864e5){S.lite.fw=t;addEntry('Porch','Wendell said goodnight with his porch light. I said it back.',"Mocha's House",t)}S.recent.unshift('home.porch');S.recent.length=Math.min(S.recent.length,6)}
+// ---------- per frame ----------
+function b16Frame(gdt){const now=Date.now(),lo=SET.saver,pn=performance.now(),dt=Math.min(.5,LX.pn?(pn-LX.pn)/1e3:gdt);LX.pn=pn;// real seconds: fades, waves and flicks keep their timing on slow devices
+  if(!LX.boot){LX.boot=1;LX.tA=.25;wltTick(.25,1)}else if((LX.tA-=dt)<=0){LX.tA=lo?1:.25;wltTick(lo?1:.25,0)}if((RIG.t-=dt)<=0){RIG.t=.5;const d=new Date();rigAssign(d.getHours()+d.getMinutes()/60)}
+  for(const H of HEARTH){H.n=fireN(T,H.seed);H.f=.9+.25*H.n}wltFx();rigFrame(dt);porchFrame(dt);lampFrame();if(LWV.dirty){LAMPS.heads.instanceColor.needsUpdate=true;LWV.dirty=0}
+  if(FLK.at&&performance.now()>=FLK.at){FLK.at=0;FLK.w=now;FLK.back=0;porch('neighbor',undefined,'flick2');FLK.log.push(now);if(FLK.log.length>8)FLK.log.shift()}
+  for(const k in WLT.brk){const b=WLT.brk[k],p=byId[k],on=now<b.until;if(p&&p.brkG!=null)glowSet(p.brkG,on?.75:0);if(!on)delete WLT.brk[k]}
+  fxFrame(dt)}
+LUXS.si=siAt(hourAt(Date.now()));wltScan();wltTick(.25,1);rigAssign(hourAt(Date.now()));LX.n0=(()=>{let n=0;scene.traverse(o=>{if(o.isLight)n++});return n})();
+// ---------- hooks ----------
+{const L0=window.__mocha.lamps;const hx=c=>'#'+[0,1,2].map(j=>Math.round(clamp(c[j],0,1)*255).toString(16).padStart(2,'0')).join('');
+  const si=s=>({i:s.i,key:s.key,lv:+s.lv.toFixed(3),tl:+(+s.tl).toFixed(3),col:hx(s.c),fl:s.fl,nk:+s.nk.toFixed(2),thr:+s.thr.toFixed(3),byte:[...WLT.d.slice(s.i*4,s.i*4+3)]});
+  Object.assign(window.__mocha,{
+  wlt:(o)=>{if(o&&o.flick==='reset'){FLK.lit=0;FLK.w=0;FLK.back=0;S.lite.fd=''}if(o&&o.tick)wltTick(.25,1);if(o&&o.force){Object.assign(WLT.force,o.force);wltTick(.25,1)}if(o&&o.brk)shopBreak(o.brk[0],o.brk[1],o.brk[2]);
+    const pid=typeof o==='string'?o:o&&o.pid;const L=WLT.S.slice(1).filter(s=>!pid||s.pid===pid);
+    return{n:WLT.S.length-1,cap:WLT.N-1,winMats:winMats.length,encoded:WLT.nwin,driven:WLT.drv.length,ticks:WLT.ticks,writes:WLT.writes,lux:+LX.lux.toFixed(3),dark:+LX.dark.toFixed(2),force:LUXS.force,
+      lut:{w:WLT.lut.image.width,h:WLT.lut.image.height,nearest:WLT.lut.magFilter===THREE.NearestFilter&&WLT.lut.minFilter===THREE.NearestFilter,mip:WLT.lut.generateMipmaps},
+      patched:winMats.filter(m=>m.userData.win).length,loop:/winMats\.forEach/.test(String(updateSky)),flick:{w:FLK.w,back:FLK.back,n:FLK.n,lit:FLK.lit,day:S.lite.fd,cand:!!(FLK.w&&!FLK.back&&Date.now()-FLK.w<18e4)},
+      brk:Object.assign({},WLT.brk),slots:L.map(si),hearth:HEARTH.map(H=>({pid:H.p.id,room:H.room,lit:H.lit,n:+H.n.toFixed(4),f:+H.f.toFixed(4)}))}},
+  setLux:x=>{LUXS.force=x==null?null:+x;wltTick(.25,0);return{lux:+LX.lux.toFixed(3),force:LUXS.force,lampsOn:LWV.on}},
+  lights:()=>{const L=[];scene.traverse(o=>{if(o.isLight)L.push({type:o.type,name:o.name||'',parent:o.parent===scene?'scene':(o.parent&&(o.parent.name||o.parent.type)),i:+o.intensity.toFixed(3),d:o.distance||0})});
+    const H=HEARTHBY.neighbor,ws=WLT.S.find(s=>s&&s.key==='neighbor:'+(H?H.room:'living'));let fire=null;if(H){const st=RIG.st.find(s=>s.s&&s.s.p===H.p&&(s.s.l.kind==='fire'));fire={n:+H.n.toFixed(4),f:+H.f.toFixed(4),lit:H.lit,win:ws&&ws.ff!=null?+ws.ff.toFixed(4):null,winFl:ws?ws.fl:0,light:st?+(RIG.L[RIG.st.indexOf(st)].intensity/(st.s.on*st.s.b*(.45+.75*nightAmt)*st.k||1)).toFixed(4):null,t:+T.toFixed(3)}}
+    return{count:L.length,n0:LX.n0,list:L,innerLightScene:byId.home.innerLight.parent===scene,L1:RIG.L[0]===byId.home.innerLight,L2:RIG.L[1].parent===scene,saverL2:SET.saver?RIG.L[1].intensity:null,
+      assign:RIG.st.map((s,j)=>({j,pid:s.s&&s.s.p.id,kind:s.s&&s.s.l.kind,want:s.want&&s.want.p.id+':'+s.want.l.kind,k:+s.k.toFixed(2),i:+RIG.L[j].intensity.toFixed(3)})),spots:LSP.length,
+      expo:{cut:+RIG.cut.toFixed(3),cutT:+RIG.cutT.toFixed(3),at:RIG.cutP&&RIG.cutP.id,hemiK:+RIG.hk.toFixed(3),sunK:+RIG.sk.toFixed(3)},fire,hearths:HEARTH.length,
+      fx:{mesh:FXM.mesh.visible,points:FXP.pts.visible,beam:+FXM.beam.toFixed(2),chimneys:CHIM.map(c=>({pid:c.p.id,lit:c.lit})),smoke:Array.from(FXP.C.filter((v,i)=>i%4===3&&i<48*4)).filter(a=>a>.003).length}}},
+  lamps:()=>Object.assign(L0?L0():{},{on:LWV.on,wave:{run:LWV.run,dir:LWV.dir,el:+(performance.now()/1e3-LWV.t0).toFixed(2),waves:LWV.waves,last:LWV.last,max:+LWV.max.toFixed(1),speed:6},tinks:LWV.tinks,square:[LWV.cx,LWV.cz],
+    k:Array.from(LWV.k).map(v=>+v.toFixed(2)),d:Array.from(LWV.d).map(v=>+v.toFixed(1)),tOn:Array.from(LWV.tOn).map(v=>+v.toFixed(2)),lux:+LX.lux.toFixed(3)}),
+  porch:(pid,lv,pat)=>pid==null?Object.keys(PORCH).map(porchInfo):(lv!==undefined||pat)?porch(pid,lv,pat):porchInfo(pid),
+  shopBreak,flickAct:()=>FLICK_ACT});}
+// ====================================================================
+//  B17 runtime: Wendell's day from planFor (he never vanishes: 'inside' is a room spot), the bottle-cap shelf (1 InstancedMesh),
+//  hangouts (staging, beats, props, CAM 'hang', drop-in y-beats, at most 1 MIND call), Wendell's invites (knock with soup, call, note).
+// ====================================================================
+function wBlock(t=Date.now()){return blockAt(planFor('wendell',t),hourAt(t))}
+function wDest(b){return!b||b[2]==='in'?'inside':b[2]==='go'?b[3]:b[3]==='yard'?'yard':'porch'}
+function wDoing(){if(W.inside)return W.spot==='fireA'&&TV.on?'watching the late show':WD.verb[W.st]||'pottering around his cottage';const sp=W_SPOTS[W.dest];return(W.dest==='porch'||W.dest==='yard')&&WD.verb[W.st]?WD.verb[W.st]:sp?sp.doing:'out and about'}
+function wWalk(dt){const s=navStep(AG.wendell,W.x,W.z,dt);W.cw=!!(s&&s.cw);if(!s||s.done){W.path.length=0;W.cw=false;return true}
+  if(!s.hold){const dx=s.x-W.x,dz=s.z-W.z,d=Math.hypot(dx,dz);if(d>.02){const st=Math.min(d,2.3*dt);W.x+=dx/d*st;W.z+=dz/d*st;const ty=Math.atan2(dx,dz);W.yaw+=Math.atan2(Math.sin(ty-W.yaw),Math.cos(ty-W.yaw))*Math.min(1,dt*6)}}return false}
+// the plan step: walk to the block's place (room spots inside, porch/yard, errands and strolls out on the town)
+function wPlanStep(){W.timer=rand(8,14);const b=wBlock(),dest=wDest(b),sn=b&&b[2]==='in'?b[4]:null;W.st=b?b[5]:'read';
+  if(dest==='inside'){const tsn=sn||'fireA',tg=homeSpotW('neighbor',tsn);if(!tg)return;if(!W.inside){const from=wOut();W.dest='inside';W.wsn=tsn;W.sit=false;W.path=wPath(from.x,from.z,tg.x,tg.z)}else if(tsn!==W.spot){W.wsn=tsn;W.sit=false;W.path=wPath(W.x,W.z,tg.x,tg.z)}else W.doing=wDoing()}
+  else if(dest!==W.dest||W.inside){const from=wOut();W.visible=true;W.dest=dest;W.sit=false;const tg=wTarget(dest);W.path=wPath(from.x,from.z,tg.x,tg.z)}else W.doing=wDoing()}
+// ---------- the bottle-cap shelf: 120 small cylinders, one InstancedMesh in p.inner, count = min(caps,120) ----------
+const CAPS={im:null};
+function capsBuild(){const p=byId.neighbor,cs=p&&p.capShelf;if(!cs||CAPS.im)return;const im=new THREE.InstancedMesh(new THREE.CylinderGeometry(.044,.044,.022,10),new ToonM({color:'#ffffff'}),120),m=new THREE.Matrix4(),q=new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI/2,0,0)),v=new THREE.Vector3(),one=new THREE.Vector3(1,1,1),c=new THREE.Color(),r=seeded(1717),PC=['#c9a24a','#b8402a','#2f6f9a','#3f8a5a','#e6e0d0','#d9822b','#7a4a8a','#9aa3ad','#e9c46a'];
+  for(let i=0;i<120;i++){const row=Math.floor(i/40),k=i%40,sub=Math.floor(k/20),j=k%20;v.set(cs.x0+.06+j*(cs.x1-cs.x0-.12)/19+(sub?.05:0),cs.ys[row]+.046+sub*.094,cs.z+(sub?-.035:.025));m.compose(v,q,one);im.setMatrixAt(i,m);im.setColorAt(i,c.set(PC[Math.floor(r()*PC.length)]))}
+  im.castShadow=im.receiveShadow=false;im.name='caps';(p.inner||p.grp||scene).add(im);CAPS.im=im;capsSync()}
+function capsSync(){if(CAPS.im)CAPS.im.count=Math.min(120,Math.max(0,S.wend.caps|0))}
+const W_CAPD=['a green ginger ale cap, older than me','a cream soda cap with a tiny ferry on it','a root beer cap, a little bent, very distinguished','a gold one off a fancy lemonade','a blue cap with a star in the middle','a red cap he found by the ferry dock'];
+// ---------- props: one canvas board + one instanced item (mugs, pot, popcorn, flashlight); hidden when idle ----------
+const HPR={g:null,bd:null,c:null,tx:null,it:null,kind:'',pc:null,t:0,v:0,turn:0,sl:0,slx:0,slz:0,ax:0,az:0,y:0,yaw:0};
+function hpInit(){if(HPR.g)return;const g=new THREE.Group();g.visible=false;g.name='hangProps';scene.add(g);const c=document.createElement('canvas');c.width=c.height=256;const tx=new THREE.CanvasTexture(c);
+  const bd=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new ToonM({map:tx}));bd.rotation.x=-Math.PI/2;g.add(bd);const it=new THREE.InstancedMesh(new THREE.CylinderGeometry(1,1,1,12),new ToonM({color:'#ffffff'}),3);it.count=0;g.add(it);
+  for(const o of [bd,it])o.castShadow=o.receiveShadow=false;Object.assign(HPR,{g,bd,c,tx,it})}
+// prop anchors (local, y absolute) for Wendell's furniture; Mocha's house uses the seat midpoint
+const HPRA={neighbor:{fireA:[-4.65,.95,0,.6],teaA:[3.6,1.1,-1.8,.8],stove:[3.6,1.1,-1.8,.8],porchA:[-3.5,.32,7.2,.6],yard:[-.5,.3,9.9,.6]}},HPRY={teaA:.78,boxA:.56,floorA:.04,couchA:.48,porchA:.05,desk:.76,fireA:.5};
+const HPRM=new THREE.Matrix4(),HPRQ=new THREE.Quaternion(),HPRV=new THREE.Vector3(),HPRS=new THREE.Vector3(),HPRC=new THREE.Color();
+function hpShow(kind){hpInit();const p=byId[HS.p],a=HS.sp,A=HPRA[HS.p]&&HPRA[HS.p][a[0]];let x,y,z,sz=.75;
+  if(A){const q=toWorld(p,A[0],A[2]);x=q.x;z=q.z;y=A[1];sz=A[3]}else{const s0=homeSpotW(HS.p,a[0]),s1=homeSpotW(HS.p,a[1]);if(!s0||!s1)return;x=(s0.x+s1.x)/2;z=(s0.z+s1.z)/2;const ya=s0.yaw||0,yb=s1.yaw||0;if(Math.abs(Math.atan2(Math.sin(ya-yb),Math.cos(ya-yb)))<.6){x+=Math.sin(ya)*.95;z+=Math.cos(ya)*.95}y=navFloor(x,z)+(HPRY[a[0].replace(/B$/,'A')]||.5)}
+  Object.assign(HPR,{kind,ax:x,az:z,y,t:0,sl:0,turn:0,yaw:p.ry});HPR.g.position.set(x,y,z);HPR.g.rotation.y=p.ry;HPR.bd.scale.set(sz,sz,1);HPR.bd.position.y=.01;
+  const board=kind==='board'||kind==='puzzle'||kind==='cards'||kind==='cloth';HPR.bd.visible=board;if(kind==='board')HPR.pc=hpCheckers();if(board)hpDraw();hpItems();HPR.g.visible=!!kind}
+function hpHide(){if(HPR.g)HPR.g.visible=false;HPR.kind=''}
+function hpItems(){const it=HPR.it,k=HPR.kind,L=k==='mugs'?[[-.18,0,.06,.11,'#f4ead8'],[.18,0,.06,.11,'#e9886b']]:k==='pot'?[[0,0,.2,.2,'#b8402a']]:k==='popcorn'?[[0,0,.17,.1,'#f6e7b0']]:k==='light'?[[.2,.05,.035,.2,'#e9c46a']]:[];it.count=L.length;
+  L.forEach((d,i)=>{const sx=HPR.sl*(i===0?1:0);HPRV.set(d[0]+sx*HPR.slx,d[3]/2+d[1],sx*HPR.slz);HPRS.set(d[2],d[3],d[2]);HPRQ.identity();HPRM.compose(HPRV,HPRQ,HPRS);it.setMatrixAt(i,HPRM);it.setColorAt(i,HPRC.set(d[4]))});it.instanceMatrix.needsUpdate=true;if(it.instanceColor)it.instanceColor.needsUpdate=true}
+function hpCheckers(){const P=[];for(let y=0;y<8;y++)for(let x=0;x<8;x++)if((x+y)%2&&(y<3||y>4))P.push([x,y,y<3?0:1]);return P}
+function hpDraw(){const g=HPR.c.getContext('2d'),k=HPR.kind;g.clearRect(0,0,256,256);
+  if(k==='board'){g.fillStyle='#5a3a22';g.fillRect(0,0,256,256);for(let y=0;y<8;y++)for(let x=0;x<8;x++){g.fillStyle=(x+y)%2?'#3a2a1e':'#e8d8b8';g.fillRect(8+x*30,8+y*30,30,30)}for(const p of HPR.pc){g.fillStyle=p[2]?'#1e1e24':'#c0392b';g.beginPath();g.arc(23+p[0]*30,23+p[1]*30,11,0,7);g.fill();if(p[3]){g.strokeStyle='#e9c46a';g.lineWidth=3;g.stroke()}}}
+  else if(k==='puzzle'){g.fillStyle='#8a6040';g.fillRect(0,0,256,256);const sh=Math.min(15,Math.floor((S.wend.puz+HS.t*.08)/100*16)),miss=HS.story%16;for(let i=0;i<16;i++){const x=(i%4)*60+8,y=Math.floor(i/4)*60+8;if(i>sh||i===miss)continue;const gr=g.createLinearGradient(0,y,0,y+60);gr.addColorStop(0,y<120?'#8fb8de':'#3f6f8a');gr.addColorStop(1,y<120?'#c9dff0':'#2a4a6a');g.fillStyle=gr;g.fillRect(x,y,60,60);if(y>=60&&y<180){g.fillStyle='#e9f0f4';g.beginPath();g.moveTo(x,y+60);g.lineTo(x+30,y+(y<120?28:0));g.lineTo(x+60,y+60);g.fill()}g.strokeStyle='rgba(0,0,0,.25)';g.strokeRect(x,y,60,60)}}
+  else if(k==='cards'){g.fillStyle='#2f6f4a';g.fillRect(0,0,256,256);for(let i=0;i<5;i++){g.save();g.translate(128,190);g.rotate((i-2)*.22);g.fillStyle='#fffaf2';g.fillRect(-22,-110,44,64);g.fillStyle=i%2?'#c0392b':'#1e1e24';g.font='bold 20px sans-serif';g.fillText('7QKA5'[i],-14,-84);g.restore()}g.fillStyle='#fffaf2';for(let i=0;i<4;i++)g.fillRect(40+i*3,40+i*2,44,64)}
+  else if(k==='cloth'){for(let y=0;y<8;y++)for(let x=0;x<8;x++){g.fillStyle=(x+y)%2?'#c0392b':'#f4ead8';g.fillRect(x*32,y*32,32,32)}g.fillStyle='#e9c46a';for(const [x,y] of [[80,110],[150,140]]){g.beginPath();g.moveTo(x,y);g.lineTo(x+46,y);g.lineTo(x+23,y-40);g.fill()}}
+  HPR.tx.needsUpdate=true;HPR.v++}
+// a piece hops every ~4 s (red, then black); jigsaw pieces fill in; the popcorn bowl slides over to your seat
+function hpTick(dt){if(!HPR.kind)return;HPR.t+=dt;if(HPR.kind==='board'&&HPR.t>=4){HPR.t=0;const side=HPR.turn,dir=side?-1:1,occ=(x,y)=>HPR.pc.some(p=>p[0]===x&&p[1]===y),L=HPR.pc.filter(p=>p[2]===side);
+    for(let n=0;n<12&&L.length;n++){const p=L[Math.floor(Math.random()*L.length)],dx=Math.random()<.5?-1:1,nx=p[0]+dx,ny=p[1]+dir;if(nx<0||nx>7||ny<0||ny>7)continue;if(!occ(nx,ny)){p[0]=nx;p[1]=ny;if(ny===0||ny===7)p[3]=1;break}
+      const jx=nx+dx,jy=ny+dir,v=HPR.pc.find(q=>q[0]===nx&&q[1]===ny);if(v&&v[2]!==side&&jx>=0&&jx<=7&&jy>=0&&jy<=7&&!occ(jx,jy)){HPR.pc.splice(HPR.pc.indexOf(v),1);p[0]=jx;p[1]=jy;break}}
+    HPR.turn^=1;if(HPR.pc.filter(p=>p[2]===0).length<2||HPR.pc.filter(p=>p[2]===1).length<2)HPR.pc=hpCheckers();hpDraw()}
+  else if(HPR.kind==='puzzle'&&HPR.t>=6){HPR.t=0;hpDraw()}
+  if(HPR.sl>0&&HPR.sl<1){HPR.sl=Math.min(1,HPR.sl+dt*.8);hpItems()}}
+// ---------- hangout staging ----------
+const HV={x:0,y:0,z:0},HF={x:0,z:0},HEV=[];
+const HFILL={w:['ah, this is nice','mm-hm','well I\'ll be','back on the boats we\'d say the same'],m:['hehe','this is the best','wendell!','i love this']};
+function hangLog(ev,o){HEV.push([ev,o||null,Math.round(T*10)/10]);if(HEV.length>60)HEV.splice(0,HEV.length-60)}
+DOOREV.on('knock',e=>hangLog('knock',{pid:e.pid,who:e.who||'you'}));DOOREV.on('pass',e=>{if(e.who==='mocha'||e.who==='wendell')hangLog('pass',{pid:e.pid,who:e.who,dir:e.dir})});
+function hq(d,who,t){HS.q.push([HS.qt+d,who,t]);HS.q.sort((a,b)=>a[0]-b[0])}
+function hangStart(act){const h=HBY[act.hang];if(!h)return act;if(HS.on)hangEnd(false);if(W.inv){potShow(false);W.inv=null}
+  Object.assign(HS,{on:true,a:act,h,host:act.host,p:act.p,sp:act.sp,ph:'',wph:'',i:0,n:0,last:'',next:1.2,y:0,yq:0,yi:0,yb:0,t:0,wt:0,kt:0,k1:0,wk:0,wk1:0,q:[],qt:0,len:act.len||rand(h.len?h.len[0]:70,h.len?h.len[1]:130),log:[],mc:0,done:0,film:'',fact:'',cam:0,scr:null,e:null});
+  act.story=wStoryPick();HS.story=act.story;if(h.id==='movie'){const f=pick(FILMS);HS.film=f.title;act.film=f.title}if(h.id==='stars'){HS.fact=pick(W_STARS);act.fact=HS.fact}
+  if(h.id==='movie')HS.scr=HS.p==='neighbor'?{x:TV.x,z:TV.z}:spotWorld('home','desk');
+  W.hang=1;W.busy=999;W.path=[];AG.mocha.keys.add('neighbor');AG.wendell.keys.add('home');NAV.cache.clear();
+  const d=DBY.neighbor,doorAt=[d.wx+d.nx*1.8,d.wz+d.nz*1.8],mIn=AG.mocha.place==='neighbor'||placeAt(G.x,G.z)==='neighbor',what=h.n.replace(/ with wendell/i,'').replace(/^having /,'');
+  if(act.inv){HS.ph='seat';HS.wph='seat';wGoSeat()}
+  else if(HS.host==='W'){if(mIn){HS.ph='seat';HS.wph='seat';wGoSeat()}else{HS.ph='door';act.at=doorAt;HS.wph='wait'}}
+  else if(S.phone){HS.ph='seat';HS.wph='wait';G.phoneT=4;hq(0,'m','*ring ring*…');hq(1.6,'w','hello? oh, mocha!');hq(3.2,'m',`come over? ${what}?`);hq(4.8,'w','well I\'ll be! be right over');HS.come=4.8}
+  else{HS.ph='door';act.at=doorAt;HS.wph='wait'}
+  hangLog('start',{id:h.id,host:HS.host,p:HS.p,ph:HS.ph,sp:HS.sp});return act}
+function wGoSeat(){const s=homeSpotW(HS.p,HS.sp[0]);if(!s)return;const from=W.inside&&HS.p==='neighbor'?{x:W.x,z:W.z}:wOut();W.sit=false;W.path=wPath(from.x,from.z,s.x,s.z);if(!W.path.length)W.path=[[s.x,s.z]]}
+function wSit(){const s=homeSpotW(HS.p,HS.sp[0]);if(s){W.x=s.x;W.z=s.z;if(s.yaw!=null)W.yaw=s.yaw}W.path=[];if(AG.wendell.nv)AG.wendell.nv.n=0;W.spot=HS.sp[0];W.inside=HS.p==='neighbor';W.dest=W.inside?'inside':'visit';W.sit=!/yard|stove|shelf|desk/.test(W.spot);HS.wph='sat';
+  W.doing=HS.h.n.replace(/ with wendell/i,' with mocha').replace(/ at wendell's/i,'').replace("painting Wendell's portrait",'sitting for his portrait');potShow(false);if(HS.h.id==='movie'&&HS.p==='neighbor')TV.force=true;hangLog('wsat',{spot:W.spot,p:HS.p})}
+function hangArrive(a){if(!HS.on||HS.a!==a)return false;G.vx*=.3;G.vz*=.3;G.mode='activity';G.timer=1e9;G.sleep=false;a.face=HF;
+  if(HS.ph==='door'){const p=byId.neighbor,d=DBY.neighbor;HF.x=d.wx;HF.z=d.wz;HS.ph='knock';HS.kt=0;if(W.inside||Math.hypot(W.x-d.wx,W.z-d.wz)>6){DOOREV.emit('knock',{pid:'neighbor',id:d.id,style:d.style,x:d.wx,z:d.wz,who:'mocha'});say(pick(['*knock knock*','knock knock!']),2)}else HS.kt=1.2;return true}
+  HS.ph='sat';const s=homeSpotW(HS.p,HS.sp[1]);if(s){G.x=s.x;G.z=s.z}hangCam(true);hangLog('msat',{spot:HS.sp[1],p:HS.p});return true}
+// look across the pair (perpendicular to the seat line), from the side of the house's cutaway front
+function hangYaw(){const p=byId[HS.p],a=homeSpotW(HS.p,HS.sp[0]),b=homeSpotW(HS.p,HS.sp[1]);if(!a||!b)return p.ry;const dx=b.x-a.x,dz=b.z-a.z,y=Math.atan2(dz,-dx),fx=Math.sin(p.ry),fz=Math.cos(p.ry);return Math.sin(y)*fx+Math.cos(y)*fz>=0?y:y+Math.PI}
+function hangCam(on){if(on){if(camS.mode!=='walk'&&!HS.cam){CAM.push('hang',{prio:1,target:()=>{HV.x=(G.x+W.x)/2;HV.z=(G.z+W.z)/2;HV.y=navFloor(HV.x,HV.z)+.7;return HV},dist:12,pitch:.9,yaw:hangYaw(),range:[6,20],ease:2.5});HS.cam=1}}else if(HS.cam){CAM.pop('hang');HS.cam=0}}
+function hangTok(t){const h=HS.h,mo=new Date().getMonth()+1;return t.replace('{story}',W_STORIES[HS.story][2]).replace('{cap}',W_CAPD[S.wend.caps%W_CAPD.length]).replace('{film}',HS.film||'an old favorite').replace('{fact}',HS.fact||W_STARS[0]).replace('{dish}',mo>=7&&mo<=9?'blackberry cobbler. blackberries from the alley, best in the city':'tomato soup, the way Pearl made it').replace('{ck}',S.wend.ck.join(' to '))}
+function hangBeat(){const h=HS.h;let line=null,y=false;if(HS.y&&h.yb&&HS.yi<h.yb.length&&(HS.yq||HS.n%3===2)){line=h.yb[HS.yi++];HS.yq=0;y=true}
+  if(!line){if(S.wend.nc&&HS.i===1&&h.id!=='caps'){line='w:oh! found a new bottle cap this week. {cap}';S.wend.nc=0}else if(HS.i<h.beats.length)line=h.beats[HS.i++];else line=(HS.last==='w'?'m:':'w:')+pick(HS.last==='w'?HFILL.m:HFILL.w)}
+  let who=y?line[1]:line[0],txt=hangTok(line.slice(line.indexOf(':')+1));
+  if(!y&&who===HS.last){if(HS.i>0&&line===h.beats[HS.i-1])HS.i--;who=who==='w'?'m':'w';txt=pick(HFILL[who])}
+  const d=Math.min(6.5,2.6+txt.length*.03);if(who==='m')say(txt,d);else wSay(txt,d);HS.n++;HS.last=who;if(y){HS.yb++;if(/popcorn/.test(txt)&&HPR.kind==='popcorn'){const ys=YOU.seat;if(ys){const c=Math.cos(-HPR.yaw),s=Math.sin(-HPR.yaw),dx=ys.x-HPR.ax,dz=ys.z-HPR.az;HPR.slx=(dx*c-dz*s)*.7;HPR.slz=(dx*s+dz*c)*.7;HPR.sl=.01}}}
+  if(/\b(laugh|hehe|hah|love|aww|sweet)\b/i.test(txt)){emote(who==='m'?mocha:wObj,'heart',2);setFace(who==='m'?mocha:wObj,'^^')}
+  HS.log.push(who+':'+txt.slice(0,40));if(HS.log.length>40)HS.log.shift()}
+// runs every frame from updateW (Mocha's side + the beat runner)
+function hangTick(dt){if(!HS.on)return;if(G.act!==HS.a){hangEnd(false);return}HS.qt+=dt;while(HS.q.length&&HS.q[0][0]<=HS.qt){const e=HS.q.shift();if(e[1]==='m')say(e[2],2.8);else wSay(e[2],2.8)}
+  if(HS.come&&HS.qt>=HS.come){HS.come=0;HS.wph='come';const d=DBY.home,from=wOut();W.sit=false;W.path=wPath(from.x,from.z,d.wx+d.nx*1.6,d.wz+d.nz*1.6)}
+  if(HS.ph==='knock'){HS.kt+=dt;if(HS.kt>=1.3&&!HS.k1){HS.k1=1;const d=DBY.neighbor;d.req=Date.now();if(HS.host==='W')wSay(pick(['mocha! come in, come in, mind the doorstop','well I\'ll be! come in, come in']),3);else{wSay('well hello, neighbor!',2.5);hq(1.4,'m',`want to come over? ${HS.h.n.replace(/ with wendell/i,'').replace(/^having /,'')}?`);hq(3,'w','lead the way, mocha')}}
+    if(HS.kt>=(HS.host==='W'?3:4.6)){HS.wph=HS.host==='W'?'seat':'esc';if(HS.host!=='W')HS.a.slow=1;wGoSeat();HS.ph='seat';HS.a.at=null;const s=spotWorld(HS.p,HS.sp[1]);G.target={x:s.x,z:s.z};G.navFor=null;G.mode='travel';G.trT=0;HS.a.face=null}}
+  if(HS.ph!=='sat')return;if(HS.cam&&camS.mode==='walk')hangCam(false);else if(!HS.cam&&camS.mode!=='walk')hangCam(true);if(HS.scr){HF.x=HS.scr.x;HF.z=HS.scr.z}else{HF.x=W.x;HF.z=W.z}
+  if(HS.wph!=='sat'){if((HS.wt+=dt)>45)wSit();return}if(!HPR.kind&&HS.h.prop)hpShow(HS.h.prop);
+  HS.t+=dt;if((HS.next-=dt)<=0){hangBeat();HS.next=rand(3.5,5)}hpTick(dt);if(HS.t>=HS.len&&HS.n>=6&&!HS.done){HS.done=1;G.timer=0}}
+// Wendell's side during a hangout (and the walk home afterwards)
+function hangW(dt){const ph=HS.wph;
+  if(W.path.length){if(wWalk(dt)){if(ph==='seat'||ph==='esc')wSit();else if(ph==='come'){HS.wph='knockM';HS.wk=0;const d=DBY.home;DOOREV.emit('knock',{pid:'home',id:d.id,style:d.style,x:d.wx,z:d.wz,who:'wendell'});wSay('*knock knock*',2)}else if(ph==='home')wHangDone()}else W.doing=ph==='home'?'heading home':'on his way over to Mocha\'s';return}
+  if(ph==='knockM'){HS.wk+=dt;if(HS.wk>1.4&&!HS.wk1){HS.wk1=1;say(pick(['it\'s open! come in!','come in, come in!']),2.5);DBY.home.req=Date.now()}if(HS.wk>2.8){HS.wk1=0;HS.wph='seat';wSay('*wipes his feet*',2);wGoSeat()}return}
+  if(ph==='sat'||ph==='wait'||ph==='knockM'){const f=HS.scr&&ph==='sat'?HS.scr:G,fy=Math.atan2(f.x-W.x,f.z-W.z);W.yaw+=Math.atan2(Math.sin(fy-W.yaw),Math.cos(fy-W.yaw))*Math.min(1,dt*3);if(ph==='wait'&&HS.ph==='door'&&!W.inside&&Math.random()<dt*.02&&wBubT<=0)wSay('oh! is that mocha?',2)}
+  if(!HS.on&&ph!=='home'){W.hang=0;W.busy=0}}
+function wHangDone(){W.hang=0;W.busy=0;HS.wph='';W.timer=0;if(W.dest==='inside')wIn(W.wsn);else W.doing=wDoing()}
+function hangEnd(ok){if(!HS.on)return;HS.on=false;HS.done=1;hangCam(false);hpHide();if(HS.h&&HS.h.id==='movie'&&TV.force===true)TV.force=null;W.busy=0;HS.q.length=0;HS.come=0;
+  if(HS.p==='home'&&(HS.wph==='sat'||W.path.length||HS.wph==='knockM')){if(ok){say('night, wendell! 👋',2.5);wSay(pick(['thank you kindly, mocha','goodnight, neighbor','same time next week?']),3)}
+    const b=wBlock(),dest=wDest(b);W.dest=dest;W.wsn=b&&b[2]==='in'?b[4]:null;const tg=dest==='inside'?homeSpotW('neighbor',W.wsn||'fireA'):wTarget(dest);HS.wph='home';W.hang=1;W.sit=false;W.inside=false;W.path=wPath(W.x,W.z,tg.x,tg.z);if(!W.path.length)wHangDone()}
+  else{if(ok)wSay(pick(['come back soon, now','mind the doorstop on your way out','that was lovely, mocha']),3);W.hang=0;W.timer=rand(4,8);HS.wph=''}
+  hangLog('end',{ok,n:HS.n,id:HS.h&&HS.h.id})}
+// the end of a hangout: the outcome template (data), then at most ONE MIND call (kind 'hang') to write the diary entry
+function hangFinish(a){localOutcome(a);const e=S.diary.find(x=>x.tag==='Wendell');HS.e=e;
+  if(MIND.on&&MIND.api&&!MIND.job&&HS.mc<1&&MIND.allow('hang')){const nm=S.mem.userName||'my visitor',ok=MIND.request('hang',()=>`You are Mocha, a small white ghost, writing one diary entry. You just finished ${a.doing} at ${a.host==='M'?'your house':"Wendell's cottage"}. Wendell is your neighbor: a gentle, slightly fussy grandpa raccoon who worked 31 years on the Puget Sound ferries. What happened (keep these facts, add none): "${e?e.text:''}".${a.you?` Your friend ${nm} dropped in and sat with you.`:''} Write 1-3 short cozy sentences, first person. Reply as JSON {"diary":"..."}`,r=>{const t=r&&(r.diary||r.text);if(e&&typeof t==='string'&&t.trim().length>20){e.text=t.trim().slice(0,500);try{onDiary()}catch(_){}save()}});if(ok)HS.mc++}
+  try{if(Math.random()<.2)maybeSelfie(a,byId[a.p].name,0)}catch(_){}}
+// ---------- Wendell's invites: knock with soup (Mocha home), a phone call (Mocha out with a phone), or a mailbox note ----------
+const WP={pot:null};
+function potShow(on){if(!WP.pot){WP.pot=new THREE.Mesh(new THREE.CylinderGeometry(.2,.17,.2,12),new ToonM({color:'#b8402a'}));WP.pot.position.set(0,.9,.42);WP.pot.castShadow=false;wObj.add(WP.pot)}WP.pot.visible=!!on}
+function hangBusyWhy(){const a=G.act;if(G.mode==='trip')return'away';if(G.sleep||(a&&a.fx==='sleep')||!mochaAwake())return'asleep';if(a&&a.fx==='movie')return'raincheck? i\'m at the movies';if(a&&(a.fx==='paint'||/paint/i.test(a.doing||'')))return'raincheck? i\'m in the middle of a painting';if(a&&a.fx==='hang')return'raincheck? we\'re already hanging out, silly';return''}
+// Mocha's own call: accept or decline, weighted by his social need, the bond, the hour, his energy and what he is doing (a seed makes it reproducible)
+function inviteDecide(seed){const w=hangBusyWhy();if(w)return{ok:false,why:w==='asleep'||w==='away'?'':w,never:w};const r=seed!=null?seeded((seed|0)*7919+17)():Math.random(),tier=tierOf(bondOf('wendell')),busy=G.mode==='activity'&&G.act&&!G.sleep;
+  const acc=1.3+(100-S.needs.social)/40+tier*.3+(S.traits.sociability-.5)+(hourAt(Date.now())>=17?.4:0),dec=.9+(S.needs.energy<25?1.4:0)+(busy?.7:0)+Math.max(0,S.traits.coziness-.6),p=acc*acc/(acc*acc+dec*dec);
+  return r<p?{ok:true,p:+p.toFixed(2),r:+r.toFixed(3)}:{ok:false,p:+p.toFixed(2),r:+r.toFixed(3),why:S.needs.energy<25?'raincheck? i\'m so sleepy tonight':busy?`raincheck? i'm in the middle of ${String(G.act.doing||'something').slice(0,36)}`:'raincheck? i\'m all cozy tonight'}}
+const WINV={last:null,n:0};
+function inviteStart(k,seed){const now=Date.now();if(HS.on||W.hang||W.inv)return{ok:false,why:'busy'};S.wend.li=now;WINV.n++;
+  if(k==='knock'){if(!mochaHome())return inviteStart('note');const d=DBY.home,from=wOut();W.inv={k,ph:'go',t:0,seed};W.busy=0;W.sit=false;W.dest='visit';AG.wendell.keys.add('home');NAV.cache.clear();W.path=wPath(from.x,from.z,d.wx+d.nx*1.6,d.wz+d.nz*1.6);potShow(true);hangLog('invite',{k});return{ok:true,k}}
+  if(k==='call'){if(!S.phone)return inviteStart('note');toast('📱 Wendell is calling Mocha');G.phoneT=4;const r=inviteDecide(seed);WINV.last={k,...r,t:now};hangLog('invite',{k,ok:r.ok});
+    if(r.never){if(r.never==='asleep'||r.never==='away'){wNote(now);return{ok:true,k:'note',why:r.never}}say(r.why,3.5);wSay('the kettle will keep',3);S.wend.inv={k:'later',t:now,d:dkey(now+864e5)};return{ok:true,k,res:r}}
+    say('hello? oh, hi wendell!',2.6);if(r.ok){const hr=hangPick(now,'W')||hangResolve(HBY.tea,'W');if(hr)setTimeout(()=>{if(!HS.on)startAct(hangAct(hr,0))},1800)}else setTimeout(()=>{say(r.why,3.5);S.wend.inv={k:'later',t:Date.now(),d:dkey(Date.now()+864e5)}},1800);return{ok:true,k,res:r}}
+  wNote(now);try{toast('📬 Wendell left a note in Mocha\'s mailbox');calDot()}catch(e){}hangLog('invite',{k:'note'});return{ok:true,k:'note'}}
+function inviteAnswer(v){const r=inviteDecide(v.seed);WINV.last={k:v.k,...r,t:Date.now()};S.pantry=Math.min(100,(+S.pantry||0)+15);hangLog('answer',{ok:r.ok,why:r.why||''});
+  if(r.ok){say(pick(['ooh, soup! come in, come in!','wendell!! yes, come in!']),3);const now=Date.now(),hr=hangPick(now,'M')||hangResolve(HBY.tea,'M')||hangResolve(HBY.reading,'M');W.inv=null;if(hr){const a=hangAct(hr,0);a.inv=1;if(hr.h.id==='tea'||hr.h.id==='boxtea')a.doing='having soup and tea with Wendell';startAct(a);return}v.ph='bye';v.t=0;return}
+  if(r.never==='asleep'){wSay('*leaves the soup on the step*',3);v.ph='bye';v.t=2.5;return}if(r.why)say(r.why,3.5);v.ph='bye';v.t=0;v.dec=1}
+function invW(dt){const v=W.inv;if(v.ph==='go'){if(W.path.length){if(wWalk(dt)){v.ph='knock';v.t=0;const d=DBY.home;DOOREV.emit('knock',{pid:'home',id:d.id,style:d.style,x:d.wx,z:d.wz,who:'wendell'});wSay('*knock knock*',2)}else W.doing='carrying a pot of soup over to Mocha\'s'}else{v.ph='knock';v.t=0}return}
+  if(v.ph==='knock'){v.t+=dt;const d=DBY.home,fy=Math.atan2(d.wx-W.x,d.wz-W.z);W.yaw+=Math.atan2(Math.sin(fy-W.yaw),Math.cos(fy-W.yaw))*Math.min(1,dt*3);if(v.t>1.5&&!v.s1){v.s1=1;wSay('I made too much soup. Again.',3.5)}if(v.t>4){v.ph='ans';inviteAnswer(v)}return}
+  if(v.ph==='bye'){v.t+=dt;if(v.dec&&v.t>2&&!v.s2){v.s2=1;wSay('the kettle will keep',3)}if(v.dec&&v.t>5&&!v.s3){v.s3=1;wSay('tomorrow evening?',2.6);S.wend.inv={k:'later',t:Date.now(),d:dkey(Date.now()+864e5)}}
+    if(v.t>(v.dec?7:3)){potShow(false);v.ph='home';const b=wBlock(),dest=wDest(b);W.dest=dest;W.wsn=b&&b[2]==='in'?b[4]:null;const tg=dest==='inside'?homeSpotW('neighbor',W.wsn||'fireA'):wTarget(dest);W.path=wPath(W.x,W.z,tg.x,tg.z)}return}
+  if(v.ph==='home'){if(!W.path.length||wWalk(dt)){W.inv=null;W.busy=0;W.timer=0;if(W.dest==='inside')wIn(W.wsn);else W.doing=wDoing()}else W.doing='heading home'}}
+// 1 Hz: caps, his own invites (home 16-20, misses Mocha, 20 h since the last invite), the drop-in check, guest keys
+function wInvTick(now){if(HS.on||W.hang||W.inv||W.busy>0||(G.act&&G.act.fx==='hang'))return;const h=hourAt(now),w=S.wend;if(h<16||h>=20||now-w.li<20*36e5||!wHomeAwake()||!wAvailAt(now)||wMiss(now)<1)return;
+  const k=mochaHome()&&mochaAwake()?'knock':S.phone&&G.mode!=='trip'&&!(G.act&&G.act.fx==='movie')?'call':w.nd===dkey(now)?null:'note';if(k)inviteStart(k)}
+function wTick1(){const now=Date.now();try{if(wendCaps(now))capsSync()}catch(e){}try{wInvTick(now)}catch(e){}
+  if(HS.on&&HS.ph==='sat'){const ys=YOU.seat&&YOU.seat.s;if(ys&&ys.tag==='dropin'&&ys.p===HS.p&&camS.mode==='walk'&&Math.hypot(ys.x-(G.x+W.x)/2,ys.z-(G.z+W.z)/2)<7){if(!HS.y){HS.y=1;HS.yq=1;HS.next=Math.min(HS.next,1);HS.a.you=1;hangLog('dropin',{seat:ys.spot})}}}
+  if(!HS.on&&!W.hang&&!W.inv){const m=AG.mocha,w=AG.wendell;if(m.keys.has('neighbor')&&m.place!=='neighbor'){m.keys.delete('neighbor');NAV.cache.clear()}if(w.keys.has('home')&&w.place!=='home'){w.keys.delete('home');NAV.cache.clear()}}}
+function hangState(){const top=CAM.top();return{on:HS.on,id:HS.h&&HS.h.id,host:HS.host,p:HS.p,sp:HS.sp&&HS.sp.slice(),ph:HS.ph,wph:HS.wph,n:HS.n,t:+HS.t.toFixed(1),len:+(+HS.len).toFixed(1),y:HS.y,yb:HS.yb,mc:HS.mc,story:HS.story,film:HS.film,
+  bv:HPR.v,prop:!!(HPR.g&&HPR.g.visible),propKind:HPR.kind,cam:top&&top.owner||null,log:HS.log.slice(-40),diary:HS.e?HS.e.text:null,last:WINV.last,ev:HEV.slice(-40),
+  G:{x:+G.x.toFixed(2),z:+G.z.toFixed(2),yaw:+G.yaw.toFixed(2),mode:G.mode,place:AG.mocha.place,fx:G.act&&G.act.fx||null},W:{x:+W.x.toFixed(2),z:+W.z.toFixed(2),yaw:+W.yaw.toFixed(2),spot:W.spot||null,sit:!!W.sit,place:AG.wendell.place,path:W.path.length}}}
+try{capsBuild()}catch(e){console.warn('caps',e)}
+Object.assign(window.__mocha,{
+  wend:()=>{const b=wBlock();return{st:W.st||null,doing:W.doing,spot:W.spot||null,inside:!!W.inside,sit:!!W.sit,vis:W.visible,x:+W.x.toFixed(2),z:+W.z.toFixed(2),dest:W.dest,path:W.path.length,place:AG.wendell.place,room:AG.wendell.room,awake:AG.wendell.awake,
+    block:b&&b.slice(),hang:!!W.hang,inv:W.inv?{k:W.inv.k,ph:W.inv.ph}:null,pot:!!(WP.pot&&WP.pot.visible),avail:wAvailAt(),miss:+wMiss(Date.now()).toFixed(2),S:JSON.parse(JSON.stringify(S.wend)),bytes:JSON.stringify(S.wend).length,
+    caps:{n:CAPS.im?CAPS.im.count:null,inst:!!(CAPS.im&&CAPS.im.isInstancedMesh),max:CAPS.im?CAPS.im.instanceMatrix.count:0,parent:CAPS.im&&CAPS.im.parent&&CAPS.im.parent.name}}},
+  wplan:d=>{const t=d!=null?+new Date(d):Date.now(),p=planFor('wendell',t);return{dk:dkey(t),plan:p.map(b=>b.slice()),now:blockAt(p,hourAt(t)),avail:wAvailAt(t),parsed:parsePlan(W_RHYTHM).length}},
+  hang:(id,where,o)=>{const h=HBY[id];if(!h)return null;const r=hangResolve(h,where||null);if(!r)return null;const a=hangAct(r,0);if(o&&o.len)a.len=o.len;if(W.inv){potShow(false);W.inv=null;W.path=[]}startAct(a);return hangState()},
+  hangState,Wst:W,hangStop:()=>{const a=G.act;hangEnd(false);if(a&&a.fx==='hang'){G.act=null;G.mode='idle';G.timer=1}if(W.inv){potShow(false);W.inv=null;W.path=[]}W.hang=0;W.busy=0;return hangState()},
+  walkSit:(pid,spot)=>{if(camS.mode!=='walk')setCamMode('walk');const s=SEATS.find(q=>q.p===pid&&q.tag==='dropin'&&q.spot===spot);return s?youSit(s,0):false},
+  catchUpSim:(days=3,o={})=>{const now=Date.now(),t0=now-days*864e5,was=isNew;isNew=false;S.lastSeen=t0;if(o.last!=null)S.wend.last=t0-o.last*36e5;if(o.li!=null){S.wend.li=t0-o.li*36e5;S.wend.nd=0}const d0=S.diary.length;let n=0;try{n=catchUp()}finally{isNew=was}
+    const hang=S.diary.filter(e=>e.tag==='Wendell'&&e.t>=t0),notes=(S.mail||[]).filter(l=>l.from==='Wendell'&&l.t>=t0),by={};hang.forEach(e=>{const k=dkey(e.t);(by[k]=by[k]||{h:0,n:0}).h++});notes.forEach(l=>{const k=dkey(l.t);(by[k]=by[k]||{h:0,n:0}).n++});
+    return{n,hang:hang.length,notes:notes.length,by,entries:S.diary.length-d0,t0,now,ids:hang.map(e=>e.text.slice(0,40))}},
+  invite:(k,o)=>inviteStart(k||'note',o&&typeof o==='object'?o.seed:o),
+  hangCands:t=>hangCands(t||Date.now()).map(a=>({hang:a.hang,host:a.host,p:a.p,sp:a.sp,hs:+a.hs.toFixed(2)})),inviteDecide:s=>inviteDecide(s),HANGOUTS:()=>HANGOUTS.map(h=>({id:h.id,w:h.w,need:h.need||null,alt:h.alt||null,res:(r=>r&&{host:r.host,p:r.p,sp:r.sp})(hangResolve(h,null))}))});
 // B9: banner + knock chip slots, OCC at boot, hooks
 {BAN.el=document.createElement('div');BAN.el.id='b9ban';BAN.el.className='b9ban';HUD.slot('banner',{el:BAN.el,on:false});
  KNOCK.el=document.createElement('button');KNOCK.el.id='knockBtn';KNOCK.el.className='b9knock';KNOCK.el.textContent='🚪 Knock?';KNOCK.el.onclick=()=>{if(KNOCK.d)doKnock(KNOCK.d.pid)};HUD.slot('knock',{zone:'tc',order:2,prio:8,el:KNOCK.el,on:false,modes:['walk']});
@@ -5002,6 +5539,17 @@ Object.assign(window.__mocha,{DOORS,DBY,AGENTS,OCC,DIM,TUN,DATL,DOORSPEC,answerK
   signAuto:on=>{if(on!=null)SIGNAUTO=!!on;return SIGNAUTO},
   wForce:dest=>{W.dest=dest;W.path=[];W.busy=0;W.timer=600;if(dest==='inside'){wIn()}else{const sp=W_SPOTS[dest];W.inside=false;W.spot=null;W.visible=true;W.x=sp.x;W.z=sp.z;W.doing=sp.doing}AGT.t=0;return wHomeAwake()}});
 
+// B15: precompile every program once the world is built (the first sunset must not hitch); grade / rim / programs hooks
+const PROGS={boot:renderer.info.programs.length,n:0,ms:0,err:null};
+{const t0=performance.now();try{camera.updateMatrixWorld();renderer.compile(scene,camera);renderer.compile(postScene,postCam)}catch(e){PROGS.err=String(e&&e.message||e)}PROGS.ms=Math.round(performance.now()-t0);PROGS.n=renderer.info.programs.length}
+{const hx=c=>'#'+c.getHexString();
+Object.assign(window.__mocha,{PAL,FAMOF,PATCH,RIM,RIMS,TOONG,TOONC,ToonM,ToonC,rbox,rimify,ghostMat,roadMat,
+  grade:()=>({toon:PAL.toon,toonC:PAL.toonC,hemi:{sky:hx(hemi.color),ground:hx(hemi.groundColor),i:+hemi.intensity.toFixed(3)},sky:{top:hx(skyMat.uniforms.top.value),bot:hx(skyMat.uniforms.bot.value)},night:+nightAmt.toFixed(3),gold:+RIMS.gold.toFixed(3),
+    keys:KEYS.map(k=>[+k[0].toFixed(2),k[1],k[2]]),fam:Object.fromEntries(PLACES.filter(p=>p.fam).map(p=>[p.id,{fam:p.fam,wall:p.wall||null,roof:p.roof||null,trim:p.trim,awn:p.awn||null}])),road:hx(roadMat.color),walk:hx(walkMat.color),grass:SEASON.grass,season:SEASON_KEY}),
+  rim:()=>{const ms=new Set();scene.traverse(o=>{const m=o.material;if(m&&!Array.isArray(m)&&m.userData.rim)ms.add(m)});
+    return{col:hx(RIM.col.value),amt:+RIM.amt.value.toFixed(3),gold:+RIMS.gold.toFixed(3),night:+nightAmt.toFixed(3),inside:+RIMS.in.toFixed(3),mats:ms.size,mocha:!!ghostMat.userData.rim,mochaRamp:ghostMat.gradientMap===TOONC,
+      pets:petObjs.map(o=>{let n=0,r=0;o.obj.traverse(q=>{if(q.isMesh){n++;if(q.material.userData.rim)r++}});return{sp:o.data.species,meshes:n,rim:r}})}},
+  programs:()=>({n:renderer.info.programs.length,boot:PROGS.boot,afterCompile:PROGS.n,compileMs:PROGS.ms,err:PROGS.err,keys:[...new Set(renderer.info.programs.map(p=>p.cacheKey.slice(p.cacheKey.lastIndexOf(',')+1)))]})})}
 })();
 </script>
 </body>
