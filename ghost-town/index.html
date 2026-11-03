@@ -1177,7 +1177,7 @@ function migrate(){S.you=youFix(S.you);S.wend=wendFix(S.wend);S.town=townFix(S.t
   if(!S.seed150){S.coins=(+S.coins||0)+150;S.seed150=1;S.seedNote=1}S.coins=Math.max(0,Math.round(+S.coins||0));if(S.phone===undefined)S.phone=null;S.gadgets=Array.isArray(S.gadgets)?S.gadgets.slice(-12):[];if(S.bike===undefined)S.bike=null;S.jobs=S.jobs||0;S.texts=Array.isArray(S.texts)?S.texts.filter(m=>m&&m.text&&(m.from==='me'||m.from==='him')).slice(-150):[];S.txQ=Array.isArray(S.txQ)?S.txQ.slice(-30):[];
   S.mail=Array.isArray(S.mail)?S.mail.filter(l=>l&&l.text).slice(0,40):[];S.mbox=Array.isArray(S.mbox)?S.mbox.filter(m=>m&&m.t).slice(-6):[];S.mailSent=Array.isArray(S.mailSent)?S.mailSent.slice(-40):[];if(!S.hol||typeof S.hol!=='object'||Array.isArray(S.hol))S.hol={};S.calT=+S.calT||0;S.careAt=+S.careAt||0;S.mailT=+S.mailT||0;
   if(!S.trip||typeof S.trip!=='object'||!S.trip.id||!Array.isArray(S.trip.ev))S.trip=null;S.trips=Array.isArray(S.trips)?S.trips.filter(x=>x&&x.id).slice(0,24):[];S.tripLast=+S.tripLast||0;S.pins=Array.isArray(S.pins)?S.pins.filter(x=>typeof x==='string').slice(-12):[];if(!S.you||typeof S.you!=='object'||Array.isArray(S.you))S.you={};if(!Array.isArray(S.you.album))S.you.album=[];if(!Array.isArray(S.you.doors))S.you.doors=[];if(!Array.isArray(S.shortcuts))S.shortcuts=[];S.shortcuts=S.shortcuts.filter(x=>typeof x==='string').slice(0,8);S.you.doors=S.you.doors.filter(x=>typeof x==='string').slice(-40);S.you.album=S.you.album.slice(-30);
-  S.town=talkFix(S.town);relFix(S.you);if(S.mem&&S.mem.hangAsk&&!(+S.mem.hangAsk.t>0))delete S.mem.hangAsk;// B23
+  S.town=talkFix(S.town);relFix(S.you);if(S.mem&&S.mem.hangAsk&&!(+S.mem.hangAsk.t>0))delete S.mem.hangAsk;try{if(S.mem&&!S.mem.bday){const b=ownerBday();if(b)S.mem.bday={m:b.m,d:b.d}}}catch(e){}// B23
   if(typeof catYouFix==='function')catYouFix();
   if(typeof walletFix==='function'){S.you=walletFix(S.you);shopDayFix()}
   if(typeof cabinFix==='function')cabinFix(S.you);
@@ -1502,7 +1502,7 @@ function layoutRoom(p,L){let R=p.inner;if(!R||!R.isObject3D){R=new THREE.Group()
   Object.assign(sp,L.spots||{});(L.seats||[]).forEach((s,i)=>sp['seat'+(i+1)]=s.slice());(L.browse||[]).forEach((s,i)=>sp['browse'+(i+1)]=s.slice());if(L.browse&&L.browse[0]){sp.t3=L.browse[0].slice();sp.t4=(L.browse[1]||L.browse[0]).slice()}
   if(!sp.main)sp.main=[dr.x,zf-2];
   // window slots first, then the rest (capped at 40)
-  const win=p.disp.filter(s=>s.surf==='window'),rest=p.disp.filter(s=>s.surf!=='window');DISPLAY[p.id]=L.goods===false?win:win.concat(rest.slice(0,40-win.length));
+  const win=p.disp.filter(s=>s.surf==='window'),rest=p.disp.filter(s=>s.surf!=='window');DISPLAY[p.id]=L.goods===false?win.concat(p.id==='library'?rest.filter(s=>s.surf==='table'&&s.maxD>1).slice(-1):[]):win.concat(rest.slice(0,40-win.length));
   // lint items: one per top-level child (union of its meshes), in room coords
   R.updateMatrixWorld(true);const inv=new THREE.Matrix4().copy(R.matrixWorld).invert(),M=new THREE.Matrix4(),B=new THREE.Box3(),U=new THREE.Box3();p.lay=[];
   R.children.forEach((c,i)=>{U.makeEmpty();c.traverse(o=>{if(!o.isMesh||o.isInstancedMesh)return;const gg=o.geometry;if(!gg.boundingBox)gg.computeBoundingBox();B.copy(gg.boundingBox).applyMatrix4(M.multiplyMatrices(inv,o.matrixWorld));U.union(B)});if(U.isEmpty())return;
@@ -3124,8 +3124,8 @@ function bdayParse(s){s=String(s||'').toLowerCase();const MO=['jan','feb','mar',
   if(r=s.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/))return mk(MO.indexOf(r[1]),+r[2]);
   if(r=s.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/))return mk(MO.indexOf(r[2]),+r[1]);
   if(r=s.match(/\b(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-]\d{2,4})?\b/))return mk(+r[1]-1,+r[2]);return null}
-function ownerBday(){if(!S||!S.mem)return null;const f=S.mem.facts||[];for(let i=f.length-1;i>=0;i--)if(/birth/i.test(f[i])){const b=bdayParse(f[i]);if(b)return b}return null}
-function setBday(b){S.mem.facts=S.mem.facts.filter(f=>!/birth/i.test(f));S.mem.facts.push(`birthday: ${monthName(b.m)} ${b.d}`);S.mem.facts=S.mem.facts.slice(-24);HLAB=null}
+function ownerBday(){if(!S||!S.mem)return null;const f=S.mem.facts||[];for(let i=f.length-1;i>=0;i--)if(/birth/i.test(f[i])){const b=bdayParse(f[i]);if(b)return b}const s=S.mem.bday;return s&&s.m>=0&&s.m<12&&s.d>=1&&s.d<=31?{m:s.m,d:s.d}:null}
+function setBday(b){S.mem.bday={m:b.m,d:b.d};S.mem.facts=S.mem.facts.filter(f=>!/birth/i.test(f));S.mem.facts.push(`birthday: ${monthName(b.m)} ${b.d}`);S.mem.facts=S.mem.facts.slice(-24);HLAB=null}
 var HPC={};
 const annivN=(t=Date.now())=>S&&S.born?Math.max(1,new Date(t).getFullYear()-new Date(S.born).getFullYear()):1;
 const annivW=n=>n<=1?'a whole year':(['two','three','four','five','six','seven','eight','nine','ten'][n-2]||n)+' whole years';
@@ -3409,7 +3409,7 @@ function localOutcome(act,t=Date.now(),live=true){const p=byId[act.p];const pnam
   if(act.p==='home'&&act.s==='kitchen'&&act.doing==='cooking')S.pantry=Math.max(0,S.pantry-25);
   if(act.fx==='movie'){const f=act.film&&act.film.title?act.film:pick(FILMS);S.seen.push(f.title);S.seen=S.seen.slice(-12);const fact=pick(f.facts||['It was really good.']);if(f.facts)addLearned(`${f.title} (${f.year||'film'})`,f.facts,t);
     addEntry('Movies',`Watched "${f.title}"${f.year?' ('+f.year+')':''} at Rain City Cinema. ${f.scenes?'My favorite part: '+pick(f.scenes)+'. ':''}I learned that ${fact.charAt(0).toLowerCase()+fact.slice(1)}${e>.6?' Loved it.':''}`,pname,t);S.recent.unshift('cinema.seat');S.xp+=4;return}
-  if(act.fx==='ask'){const k=KB[act.keeper];if(k){const key=pick(k.fk.filter(x=>FACTS[x]));const fact=pick(FACTS[key]||['they know a lot']);addLearned(`${key} (asked ${k.name})`,[fact],t);S.know[k.id]=(S.know[k.id]||0)+1;
+  if(act.fx==='ask'){const k=KB[act.keeper];if(k){const key=pick(k.fk.filter(x=>FACTS[x]));const fact=pick(FACTS[key]||['they know a lot']);addLearned(`${key} (asked ${k.name})`,[fact],t);S.know[k.id]=(S.know[k.id]||0)+1;S.askT=t;
     addEntry('Asked',`Asked ${k.name} the ${k.species} about ${k.topic}. ${k.pr==='they'?'They':k.pr==='she'?'She':'He'} told me: "${fact}" ${pick(['Writing that down.','I love when people know things.','My brain grew a size.'])}`,pname,t);if(live&&k.obj.visible)kSay(k,fact,5);S.recent.unshift(act.p+'.counter');return}}
   if(act.p==='studio'&&(act.fx==='paint'||/paint/i.test(act.doing||''))){const subj=pick([...topInterests(3).map(([k])=>k),'the sound at sunset','a rainy street','my house','the mountain','autumn trees','wendell','myself','the night sky']);const ptN=makePainting(subj,pick(['Untitled #'+(S.paintings.length+1),'Rainy Mood','Little Light','Gray, But Specific','Hello, '+subj,'A Quiet Moment','Drizzle Study']),t);maybePostPainting(ptN,e,t);if(Math.random()<.15)localAcquire({...act,pool:['beret','apron']},t,pname);}
   if(act.fx==='research')research(t,p.id);
@@ -3459,7 +3459,7 @@ function localChoose(at=Date.now()){const tr=S.traits,h=hourAt(at),asleep=asleep
     if(a.p==='home')s+=tr.coziness*.8;if(a.doing==='cooking'&&S.pantry<12)s-=4;if(a.fx==='groceries')s+=S.pantry<30?3+(100-S.needs.snack)/30:-1.5;if(a.pet)s+=1.5;if(a.fx==='hang')s+=a.hs;else if(a.npc)s+=(S.metW?.5:2)+(S.friendW||0)*.05;if(a.tags.includes('people'))s+=(tr.sociability-.5)*1.5;s+=gearScore(a,at);
     const g=S.goal;if(g&&g.kind==='hobby'&&a.hobby===g.key)s+=2;if(g&&g.kind==='research'&&a.fx==='research')s+=2;if(g&&g.kind==='new'&&!S.visits[a.p])s+=2;
     if(a.fx==='bench')s+=benchScore(a,h,tr);s+=userBias(a,UBX);if(CHB[a.p]&&at-CHB[a.p]>=0&&at-CHB[a.p]<18e5)s+=.5;return Math.max(.05,s)});
-  let r=Math.random()*sc.reduce((a,b)=>a+b*b,0);for(let i=0;i<cands.length;i++){r-=sc[i]*sc[i];if(r<=0)return{act:cands[i]}}return{act:cands[0]}}
+  const nAsk=cands.reduce((n,a)=>n+(a.fx==='ask'?1:0),0),askK=(nAsk>4?nAsk/4:1)*(Math.abs(at-(+S.askT||0))<6e5?3:1),wq=sc.map((s,i)=>cands[i].fx==='ask'?s*s/askK:s*s);let r=Math.random()*wq.reduce((a,b)=>a+b,0);for(let i=0;i<cands.length;i++){r-=wq[i];if(r<=0)return{act:cands[i]}}return{act:cands[0]}}
 // ====================================================================
 //  TRIPS: Rain City Station (a little train every 5 minutes, 6am–11pm) and the ferry. Where and when is always his own choice.
 //  S.trip = the trip he's on right now (null at home) {id,t0,back,over,ev:[[t,kind]],i,sv,pc,pid,xm}; S.trips = past trips (cap 24); S.tripLast = when he last left.
@@ -3892,11 +3892,11 @@ function bikePath(ax,az,bx,bz){nodeTables();const n=NODES.length,dA=NODES.map(q=
     const dd=1+n1[0]*n2[0]+n1[1]*n2[1],f=dd>.3?1.8/dd:1.8;return[q[0]+(n1[0]+n2[0])*f,q[1]+(n1[1]+n2[1])*f]});return out}
 function dismountPt(p,w){if(!p)return{x:w.x,z:w.z};if(p.kind==='home')return{x:34.5,z:54.1,yaw:Math.PI/2};if(p.kind==='park')return{x:p.x-21,z:p.z,yaw:0};if(p.x<-60)return{x:-58.6,z:clamp(p.dz,-95,60),yaw:0};
   if(p.kind==='hill'){const a=Math.atan2(G.x-p.x,G.z-p.z);return{x:p.x+Math.sin(a)*18,z:p.z+Math.cos(a)*18}}if(p.kind==='needle'){const q=toWorld(p,2.4,9);return{x:q.x,z:q.z,yaw:p.ry+Math.PI/2}}
-  {const rk=rackFor(p);if(rk)return{x:rk.px,z:rk.pz,yaw:rk.yaw}}if(p.w){const q=toWorld(p,2.4,p.d/2+4.6);return{x:q.x,z:q.z,yaw:p.ry+Math.PI/2}}return{x:p.dx,z:p.dz}}
+  {const rk=rackFor(p);if(rk)return{x:rk.px,z:rk.pz,yaw:rk.yaw}}if(p.kind==='plaza')return{x:-7.6,z:27,yaw:0};if(p.w){const q=toWorld(p,2.4,p.d/2+4.6);return{x:q.x,z:q.z,yaw:p.ry+Math.PI/2}}return{x:p.dx,z:p.dz}}
 function planRide(act,w){G.route=null;if(!S.bike||!bikeObj||act.npc){if(G.biking)parkBike();return}const loop=act.fx==='bikeride',d=Math.hypot(w.x-G.x,w.z-G.z);
-  if(!loop&&d<(G.biking?22:38)){if(G.biking)parkBike();return}
+  if(!loop&&d<(G.biking?30:60)){if(G.biking)parkBike();return}
   const p=byId[act.p],dm=loop?{x:w.x,z:w.z}:dismountPt(p,w);let m=null;
-  if(!G.biking){const bd=Math.hypot(BK.x-G.x,BK.z-G.z);if(bd<60&&bd<Math.hypot(dm.x-G.x,dm.z-G.z)+10)m=[BK.x,BK.z];else{const ib=PLACES.find(q=>(q.interior||q.kind==='home')&&inBuilding(q,G.x,G.z));m=ib?[ib.dx,ib.dz]:[G.x,G.z];BK.x=m[0];BK.z=m[1];BK.y=bikeY(m[0],m[1]);BK.yaw=G.yaw}}
+  if(!G.biking){const bd=Math.hypot(BK.x-G.x,BK.z-G.z);if(bd<60&&bd<Math.hypot(dm.x-G.x,dm.z-G.z)+10&&!placeOf(BK.x,BK.z))m=[BK.x,BK.z];else{const ib=PLACES.find(q=>(q.interior||q.kind==='home')&&inBuilding(q,G.x,G.z));m=ib?[ib.dx,ib.dz]:[G.x,G.z];BK.x=m[0];BK.z=m[1];BK.y=bikeY(m[0],m[1]);BK.yaw=G.yaw}}
   const A=m?{x:m[0],z:m[1]}:{x:G.x,z:G.z};G.route={pts:(m?[m]:[]).concat(bikePath(A.x,A.z,dm.x,dm.z),[[dm.x,dm.z]]),i:0,mount:!!m,loop,yaw:dm.yaw}}
 function mountBike(){if(!bikeObj)return;G.biking=true;BK.y=bikeY(G.x,G.z)}
 function parkBike(yaw){if(!G.biking)return;G.biking=false;BK.x=G.x;BK.z=G.z;BK.yaw=yaw!=null?yaw:G.yaw;BK.y=bikeY(G.x,G.z)}
@@ -5197,7 +5197,7 @@ function renderSet(){const seg=(k,opts)=>`<div class="seg">${opts.map(([v,l])=>`
   <div class="set" style="display:block"><div>Preview a season<small>Normally it follows the real calendar.</small></div><div class="seg">${['auto','spring','summer','fall','winter'].map(x=>`<button data-season="${x}" class="${(x==='auto'&&!SEASONS[(location.hash||'').slice(1)])||location.hash==='#'+x?'on':''}">${x}</button>`).join('')}</div></div>
   <div class="set"><div>Start fresh<small>A brand-new Mocha with no memories, interests or stuff. Your settings stay.</small></div><button class="danger" id="freshBtn" style="margin:0">start over</button></div>
   <div class="set" style="display:block"><div>Put Mocha on your home screen<small>iPhone: open this page in Safari → Share → <b>Add to Home Screen</b>. He'll open full-screen like an app.</small></div></div>`;
-  $('#freshBtn').onclick=async e=>{const b=e.target;if(b.dataset.sure){const keep=S.mind,keepYou=S.you,g=(+S.gen||0)+1;S=fresh();S.you=keepYou;S.gen=g;S.mind=keep;S.lastSeen=Date.now();G.act=null;G.mode='idle';try{localStorage.removeItem('mocha-photos')}catch(_){}save();await pushRemote(true);location.reload()}else{b.dataset.sure=1;b.textContent='tap again to confirm'}};
+  $('#freshBtn').onclick=async e=>{const b=e.target;if(b.dataset.sure){const keep=S.mind,keepYou=S.you,g=(+S.gen||0)+1;S=fresh();S.you=keepYou;S.gen=g;S.mind=keep;S.lastSeen=Date.now();G.act=null;G.mode='idle';try{savePhotos()}catch(_){}save();await pushRemote(true);location.reload()}else{b.dataset.sure=1;b.textContent='tap again to confirm'}};
   $('#tab-set').querySelectorAll('[data-t]').forEach(t=>t.onchange=()=>{SET[t.dataset.t]=t.checked;saveSet();if(t.dataset.t==='mic'){t.checked?startMic():stopMic()}if(t.dataset.t==='saver')applyPower();if(t.dataset.t==='dots')post.uniforms.dots.value=SET.dots?1:0;updateMicBtn()});
   $('#tab-set').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{SET[b.dataset.k]=b.dataset.v;saveSet();renderSet()});
   $('#tab-set').querySelectorAll('[data-mcap]').forEach(b=>b.onclick=()=>{SET.mind.cap=b.dataset.mcap;saveSet();renderSet()});
@@ -5727,7 +5727,7 @@ function cPost(r,dt,t){const u=r.obj.userData,p=r.c.pose;if(!u.arms)return;if(p=
   else if(p==='oneleg'&&Math.sin(t*.3+r.ph)>.1){u.legs[1].rotation.x=1.35;u.head.rotation.x=.12}}
 function gAnim(r,dt,t){const b=r.obj.userData.body;b.position.y=.12+Math.sin(t*1.7+r.ph)*.07;b.rotation.z=Math.sin(t*1.1+r.ph)*.08}
 function pAnim(r,dt,t){r.obj.userData.M.BODY.scale.y=1+Math.sin(t*2+r.ph)*.03}
-function b19Frame(dt,t){if((CHARLOD.acc-=dt)<=0){CHARLOD.acc=.5;CHARLOD.tick()}
+function b19Frame(dt,t){if((CHARLOD.acc-=dt)<=0){CHARLOD.acc=.5;CHARLOD.tick();const na=nightAmt,k=1+.55*na,f=1-.4*na;CHIBI_MAT.color.setRGB(k,k,k);CHIBI_MAT.emissive.setRGB(.045*na,.04*na,.05*na);FACE_MAT.color.setRGB(f,f,f)}
   for(const r of CHARLOD.L){if(r.lvl<0)continue;if(r.drive)r.drive(r,dt,t);
     if(r.rig){if(r.lvl===0){chibiAnim(r.obj,dt,t);if(r.post)r.post(r,dt,t)}else r.obj.userData.lod1.position.y=r.mv?Math.abs(Math.sin(t*9))*.06:0}if(r.anim)r.anim(r,dt,t)}}
 // ---------- build the cast ----------
@@ -5950,8 +5950,23 @@ function tkHold(id,on){const c=CASTB[id];if(!c)return;const n=TN[id];
   if(id==='wendell'){W.path=s.path||[];W.timer=Math.min(s.timer,rand(4,9))}}
 function tkFace(id){const c=CASTB[id];if(!c||!c.obj||c.obj.parent!==scene&&id!=='wendell')return;tkPos(id,TKW);const y=Math.atan2(YOU.x-TKW.x,YOU.z-TKW.z),n=TN[id];
   if(id==='wendell'){W.yaw+=Math.atan2(Math.sin(y-W.yaw),Math.cos(y-W.yaw))*.2;wObj.rotation.y=W.yaw;return}const o=c.obj,cur=n?n.ry:o.rotation.y,ny=cur+Math.atan2(Math.sin(y-cur),Math.cos(y-cur))*.2;if(n)n.ry=ny;o.rotation.y=ny}
-function tkMid(){tkPos(TK.id,TKW);TKV.x=(TKW.x+YOU.x)/2;TKV.z=(TKW.z+YOU.z)/2;TKV.y=navFloor(TKV.x,TKV.z)+.1;return TKV}
+function tkMid(){tkPos(TK.id,TKW);TKV.x=(TKW.x+YOU.x)/2;TKV.z=(TKW.z+YOU.z)/2;TKV.y=navFloor(TKV.x,TKV.z)+(TK.id==='mocha'?.75:.35);return TKV}
 function tkYaw(){tkPos(TK.id,TKW);const dx=TKW.x-YOU.x,dz=TKW.z-YOU.z,a=Math.atan2(-dz,dx),b=a+Math.PI,d=y=>Math.abs(Math.atan2(Math.sin(y-camS.yaw),Math.cos(y-camS.yaw)));return d(a)<=d(b)?a:b}
+// two-shot picked once per opening: dist grows with the speakers' separation and the horizontal fov; candidate yaws are ray-tested to both heads (own shop walls are cut away), blocked -> look down over it and pull in
+const TKRC=new THREE.Raycaster(),TKCP=new THREE.Vector3(),TKH=[new THREE.Vector3(),new THREE.Vector3()];TKRC.near=1;
+function tkShot(){tkPos(TK.id,TKW);const dx=TKW.x-YOU.x,dz=TKW.z-YOU.z,sep=Math.hypot(dx,dz),a=Math.atan2(-dz,dx),
+  tH=Math.tan(camera.fov*Math.PI/360)*camera.aspect,dist=clamp((sep/2+.5)/(tH*.9),5.5,11),m=tkMid(),p=RC.pid&&byId[RC.pid];
+  TKH[0].set(YOU.x,navFloor(YOU.x,YOU.z)+1.5,YOU.z);TKH[1].set(TKW.x,TK.id==='mocha'?TKW.y+.5:navFloor(TKW.x,TKW.z)+1.4,TKW.z);
+  const skip=new Set();for(const o of [visitor,mocha,TK.c&&TK.c.obj])if(o)o.traverse(q=>skip.add(q));if(p&&p.walls)for(const w of p.walls)if(w&&w[0])skip.add(w[0]);
+  const L=[];scene.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||skip.has(o))return;for(let q=o;q;q=q.parent)if(!q.visible)return;const mt=Array.isArray(o.material)?o.material[0]:o.material;if(mt&&mt.transparent&&mt.opacity<.5)return;
+    const g=o.geometry;if(!g)return;if(!g.boundingSphere)g.computeBoundingSphere();TKCP.copy(g.boundingSphere.center).applyMatrix4(o.matrixWorld);if(TKCP.distanceTo(m)-g.boundingSphere.radius*o.matrixWorld.getMaxScaleOnAxis()<dist+1)L.push(o)});
+  let best=null;const tryC=(yw,pi,D,pen)=>{if(p){const d=Math.atan2(Math.sin(yw-p.ry),Math.cos(yw-p.ry));yw=p.ry+clamp(d,-1.1,1.1)}
+    const c=Math.cos(pi);TKCP.set(m.x+Math.sin(yw)*c*D,Math.max(1.5,m.y+Math.sin(pi)*D),m.z+Math.cos(yw)*c*D);let hit=0;
+    for(const h of TKH){TKW2.copy(h).sub(TKCP);const l=TKW2.length();TKRC.set(TKCP,TKW2.normalize());TKRC.far=Math.max(1.01,l-.4);if(TKRC.intersectObjects(L,false).length)hit++}
+    const s=hit*10+pen+Math.abs(Math.atan2(Math.sin(yw-camS.yaw),Math.cos(yw-camS.yaw)))*.3;if(!best||s<best.s)best={s,yaw:yw,pitch:pi,dist:D,hit}};
+  for(const b of [a,a+Math.PI])for(const o of [0,.45,-.45])tryC(b+o,p?.42:.28,dist,Math.abs(o));
+  if(best.hit)for(const b of [a,a+Math.PI])for(const o of [0,.45,-.45])tryC(b+o,.62,Math.max(3.6,dist*.7),1.5+Math.abs(o));
+  return best}
 // ---------- the card ----------
 function tkSay(text,o={}){TK.full=String(text||'');TK.raw=o.raw!=null?o.raw:TK.full;TK.src=o.src||TK.src;TK.n=0;TKT.textContent='';$('#tkYou').textContent=o.you?`you: “${clip(o.you,70)}”`:'';if(TK.id==='mocha'&&!o.noBub)say(clip(TK.full,140),Math.max(3.5,TK.full.length/13));
   if(TK.id&&TK.id!=='mocha'&&TK.id!=='board')try{typeof babble==='function'&&babble(TK.id,TK.full)}catch(e){}}
@@ -5972,10 +5987,10 @@ function talkOpen(id,o={}){if(document.body.classList.contains('ylOn'))return nu
   try{if(!panel.classList.contains('hidden'))panelOpen(false)}catch(e){}try{if(msgOpen)closeMsgs()}catch(e){}if(YOU.seat)try{youStand()}catch(e){}
   if(o.place){if(camS.mode!=='walk')setCamMode('walk');tkPos(id,TKW);const n=TN[id],ry=id==='mocha'?G.yaw:id==='board'?0:n?n.ry:c.obj.rotation.y;
     const off=typeof o.place==='number'?o.place:0;for(const da of [0,.6,-.6,1.2,-1.2,Math.PI]){const x=TKW.x+Math.sin(ry+off+da)*1.8,z=TKW.z+Math.cos(ry+off+da)*1.8;if(da===Math.PI||youFree(x,z)){YOU.x=x;YOU.z=z;break}}try{AG.you.x=YOU.x;AG.you.z=YOU.z}catch(e){}TG.on=0}
-  TK.open=true;TK.hid=0;TK.id=id;TK.c=c;TK.page=0;TK.q=null;TK.inp=false;TK.src='';TK.intent='open';TK.shoulder=id==='mocha';CARD.classList.remove('inp');tkPos(id,TKW);YOU.yaw=Math.atan2(TKW.x-YOU.x,TKW.z-YOU.z);
+  TK.open=true;TK.hid=0;TK.id=id;TK.c=c;TK.page=0;TK.q=null;TK.inp=false;TK.src='';TK.intent='open';TK.shoulder=id==='mocha';CARD.classList.remove('inp');tkPos(id,TKW);YOU.yaw=Math.atan2(TKW.x-YOU.x,TKW.z-YOU.z);TK.r=Math.hypot(TKW.x-YOU.x,TKW.z-YOU.z)+1.5;
   const tb=$('#tkTab'),col=tkColor(id);tb.textContent=tkName(id);tb.style.background=col;tb.style.color=tkInk(col);
   document.body.classList.add('talking');for(const k in HUD.S){const s=HUD.S[k];if(!s.fixed&&s.el&&(s.zone==='bl'||s.zone==='br'||s.zone==='tc'))s.el.classList.add('tkHide')}CARD.classList.add('on');
-  CAM.push('talk',{prio:2,target:tkMid,dist:5.5,pitch:.28,yaw:tkYaw(),range:[3.5,9],ease:2.5});try{youGesture('wave',1.6)}catch(e){}try{sfx('talk',{id})}catch(e){}
+  {let sh=null;try{sh=tkShot()}catch(e){}if(!sh)sh={dist:5.5,pitch:.28,yaw:tkYaw()};CAM.push('talk',{prio:2,target:tkMid,dist:sh.dist,pitch:sh.pitch,yaw:sh.yaw,range:[3.5,Math.max(9,sh.dist*1.3)],ease:2.5})}try{youGesture('wave',1.6)}catch(e){}try{sfx('talk',{id})}catch(e){}
   if(id==='mocha')tkSay(mochaReply('open'),{src:'mocha'});else if(id==='board')tkSay(boardText('news'),{src:'board'});
   else{tkHold(id,true);const r=relOf(id),first=!r,q=tkQDue(id);relOf(id,true);if(q){TK.q=q;TK.bang['q'+id]=dkey(Date.now());tkSay(tkVoice(id,(first?tkFirst(id)+' ':'')+q.q,'ask'),{src:'ask'})}else{const g=npcReply(id,first?'first':'hi');tkSay(g.text,{src:g.src,raw:g.raw})}}
   tkChipsRender();tkKb();save();return talkInfo()}
@@ -6148,14 +6163,14 @@ function talkArrive(a,k){try{if(!k||!k.id||!S.town)return false;const me=youName
       setTimeout(()=>say(`oh! ${k.name.split(' ')[0]}, this is ${me}! ${me}'s from kansas city 👻`,3.5),300);setTimeout(()=>kSay(k,`welcome, ${me}! any friend of mocha's…`,3.5),1500);addEntry('Friends',`Introduced ${me} to ${k.name} today. I think they'll be friends.`,(byId[a.p]||{}).name||'');return true}}
   if(Math.random()>.4)return false;const bk=nBit(k.id),N=S.town.news.filter(n=>nHas(n[4],bk)&&now-n[0]<3*864e5);
   const yn=N.filter(n=>!nHas(n[4],NB_M)).pop();if(yn){yn[4]=nSet(yn[4],NB_M);setTimeout(()=>kSay(k,`oh, mocha! did you hear? ${yn[2]}!`,4.5),600);
-    if(yn[1]==='you'){const f=lcf(yn[2])+` (heard from ${k.name.split(' ')[0]})`;if(!S.mem.facts.includes(f)&&!FACT_BAD.test(f))S.mem.facts.push(f);S.mem.facts=S.mem.facts.slice(-24);addEntry('Friends',`${k.name} told me ${yn[2]}. I didn't know that! Writing it down.`,(byId[a.p]||{}).name||'')}return true}
+    if(yn[1]==='you'){const f=lcf(yn[2])+` (heard from ${k.name.split(' ')[0]})`;if(!S.mem.facts.includes(f)&&!FACT_BAD.test(f)){const H=S.mem.facts.filter(x=>/\(heard from [^)]*\)$/.test(x));if(H.length>=4)S.mem.facts.splice(S.mem.facts.indexOf(H[0]),1);S.mem.facts.push(f)}S.mem.facts=S.mem.facts.slice(-24);addEntry('Friends',`${k.name} told me ${yn[2]}. I didn't know that! Writing it down.`,(byId[a.p]||{}).name||'')}return true}
   const mn=N.filter(n=>nHas(n[4],NB_M)&&/^Mocha /.test(n[2])&&!TK.greeted.has(n[0]+k.id)).pop();if(!mn)return false;TK.greeted.add(mn[0]+k.id);let m;const tx=mn[2];
   const line=(m=tx.match(/back from (.+)$/))?`how was ${m[1]}?!`:(m=tx.match(/adopted an? (.+) named (.+)$/))?`congrats on ${m[2]} the ${m[1]}!`:(m=tx.match(/"(.+)"/))?`i heard about "${m[1]}"!`:(m=tx.match(/hobby: (.+)$/))?`${m[1]}! i heard!`:/bike/.test(tx)?'nice bike, mocha!':'i heard the news, mocha!';setTimeout(()=>kSay(k,line,4),600);return true}catch(e){return false}}
 // ---------- frame: 4 Hz scan, 1 Hz sightings / "!" / hourly news spread; card typewriter, facing, head turn, possum flop, bubble pool ----------
 function b23Frame(dt,t){if((TK.t4-=dt)<=0){TK.t4=.25;talkScan();if(TK.open)tkFit()}if((TK.t1-=dt)<=0){TK.t1=1;tk1Hz()}
   if(TK.open){if(TK.n<TK.full.length){TK.n=Math.min(TK.full.length,TK.n+dt*40);TKT.textContent=TK.full.slice(0,TK.n|0)}const id=TK.id;
-    if(id==='mocha'){if(G.mode==='trip'||!mocha.visible||Math.hypot(G.x-YOU.x,G.z-YOU.z)>7)talkClose();else if(TK.mwait){const m=S.chatLog[S.chatLog.length-1];if(m&&m!==TK.mref&&m.who==='me'){TK.mwait=false;tkSay(m.text,{src:'mocha',noBub:1,you:$('#tkYou').textContent.replace(/^you: “|”$/g,'')})}}}
-    else if(id!=='board'){const c=CASTB[id];if(!tkVis(c)){if((TK.hid=(TK.hid||0)+dt)>1.5){talkClose();return}}else TK.hid=0;tkPos(id,TKW);if(Math.hypot(TKW.x-YOU.x,TKW.z-YOU.z)>6){talkClose();return}tkFace(id);if(TK.wave>0&&(TK.wave-=dt)<=0&&TN[id])TN[id].verb=null}
+    if(id==='mocha'){if(G.mode==='trip'||!mocha.visible||Math.hypot(G.x-YOU.x,G.z-YOU.z)>Math.max(7,TK.r||0))talkClose();else if(TK.mwait){const m=S.chatLog[S.chatLog.length-1];if(m&&m!==TK.mref&&m.who==='me'){TK.mwait=false;tkSay(m.text,{src:'mocha',noBub:1,you:$('#tkYou').textContent.replace(/^you: “|”$/g,'')})}}}
+    else if(id!=='board'){const c=CASTB[id];if(!tkVis(c)){if((TK.hid=(TK.hid||0)+dt)>1.5){talkClose();return}}else TK.hid=0;tkPos(id,TKW);if(Math.hypot(TKW.x-YOU.x,TKW.z-YOU.z)>Math.max(6,TK.r||0)){talkClose();return}tkFace(id);if(TK.wave>0&&(TK.wave-=dt)<=0&&TN[id])TN[id].verb=null}
     else if(Math.hypot(-30-YOU.x,25.5-YOU.z)>6)talkClose()}
   // Mocha's head (the whole ghost turns at the waist): toward you while the card is open, eased back after; G.yaw is never touched
   {let tg=0;if(TK.open&&TK.id==='mocha'&&!G.sleep){const y=Math.atan2(YOU.x-G.x,YOU.z-G.z)-G.yaw;tg=clamp(Math.atan2(Math.sin(y),Math.cos(y)),-1.1,1.1)}if(tg||Math.abs(body.rotation.y)>1e-3)body.rotation.y+=(tg-body.rotation.y)*Math.min(1,dt*4)}
@@ -7020,7 +7035,7 @@ vft|50|Venus Flytrap|plnt|plant|20|wa|carnivorous spooky|.25x.25|k=4;h=.3|nurser
 trr|51|Mossy Terrarium|plnt|aquarium|34|mf|moss tiny world|.35x.35|k=1;h=.38|nursery||clear:bfe3ef,green:a8d8b8,smoke:b8b8c8|plant
 swf|52|Western Sword Fern|plnt|plant|26|cr|fern native forest|.7x.7|k=0;h=.8;big=1|nursery||cedar:9a5a3a,stone:9a9aa4|plant
 cct|53|Cactus|plnt|plant|14|ra|desert spiky|.25x.25|k=5;h=.4|nursery thrift||terracotta:b0613a,pink:f29fb5,white:f4ead8|retro
-fig|54|Fiddle-Leaf Fig|plnt|plant|55||tree big leaves|.6x.6|k=6;h=1.6|nursery||white:f4ead8,terracotta:b0613a,black:2a2a33|plant
+fig|54|Fiddle-Leaf Fig|plnt|plant|55||tree big leaves|.6x.6|k=6;h=1.6|nursery evergreen||white:f4ead8,terracotta:b0613a,black:2a2a33|plant
 suc|55|Succulent Trio|plnt|plant|16||tiny succulents|.4x.2|k=7;h=.2|nursery market||white:f4ead8,sage:9ab08a,pink:f0c0c8|minimal
 rgd|56|Diamond Kilim Rug|rug|rug|60|cr|woven rug|2x1.4|dc=rugA|evergreen thrift||red:b0413e,indigo:3a4a7a,sage:7a8a5a|cozy
 rgs|57|Striped Rag Rug|rug|rug|35|cb|woven rug stripes|1.6x1|dc=rugB|evergreen thrift||blue:6c8ebf,rose:d98a9a,green:7fa06a|cozy
@@ -7537,7 +7552,7 @@ function catFree(grp){if(!grp)return 0;grp.children.forEach(m=>m.geometry&&m.geo
 // ---------- shop displays: provisional daily stock (B25's stockFor replaces it), lifetime by distance, LRU memory cap ----------
 const catHash=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0};
 const CATMAXH={window:.8,table:.75,shelf:.45,floor:2.2,rack:.9,wall:1};
-function catFits(s,it){if(s.surf==='wall')return it.cat==='wall'&&it.b!=='frame'||it.b==='frame'&&it.q.k!==4||it.b==='clock'&&it.q.k===0;if(it.cat==='wall'||it.cat==='rug'&&s.surf!=='floor')return false;if(s.surf==='rack')return it.cat==='clo'&&(it.q.k|0)===0;if(s.surf==='floor')return /seat|tabl|bed|stor|misc|plnt/.test(it.cat)&&it.h>.5;return it.b!=='string'||s.surf!=='shelf'}
+function catFits(s,it){if(s.surf==='wall')return it.cat==='wall'&&it.b!=='frame'||it.b==='frame'&&it.q.k!==4||it.b==='clock'&&it.q.k===0;if(it.cat==='wall'&&s.surf!=='table'||it.cat==='rug'&&s.surf!=='floor')return false;if(s.surf==='rack')return it.cat==='clo'&&(it.q.k|0)===0;if(s.surf==='floor')return it.cat==='rug'||/seat|tabl|bed|stor|misc|plnt|seas/.test(it.cat)&&it.h>.5;return it.b!=='string'||s.surf!=='shelf'}
 function catScale(it,s,h){return Math.min(1,s.maxW/Math.max(.05,it.w),s.maxD/Math.max(.05,it.d),(CATMAXH[s.surf]||.6)/Math.max(.05,h==null?it.h:h))}
 function catStock0(pid,day){const key=pid+':'+day,C=CATD.sc;if(C[key])return C[key];const slots=DISPLAY[pid]||[],mo=new Date().getMonth()+1,pool=CAT.items.filter(it=>it.pool.includes(pid)&&(!it.season.length||it.season.includes(mo))),R=seeded(catHash(key)),out=[];let sh=0;
   slots.forEach((s,i)=>{if(s.surf==='shelf'&&(sh++%2))return;const c=pool.filter(it=>catFits(s,it));if(!c.length)return;let best=null,bs=-1;for(let t=0;t<5;t++){const it=c[Math.floor(R()*c.length)],sc=catScale(it,s);if(sc>bs){bs=sc;best=it}}
@@ -7586,10 +7601,10 @@ function catSee(n){if(typeof n==='string')n=CAT.by[n]&&CAT.by[n].n;if(catBitSet(
 function catOwn(n){if(typeof n==='string')n=CAT.by[n]&&CAT.by[n].n;catBitSet('s',n);const r=catBitSet('o',n);if(r)catMilestones();return r}
 function catState(it){return catHas('o',it.n)?'own':catHas('s',it.n)?'seen':'sil'}
 // completion = found (seen or owned) per category; rewards at 25/50/75/100% (coins via B25's addCoins, else held in pend); 100% overall = the brass catalog bell
-const CATRW={25:10,50:25,75:50,100:100};
-function catPct(cat){const L=CAT.items.filter(i=>!cat||i.cat===cat);return Math.floor(100*L.filter(i=>catHas('s',i.n)||catHas('o',i.n)).length/Math.max(1,L.length))}
+const CATRW={25:2,50:3,75:5,100:10};
+function catPct(cat){const L=CAT.items.filter(i=>(!cat||i.cat===cat)&&i.pool[0]!=='reward');return Math.floor(100*L.filter(i=>catHas('s',i.n)||catHas('o',i.n)).length/Math.max(1,L.length))}
 function catMilestones(){const c=S.you.cat;let got=[];for(const C of CATC){const p=catPct(C[0]);for(const m of [25,50,75,100])if(p>=m&&!c.m.includes(C[0]+m+';')){c.m+=C[0]+m+';';got.push([C,m])}}
-  for(const [C,m] of got){const n=CATRW[m];if(typeof addCoins==='function'){try{addCoins(n,'cat')}catch(e){c.pend+=n}}else c.pend+=n}
+  {let n=0;for(const [C,m] of got)n+=CATRW[m];if(n){if(typeof addCoins==='function'){try{addCoins(n,'cat')}catch(e){c.pend+=n}}else c.pend+=n}}
   if(catPct()>=100&&!c.m.includes('all;')){c.m+='all;';catOwn('bel')}if(got.length&&typeof toast==='function')try{toast(`📖 catalog: ${got[0][0][1]} ${got[0][1]}% found!`)}catch(e){}return got.length}
 // ---------- the catalog page (you tab) ----------
 const CATU={cat:'seat',sel:null};
@@ -7675,7 +7690,7 @@ function walDraw(){const b=$('#walN');if(b&&S&&S.you&&b.textContent!==String(S.y
 function stockFor(pid,day){day=+day||curDay();const key=pid+':'+day,C=SHOP.mem;if(C[key])return C[key];const slots=DISPLAY[pid]||[],mo=Math.floor(day/100)%100,R=seeded(catHash(key+':b25')),out=[],used={};
   const lib=pid==='library',pool=lib?CAT.items.filter(it=>it.price<=40&&!isFurn(it)&&it.cat!=='clo'&&it.b!=='string'&&it.pool[0]!=='reward'):CAT.items.filter(it=>it.pool.includes(pid)&&(!it.season.length||it.season.includes(mo)));let sh=0;
   slots.forEach((s,i)=>{if(lib&&out.length)return;if(s.surf==='shelf'&&(sh++%2))return;const c=pool.filter(it=>catFits(s,it));if(!c.length)return;let best=null,bs=-1;
-    for(let t=0;t<6;t++){const it=c[Math.floor(R()*c.length)],sc=catScale(it,s)-(used[it.code]||0)*.3;if(sc>bs){bs=sc;best=it}}
+    for(let t=0;t<6;t++){const it=c[Math.floor(R()*c.length)],sc=(s.surf==='floor'?Math.min(.25,catScale(it,s)):catScale(it,s))-(used[it.code]||0)*.3;if(sc>bs){bs=sc;best=it}}
     if(best&&catScale(best,s)>=.25){used[best.code]=(used[best.code]||0)+1;out.push({code:best.code,v:Math.floor(R()*best.vars.length),slot:i,surf:s.surf})}});
   if(out.length&&!lib)out[Math.floor(R()*out.length)].pick=1;for(const k in C)if(k.startsWith(pid+':'))delete C[k];return C[key]=out}
 function priceOf(pid,e){const it=CAT.by[e.code];if(!it||pid==='library')return 0;let p=it.price;if(pid==='thrift')p*=.7;if(e.pick)p*=.8;return Math.max(1,Math.round(p))}
@@ -7855,7 +7870,7 @@ CATDEC.soldM=g=>{g.fillStyle='#f4ead8';g.fillRect(0,0,128,128);g.strokeStyle='#8
 {const r0=TABS.R.you;TABS.R.you=()=>{if(r0)r0();try{youTabB25()}catch(e){}}}
 {const r0=TABS.R.set;TABS.R.set=()=>{if(r0)r0();try{youSetB25()}catch(e){}}}
 // taps on a shelf item open its card (phones also get the price tag and "See everything here"); tapping never steers Mocha
-{const tap0=tap;tap=function(x,y,jog){try{if(shopTap(x,y))return}catch(e){}return tap0(x,y,jog)}}
+{const tap0=tap;tap=function(x,y,jog){try{ndc.set(x/innerWidth*2-1,-(y/innerHeight)*2+1);ray.setFromCamera(ndc,camera);if(typeof talkTap==='function'&&talkTap())return}catch(e){}try{if(shopTap(x,y))return}catch(e){}return tap0(x,y,jog)}}
 // Mocha's own acquisitions are routed through today's stockFor: the matching shelf slot reads "sold to Mocha"
 {const la0=localAcquire;localAcquire=function(act,t,pn){const n0=(S.owned||[]).length,r=la0.apply(this,arguments);try{if((S.owned||[]).length>n0){const o=S.owned[S.owned.length-1];mochaShelf(act.p,{cat:'clo',word:o.item},t)}}catch(e){}return r}}
 {const bd0=buyDecor;buyDecor=function(id,t,place){const r=bd0.apply(this,arguments);try{if(r){const p=PLACES.find(q=>q.name===place);mochaShelf(p&&p.id,{word:DECOR[id]},t)}}catch(e){}return r}}
@@ -7881,10 +7896,10 @@ Object.assign(window.__mocha,{SHOP,stockFor,buySlot,addCoins:(n,code)=>{const c=
 // ====================================================================
 var CB=null;
 // S.you.home: literal-only + hoisted (fresh() and migrate() call it before this block runs)
-function cabinFix(y){if(!y||typeof y!=='object')return y;let h=y.home;if(!h||typeof h!=='object'||Array.isArray(h))h={};const I=(v,a,b,d)=>{v=Math.round(+v);return isFinite(v)?Math.max(a,Math.min(b,v)):d},str=(v,n)=>typeof v==='string'?v.slice(0,n):'';
+function cabinFix(y){if(!y||typeof y!=='object')return y;let h=y.home;if(!h||typeof h!=='object'||Array.isArray(h))h={};const I=(v,a,b,d)=>{v=Math.round(+v);return isFinite(v)?Math.max(a,Math.min(b,v)):d},str=(v,n)=>typeof v==='string'?v.slice(0,n):'',recs=(v,n)=>{if(typeof v!=='string')return'';if(v.length<=n)return v;const o=[];let len=-1;for(const t of v.split(';')){if(!t)continue;if(o.length>=120||len+1+t.length>n)break;len+=1+t.length;o.push(t)}return o.join(';')};
   const e=Array.isArray(h.ext)?h.ext:[],R=h.rooms&&typeof h.rooms==='object'&&!Array.isArray(h.rooms)?h.rooms:{},rm={};
-  for(const k of ['great','loft','back','porch','green','yard'])if(R[k]&&typeof R[k]==='object')rm[k]={wp:I(R[k].wp,0,99,0),fl:I(R[k].fl,0,99,0),it:str(R[k].it,2400)};if(!rm.great)rm.great={wp:0,fl:0,it:''};
-  y.home={lv:I(h.lv,1,6,1),ext:[0,1,2,3].map(i=>I(e[i],0,3,0)),jar:I(h.jar,0,999999,0),rooms:rm,yard:str(h.yard,1200),porch:I(h.porch,0,1,1),br:h.br==='kit'?'kit':'bed',paint:I(h.paint,0,1,0),
+  for(const k of ['great','loft','back','porch','green','yard'])if(R[k]&&typeof R[k]==='object')rm[k]={wp:I(R[k].wp,0,99,0),fl:I(R[k].fl,0,99,0),it:recs(R[k].it,2600)};if(!rm.great)rm.great={wp:0,fl:0,it:''};
+  y.home={lv:I(h.lv,1,6,1),ext:[0,1,2,3].map(i=>I(e[i],0,3,0)),jar:I(h.jar,0,999999,0),rooms:rm,yard:recs(h.yard,2600),porch:I(h.porch,0,1,1),br:h.br==='kit'?'kit':'bed',paint:I(h.paint,0,1,0),
     pit:I(h.pit,0,4e12,0),hf:I(h.hf,0,4e12,0),pea:I(h.pea,0,4e12,0),bu:I(h.bu,0,99999999,0),bl:I(h.bl,0,6,0),fl:I(h.fl,0,65535,0),mb:I(h.mb,0,9,0),ks:str(h.ks,900)};return y}
 // B25's "reset my cabin": clears the layout only (level, jar, paint, coins and keepsakes stay)
 function cabinReset(){if(!S||!S.you||!S.you.home)return;const h=S.you.home;for(const k in h.rooms)h.rooms[k].it='';h.yard='';try{cabBuild()}catch(e){}save();toast('🏡 your cabin is tidied back to its built-ins')}
@@ -7944,11 +7959,11 @@ function buildCabin(p,grp,lv,ext){const C=CB;// dispose everything this cabin ow
   if(C.items){catFree(C.items);C.items=null}
   const stain=CABPAINT[0][1][ext[0]][1],roofC=CABPAINT[1][1][ext[1]][1],doorC=CABPAINT[2][1][ext[2]][1],trim=CABPAINT[3][1][ext[3]][1],gx=C.gx=new THREE.Group(),gf=C.gf=new THREE.Group(),gi=C.gi=new THREE.Group();if(C.roofCol!==roofC+SEASON.snowy){C.roofCol=roofC+SEASON.snowy;cabRoofDraw(C.roofT.image.getContext('2d'),128,128,roofC,!!SEASON.snowy);C.roofT.needsUpdate=true}gx.name='cabinExt';gf.name='cabinFront';gi.name='cabinIn';grp.add(gx,gf,gi);
   // ---- logs: one InstancedMesh ----
-  const L=[],O=cabOpenings(lv),add=(x,y,z,len,ry,rz,front,dk)=>L.push([x,y,z,len,ry||0,rz||0,front?1:0,dk||0]),wallLogs=(wall,a0,a1,fixed,ax,y,c)=>{let segs=[[a0,a1]];
+  const L=[],O=cabOpenings(lv),add=(x,y,z,len,ry,rz,front,dk)=>L.push([x,y,z,len,ry||0,rz||0,front|0,dk||0]),wallLogs=(wall,a0,a1,fixed,ax,y,c)=>{let segs=[[a0,a1]];
       for(const q of O)if(q[0]===wall&&y>q[3]-.2&&y<q[4]+.25){const n=[];for(const [s,e] of segs){if(q[2]<=s||q[1]>=e){n.push([s,e]);continue}if(q[1]>s+.15)n.push([s,q[1]]);if(q[2]<e-.15)n.push([q[2],e])}segs=n}
-      for(const [s,e] of segs){const m=(s+e)/2,len=e-s;if(ax==='x')add(m,y,fixed,len,0,0,wall==='f'&&c>0);else add(fixed,y,m,len,Math.PI/2,0,false)}return segs};
+      for(const [s,e] of segs){const m=(s+e)/2,len=e-s;if(ax==='x')add(m,y,fixed,len,0,0,c>0?(wall==='f'?1:wall==='b'?2:0):0);else add(fixed,y,m,len,Math.PI/2,0,false)}return segs};
   const chink=[];for(let c=0;c<7;c++){const y=.32+c*.6;
-    for(const [w,z] of [['f',4.7],['b',-4.7]]){const sg=wallLogs(w,-7.15,7.15,z,'x',y,c);if(c)for(const [s,e] of sg)chink.push([(s+e)/2,y-.3,z,e-s,0,w==='f'])}
+    for(const [w,z] of [['f',4.7],['b',-4.7]]){const sg=wallLogs(w,-7.15,7.15,z,'x',y,c);if(c)for(const [s,e] of sg)chink.push([(s+e)/2,y-.3,z,e-s,0,w==='f'?1:2])}
     for(const [w,x] of [['l',-6.7],['r',6.7]]){const sg=wallLogs(w,-4.38,4.38,x,'z',y,c);if(c)for(const [s,e] of sg)chink.push([x,y-.3,(s+e)/2,e-s,1,0]);for(const z of [-4.92,4.92])add(x,y,z,.45,Math.PI/2,0,false,1)}}
   for(const sx of [-6.7,6.7])for(let c=0;c<4;c++){const y=4.52+c*.6,len=2*5*(CBR-y)/(CBR-CBH)-.2;if(len>.4)add(sx,y,0,len,Math.PI/2,0,true)}// gable logs
   add(0,CBR-.22,0,15.4,0,0,true,1);for(const z of [-2.6,2.6])add(0,CBR-1.95,z,15,0,0,true,1);// ridge + purlins
@@ -7961,8 +7976,8 @@ function buildCabin(p,grp,lv,ext){const C=CB;// dispose everything this cabin ow
     _cbc.copy(sc).multiplyScalar((q[7]?.82:.92)+r()*.16);im.setColorAt(i,_cbc)});im.instanceMatrix.needsUpdate=true;im.castShadow=true;im.receiveShadow=true;im.name='cabinLogs';gx.add(im);C.logs=im;C.nlog=n;
   // ---- static exterior through a Batcher: chinking, foundation, porch, chimney, frames, rocker, woodpile, boxes, pit, benches ----
   const T=new THREE.Group(),bx=(w,h,d,c,x,y,z,ry,rx,rz,par)=>{const m=box(w,h,d,c,x,y,z,par||T,false);m.rotation.set(rx||0,ry||0,rz||0);return m},cy=(rt,rb,h,c,x,y,z,s,par)=>cyl(rt,rb,h,c,x,y,z,par||T,s||8);
-  const TF=new THREE.Group();// front-wall pieces that hide in the cutaway
-  for(const q of chink)bx(q[3],.16,.42,'#3a2e26',q[0],q[1],q[2],q[4]?Math.PI/2:0,0,0,q[5]?TF:T);
+  const TF=new THREE.Group(),TB=new THREE.Group();// front-wall pieces that hide in the cutaway
+  for(const q of chink)bx(q[3],.16,.42,'#3a2e26',q[0],q[1],q[2],q[4]?Math.PI/2:0,0,0,q[5]===1?TF:q[5]===2?TB:T);
   bx(14.6,.14,10.6,'#6f6a62',0,.04,0);// sill stones
   // porch: deck, steps, rails (gap at the steps), roof underside lives in the roof batch
   bx(14.6,.14,2.5,'#9a7a56',0,.07,6.15);for(let i=0;i<9;i++)bx(14.6,.012,.04,'#7a5a3e',0,.145,5.0+i*.29);bx(2.4,.07,.5,'#8a6a4a',0,.04,7.6);
@@ -7972,7 +7987,7 @@ function buildCabin(p,grp,lv,ext){const C=CB;// dispose everything this cabin ow
   bx(.05,.05,.5,'#2c2a2a',-1.45,2.42,5.25);bx(.05,.05,.4,'#2c2a2a',1.25,2.62,5.2);
   // window frames + sills + window boxes with seasonal flowers
   const mo=new Date().getMonth(),fc=SEASON.snowy||mo===11||mo<2?['#2f5a3a','#c9302c','#3a6a4a']:mo<5?['#f29fb5','#f2d14e','#b98ad9']:mo<8?['#e0483e','#f4f4f4','#ef8a5a']:['#c9622f','#8a2f45','#e0a030'];
-  for(const w of cabWins(lv)){const [rm,x,y,z,ry,ww,hh]=w,g=pbG(x,z,ry);g.position.y=y;(w[7]?TF:T).add(g);bx(ww+.24,.12,.16,trim,0,hh/2+.04,0,0,0,0,g);bx(ww+.34,.1,.28,trim,0,-hh/2-.05,.04,0,0,0,g);bx(.12,hh,.16,trim,-ww/2-.06,0,0,0,0,0,g);bx(.12,hh,.16,trim,ww/2+.06,0,0,0,0,0,g);
+  for(const w of cabWins(lv)){const [rm,x,y,z,ry,ww,hh]=w,g=pbG(x,z,ry);g.position.y=y;(w[7]?TF:w[0]==='kitchen'?TB:T).add(g);bx(ww+.24,.12,.16,trim,0,hh/2+.04,0,0,0,0,g);bx(ww+.34,.1,.28,trim,0,-hh/2-.05,.04,0,0,0,g);bx(.12,hh,.16,trim,-ww/2-.06,0,0,0,0,0,g);bx(.12,hh,.16,trim,ww/2+.06,0,0,0,0,0,g);
     if(w[7]){bx(ww+.1,.34,.36,'#7a5a3e',0,-hh/2-.32,.22,0,0,0,g);for(let i=0;i<7;i++){const s=new THREE.Mesh(SPH8,lam(fc[i%3]));s.scale.setScalar(.13+(i%2)*.04);s.position.set(-ww/2+.2+i*(ww-.4)/6,-hh/2-.08,.22+(i%2?.06:-.05));g.add(s)}}}
   // river-stone chimney on the back wall (outside), above the hearth
   {const r2=seeded(31),cols=['#8d8a84','#a39d92','#6f6c68','#b7ad9c','#7d7a74'];for(let y=.25;y<CBR+1.6;y+=.42){const wd=y<4?1.9:1.2;for(let x=-wd/2+.2;x<wd/2;x+=.42){const s=new THREE.Mesh(SPH8,lam(cols[(r2()*5)|0]));s.scale.set(.26,.2,.22);s.position.set(-2+x+(r2()-.5)*.08,y,-5.25-(y<4?.15:0));T.add(s)}}
@@ -8001,7 +8016,7 @@ function buildCabin(p,grp,lv,ext){const C=CB;// dispose everything this cabin ow
     for(let i=0;i<5;i++){const s=new THREE.Mesh(SPH8,lam(['#5f9f5a','#4f8a4a','#7fb26a'][i%3]));s.scale.setScalar(.3);s.position.set(-1.2+i*.6,.9,-1.1);g.add(s)}bx(3.2,.6,.6,'#7a5a3e',0,.4,-1.1,0,0,0,g)}
   if(lv>=6){const g=pbG(-4,-10.5,0);T.add(g);cy(1.15,1.15,.95,'#a0663a',0,.48,0,16,g);cy(1.02,1.02,.06,'#8fd0d8',0,.9,0,16,g);for(let i=0;i<8;i++){const a=i/8*Math.PI*2;bx(.06,1,.06,'#5a3a22',Math.cos(a)*1.17,.48,Math.sin(a)*1.17,0,0,0,g)}}
   // ---- interior built-ins (visible only when cut away) ----
-  const TI=new THREE.Group(),ib=(w,h,d,c,x,y,z,ry)=>bx(w,h,d,c,x,y,z,ry||0,0,0,TI),ic=(rt,rb,h,c,x,y,z,s)=>cyl(rt,rb,h,c,x,y,z,TI,s||10);
+  const TI=new THREE.Group(),ib=(w,h,d,c,x,y,z,ry)=>bx(w,h,d,c,x,y,z,ry||0,0,0,TI),ic=(rt,rb,h,c,x,y,z,s)=>cyl(rt,rb,h,c,x,y,z,TI,s||10);const TL=new THREE.Group(),lb=(w,h,d,c,x,y,z)=>bx(w,h,d,c,x,y,z,0,0,0,TL),lc=(rt,rb,h,c,x,y,z,s)=>cyl(rt,rb,h,c,x,y,z,TL,s||10);
   ib(13,.12,9,'#b58a5a',0,.06,0);for(let i=0;i<14;i++)ib(13,.01,.03,'#8a643e',0,.125,-4.3+i*.66);// plank floor
   // mudroom: coat hooks (your other jackets) + boot tray
   ib(1.8,.12,.06,'#6a4a32',2.0,1.75,4.32);for(let i=0;i<4;i++)ib(.05,.05,.16,'#2c2a2a',1.4+i*.4,1.68,4.24);
@@ -8013,16 +8028,16 @@ function buildCabin(p,grp,lv,ext){const C=CB;// dispose everything this cabin ow
     for(const x of [-3.1,-2.5,-1.1])ic(.07,.09,.26,['#c9a94e','#c94f4f','#f4ead8'][(x*7|0)&1?1:0],x,2.15,-4.1,8);ib(.6,.45,.04,'#f4ead8',-2,2.35,-4.32)}
   // enamel kitchen corner: counter, stove, sink, kettle, shelf with jars
   ib(3.4,.9,.75,'#f4ead8',5.0,.45,-4.0);ib(3.5,.06,.82,'#6a4a2c',5.0,.93,-4.0);ib(.9,.95,.78,'#e9e2d4',3.75,.48,-3.98);ib(.86,.04,.74,'#2c2a2a',3.75,.97,-3.98);for(const [x,z] of [[3.55,-4.15],[3.95,-3.8]])ic(.13,.13,.02,'#444',x,1.0,z,10);
-  ib(.7,.12,.5,'#c9d0d8',5.3,.92,-4.0);ic(.03,.03,.35,'#c9d0d8',5.3,1.12,-4.3,6);ic(.15,.18,.22,'#c94f4f',3.95,1.11,-3.8,12);ib(3.2,.06,.3,'#6a4a2c',5.0,2.0,-4.42);for(let i=0;i<5;i++)ic(.08,.08,.22,['#f2c14e','#c94f4f','#9fd6c2'][i%3],3.8+i*.55,2.14,-4.42,8);
+  ib(.7,.12,.5,'#c9d0d8',5.3,.92,-4.0);ic(.03,.03,.35,'#c9d0d8',5.3,1.12,-4.3,6);ic(.15,.18,.22,'#c94f4f',3.95,1.11,-3.8,12);lb(3.2,.06,.3,'#6a4a2c',5.0,2.0,-4.42);for(let i=0;i<5;i++)lc(.08,.08,.22,['#f2c14e','#c94f4f','#9fd6c2'][i%3],3.8+i*.55,2.14,-4.42,8);
   // window-seat reading nook (under the east window) + reading lamp
   ib(.9,.5,3,'#7a5a3e',-6.0,.25,2.05);ib(.86,.16,2.9,'#c96a5a',-6.0,.58,2.05);for(const z of [.9,3.2])ib(.2,.4,.4,'#f2d14e',-6.25,.82,z);ib(.18,.36,.36,'#9fd6c2',-6.3,.82,2.0);
   ic(.04,.04,1.5,'#2c2a2a',-5.85,.75,.25,6);ic(.12,.22,.26,'#f4ead8',-5.85,1.6,.25,10);ib(1.6,.02,2.2,'#a85a4a',-3.6,.13,-2.2);// a rag rug at the hearth
-  if(lv>=2){ib(6.9,.16,4,'#9a7350',3.05,2.55,-2.4);ib(6.9,.08,.08,trim,3.05,3.2,-.42);for(let x=0;x<6.6;x+=.6)ib(.06,.6,.06,trim,x,2.9,-.42);
+  if(lv>=2){lb(6.9,.16,4,'#9a7350',3.05,2.55,-2.4);lb(6.9,.08,.08,trim,3.05,3.2,-.42);for(let x=0;x<6.6;x+=.6)lb(.06,.6,.06,trim,x,2.9,-.42);
     for(const sx of [-.25,.25])ic(.04,.04,2.9,'#7a5a3e',.6+sx,1.4,-.25,6).rotation.x=-.12;for(let y=.35;y<2.6;y+=.36)ib(.55,.05,.06,'#7a5a3e',.6,y,-.25+(y-1.4)*.12);// ladder
-    ib(1.6,.32,2.2,'#6a4a32',3.6,2.8,-3.0);ib(1.5,.14,2.0,'#c94f4f',3.6,3.0,-2.95);for(let i=0;i<4;i++)ib(1.52,.15,.06,'#2c3a5a',3.6,3.01,-3.75+i*.5);ib(.7,.16,.4,'#f4ead8',3.6,3.1,-3.85)}
+    lb(1.6,.32,2.2,'#6a4a32',3.6,2.8,-3.0);lb(1.5,.14,2.0,'#c94f4f',3.6,3.0,-2.95);for(let i=0;i<4;i++)lb(1.52,.15,.06,'#2c3a5a',3.6,3.01,-3.75+i*.5);lb(.7,.16,.4,'#f4ead8',3.6,3.1,-3.85)}
   if(lv>=3){const bed=S.you.home.br!=='kit';ib(5,.12,3.8,'#b58a5a',4.1,.06,-7.1);if(bed){ib(1.6,.45,2.1,'#6a4a32',4.6,.3,-7.8);ib(1.5,.14,1.9,'#2f6f62',4.6,.58,-7.75);ib(.7,.14,.4,'#f4ead8',4.6,.66,-8.55)}else{ib(1.6,.75,.9,'#7a5a3e',4.2,.4,-7.4);for(const sx of [-.6,.6])ib(.4,.45,.4,'#c96a5a',4.2+sx,.25,-6.7)}}
   // ---- batch (one chunk each, cabin-local): exterior vc, roof (casts shadow), front pieces, interior ----
-  cabBatch(T,{vc:PBM.vc},false,gx);C.roof=cabBatch(RT,{roof:C.roofM,vc:PBM.vc},true,gx);cabBatch(TF,{vc:PBM.vc},false,gf);cabBatch(TI,{vc:PBM.vc},false,gi);
+  cabBatch(T,{vc:PBM.vc},false,gx);C.roof=cabBatch(RT,{roof:C.roofM,vc:PBM.vc},true,gx);cabBatch(TF,{vc:PBM.vc},false,gf);cabBatch(TI,{vc:PBM.vc},false,gi);{const g=C.gl=new THREE.Group();g.name='cabinLoft';gi.add(g);if(TL.children.length)cabBatch(TL,{vc:PBM.vc},false,g);const b=C.gb=new THREE.Group();b.name='cabinBack';gx.add(b);if(TB.children.length)cabBatch(TB,{vc:PBM.vc},false,b)}
   // ---- windows (WLT slots; the front panes hide with the cutaway), one rain-drip mesh over every pane ----
   const wl=cabWins(lv),dpos=[],duv=[],didx=[],mk=(front)=>{const pos=[],uv=[],idx=[];let k=0;wl.forEach(w=>{if(!!w[7]!==front)return;const [rm,x,y,z,ry,ww,hh]=w,c=Math.cos(ry),s=Math.sin(ry),cell=C.wslots.indexOf(wltSlot('cabin:'+rm)),u0=(cell%4)*32/128,v0=1-(Math.floor(cell/4)+1)*32/64,dk=dpos.length/3;
       for(const [a,b] of [[-1,-1],[1,-1],[1,1],[-1,1]]){const lx=a*ww/2,X=x+lx*c+.03*s,Z=z-lx*s+.03*c;pos.push(X,y+b*hh/2,Z);dpos.push(X+.02*s,y+b*hh/2,Z+.02*c);uv.push(u0+(a>0?32:0)/128,v0+(b>0?32:0)/64);duv.push((a>0?ww:0)*.6,(b>0?hh:0)*.5)}
@@ -8051,8 +8066,8 @@ function cabBatch(root,mats,shadow,parent){const B=Batcher(1e9);root.updateMatri
 // ---------- anchors (preallocated; no allocation in the .25 s scan) ----------
 function cabAnchor(act,lx,y,lz,o){const C=CB,q=toWorld(byId.cabin,lx,lz),a=C.A.length<C.Apool.length?C.Apool[C.A.length]:{};Object.assign(a,{i:C.A.length,act,lx,lz,x:q.x,y,z:q.z,code:null,v:0,src:null,room:null,ti:-1,fl:0,ext:0,bit:0},o||{});C.A.push(a);return a}
 // ---------- cutaway: roof + front wall + front windows hide, interior shows ----------
-function cabCutApply(force){const C=CB,on=!!C.cut;if(!force&&C.cutA===on)return;C.cutA=on;if(C.roof)C.roof.forEach(m=>m.visible=!on);if(C.gf)C.gf.visible=!on;if(C.gi)C.gi.visible=on;
-  const im=C.logs;if(im){for(let i=0;i<C.nlog;i++)if(C.lf[i]){if(on)im.setMatrixAt(i,_cbz);else{_cbo.matrix.fromArray(C.lm,i*16);im.setMatrixAt(i,_cbo.matrix)}}im.instanceMatrix.needsUpdate=true}
+function cabCutApply(force){const C=CB,on=!!C.cut,cx=on?(C.cutX|0):0,key=(on?1:0)|cx;if(!force&&C.cutA===key)return;C.cutA=key;if(C.roof)C.roof.forEach(m=>m.visible=!on);if(C.gf)C.gf.visible=!on;if(C.gi)C.gi.visible=on;if(C.gl)C.gl.visible=!(cx&4);if(C.gb)C.gb.visible=!(cx&2);
+  const im=C.logs;if(im){for(let i=0;i<C.nlog;i++){const f=C.lf[i];if(!f)continue;if(f===1?on:(cx&2))im.setMatrixAt(i,_cbz);else{_cbo.matrix.fromArray(C.lm,i*16);im.setMatrixAt(i,_cbo.matrix)}}im.instanceMatrix.needsUpdate=true}
   byId.cabin.inVis=on}
 function cabIn(x,z,m){const q=toWorldInv(x,z);m=m||0;return Math.abs(q.x)<6.45+m&&Math.abs(q.z)<4.45+m||(CB&&CB.lv>=3&&q.x>1.7-m&&q.x<6.5+m&&q.z<-4.4&&q.z>-9.1-m)}
 function cabRoomAt(x,z){if(!cabIn(x,z))return null;return roomAt('cabin',x,z)||'great'}
@@ -8343,7 +8358,7 @@ function dWallSpot(R,it,wo,near){let b=null,bs=1e9;const hw=it.w/2,hd=it.d/2;for
       const t=near?(w==='b'?Math.abs(a-near.x):Math.abs(a-near.z)+2):Math.abs(a-(along[0]+along[1])/2);const s=t+lvl*1.5+(w==='b'?0:.5);if(s<bs){bs=s;b={x,z,rot,lvl,hw:rot&1?hd:hw,hd:rot&1?hw:hd,b:bx}}}}return b}
 // ---------- the cabin's placed items (called by B26 buildCabin): interior rooms -> C.items (gi), the yard -> C.yItems (gx); anchors ----------
 function cabItemsBuild(C,gi,gx,lv){if(C.items){catFree(C.items);C.items=null}if(C.yItems){catFree(C.yItems);C.yItems=null}C.A.length=C.nfix;const list=[],yl=[],sk=DECO&&DECO.skip;
-  for(const rid of CABIN_ROOMS[lv].map(r=>r.id).concat(['lot'])){const R=dRoomDef(rid);if(!R)continue;const L=dParse(rid,R);L.forEach((e,i)=>{if(sk&&sk.rid===rid&&sk.set.has(i))return;
+  for(const rid of CABIN_ROOMS[lv].map(r=>r.id).concat(['lot'])){if(rid==='loft'&&(C.cutX&4))continue;const R=dRoomDef(rid);if(!R)continue;const L=dParse(rid,R);L.forEach((e,i)=>{if(sk&&sk.rid===rid&&sk.set.has(i))return;
       (rid==='lot'?yl:list).push({code:e.code,v:e.v,x:e.lx,y:e.y,z:e.lz,ry:e.rot*Math.PI/2,s:1});const act=cabAct(e.code);if(act)cabAnchor(act,e.lx,e.y+Math.min(1.2,dTop(e.code,e.v)),e.lz,{code:e.code,v:e.v,src:e.src||ksOf(e.code,e.v),room:rid,ti:i,fl:e.fl,ext:rid==='lot'||rid==='porch'?1:0})})}
   if(list.length){C.items=catMerge(list,{});gi.add(C.items)}if(yl.length){C.yItems=catMerge(yl,{});C.yItems.name='cabinYard';gx.add(C.yItems)}try{dSurfBuild(C,gi)}catch(e){}}
 // ---------- wallpaper + floor (wp/fl = 1 + index*6 + variant; 0 = logs / planks) ----------
@@ -8361,15 +8376,19 @@ function dSurfGeo(R,kind,strips){const pos=[],uv=[],col=[],idx=[];let k=0;const 
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));g.setIndex(idx);g.computeVertexNormals();return g}
 function dSurfMesh(R,kind,k){const t=dSwTex(kind==='fl'?'flor':'wpap',k);if(!t)return null;const m=new THREE.Mesh(dSurfGeo(R,kind),new ToonM({color:'#ffffff',map:t,vertexColors:true}));m.material.polygonOffset=true;m.material.polygonOffsetFactor=-1;m.name='decoSurf:'+R.id+':'+kind;m.userData.k=k;m.receiveShadow=true;return m}
 function dSurfBuild(C,gi){if(!DECO)return;if(C.gw){C.gw.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material&&o.material.dispose)o.material.dispose()});if(C.gw.parent)C.gw.parent.remove(C.gw)}const g=C.gw=new THREE.Group();g.name='decoSurfs';gi.add(g);DECO.sm={};
-  for(const rid of CABIN_ROOMS[C.lv||1].map(r=>r.id)){const r=S.you.home.rooms[rid],R=dRoomDef(rid);if(!r||!R||R.out)continue;for(const kind of ['wp','fl']){if(!r[kind]||(kind==='wp'&&!R.walls.length))continue;const m=dSurfMesh(R,kind,r[kind]);if(m){g.add(m);DECO.sm[rid+kind]=m}}}}
+  for(const rid of CABIN_ROOMS[C.lv||1].map(r=>r.id)){const r=S.you.home.rooms[rid],R=dRoomDef(rid);if(!r||!R||R.out)continue;for(const kind of ['wp','fl']){if(!r[kind]||(kind==='wp'&&!R.walls.length))continue;if(C.cutX&&(rid==='loft'&&C.cutX&4||rid==='great'&&kind==='wp'&&C.cutX&2))continue;const m=dSurfMesh(R,kind,r[kind]);if(m){g.add(m);DECO.sm[rid+kind]=m}}}}
 // ---------- the decorate engine ----------
 function dCur(){return DECO.L}
 function dLoad(){DECO.R=dRoomDef(DECO.rid);DECO.L=dParse(DECO.rid,DECO.R);dGrid();return DECO.L}
-function dSnap(rid){const h=S.you.home,r=h.rooms[rid]||{};return{it:dStr(rid),wp:r.wp|0,fl:r.fl|0,store:S.you.store,pk:S.you.pk}}
-function dApply(rid,s){const h=S.you.home;dSetStr(rid,s.it);if(rid!=='lot'){const r=h.rooms[rid]||(h.rooms[rid]={wp:0,fl:0,it:''});r.wp=s.wp;r.fl=s.fl}S.you.store=s.store;S.you.pk=s.pk}
+function dSnap(rid){const h=S.you.home,r=h.rooms[rid]||{};return{it:dStr(rid),wp:r.wp|0,fl:r.fl|0}}
+function dBag(s){const m=new Map();(s||'').split(';').forEach(t=>{const a=t.split('.');if(a.length<5)return;const it=CAT.by[a[0]];if(!it||!it.n)return;const k=a[0]+'.'+(+a[1]|0);m.set(k,(m.get(k)||0)+1)});return m}
+function dApply(rid,s){const h=S.you.home,cur=dBag(dStr(rid)),nxt=dBag(s.it),st0=S.you.store,pk0=S.you.pk;let ok=true;
+  for(const [k,n] of nxt){const a=k.split('.');for(let i=n-(cur.get(k)||0);i>0&&ok;i--)ok=dTake(a[0],+a[1])}
+  for(const [k,n] of cur){const a=k.split('.');for(let i=n-(nxt.get(k)||0);i>0&&ok;i--)ok=!!dPut(a[0],+a[1])}
+  if(!ok){S.you.store=st0;S.you.pk=pk0;return false}dSetStr(rid,s.it);if(rid!=='lot'){const r=h.rooms[rid]||(h.rooms[rid]={wp:0,fl:0,it:''});r.wp=s.wp;r.fl=s.fl}return true}
 function dCommit(fn,o){const D=DECO,rid=D.rid,a=dSnap(rid);const r=fn();if(r!==false){dSetStr(rid,dSer(D.L,D.R));const b=dSnap(rid);if(JSON.stringify(a)!==JSON.stringify(b)){D.U.push({rid,a,b});if(D.U.length>30)D.U.shift();D.Rd.length=0;D.ops++}}dLoad();if(!(o&&o.norebuild))dRebuild();save();dTrayDraw();return r}
 function dRebuild(){const C=CB;if(!C||!C.gi)return;const t0=performance.now();cabItemsBuild(C,C.gi,C.gx,C.lv);DECO.rbMs=+(performance.now()-t0).toFixed(1);DECO.rb++}
-function dUndo(redo){const D=DECO,A=redo?D.Rd:D.U,B=redo?D.U:D.Rd,op=A.pop();if(!op)return false;dGhostOff();dApply(op.rid,redo?op.b:op.a);B.push(op);if(op.rid!==D.rid)D.rid=op.rid;dLoad();dRebuild();try{dSurfBuild(CB,CB.gi)}catch(e){}save();dTrayDraw();sfx('swish',{});return true}
+function dUndo(redo){const D=DECO,A=redo?D.Rd:D.U,B=redo?D.U:D.Rd,op=A.pop();if(!op)return false;dGhostOff();if(!dApply(op.rid,redo?op.b:op.a)){toast('📦 those pieces aren\'t in your storage any more');dTrayDraw();return false}B.push(op);if(op.rid!==D.rid)D.rid=op.rid;dLoad();dRebuild();try{dSurfBuild(CB,CB.gi)}catch(e){}save();dTrayDraw();sfx('swish',{});return true}
 // grid: .5 cells, layer bits 1 furniture, 2 rug, 4 wall-adjacent, 8 built-in
 function dGrid(){const D=DECO,R=D.R,cols=Math.ceil(R.w/.5),rows=Math.ceil(R.d/.5),g=D.grid=new Uint8Array(cols*rows);D.gc=cols;D.gr=rows;const mark=(b,bit)=>{for(let j=Math.max(0,Math.floor((b[1]-R.z0)/.5));j<Math.min(rows,Math.ceil((b[3]-R.z0)/.5));j++)for(let i=Math.max(0,Math.floor((b[0]-R.x0)/.5));i<Math.min(cols,Math.ceil((b[2]-R.x0)/.5));i++)g[j*cols+i]|=bit};
   R.blk.forEach(b=>mark(b,8));for(const e of D.L){if(e.on)continue;const [hw,hd]=dFp(e.it,e.rot),k=dKind(e.it);if(k==='wall')continue;mark([e.lx-hw,e.lz-hd,e.lx+hw,e.lz+hd],k==='rug'?2:1)}
@@ -8428,7 +8447,7 @@ function dPut(code,v){return putItem(code,v)}
 function dTidy(seed){const D=DECO;dSetDownOrCancel();if(D.G)dGhostOff();const items=D.L.map(e=>({code:e.code,v:e.v})),r=autoArrange(D.R,items,'cozy',seed==null?D.ops+Date.now()%997:seed);
   dCommit(()=>{for(const q of r.left)dPut(q.code,q.v);D.L=r.placed.map(p=>({code:p.code,v:p.v,it:CAT.by[p.code],lx:p.lx,lz:p.lz,rot:p.rot,fl:0,on:p.on,par:p.par,lvl:p.lvl,y:0}))});
   sfx('yay',{});return{n:r.placed.length,left:r.left.length,overlaps:dOverlaps(D.L,D.R)}}
-function dRevert(){const D=DECO,s=D.rv[D.rid];if(!s)return false;if(D.G)dGhostOff();const a=dSnap(D.rid);dApply(D.rid,s);D.U.push({rid:D.rid,a,b:dSnap(D.rid)});dLoad();dRebuild();dSurfBuild(CB,CB.gi);save();dTrayDraw();sfx('swish',{});return true}
+function dRevert(){const D=DECO,s=D.rv[D.rid];if(!s)return false;if(D.G)dGhostOff();const a=dSnap(D.rid);if(!dApply(D.rid,s)){toast('📦 those pieces aren\'t in your storage any more');return false}D.U.push({rid:D.rid,a,b:dSnap(D.rid)});D.Rd.length=0;dLoad();dRebuild();dSurfBuild(CB,CB.gi);save();dTrayDraw();sfx('swish',{});return true}
 function dSweep(kind,k){const D=DECO,R=D.R;if(R.out||kind==='wp'&&!R.walls.length){toast('🎨 no walls to paper here');return false}dGhostOff();const old=D.sm&&D.sm[D.rid+kind];
   dCommit(()=>{const r=S.you.home.rooms[D.rid]||(S.you.home.rooms[D.rid]={wp:0,fl:0,it:''});r[kind]=k},{norebuild:1});const m=k?dSurfMesh(R,kind,k):null;if(m){CB.gw.add(m);D.sm[D.rid+kind]=m;m.geometry.setDrawRange(0,0)}else delete D.sm[D.rid+kind];
   D.sw={m,old,t0:performance.now(),n:m?m.geometry.index.count:0};sfx('swish',{});for(let i=0;i<4;i++)setTimeout(()=>{try{sfx('tink',{g:.25})}catch(e){}},150+i*160);return true}
@@ -8447,13 +8466,14 @@ function dEnter(rid){const D=DECO;if(!CB||!S.you||!S.you.home)return null;if(MD&
   if(!dRooms().includes(rid))rid='great';if(D.on&&D.rid!==rid&&D.G)dSetDownOrCancel();D.rid=rid;dLoad();if(!D.rv[rid])D.rv[rid]=dSnap(rid);
   if(!D.on){D.on=1;dHud(1,'d');
     try{if(!panel.classList.contains('hidden'))panelOpen(false)}catch(e){}document.body.classList.add('decoOn');try{hideHint()}catch(e){}D.tab=rid==='lot'?'yard':'all';D.t0=performance.now();sfx('open',{})}
-  CB.cutF=D.R.out&&rid==='lot'?false:true;try{cabFrame(.016)}catch(e){}dCam();dGridMesh();dTrayDraw();dBarDraw();dLayout();
+  {const cx=rid==='back'?6:rid==='green'?2:rid==='great'&&CB.lv>=2?4:0;if((CB.cutX|0)!==cx){CB.cutX=cx;try{dRebuild()}catch(e){}}}
+  CB.cutF=D.R.out&&rid==='lot'?false:true;try{cabFrame(.016)}catch(e){}try{cabCutApply()}catch(e){}dCam();dGridMesh();dTrayDraw();dBarDraw();dLayout();
   if(rid!=='lot'&&camS.mode==='walk'&&cabIn(YOU.x,YOU.z,.1)&&!TG.on){const q=toWorld(byId.cabin,rid==='great'?5.6:D.R.x1-.6,rid==='great'?3.5:D.R.z1-.5);try{tapGo(q.x,q.z,{why:'deco'})}catch(e){}}return dState()}
 // fit the room into the area the tray leaves free (the live camera fov/aspect), then slide the target so the room sits in that area's middle
-function dCam(){const D=DECO,R=D.R,p=byId.cabin,W=innerWidth,H=innerHeight,side=W>H||W>=800,t=Math.tan((camera.fov||52)*Math.PI/360),asp=camera.aspect||W/H,pit=R.out?.95:1.02,tw=side?Math.min(252,W*.36):0,th=side?0:Math.min(H*.36,262),fw=(W-tw-16)/W,fh=(H-th-24)/H;
+function dCam(){const D=DECO,R=D.R,p=byId.cabin,W=innerWidth,H=innerHeight,side=W>H||W>=800,t=Math.tan((camera.fov||52)*Math.PI/360),asp=camera.aspect||W/H,pit=R.id==='lot'?1.2:R.out?.95:1.02,tw=side?Math.min(252,W*.36):0,th=side?0:Math.min(H*.36,262),fw=(W-tw-16)/W,fh=(H-th-24)/H;
   const d1=R.w/2*1.12/(t*asp*fw),d2=(R.d*Math.sin(pit)+2.6*Math.cos(pit))/2*1.4/(t*fh),fit=clamp(Math.max(d1,d2),6,40),ox=side?tw*fit*t*asp/W:0,oz=side?0:th/H*fit*t/Math.sin(pit);
   const w=toWorld(p,(R.x0+R.x1)/2+ox,(R.z0+R.z1)/2+oz);D.cam=CAM.push('deco',{prio:3,tx:w.x,ty:R.y,tz:w.z,dist:fit,pitch:pit,yaw:p.ry,range:[fit*.5,fit*1.5],ease:3})}
-function dExit(){const D=DECO;if(!D.on)return dState();dSetDownOrCancel();if(D.G)dGhostOff();D.on=0;D.skip=null;CAM.pop('deco');CB.cutF=null;document.body.classList.remove('decoOn','decoSide');dHud(0,'d');
+function dExit(){const D=DECO;if(!D.on)return dState();dSetDownOrCancel();if(D.G)dGhostOff();D.on=0;D.U.length=0;D.Rd.length=0;D.rv={};D.skip=null;CAM.pop('deco');CB.cutF=null;CB.cutX=0;document.body.classList.remove('decoOn','decoSide');dHud(0,'d');
   D.gm&&catFree(D.gm);D.gm=null;D.gp.visible=false;D.grd.visible=false;try{cabBuild()}catch(e){dRebuild()}save();HUD.layout();sfx('shut',{});return dState()}
 // while decorating or reading a Moving Day card, the walk HUD steps out of the way (restored exactly on exit)
 function dHud(on,k){const D=DECO,L=D.hl[k]||(D.hl[k]=[]);if(on){if(L.length)return;for(const id in HUD.S){const s=HUD.S[id];if(s.el&&s.el.style.visibility!=='hidden'&&s.el.id!=='decoBtn'){L.push(s.el);s.el.style.visibility='hidden'}}for(const z in HUD.more){L.push(HUD.more[z]);HUD.more[z].style.visibility='hidden'}}else{for(const el of L)el.style.visibility='';L.length=0}}
@@ -8739,19 +8759,22 @@ function mN(P,ins,midi,t,dur,g){const c=AUD.c,R=INS[ins];if(!R||!P.out)return;mi
   if(R.port&&P.lf){for(const o of O){o.frequency.setValueAtTime(P.lf,t);o.frequency.exponentialRampToValueAtTime(f,t+R.port)}}if(R.port)P.lf=f;
   if(R.vib){const l=c.createOscillator(),lg=c.createGain();l.frequency.value=R.vib[0];lg.gain.setValueAtTime(0,t);lg.gain.linearRampToValueAtTime(R.vib[1],t+(R.vib[2]||0)+.06);l.connect(lg);for(const o of O)lg.connect(o.detune);l.start(t);l.stop(end);n.push(l,lg)}
   if(R.br){const s=c.createBufferSource(),bp=c.createBiquadFilter(),bg=c.createGain();s.buffer=AUD.white;bp.type='bandpass';bp.frequency.value=f*2;bp.Q.value=2;bg.gain.setValueAtTime(0,t);bg.gain.linearRampToValueAtTime(.06,t+.03);bg.gain.linearRampToValueAtTime(0,t+.25);s.connect(bp);bp.connect(bg);bg.connect(out);s.start(t,Math.random()*1.5);s.stop(t+.3);n.push(s,bp,bg)}
-  for(const o of O){o.start(t);o.stop(end+.02)}out.connect(P.out);n.push(out,...O);MUS.live.push({n,end});MUS.st.notes++}
+  for(const o of O){o.start(t);o.stop(end+.02)}out.connect(P.out);n.push(out,...O);MUS.live.push({n,end,t0:t,g:out});MUS.st.notes++}
 function mPerc(P,k,t,g,dur){const c=AUD.c,D=PRC[k];if(!D||!P.out)return;const s=c.createBufferSource(),fl=c.createBiquadFilter(),e=c.createGain(),d=dur||D[3];s.buffer=D[0]==='p'?AUD.pink:AUD.white;s.loop=!!dur;fl.type=D[1];fl.frequency.value=D[2];fl.Q.value=k==='sleigh'?6:1;
   e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(D[4]*g,t+(dur?.3:.003));if(dur){e.gain.setValueAtTime(D[4]*g,t+d-.3);e.gain.linearRampToValueAtTime(0,t+d)}else e.gain.exponentialRampToValueAtTime(.0004,t+d);
-  s.connect(fl);fl.connect(e);e.connect(P.out);s.start(t,Math.random()*1.5);s.stop(t+d+.03);MUS.live.push({n:[s,fl,e],end:t+d+.03})}
-function mKick(P,t,g){const c=AUD.c,o=c.createOscillator(),e=c.createGain();o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(45,t+.14);e.gain.setValueAtTime(.12*g,t);e.gain.exponentialRampToValueAtTime(.0004,t+.16);o.connect(e);e.connect(P.out);o.start(t);o.stop(t+.18);MUS.live.push({n:[o,e],end:t+.18})}
+  s.connect(fl);fl.connect(e);e.connect(P.out);s.start(t,Math.random()*1.5);s.stop(t+d+.03);MUS.live.push({n:[s,fl,e],end:t+d+.03,t0:t,g:e})}
+function mKick(P,t,g){const c=AUD.c,o=c.createOscillator(),e=c.createGain();o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(45,t+.14);e.gain.setValueAtTime(.12*g,t);e.gain.exponentialRampToValueAtTime(.0004,t+.16);o.connect(e);e.connect(P.out);o.start(t);o.stop(t+.18);MUS.live.push({n:[o,e],end:t+.18,t0:t,g:e})}
+// B20 music cap for B21 notes: count notes sounding at t (not the look-ahead / ended tails); steal the one closest to its end
+function musOn(t){let k=0;for(const v of MUS.live)if(v.t0<t+.12&&v.end>t)k++;return k}
+function musSteal(t){let w=null,wl=1e9;for(const v of MUS.live)if(v.t0<t&&v.end>t+.05&&v.g){const l=(v.end-t)/Math.max(.01,v.end-v.t0);if(l<wl){wl=l;w=v}}if(!w)return;try{w.g.gain.cancelScheduledValues(t);w.g.gain.setTargetAtTime(0,t,.015)}catch(e){}for(const x of w.n)if(x.stop)try{x.stop(t+.08)}catch(e){}w.end=t;MUS.st.steal=(MUS.st.steal||0)+1}
 // ---- one 8th-note slot of a player (lead .14, comp .07 per voice, bass .16, pad .06, percussion .03-.05) ----
 const CPAT={marimba:[0,2,3,4,6],kalimba:[0,3,4,6],mbox:[0,2,4,6],celesta:[0,4],glock:[0,4],harp:[0,1,2,3,4,5,6,7],sq:[0,1,2,3,4,5,6,7],uke:[0,3,4,6],felt:[0,4],rhodes:[0,5],organ:[0,3,4,7],synth:[0,3,6],glass:[0]},ARP=new Set(['marimba','kalimba','mbox','celesta','glock','harp','sq']);
 const mcv=(v,lo)=>{let m=lo+(((v-lo)%12)+12)%12;return m};
-function musSlot(P,k,t,e8){const th=P.th,spb=th.spb,kk=k-P.k0,bar=Math.floor(kk/spb),pos=kk%spb,fb=bar%16,c0=chordAt(th,fb),pcs=chordPcs(th,c0),lv=1,low=audTier()==='LOW',busy=MUS.live.length>MUS.cap,beat=e8*2,st=th.style;
+function musSlot(P,k,t,e8){const th=P.th,spb=th.spb,kk=k-P.k0,bar=Math.floor(kk/spb),pos=kk%spb,fb=bar%16,c0=chordAt(th,fb),pcs=chordPcs(th,c0),lv=1,low=audTier()==='LOW',room=MUS.cap-musOn(t),busy=room<3,beat=e8*2,st=th.style;
   if(pos===0&&fb%2===0)musPhrase(P,fb);const L=P.lead||th.lead;
-  for(const n of th.mel[fb])if(n[0]===pos)mN(P,L,n[1],t,n[2]*e8*.92,.14*lv);
-  if(P.ctr&&pos===0&&fb%(P.ctr==='theremin'?2:1)===0){const v=pcs[th.sev?3:1]||pcs[1];mN(P,P.ctr,mcv(v,P.ctr==='theremin'?67:62),t,spb*e8*(P.ctr==='theremin'?1.9:.95),P.ctr==='theremin'?.07:.06)}
-  if(th.pad&&pos===0&&!low&&!busy)for(const v of pcs.slice(0,3))mN(P,th.pad,mcv(v,52),t,spb*e8,.06);
+  for(const n of th.mel[fb])if(n[0]===pos){if(MUS.cap-musOn(t)<=0)musSteal(t);mN(P,L,n[1],t,n[2]*e8*.92,.14*lv)}
+  if(P.ctr&&room>1&&pos===0&&fb%(P.ctr==='theremin'?2:1)===0){const v=pcs[th.sev?3:1]||pcs[1];mN(P,P.ctr,mcv(v,P.ctr==='theremin'?67:62),t,spb*e8*(P.ctr==='theremin'?1.9:.95),P.ctr==='theremin'?.07:.06)}
+  if(th.pad&&pos===0&&!low&&room>=6)for(const v of pcs.slice(0,3))mN(P,th.pad,mcv(v,52),t,spb*e8,.06);
   // bass
   const b=th.bass,root=mcv(pcs[0],36),fifth=mcv(pcs[2],36);let bn=null;
   if(b==='walk'){if(pos%2===0){const j=pos/2,nx=mcv(chordPcs(th,chordAt(th,(fb+1)%16))[0],36);bn=j===0?root:j===1?mcv(pcs[1],36):j===2?fifth:nx+(nx>fifth?-1:1)}}
@@ -8759,16 +8782,16 @@ function musSlot(P,k,t,e8){const th=P.th,spb=th.spb,kk=k-P.k0,bar=Math.floor(kk/
   else if(b==='funk'){if(pos===0||pos===3||pos===6||pos===7)bn=pos===3||pos===7?root+12:root}
   else if(b==='tri'){bn=pos%2?root+12:root}
   else if(b){if(st==='bossa'){if(pos===0||pos===3||pos===4||pos===7)bn=pos===3||pos===7?fifth:root}else if(spb===6){if(pos===0)bn=root}else if(pos===0||pos===4)bn=pos?fifth:root}
-  if(bn!=null)mN(P,b==='walk'||b==='stride'||b==='funk'?(b==='stride'?'felt':'upright'):b,bn,t,e8*(b==='tri'?.9:1.6),.16);
+  if(bn!=null&&MUS.cap-musOn(t)>0)mN(P,b==='walk'||b==='stride'||b==='funk'?(b==='stride'?'felt':'upright'):b,bn,t,e8*(b==='tri'?.9:1.6),.16);
   // comp
   if(!busy){const C=th.comp;let pat=CPAT[C]||[0,4];if(st==='bossa')pat=[0,3,6];else if(st==='stride')pat=[2,6];else if(st==='march')pat=[1,3,5,7];else if(st==='waltz'||spb===6)pat=ARP.has(C)?[0,2,4]:[2,4];else if(st==='trem')pat=[0,1,2,3,4,5,6,7];
     if(pat.includes(pos)){if(ARP.has(C)&&st!=='trem'){const i=pat.indexOf(pos),v=pcs[i%pcs.length]+(i>=pcs.length?12:0);mN(P,C,mcv(v,60)+(C==='sq'||C==='harp'?12:0),t,e8*1.6,.07)}
-      else{const vs=pcs.slice(0,low?2:4);vs.forEach((v,i)=>mN(P,C,mcv(v,st==='trem'?48:55),t+(C==='uke'?i*.012:0),st==='trem'?e8*.9:e8*(pos===0?3:1.8),st==='trem'?.04:.07))}}}
+      else{const vs=pcs.slice(0,Math.max(0,Math.min(low?2:4,MUS.cap-musOn(t)-1)));vs.forEach((v,i)=>mN(P,C,mcv(v,st==='trem'?48:55),t+(C==='uke'?i*.012:0),st==='trem'?e8*.9:e8*(pos===0?3:1.8),st==='trem'?.04:.07))}}}
   // percussion (+ sparse vinyl crackle on lo-fi and in rain)
-  const pc=P.perc||th.perc;if(pc&&!low){if(pc==='shaker')mPerc(P,'shaker',t,pos%2?1.4:.8);else if(pc==='brush'){if(pos===2||pos===6)mPerc(P,'brush',t,1)}else if(pc==='ride'){if(pos%2===0||pos===3||pos===7)mPerc(P,'ride',t,pos%2?.7:1)}
+  const pc=P.perc||th.perc;if(pc&&!low&&MUS.cap-musOn(t)>1){if(pc==='shaker')mPerc(P,'shaker',t,pos%2?1.4:.8);else if(pc==='brush'){if(pos===2||pos===6)mPerc(P,'brush',t,1)}else if(pc==='ride'){if(pos%2===0||pos===3||pos===7)mPerc(P,'ride',t,pos%2?.7:1)}
     else if(pc==='hat'){mPerc(P,'hat',t,pos%2?1:.6);if(pos===0||pos===4)mKick(P,t,.8)}else if(pc==='kick'){if(pos===0||pos===4||pos===5)mKick(P,t,1);if(pos===2||pos===6)mPerc(P,'snare',t,.8);if(pos%2)mPerc(P,'hat',t,.8)}
     else if(pc==='snare'){if(pos%2===0)mPerc(P,'snare',t,pos%4?.7:1)}else if(pc==='sleigh'){if(pos%2===0)mPerc(P,'sleigh',t,.9)}}
-  if((th.crk||P.crk)&&Math.random()<.18)mPerc(P,'crk',t+Math.random()*e8,1);if(P.whir&&pos===0)mPerc(P,'whir',t,1,spb*e8+.4);
+  if((th.crk||P.crk)&&room>1&&Math.random()<.18)mPerc(P,'crk',t+Math.random()*e8,1);if(P.whir&&pos===0)mPerc(P,'whir',t,1,spb*e8+.4);
   if(P.k==='town'&&MUS.snow&&pos===0&&fb%2===0&&!low)mPerc(P,'sleigh',t,1.2)}
 // phrase-level choices for the town: season leads on A' and B, Halloween's organ + theremin, and the town leaning toward his taste
 function musPhrase(P,fb){const th=P.th;P.lead=null;P.ctr=th.ctr;P.crk=MUS.rain&&P.k==='town'?1:0;if(P.k!=='town'||!P.src||P.src.song==null)return;const hol=musHol();
@@ -8791,10 +8814,10 @@ function townSrc(now){const M=S.music;if(MUS.hf!=null)return{song:MUS.hf};if(M.t
 function shopWant(){if(audOn())audLis();const x=AP.x,z=AP.z;let best=null,bd=30;for(const pid in SHOPM){const p=byId[pid];if(!p||!isOpen(p))continue;const d=Math.hypot(p.x-x,p.z-z);if(d<bd){bd=d;best=p}}return best}
 function shopSrc(pid){const r=SHOPM[pid],M=S.music,day=dkey(Date.now());if(r==='@'||((pid==='cafe'||pid==='records')&&M.tk&&Date.now()<M.tk.until))return{rec:M.tk&&Date.now()<M.tk.until?M.tk.id:RECORDS[(day+7)%15].id};return{rcp:r,seed:wxHash(pid+day)}}
 // 150 ms (400 ms LOW) scheduler with a .6 s look-ahead; on resume the next note is reset to now + .1
-function musTick(){if(!audOn()||!MUS)return;const c=AUD.c,ct=c.currentTime,low=audTier()==='LOW',la=.6,now=Date.now();MUS.cap=low?14:TOUCH?28:40;MUS.tickN++;
+function musTick(){if(!audOn()||!MUS)return;const c=AUD.c,ct=c.currentTime,low=audTier()==='LOW',la=.6,now=Date.now();MUS.cap=low?5:AUD.CAP.music;let pb=null,ga=0;if(low)for(const Q of MUS.P)if(Q.em&&Q.out){const g=Q.em.solo?1:audSpat(Q.em.x,Q.em.z,Q.em.ref,Q.em.max,Q.em.pid,MUS.sp).g;if(g>ga){ga=g;pb=Q}}MUS.tickN++;
   if(!MUS.tg){MUS.tg=c.createGain();MUS.tg.gain.value=1;MUS.tg.connect(AUD.bus.music);MUS.fog=c.createGain();MUS.fog.gain.value=0;MUS.tg.connect(MUS.fog);MUS.fog.connect(AUD.room)}
   if(MUS.tickN%4===1)musSync(now);
-  for(const P of MUS.P){if(!P.out){musWire(P);if(!P.out)continue}if(P.nt<ct)P.nt=ct+.1;const e=P.em,far=e&&!e.solo&&audSpat(e.x,e.z,e.ref,e.max,e.pid,MUS.sp).g<.003;let n=0;
+  for(const P of MUS.P){if(!P.out){musWire(P);if(!P.out)continue}if(P.nt<ct)P.nt=ct+.1;const e=P.em,far=(e&&!e.solo&&audSpat(e.x,e.z,e.ref,e.max,e.pid,MUS.sp).g<.003)||(ga>.25&&P!==pb);let n=0;
     while(P.nt<ct+la&&n++<16){const th=P.th,rk=P.k==='town'&&MUS.rain?.92:1,bt=60/(th.bpm*rk),kk=P.kc-P.k0,on=kk%2===0,e8=th.sw>.5?(on?bt*th.sw:bt*(1-th.sw)):bt/2;if(!far)try{musSlot(P,P.kc,P.nt,bt/2)}catch(err){MUS.st.err=String(err&&err.message||err)}
       if(P.k==='town'&&kk%th.spb===0){MUS.bt={t:P.nt,bt,spb:th.spb}}P.nt+=e8;P.kc++}}
   for(let i=MUS.live.length-1;i>=0;i--){const v=MUS.live[i];if(ct>v.end+.25){for(const x of v.n)try{x.disconnect()}catch(_){}MUS.live.splice(i,1)}}}
