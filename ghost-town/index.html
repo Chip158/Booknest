@@ -935,11 +935,11 @@ const WX={forDate:d=>wxDay(d),
 // live decisions read the weather you see (so __mocha.weather overrides count); past times read the almanac
 function wxKind(t){return Math.abs(t-Date.now())<9e5?WEATHER.kind:WX.at(t)}
 // HOME CAPS: what a home has, and the fallback when it lacks it. hasItem(slot,home) / capSpot(slot,home) -> {p,s,fb} or null.
-const FEAT={nest:false,radio:false};
+const FEAT={nest:false,radio:true};
 const HOME_CAPS={bed:{s:'bed',fb:'blanket',fs:'blanket'},stove:{s:'kitchen',fb:null,alt:'cafe'},computer:{s:'desk',fb:'library',fp:'library'},couch:{s:'couch',fb:'cushions',fs:'floorA',pair:['couchA','couchB'],fpair:['floorA','floorB']},table:{s:'kitchen',fb:'box',fs:'boxA',pair:['teaA','teaB'],fpair:['boxA','boxB']},fridge:{s:'kitchen',fb:'box',fs:'boxA'},desk:{s:'desk',fb:'box',fs:'boxA'},player:{s:'couch',fb:'radio',fs:'couch',need:'radio'},radio:{s:'couch',fb:null},tv:{s:'couch',fb:null},lamp:{s:'main',fb:'bulb',fs:'bulb'},bath:{s:'bath',always:1}};
 // per-home spot names for a slot (B14): Wendell's cottage has armchairs, a tea table and a TV corner
 const HOME_S={neighbor:{bed:'bed',stove:'stove',table:'teaA',couch:'fireA',tv:'tv',radio:'fireA',lamp:'reading',desk:'shelf',computer:null}};
-function hasItem(slot,home='home'){const c=HOME_CAPS[slot];if(!c)return false;if(c.always)return true;if(slot==='radio'&&!FEAT.radio)return false;if(!FEAT.nest)return true;const own=S&&S.homeItems&&S.homeItems[home];return!!(own&&(Array.isArray(own)?own.includes(slot):own[slot]))}
+function hasItem(slot,home='home'){const c=HOME_CAPS[slot];if(!c)return false;if(c.always)return true;if(slot==='radio')return!!(FEAT.radio&&S&&S.music&&S.music.rad);if(!FEAT.nest)return true;const own=S&&S.homeItems&&S.homeItems[home];return!!(own&&(Array.isArray(own)?own.includes(slot):own[slot]))}
 function capSpot(slot,home='home'){const c=HOME_CAPS[slot];if(!c)return null;const hs=HOME_S[home]||{};if(hasItem(slot,home)){const s=hs[slot]!==undefined?hs[slot]:c.s;return s?{p:home,s,fb:null,pair:home==='home'?c.pair||null:null}:null}if(c.fp)return{p:c.fp,s:null,fb:c.fb};if(c.fs&&(!c.need||hasItem(c.need,home)))return{p:home,s:c.fs,fb:c.fb,pair:c.fpair||null};return null}
 // BONDS shim (B28 replaces the body of bondOf with S.bonds)
 const TIERS=[0,10,60,160,320,600],TIER_N=['stranger','acquaintance','regular','friend','close friend','best friend'];
@@ -1170,6 +1170,7 @@ function fresh(){const tr=()=>+(Math.random()).toFixed(2);return{v:1,wend:wendFr
 {const f0=fresh;fresh=function(){const s=f0();s.you=walletFix(s.you);s.shopDay={k:0,sold:{},m:{}};return s}}
 {const f1=fresh;fresh=function(){const s=f1();cabinFix(s.you);return s}}
 {const f2=fresh;fresh=function(){const s=f2();decoFix(s.you);return s}}
+{const f3=fresh;fresh=function(){const s=f3();s.music=musicFix(null,1);return s}}
 let S=null;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 let isNew=!S||!S.needs;if(isNew)S=fresh();const seen0=isNew?0:(+S.lastSeen||0);
 function migrate(){S.you=youFix(S.you);S.wend=wendFix(S.wend);S.town=townFix(S.town);S.lite=Object.assign({v:0,lw:0,fw:0,ld:'',fd:''},S.lite&&typeof S.lite==='object'?S.lite:{});S.paintings=S.paintings||[];S.coins=S.coins||0;S.know=S.know||{};S.seen=S.seen||[];S.posts=S.posts||[];S.pets=S.pets||[];S.decor=S.decor||[];if(S.pantry==null)S.pantry=60;
@@ -1181,6 +1182,7 @@ function migrate(){S.you=youFix(S.you);S.wend=wendFix(S.wend);S.town=townFix(S.t
   if(typeof walletFix==='function'){S.you=walletFix(S.you);shopDayFix()}
   if(typeof cabinFix==='function')cabinFix(S.you);
   if(typeof decoFix==='function')decoFix(S.you);
+  if(typeof musicFix==='function')S.music=musicFix(S.music,isNew);
   (S.hobbies||[]).forEach(h=>{if(!h)return;if(!own(byId,h.p)){h.p='home';h.s='couch'}const sp=byId[h.p].spots;if(h.s&&sp&&!own(sp,h.s))h.s=h.p==='home'?'couch':null})}migrate();
 let dirty=true,hiddenAt=0;
 function save(){if(!hiddenAt)S.lastSeen=Date.now();try{S.now=nowSnap()}catch(_){}dirty=true;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){try{localStorage.removeItem(KEY+'-bak');localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}}}
@@ -3177,10 +3179,10 @@ function mailGift(h){const own=it=>S.owned.some(o=>o.item===it),g={},tr=n=>{if(S
    case'anniv':if(!S.decor.includes('fern'))g.decor='fern';g.coins=(g.coins||0)+20;break;
    default:{const r=Math.random();if(r<.42)g.coins=Math.round(rand(10,25));else if(r<.66){const c=['beanie','scarf'].find(x=>!own(x));if(c){const col=pick(PALETTE);g.wear={item:c,color:col,name:`${COLOR_NAMES[col]} ${c} Mom knitted`}}else g.coins=12}
      else{const n=['a piece of sea glass from the beach below the lighthouse','a tiny driftwood boat Dad carved','a postcard of the lighthouse at sunset','a little jar of sand from the coast','a lighthouse keychain'].filter(x=>!S.items.some(i=>i.name===x));if(n.length)g.tr=pick(n);else g.coins=12}}}
-  return g}
-function giftDesc(g){if(!g)return'';const o=[];if(g.wear)o.push(aan(g.wear.name));if(g.decor)o.push(aan(DECOR[g.decor]));if(g.tr)o.push(g.tr);if(g.coins)o.push(`${g.coins} coins`);return o.length>1?o.slice(0,-1).join(', ')+' and '+o[o.length-1]:o[0]||'a letter'}
+  if(h==='welcome'||(S.music&&S.music.rad===0))g.radio=1;return g}
+function giftDesc(g){if(!g)return'';const o=[];if(g.wear)o.push(aan(g.wear.name));if(g.decor)o.push(aan(DECOR[g.decor]));if(g.tr)o.push(g.tr);if(g.radio)o.push('a hand-me-down transistor radio');if(g.coins)o.push(`${g.coins} coins`);return o.length>1?o.slice(0,-1).join(', ')+' and '+o[o.length-1]:o[0]||'a letter'}
 function applyGift(g,t,h){if(!g)return'';if(g.wear&&WEAR[g.wear.item]){const it=acquire(g.wear.item,g.wear.color,String(g.wear.name).slice(0,40),'Mom & Dad',t);if(it){const th=holTheme(t);if(HOLWEAR[it.item]&&holWearOk(it.item)||(th==='halloween'&&COSTUME[it.item])){if(th==='halloween'&&COSTUME[it.item])wearCostume();else wearItem(it.id)}else if(!HOLWEAR[it.item]&&Math.random()<.6)wearItem(it.id)}}
-  if(g.decor&&DECOR[g.decor]&&!S.decor.includes(g.decor)){S.decor.push(g.decor);try{applyDecor()}catch(e){}}if(g.tr&&S.items.length<60)S.items.push({name:g.tr,from:'Mom & Dad',t});if(g.coins)S.coins+=g.coins;return giftDesc(g)}
+  if(g.decor&&DECOR[g.decor]&&!S.decor.includes(g.decor)){S.decor.push(g.decor);try{applyDecor()}catch(e){}}if(g.tr&&S.items.length<60)S.items.push({name:g.tr,from:'Mom & Dad',t});if(g.coins)S.coins+=g.coins;if(g.radio&&S.music)S.music.rad=1;return giftDesc(g)}
 const LETTERS={
  welcome:['Dear Mocha, we mailed this before you even moved in so it would be waiting for you! Your very own house. We are so proud of you, our brave little boo. The lighthouse feels quiet without you, but Dad says that just means the waves have more room to talk. Here\'s a little something to start you off. Write when you can!','Our dear Mocha, welcome to your new home! Mom cried a little (happy tears, they evaporate). Remember: be kind, try new things, and wear a scarf when it\'s windy. A few coins for your first week, and a photo so you don\'t forget our faces.'],
  halloween:['Happy Halloween, sweet pea! It\'s our favorite night, of course. Dad already put a jack-o\'-lantern in the lighthouse window and the fishing boats keep waving at it. We sent you something to wear for trick-or-treating, and some taffy from the boardwalk. Boo-tiful wishes!','Dear Mocha, BOO! (That was Dad.) Halloween on the coast is foggy and perfect. We tucked a costume piece in here for you, plus taffy. Send us a picture of you all dressed up if you can!'],
@@ -3193,7 +3195,7 @@ const LETTERS={
  easter:['Happy Easter, Mocha! The tide pools are full of baby crabs and the gulls are being very dramatic. We sent you something silly to wear and a chocolate egg (we know, we know, you can\'t eat it, but it\'s shiny).'],
  anniv:['Dear Mocha, can you believe it\'s been {YRS} in your own house? We are SO proud of you. Here\'s a plant to keep your rooms green, and a few coins to celebrate. Happy move-in day!'],
  care:['Dear Mocha, just a little care package because we were thinking about you. The fog rolled in thick this morning and Dad said "Mocha would love this." Eat your vegetables (smell them, at least). Love, Mom & Dad.','Hello from the lighthouse! Nothing special, we just miss you. Mom found something on the beach that made her think of you. Dad says to tell you a joke: what do you call a ghost who stays up all night? A night-owl-oooo. (Sorry.)','Our dear boo, a few things for you from the coast. Are you sleeping enough? Making friends? Mom says hi, Dad says hi louder.']};
-function letterText(m){const L=LETTERS[m.h]||LETTERS.care;let s=pick(L);if(m.h==='anniv'){const y=+String(m.k||'').split('-')[1]||new Date(m.t||Date.now()).getFullYear();s=s.replace('{YRS}',annivW(annivN(new Date(y,11,31).getTime())))}if(!/love, mom & dad/i.test(s))s+=' Love, Mom & Dad.';return s}
+function letterText(m){const L=LETTERS[m.h]||LETTERS.care;let s=pick(L);if(m.h==='anniv'){const y=+String(m.k||'').split('-')[1]||new Date(m.t||Date.now()).getFullYear();s=s.replace('{YRS}',annivW(annivN(new Date(y,11,31).getTime())))}if(!/love, mom & dad/i.test(s))s+=' Love, Mom & Dad.';if(m.g&&m.g.radio)s+=' P.S. Dad found this radio in the lighthouse attic. It still gets Drizzle FM!';return s}
 function mailWaiting(t=Date.now()){return(S.mbox||[]).filter(m=>m.t<=t)}
 function mailUnanswered(t=Date.now()){return(S.mail||[]).find(l=>l.from!=='me'&&l.from!=='Wendell'&&!l.reply&&t-l.t<14*864e5&&t>=l.t)}
 // put due packages in his mailbox. first run (fresh Mocha or first time with this feature): only what's due right now
@@ -3449,7 +3451,7 @@ function localChoose(at=Date.now()){const tr=S.traits,h=hourAt(at),asleep=asleep
   const hidden=PLACES.filter(p=>!known(p));
   if(hidden.length&&!night&&Math.random()<.07+tr.curiosity*.1+(S.needs.curious<35?.1:0)+(S.goal&&S.goal.kind==='discover'?.15:0))return{explore:pick(hidden)};
   const cands0=1;const cands=ACTS.filter(a=>known(byId[a.p])&&(!a.night||night)&&(!a.pet||S.pets.length)&&(!a.bike||S.bike)&&!a.npc&&isOpen(byId[a.p],h)&&(a.fx!=='sleep'||S.needs.energy<8)&&(a.fx!=='mail'||mailWaiting(at).length)&&(a.fx!=='writeback'||mailUnanswered(at)));
-  S.hobbies.forEach(hb=>{if(!hobbyOk(hb)||(byId[hb.p]&&!isOpen(byId[hb.p],hourAt(at))))return;cands.push({p:hb.p,s:hb.s,doing:hb.doing,tags:hb.tag?[hb.tag]:[],need:{fun:30},hobby:hb.name})});holCands(at).forEach(a=>cands.push(a));hangCands(at).forEach(a=>cands.push(a));{const bj=benchJoinCand(at);if(bj)cands.push(bj)}{let tv=null;try{tv=talkVisitCand(at)}catch(e){}if(tv)cands.push(tv)}if(DVIS.t&&DVIS.pid==='home'&&at-DVIS.t>=0&&at-DVIS.t<6e4)cands.push(GREET_ACT);if(FLK.w&&!FLK.back&&at-FLK.w>=0&&at-FLK.w<18e4)cands.push(FLICK_ACT);{const tc=tripCand(at);if(tc&&known(byId[tc.p]))cands.push(tc);const up=tripUnpack(at);if(up)cands.push(up)}
+  S.hobbies.forEach(hb=>{if(!hobbyOk(hb)||(byId[hb.p]&&!isOpen(byId[hb.p],hourAt(at))))return;cands.push({p:hb.p,s:hb.s,doing:hb.doing,tags:hb.tag?[hb.tag]:[],need:{fun:30},hobby:hb.name})});holCands(at).forEach(a=>cands.push(a));hangCands(at).forEach(a=>cands.push(a));{const bj=benchJoinCand(at);if(bj)cands.push(bj)}{let tv=null;try{tv=talkVisitCand(at)}catch(e){}if(tv)cands.push(tv)}{let mc=null;try{mc=musCands(at)}catch(e){}if(mc)mc.forEach(a=>cands.push(a))}if(DVIS.t&&DVIS.pid==='home'&&at-DVIS.t>=0&&at-DVIS.t<6e4)cands.push(GREET_ACT);if(FLK.w&&!FLK.back&&at-FLK.w>=0&&at-FLK.w<18e4)cands.push(FLICK_ACT);{const tc=tripCand(at);if(tc&&known(byId[tc.p]))cands.push(tc);const up=tripUnpack(at);if(up)cands.push(up)}
   if(cands.length>1)for(let i=cands.length-1;i>=0;i--)if(cands.length>1&&ubVeto(cands[i]))cands.splice(i,1);UBX.at=at;UBX.h=h;
   const sc=cands.map(a=>{let s=1;for(const n in a.need||{})s+=(100-S.needs[n])/30*(a.need[n]/40);a.tags.forEach(k=>s+=Math.max(-1.5,(S.interests[k]||0))*.35);
     if(a.hobby)s+=2.5;if(a.hw)s+=a.hw;if(a.fx==='trip'||a.fx==='unpack')s+=a.tw;if(a.fx==='calendar')s+=calScore(at);if(a.fx==='mail')s+=4.5+Math.min(2,mailWaiting(at).length);if(a.fx==='writeback')s+=1.2+tr.sociability;const key=a.p+(a.s?'.'+a.s:'');if(S.recent.slice(0,2).includes(key))s-=3;if(!S.visits[a.p])s+=1.2+tr.curiosity*2;
@@ -3996,11 +3998,11 @@ function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;S.pantry=
   let alt=ty!=null?ty:navFloor(G.x,G.z)+1+Math.max(0,growScale()-1.5)*.5;if(G.sleep&&inHome(G.x,G.z))alt=2.3;
   G.y+=(alt-G.y)*Math.min(1,dt*(G.ride?8:G.biking?6:4));
   musingT-=dt;if(musingT<=0&&bubbleT<=0&&!G.sleep&&G.mode!=='trip'&&!HS.on&&!(G.act&&(G.act.fx==='hang'||G.act.fx==='ask'))){musingT=rand(25,45);const m=muse();if(m){say(m,4,true);if(m.includes('📱'))G.phoneT=3.5}}
-  const sc=growScale(),bob=G.biking?Math.abs(Math.sin(t*9))*.035:Math.sin(t*2.2)*(G.sleep?.06:.16)+(G.startle>0?Math.abs(Math.sin(G.startle*14))*.5:0);
+  const sc=growScale(),bob=G.biking?Math.abs(Math.sin(t*9))*.035:Math.sin(t*2.2)*(G.sleep?.06:.16)+(BEAT&&BEAT.on&&!G.sleep?BEAT.b*.035:0)+(G.startle>0?Math.abs(Math.sin(G.startle*14))*.5:0);
   mocha.position.set(G.x,G.y+bob,G.z);mocha.visible=G.mode!=='trip'&&!(G.lh&&G.lh.ph!=='top');mocha.rotation.y=G.yaw;mocha.scale.setScalar(sc);
   body.rotation.x=G.sleep?-.5:G.biking?.06:clamp(sp*.03,0,.3);body.rotation.z=Math.sin(t*1.3)*.05;
   const sq=G.startle>0?1+Math.sin(G.startle*25)*.08:1;body.scale.set(sq,2-sq,sq);
-  for(let k=0;k<hemIdx.length;k++){const [idx,ang,j]=hemIdx[k],[bx,by,bz]=hemBase[k];const w=Math.sin(ang*6+t*4)*(j?.03:.08);gPos.setXYZ(idx,bx*(1+w*.4),by+w,bz*(1+w*.4))}gPos.needsUpdate=true;
+  for(let k=0;k<hemIdx.length;k++){const [idx,ang,j]=hemIdx[k],[bx,by,bz]=hemBase[k];const w=Math.sin(ang*6+t*4)*(j?.03:.08)*(BEAT&&BEAT.on?1+BEAT.b*.5:1);gPos.setXYZ(idx,bx*(1+w*.4),by+w,bz*(1+w*.4))}gPos.needsUpdate=true;
   arms.forEach((a,i)=>{const sg=i?1:-1;if(G.biking)a.position.set(sg*.38,-.24+Math.sin(t*9+i*Math.PI)*.015,.56);else if(i&&G.phoneT>0)a.position.set(.6,.2+Math.sin(t*3)*.02,.3);else{a.position.x=sg*.66;a.position.z=.05;a.position.y=.2+Math.sin(t*4+i*Math.PI)*.06+(G.talk>0?Math.abs(Math.sin(t*8))*.12:0)}});
   const blink=(t%4.3)<.13;eyes.forEach(e=>{e.visible=!G.sleep;e.scale.y=blink?.1:G.startle>0?1.3:1});sleepEyes.forEach(e=>e.visible=G.sleep);
   smile.visible=!(G.startle>0||(G.talk>0&&!G.sleep));mouthO.visible=!smile.visible;mouthO.scale.y=G.startle>0?1.4:.6+Math.abs(Math.sin(t*14))*.8;
@@ -4191,6 +4193,7 @@ Reply with ONLY a JSON object:
  "selfie": ${S.phone?'null or {"caption":"a short caption he posts with a selfie, lowercase, maybe an emoji"} (only sometimes, when a moment feels worth sharing)':'null (he has no phone yet, so no selfies)'},
  "letter": null or "the letter from his parents (only if he just checked his mail and there was something): 2-4 warm, funny sentences from Mom & Dad, two old ghosts who keep a lighthouse on the Oregon coast; mention the occasion and what they sent; sign it: love, Mom & Dad",
  "write_back": null or "his letter back to his parents, 2-4 sentences in his voice about his real recent days, signed Mocha (only if he just wrote back to them)",
+ "record": ${typeof RECORDS!=='undefined'&&RECORDS&&S.music&&S.music.rad?'null or one of ['+RECORDS.filter(r=>!r.secret).map(r=>r.id).join(', ')+'] (only if he would put that song on his radio at home right now; his own choice)':'null'},
  "thought": "a short private thought (max 10 words, lowercase)",
  "next": {"place":"a place id from the list, or \\"explore\\"","spot":"one of that place's spots (see the list), or null","doing":"2-5 words, present tense","say":"what he says out loud, max 8 words, lowercase","hobby":"one of his hobby names if he's practicing it, else null","research":"a topic if he'll look something up on a computer (home desk or library), else null","ask":"a shopkeeper id if he goes to ask them something (their shop must be open), else null","job":"true if he goes there to help out for coins (an odd job listed for that place), else false","holiday":"a holiday activity id from the Calendar list if he does one now, else null","trip":"a destination id from the Trips list if he decides to travel now (he must be able to afford the ticket), else null","question":"his question, if ask is set","film":null or {"title":"a REAL film that exists (classic films and real documentaries are great)","year":1900,"by":"director","theme":"one of '+FILM_THEMES.join('/')+'","scenes":["4-5 short kid-friendly scene captions"],"facts":["2-3 true facts about the film"]} (only if he goes to watch a movie at the cinema)}
 }
@@ -5417,6 +5420,7 @@ function frame(now){const fps=SET.saver?20:TOUCH?30:60;if(now-last<1000/fps-2){r
   b18Frame(dt,T);
   b19Frame(dt,T);townFrame(dt,T);
   b23Frame(dt,T);
+  b21Frame(dt);
   byId.petstore.display.forEach((d,i)=>{animatePet(d,T+i,false);if(d.userData.sp==='poodle'||d.userData.sp==='hedgehog')d.position.y=.6+Math.max(0,Math.sin(T*2+i*1.7))**8*.25});
   const wl=byId.wheel;wl.wheel.rotation.x+=dt*.08;wl.gond.forEach(g=>{const a=g.userData.a;g.position.set(.6,Math.sin(a)*13,Math.cos(a)*13);g.rotation.x=-wl.wheel.rotation.x});
   if(byId.records.spin)byId.records.spin.rotation.y+=dt*1.5;
@@ -8027,7 +8031,7 @@ function buildCabin(p,grp,lv,ext){const C=CB;// dispose everything this cabin ow
   C.winF=mk(true);C.winB=mk(false);{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(dpos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(duv,2));g.setIndex(didx);const d=new THREE.Mesh(g,C.dripM);d.visible=false;d.renderOrder=2;d.name='cabinDrips';gx.add(d);C.drip=d}
   // door leaf (pivot on the hinge, 1 draw), porch sign (1), lantern = the porch light material (1), peanuts (1)
   {const dg=pbG(-.72,4.98,0);gx.add(dg);const D=new THREE.Group();box(1.44,2.42,.1,doorC,.72,1.23,0,D,false);box(.08,.08,.1,'#c9a94e',1.28,1.2,.08,D,false);box(.5,.5,.03,'#bfdbea',.72,1.8,.05,D,false);for(const y of [.6,1.1])box(1.2,.05,.03,'#3a2a22',.72,y,.05,D,false);cabBatch(D,{vc:PBM.vc},false,dg);C.door=dg;dg.userData.ang=0}
-  {const S2=new THREE.Group(),sg=new THREE.Mesh(UPLANE,C.signM);sg.scale.set(.62,.62,1);sg.position.set(-1.45,2.0,5.47);sg.userData={pk:'sign',uv:[0,0,.5,1],col:'#ffffff'};S2.add(sg);const sb=sg.clone();sb.rotation.y=Math.PI;sb.position.z=5.45;S2.add(sb);cabBatch(S2,{sign:C.signM},false,gx)}
+  {const S2=new THREE.Group(),sg=new THREE.Mesh(UPLANE,C.signM);sg.scale.set(.62,.62,1);sg.position.set(-1.45,2.0,5.47);sg.userData={pk:'cabsign',uv:[0,0,.5,1],col:'#ffffff'};S2.add(sg);const sb=sg.clone();sb.rotation.y=Math.PI;sb.position.z=5.45;S2.add(sb);cabBatch(S2,{cabsign:C.signM},false,gx)}
   {const l=box(.24,.34,.24,C.lanM,1.25,2.3,5.4,gx,false);l.name='cabinLantern'}
   {const pg=new THREE.Group();for(let i=0;i<7;i++){const s=new THREE.Mesh(SPH8,C.peaM);s.scale.set(.06,.04,.05);s.position.set(-2.2+Math.cos(i*2.4)*.07*(i%3),1.21+(i>4?.03:0),7.35+Math.sin(i*2.4)*.07*(i%3));pg.add(s)}const pm=cabBatch(pg,{vc:PBM.vc},false,gx)[0];pm.name='cabinPeanuts';C.pea=pm}
   C.gs=null;if(S.you.home.bu)cabScaffold(grp,S.you.home.bl);
@@ -8614,13 +8618,358 @@ function youUmbShow(on){const v=visitor,u=v.userData;let m=u.umb;if(!on){if(m)m.
   if(!m){const mat=new THREE.MeshLambertMaterial({color:c,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false}),dome=new THREE.Mesh(new THREE.SphereGeometry(.78,16,6,0,Math.PI*2,0,Math.PI*.42),mat),
       stick=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,1.05,6),new THREE.MeshLambertMaterial({color:'#5a4a3a'}));stick.position.y=-.5;m=new THREE.Group();m.add(dome,stick);dome.position.y=-.2;m.userData.mat=mat;u.umb=m;v.add(m)}
   const sc=v.scale.y||1;m.position.set(.22/sc,2.25/sc,0);if(m.userData.c!==c){m.userData.c=c;m.userData.mat.color.set(c);m.userData.mat.opacity=/clear/i.test(vr.nm||'')?.45:.85}m.visible=true}
-const MB3={F:{},acc:0};
+const MB3={F:{},t:0};
 // 1 Hz from frame() (so it pauses when hidden): the cabin hearth and the yard fire pit crackle through B20 'fire' emitters while they burn
 function mb3Fire(k,lit,x,z,pid){const F=MB3.F[k];if(lit&&!F&&AUD&&AUD.c&&AUD.crk&&audOn()){const e=audEmitter({type:'fire',x,z,pid,bus:'amb'});if(e){const c=AUD.c,s=c.createBufferSource(),g=c.createGain();s.buffer=AUD.crk;s.loop=true;g.gain.value=.6;s.connect(g);g.connect(e.in);s.start(0,Math.random()*1.5);MB3.F[k]={e,s}}}
   else if(!lit&&F){try{F.s.stop()}catch(_){}audDrop(F.e);delete MB3.F[k]}}
-function mb3Frame(dt){if((MB3.acc-=dt)>0)return;MB3.acc=1;try{const H=typeof HEARTHBY==='object'&&HEARTHBY.cabin;mb3Fire('hearth',!!(H&&H.p&&H.p.hearthLit&&H.p.hearthLit()),H&&H.x,H&&H.z,'cabin');
+function mb3Frame(dt){const tn=performance.now();if(tn<MB3.t)return;MB3.t=tn+1000;try{const H=typeof HEARTHBY==='object'&&HEARTHBY.cabin;mb3Fire('hearth',!!(H&&H.p&&H.p.hearthLit&&H.p.hearthLit()),H&&H.x,H&&H.z,'cabin');
   if(typeof CB==='object'&&CB&&CB.pit)mb3Fire('pit',typeof cabPitLit==='function'&&cabPitLit(),CB.pit.x,CB.pit.z,null)}catch(e){}}
+// precompile what track B built after the B15 renderer.compile (cabin exterior toon variant, decorate dust) so it never hitches on first view
+try{camera.updateMatrixWorld();renderer.compile(scene,camera)}catch(e){}
 Object.assign(window.__mocha,{lookTry,lookTryEnd,lookOfItem,youWornJacket,youUmb:()=>{const r=youUmb();return r?{nm:r.nm,c:r.c,shown:!!(visitor.userData.umb&&visitor.userData.umb.visible)}:null},hearthSnd:()=>({hearth:!!MB3.F.hearth,pit:!!MB3.F.pit})});
+// ====================================================================
+//  B21 SOUND B: the Town Songbook (24 hourly themes from S.music.seed), GENRES + RECORDS, MUSIC.play(id,emitter), Mocha's radio,
+//  the Lantern Square jukebox, the Rain City Records request box, phone call-ins to Drizzle FM, pickMusic(ctx), the now-playing chip,
+//  its card and Listen in, note sprites (1 Points draw), shop soundtracks, the cinema pianist, the hour chime, BEAT and SONG.key.
+//  Web Audio synthesis only. The scheduler is an AUD.timer (150 ms, 400 ms LOW, .6 s look-ahead): cleared on hidden/muted/idle.
+//  Mocha's choices run at 1 Hz from b21Frame (so the chip shows his pick with the sound off); audio players exist only while audOn().
+// ====================================================================
+var MUS=null,NP=null,MUSIC=null,RADIO=null,GENRES=null,RECORDS=null,RECBY=null,BEAT={on:0,ph:0,bpm:0,b:0},SONG={key:null,h:-1,th:null};
+// S.music = {seed, t:{genre:-1..1}, st:station, now:{src,id,st,since}|null, jb (last jukebox t), ph:{g,t} phase, r:[recent ids], our, sg:[], rad 0/1 (radio owned),
+//   tk:{id,until,src} (his pick is the town music), rq:{id,at} (a request card in Basil's box), ci:{d,n,nx} (call-ins), lt (last pick t), seeded}. Literal-only (runs in migrate).
+function musicFix(m,fr){const G0=['lofi','jazz','musicbox','folk','citypop','ambient','spooky','chiptune'];if(!m||typeof m!=='object'||Array.isArray(m))m={rad:fr?1:0};
+  m.seed=(+m.seed>>>0)||(1+Math.floor(Math.random()*4294967000));if(!m.t||typeof m.t!=='object'||Array.isArray(m.t))m.t={};for(const g of G0){const v=+m.t[g];m.t[g]=isFinite(v)?Math.max(-1,Math.min(1,Math.round(v*100)/100)):0}for(const k in m.t)if(!G0.includes(k))delete m.t[k];
+  if(!/^(drizzle|harbor|lantern)$/.test(m.st))m.st='drizzle';m.now=m.now&&typeof m.now==='object'&&m.now.src?{src:String(m.now.src).slice(0,8),id:m.now.id?String(m.now.id).slice(0,24):null,st:m.now.st?String(m.now.st).slice(0,8):null,since:+m.now.since||0}:null;
+  m.jb=+m.jb||0;m.rad=m.rad?1:0;m.ph=m.ph&&typeof m.ph==='object'&&m.ph.g?{g:String(m.ph.g).slice(0,10),t:+m.ph.t||0}:null;for(const k of ['r','sg'])m[k]=Array.isArray(m[k])?m[k].filter(x=>typeof x==='string').slice(-12):[];if(m.our===undefined)m.our=null;
+  m.tk=m.tk&&+m.tk.until>0&&m.tk.id?{id:String(m.tk.id).slice(0,24),until:+m.tk.until,src:String(m.tk.src||'req').slice(0,6),t0:+m.tk.t0||0}:null;m.rq=m.rq&&+m.rq.at>0&&m.rq.id?{id:String(m.rq.id).slice(0,24),at:+m.rq.at,t:+m.rq.t||0}:null;
+  m.ci=m.ci&&typeof m.ci==='object'?{d:String(m.ci.d||'').slice(0,10),n:Math.max(0,Math.min(9,+m.ci.n||0)),w:Math.max(1,Math.min(3,+m.ci.w||1)),nx:+m.ci.nx||0}:{d:'',n:0,w:1,nx:0};m.lt=+m.lt||0;m.seeded=m.seeded?1:0;return m}
+if(!S.music)S.music=musicFix(S.music);
+// ---- theory: scales, progressions, the hour palettes (spec table) ----
+const MSC={maj:[0,2,4,5,7,9,11],lyd:[0,2,4,6,7,9,11],dor:[0,2,3,5,7,9,10],min:[0,2,3,5,7,8,10],hmin:[0,2,3,5,7,8,11]},PENT=[0,2,4,7,9],KEYN=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+// I-vi-IV-V · I-iii-IV-iv (-3 = borrowed iv) · ii7-V7-Imaj7-vi7 · Imaj7-IVmaj7 · I-V-vi-IV · vi-IV-I-V
+const MPROGS=[[0,5,3,4],[0,2,3,-3],[1,4,0,5],[0,3],[0,4,5,3],[5,3,0,4]],MPROGN=['I-vi-IV-V','I-iii-IV-iv','ii7-V7-Imaj7-vi7','Imaj7-IVmaj7','I-V-vi-IV','vi-IV-I-V'];
+const HPAL=[[1,5,{r:4,m:'dor',bpm:58,lead:'mbox',comp:'celesta',pad:'pad',rest:.4}],[5,7,{r:2,m:'maj',pent:1,bpm:72,lead:'kalimba',comp:'kalimba',pad:'pad'}],
+  [7,10,{r:7,m:'maj',bpm:96,lead:'marimba',comp:'marimba',bass:'pizz',perc:'shaker'}],[10,12,{r:0,m:'lyd',bpm:104,lead:'glock',comp:'uke',bass:'pizz',perc:'shaker'}],
+  [12,14,{r:5,m:'maj',bpm:100,lead:'flute',comp:'felt',bass:'upright',perc:'brush'}],[14,17,{r:10,m:'maj',bpm:88,lead:'felt',comp:'felt',bass:'upright',ctr:'clar'}],
+  [17,19,{r:3,m:'maj',bpm:84,sw:.58,lead:'vibe',comp:'rhodes',bass:'upright',perc:'brush',ext:1}],[19,22,{r:8,m:'maj',bpm:76,sw:.62,lead:'rhodes',comp:'rhodes',bass:'walk',perc:'ride',ext:1,alt:{r:5,m:'min'}}],
+  [22,25,{r:9,m:'maj',pent:1,bpm:66,lead:'mbox',comp:'mbox',pad:'pad'}]];
+// GENRES (8 recipes from the songbook voices) and their variants (bossa, rag, funk, lullaby, march, holiday, shanty, and the shop flavours)
+const RCP={lofi:{m:'maj',bpm:78,sw:.56,lead:'felt',comp:'rhodes',bass:'upright',perc:'brush',crk:1,prog:2},jazz:{m:'maj',bpm:112,sw:.62,lead:'vibe',comp:'rhodes',bass:'walk',perc:'ride',prog:2,sev:1},
+  musicbox:{m:'maj',pent:1,bpm:72,lead:'mbox',comp:'mbox',pad:'pad',spb:6},folk:{m:'maj',bpm:100,lead:'flute',comp:'uke',bass:'pizz',perc:'shaker'},
+  citypop:{m:'maj',bpm:108,lead:'synth',comp:'rhodes',bass:'funk',perc:'kick',sev:1},ambient:{m:'lyd',bpm:60,lead:'glass',comp:'glock',pad:'pad',rest:.45},
+  spooky:{m:'hmin',bpm:84,lead:'organ',comp:'organ',bass:'pizz',ctr:'theremin',spb:6},chiptune:{m:'maj',bpm:132,lead:'sq',comp:'sq',bass:'tri',perc:'hat',prog:4},
+  bossa:{of:'jazz',m:'maj',bpm:120,lead:'flute',comp:'felt',bass:'pizz',perc:'shaker',style:'bossa',sev:1},rag:{of:'jazz',m:'maj',bpm:108,lead:'felt',comp:'felt',bass:'stride',style:'stride',prog:0},
+  funk:{of:'citypop',m:'min',bpm:104,lead:'synth',comp:'rhodes',bass:'funk',perc:'kick',prog:5},lullaby:{of:'musicbox',m:'maj',pent:1,bpm:60,lead:'mbox',comp:'celesta',pad:'pad',spb:6,rest:.3},
+  march:{of:'folk',m:'maj',bpm:112,lead:'clar',comp:'felt',bass:'stride',perc:'snare',style:'march',prog:4},holiday:{of:'musicbox',m:'maj',bpm:84,lead:'mbox',comp:'celesta',pad:'pad',perc:'sleigh',hol:1},
+  shanty:{of:'folk',m:'maj',bpm:100,lead:'organ',comp:'organ',bass:'pizz',spb:6,prog:4},harp:{of:'ambient',m:'lyd',bpm:76,lead:'harp',comp:'harp',rest:.3},
+  synthpop:{of:'citypop',m:'maj',bpm:116,lead:'synth',comp:'synth',bass:'funk',perc:'kick',prog:4},surf:{of:'folk',m:'maj',bpm:124,lead:'uke',comp:'uke',bass:'pizz',perc:'snare',prog:4},
+  elevator:{of:'jazz',m:'maj',bpm:96,lead:'vibe',comp:'felt',bass:'pizz',perc:'shaker',style:'bossa',sev:1},evjazz:{of:'jazz',m:'maj',bpm:84,sw:.6,lead:'felt',comp:'felt',bass:'upright',perc:'brush',sev:1,prog:2},
+  glass:{of:'ambient',m:'lyd',bpm:56,lead:'glass',comp:'glass',pad:'pad',rest:.5},sweet:{of:'musicbox',m:'maj',bpm:80,lead:'mbox',comp:'felt',spb:6}};
+GENRES={};['lofi','jazz','musicbox','folk','citypop','ambient','spooky','chiptune'].forEach(g=>GENRES[g]=RCP[g]);
+// the 16 original records {id,ttl,artist,g,recipe,seed,bpm,key,mood[],price}
+RECORDS=[['rainylofi','Rainy Lo-fi','Puddle Tapes','lofi','lofi',78,'F','rainy wistful cozy',12],['musicboxwaltz','Music Box Waltz','The Attic Trio','musicbox','musicbox',88,'D','wistful gentle',10],
+  ['ferryjazz','Ferry Jazz','The Sound Quartet','jazz','jazz',112,'Bb','happy social',14],['seashanty','Sea Shanty Singalong','The Pier 3 Crew','folk','shanty',100,'G','happy social',10],
+  ['citypopdrizzle','City Pop Drizzle','Neon Umbrella','citypop','citypop',108,'Eb','happy energetic',14],['spookyorgan','Spooky Organ','The Lantern Ghosts','spooky','spooky',84,'Dm','spooky',12],
+  ['cedarlake','Cedar Lake Ambient','Mossbank','ambient','ambient',60,'E','calm wistful rainy',12],['ukulelesunday','Ukulele Sunday','Fern & the Ferns','folk','folk',100,'C','happy cozy',10],
+  ['chiptunearcade','Chiptune Arcade','Pixel Pond','chiptune','chiptune',132,'A','energetic happy',10],['silentfilmrag','Silent Film Rag','Nickel Keys','jazz','rag',108,'F','happy energetic',10],
+  ['bossabean','Bossa Bean','Café Garoa','jazz','bossa',120,'G','cozy calm',12],['snowglobe','Snowglobe','Little Lighthouse Bells','musicbox','holiday',84,'C','cozy wistful',12],
+  ['nightmarketfunk','Night Market Funk','The Lanternlights','citypop','funk',104,'Em','energetic social',14],['lighthouselullaby','Lighthouse Lullaby','The Night Keepers','musicbox','lullaby',60,'F','sleepy calm',10],
+  ['salmonrun','Salmon Run March','Fish Ladder Brass','folk','march',112,'Bb','energetic happy',10],['mochasong',"Mocha's Song",'Mocha','lofi','sweet',80,'A','happy cozy wistful',0]
+].map(([id,ttl,artist,g,recipe,bpm,key,mood,price])=>({id,ttl,artist,g,recipe,seed:wxHash('rec:'+id),bpm,key,mood:mood.split(' '),price,secret:id==='mochasong'?1:0}));
+RECBY=Object.fromEntries(RECORDS.map(r=>[r.id,r]));
+// three original stations on his hand-me-down transistor radio
+RADIO={drizzle:{id:'drizzle',n:'Drizzle FM',f:'88.5',g:Object.keys(GENRES),town:1},harbor:{id:'harbor',n:'Harbor Jazz',f:'91.3',g:['jazz','citypop'],r:['ferryjazz','bossabean','citypopdrizzle','nightmarketfunk','silentfilmrag']},
+  lantern:{id:'lantern',n:'Lantern Lullaby',f:'104.7',g:['musicbox','ambient'],r:['musicboxwaltz','cedarlake','lighthouselullaby','snowglobe']}};
+const MSIG={jazz:'vibe',folk:'uke',musicbox:'mbox',citypop:'rhodes',lofi:'felt',ambient:'pad',spooky:'organ',chiptune:'sq'},GNAME={lofi:'lo-fi',jazz:'jazz',musicbox:'music-box',folk:'folk',citypop:'city-pop',ambient:'ambient',spooky:'spooky-organ',chiptune:'chiptune'};
+// shop soundtracks (recipes; '@' = the featured record) and shop sounds (palette one-shots while you're inside)
+const SHOPM={cafe:'bossa',records:'@',studio:'harp',arcade:'chiptune',market:'bossa',grocery:'bossa',phones:'synthpop',bikes:'surf',fogwell:'elevator',evergreen:'evjazz',threads:'citypop',nursery:'harp',bakery:'musicbox',lantern:'glass'};
+const SHOPFX={cafe:[['clink',.14],['steam',.05]],records:[['crackle',.12]],petstore:[['bubbles',.18],['robin',.05]],bikes:[['freewheel',.07]],bookstore:[['page',.08]],library:[['page',.07]],market:[['blip',.09]],grocery:[['blip',.1]],fogwell:[['elevator',.015]],nursery:[['robin',.05],['chime',.05]],bakery:[['hum',.06]],townhall:[]};
+// ---- instruments: oscillators + envelopes (spec recipes). p:[[ratio,gain,wave,decay x faster,detune cents]], a attack, d decay | h hold (+r release) ----
+const INS={marimba:{p:[[1,1],[4,.12,0,4]],a:.002,d:.6,drop:1},kalimba:{p:[[1,1],[5.4,.08,0,3]],a:.003,d:1.2},mbox:{p:[[1,1],[4.2,.18,0,3],[2,.1,0,2]],a:.002,d:1.6,det:4},
+  glock:{p:[[1,1,'triangle'],[2.76,.15,'triangle',2]],a:.002,d:1,hp:600},celesta:{p:[[1,1,'triangle'],[2.76,.15,'triangle',2]],a:.002,d:1,hp:600},rhodes:{fm:[1,2.2,.3,.4],a:.004,d:1.8},
+  felt:{p:[[1,1,'triangle'],[2,.25,'triangle',1.5]],a:.008,d:1.4,lp:2200},uke:{p:[[1,.7,'sawtooth']],a:.003,d:.9,lpe:[3500,700,.18]},pizz:{p:[[1,1,'triangle'],[.5,.3,'triangle']],a:.005,d:.45,lp:500},
+  upright:{p:[[1,1,'triangle'],[.5,.3,'triangle']],a:.006,d:.85,lp:500},flute:{p:[[1,1]],a:.05,h:1,r:.12,vib:[5.5,12,.25],br:1},clar:{p:[[1,.55,'square']],a:.03,h:1,r:.1,lp:1400},
+  vibe:{p:[[1,1],[4,.05,0,2]],a:.004,d:1.6,trem:5},pad:{p:[[1,.45,'sawtooth',0,7],[1,.45,'sawtooth',0,-7]],a:1.2,h:1,r:2,lp:900},organ:{p:[[1,.45,'sawtooth'],[2,.25,'square']],a:.06,h:1,r:.15,lp:1500,vib:[5,6,0]},
+  theremin:{p:[[1,1]],a:.12,h:1,r:.3,vib:[6,22,.1],port:.12},sq:{p:[[1,.5,'square']],a:.002,h:1,r:.03,lp:5000},tri:{p:[[1,1,'triangle']],a:.002,h:1,r:.03},pan:{fm:[2.5,1.4,.2,.3],a:.003,d:1.1},
+  bell:{p:[[1,1],[2.76,.5,0,1.5],[5.4,.25,0,2.5]],a:.002,d:3},harp:{p:[[1,1,'triangle'],[2,.2,0,2]],a:.003,d:1.2,lp:3000},glass:{p:[[1,.6],[2.01,.25],[3,.1]],a:.4,h:1,r:1.2,trem:3},
+  synth:{p:[[1,.5,'sawtooth'],[1.005,.5,'sawtooth']],a:.01,d:.55,lp:2600}};
+// percussion: noise through a filter (pink for brushes), gains .03-.05
+const PRC={brush:['p','bandpass',3000,.08,.05],ride:['w','highpass',6000,.25,.03],shaker:['w','highpass',5000,.04,.03],snare:['w','bandpass',1800,.1,.045],hat:['w','highpass',8000,.03,.03],sleigh:['w','bandpass',7000,.12,.025],crk:['w','bandpass',3000,.008,.06],whir:['p','bandpass',1200,0,.018]};
+// ---- composition: seeded motifs (C5-C6, chord-tone ends, ~70% steps, leaps <= a 6th then step back, ~20% rests), form A A' B A (16 bars) ----
+function musMotif(r,slots,rest,ml){const o=[];let i=0,p=0,lp=0,first=1;while(i<slots){let d=r()<.45?1:r()<.6?2:r()<.6?3:4;d=Math.min(d,slots-i);
+    if(!first&&i<slots-2&&r()<rest){o.push([i,null,d]);i+=d;continue}
+    if(!first){if(lp){p-=Math.sign(lp);lp=0}else if(r()<.7)p+=r()<.5?1:-1;else{const l=(2+Math.floor(r()*(ml-1)))*(r()<.5?1:-1);p+=l;lp=l}}
+    first=0;p=Math.max(-4,Math.min(6,p));o.push([i,p,d]);i+=d}return o}
+function musS2M(th,s){const L=th.ms.length,o=Math.floor(s/L);return 60+th.root+12*o+th.ms[((s%L)+L)%L]}
+function musM2S(th,m){let b=0,bd=99;for(let s=-12;s<40;s++){const d=Math.abs(musS2M(th,s)-m);if(d<bd){bd=d;b=s}}return b}
+function musNear(m,pcs){for(let d=0;d<7;d++){if(pcs.includes(((m+d)%12+12)%12))return m+d;if(pcs.includes(((m-d)%12+12)%12))return m-d}return m}
+function chordAt(th,fb){if(th.hol&&fb>=13)return[3,-3,0][fb-13];return th.prog[Math.floor(fb/th.bpc)%th.prog.length]}
+function chordPcs(th,d){const sc=th.sc,bor=d<0;d=Math.abs(d);const st=[0,2,4];if(th.sev)st.push(6);if(th.add9)st.push(8);return st.map((s,i)=>{let v=sc[(d+s)%7]+12*Math.floor((d+s)/7);if(bor&&i===1&&((sc[(d+2)%7]-sc[d]+12)%12)===4)v-=1;return th.root+v})}
+function compose(seed,pal,tag){const r=seeded(wxHash('mus:'+seed+':'+tag));let root=pal.r,mode=pal.m;if(pal.alt&&r()<.5){root=pal.alt.r;mode=pal.alt.m}
+  const pi=pal.prog!=null?pal.prog:Math.floor(r()*MPROGS.length),prog=MPROGS[pi],spb=pal.spb||8,bpc=prog.length<=2?2:r()<.35?2:1;
+  const th={tag,seed,root,mode,key:KEYN[root]+(/min|dor/.test(mode)?'m':''),pent:!!pal.pent,bpm:pal.bpm,sw:pal.sw||.5,spb,prog,pi,bpc,sev:!!(pal.sev||pal.ext||pi===2||pi===3),add9:!!pal.ext,
+    lead:pal.lead,comp:pal.comp,bass:pal.bass||null,pad:pal.pad||null,perc:pal.perc||null,ctr:pal.ctr||null,style:pal.style||(spb===6?'waltz':''),crk:pal.crk||0,rest:pal.rest||.2,hol:pal.hol||0};
+  th.sc=MSC[mode]||MSC.maj;th.ms=th.pent?PENT:th.sc;const sl=spb*2,ml=th.pent?3:5;th.mA=musMotif(r,sl,th.rest,ml);th.mA2=musMotif(r,sl,th.rest,ml);th.mB=musMotif(r,sl,th.rest,ml);
+  const mel=[];for(let b=0;b<16;b++)mel.push([]);const sec=[['mA','mA'],['mA','mA2'],['mB','mB'],['mA','mA']];let anc=76;
+  for(let s=0;s<4;s++)for(let ph=0;ph<2;ph++){const mo=th[sec[s][ph]],b0=s*4+ph*2;let s0=null;
+    mo.forEach((nt,i)=>{if(nt[1]==null)return;const bar=b0+Math.floor(nt[0]/spb),pcs=chordPcs(th,chordAt(th,bar)).map(v=>v%12);let m;
+      if(s0==null){m=musNear(anc,pcs);s0=musM2S(th,m)-nt[1];anc=m}else m=musS2M(th,s0+nt[1]);if(mo.slice(i+1).every(x=>x[1]==null))m=musNear(m,pcs);
+      while(m>84)m-=12;while(m<72)m+=12;mel[bar].push([nt[0]%spb,m,nt[2]])})}
+  th.mel=mel;return th}
+function hpal(h){h=((Math.floor(h)%24)+24)%24;for(const [a,b,p] of HPAL)if((h>=a&&h<b)||(h+24>=a&&h+24<b))return p;return HPAL[0][2]}
+function musHol(){try{return holTheme()}catch(e){return null}}
+// the Town Songbook: theme for hour h from the stored seed (+ Halloween re-harmonized in harmonic minor on a reed organ with a theremin, winter-holiday bells and IV-iv-I)
+function songFor(h,hol){const p=Object.assign({},hpal(h));hol=hol===undefined?musHol():hol;let tag='h'+(((Math.floor(h)%24)+24)%24);
+  if(hol==='halloween'){p.m='hmin';p.alt=null;p.lead='organ';p.ctr='theremin';tag+='hw'}else if(hol==='winter'&&new Date().getMonth()===11){p.hol=1;p.perc=p.perc||'sleigh';tag+='xm'}
+  return compose(S.music.seed,p,tag)}
+function recPal(rec){const p=Object.assign({},RCP[rec.recipe]||RCP[rec.g]||RCP.lofi),k=String(rec.key||'C'),m=k.match(/^([A-G])(b|#)?(m)?/);if(m){p.r=({C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1]]+(m[2]==='b'?-1:m[2]==='#'?1:0)+12)%12;if(m[3]&&p.m!=='hmin')p.m='min'}else p.r=0;if(rec.bpm)p.bpm=rec.bpm;if(rec.id==='ferryjazz')p.sw=.62;return p}
+// theme for a source {song:h} | {rec:id} | {rcp:name,seed} (cached, cap 24)
+function musTheme(src){const k=src.song!=null?'s'+src.song+':'+(musHol()||''):src.rec?'r'+src.rec:'c'+src.rcp+':'+src.seed;let th=MUS.TC.get(k);if(th)return th;
+  if(src.song!=null)th=songFor(src.song);else if(src.rec)th=compose(RECBY[src.rec].seed,recPal(RECBY[src.rec]),'r'+src.rec);else{const p=Object.assign({},RCP[src.rcp]||RCP.lofi);if(p.r==null)p.r=(src.seed>>>3)%12;th=compose(src.seed,p,'c'+src.rcp)}
+  if(MUS.TC.size>24)MUS.TC.delete(MUS.TC.keys().next().value);MUS.TC.set(k,th);return th}
+// ---- the voice: one note of an instrument at time t into P.dst; tracked in MUS.live and disconnected after it ends ----
+function mN(P,ins,midi,t,dur,g){const c=AUD.c,R=INS[ins];if(!R||!P.out)return;midi+=R.oct||0;const f=440*Math.pow(2,(midi-69)/12),n=[],out=c.createGain(),hold=R.h,a=R.a,end=hold?t+Math.max(a+.02,dur)+(R.r||.1):t+(R.d||1);
+  out.gain.setValueAtTime(0,t);out.gain.linearRampToValueAtTime(g,t+a);if(hold){out.gain.setValueAtTime(g,Math.max(t+a,end-(R.r||.1)));out.gain.linearRampToValueAtTime(0,end)}else out.gain.exponentialRampToValueAtTime(.0004,end);
+  let dst=out;if(R.lp||R.hp||R.lpe){const fl=c.createBiquadFilter();fl.type=R.hp?'highpass':'lowpass';if(R.lpe){fl.frequency.setValueAtTime(R.lpe[0],t);fl.frequency.exponentialRampToValueAtTime(R.lpe[1],t+R.lpe[2])}else fl.frequency.value=R.hp||R.lp;fl.connect(out);dst=fl;n.push(fl)}
+  if(R.trem){const l=c.createOscillator(),lg=c.createGain(),tg=c.createGain();l.frequency.value=R.trem;lg.gain.value=.3;tg.gain.value=.7;l.connect(lg);lg.connect(tg.gain);tg.connect(dst);dst=tg;l.start(t);l.stop(end);n.push(l,lg,tg)}
+  const O=[];if(R.fm){const car=c.createOscillator(),mod=c.createOscillator(),mg=c.createGain();car.frequency.value=f;mod.frequency.value=f*R.fm[0];mg.gain.setValueAtTime(f*R.fm[1],t);mg.gain.exponentialRampToValueAtTime(Math.max(1,f*R.fm[2]),t+R.fm[3]);mod.connect(mg);mg.connect(car.frequency);car.connect(dst);O.push(car,mod);n.push(mg)}
+  else for(const [ra,pg,w,dk,ct] of R.p){const o=c.createOscillator();o.type=w||'sine';o.frequency.value=f*ra;if(ct)o.detune.value=ct;else if(R.det)o.detune.value=(Math.random()*2-1)*R.det;let x=o;
+    if(pg!==1||dk){const gg=c.createGain();gg.gain.value=pg;if(dk&&!hold){gg.gain.setValueAtTime(pg,t);gg.gain.exponentialRampToValueAtTime(.0004,t+(R.d||1)/dk)}o.connect(gg);x=gg;n.push(gg)}x.connect(dst);O.push(o)}
+  if(R.drop)for(const o of O){o.detune.setValueAtTime(9,t);o.detune.linearRampToValueAtTime(0,t+.02)}
+  if(R.port&&P.lf){for(const o of O){o.frequency.setValueAtTime(P.lf,t);o.frequency.exponentialRampToValueAtTime(f,t+R.port)}}if(R.port)P.lf=f;
+  if(R.vib){const l=c.createOscillator(),lg=c.createGain();l.frequency.value=R.vib[0];lg.gain.setValueAtTime(0,t);lg.gain.linearRampToValueAtTime(R.vib[1],t+(R.vib[2]||0)+.06);l.connect(lg);for(const o of O)lg.connect(o.detune);l.start(t);l.stop(end);n.push(l,lg)}
+  if(R.br){const s=c.createBufferSource(),bp=c.createBiquadFilter(),bg=c.createGain();s.buffer=AUD.white;bp.type='bandpass';bp.frequency.value=f*2;bp.Q.value=2;bg.gain.setValueAtTime(0,t);bg.gain.linearRampToValueAtTime(.06,t+.03);bg.gain.linearRampToValueAtTime(0,t+.25);s.connect(bp);bp.connect(bg);bg.connect(out);s.start(t,Math.random()*1.5);s.stop(t+.3);n.push(s,bp,bg)}
+  for(const o of O){o.start(t);o.stop(end+.02)}out.connect(P.out);n.push(out,...O);MUS.live.push({n,end});MUS.st.notes++}
+function mPerc(P,k,t,g,dur){const c=AUD.c,D=PRC[k];if(!D||!P.out)return;const s=c.createBufferSource(),fl=c.createBiquadFilter(),e=c.createGain(),d=dur||D[3];s.buffer=D[0]==='p'?AUD.pink:AUD.white;s.loop=!!dur;fl.type=D[1];fl.frequency.value=D[2];fl.Q.value=k==='sleigh'?6:1;
+  e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(D[4]*g,t+(dur?.3:.003));if(dur){e.gain.setValueAtTime(D[4]*g,t+d-.3);e.gain.linearRampToValueAtTime(0,t+d)}else e.gain.exponentialRampToValueAtTime(.0004,t+d);
+  s.connect(fl);fl.connect(e);e.connect(P.out);s.start(t,Math.random()*1.5);s.stop(t+d+.03);MUS.live.push({n:[s,fl,e],end:t+d+.03})}
+function mKick(P,t,g){const c=AUD.c,o=c.createOscillator(),e=c.createGain();o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(45,t+.14);e.gain.setValueAtTime(.12*g,t);e.gain.exponentialRampToValueAtTime(.0004,t+.16);o.connect(e);e.connect(P.out);o.start(t);o.stop(t+.18);MUS.live.push({n:[o,e],end:t+.18})}
+// ---- one 8th-note slot of a player (lead .14, comp .07 per voice, bass .16, pad .06, percussion .03-.05) ----
+const CPAT={marimba:[0,2,3,4,6],kalimba:[0,3,4,6],mbox:[0,2,4,6],celesta:[0,4],glock:[0,4],harp:[0,1,2,3,4,5,6,7],sq:[0,1,2,3,4,5,6,7],uke:[0,3,4,6],felt:[0,4],rhodes:[0,5],organ:[0,3,4,7],synth:[0,3,6],glass:[0]},ARP=new Set(['marimba','kalimba','mbox','celesta','glock','harp','sq']);
+const mcv=(v,lo)=>{let m=lo+(((v-lo)%12)+12)%12;return m};
+function musSlot(P,k,t,e8){const th=P.th,spb=th.spb,kk=k-P.k0,bar=Math.floor(kk/spb),pos=kk%spb,fb=bar%16,c0=chordAt(th,fb),pcs=chordPcs(th,c0),lv=1,low=audTier()==='LOW',busy=MUS.live.length>MUS.cap,beat=e8*2,st=th.style;
+  if(pos===0&&fb%2===0)musPhrase(P,fb);const L=P.lead||th.lead;
+  for(const n of th.mel[fb])if(n[0]===pos)mN(P,L,n[1],t,n[2]*e8*.92,.14*lv);
+  if(P.ctr&&pos===0&&fb%(P.ctr==='theremin'?2:1)===0){const v=pcs[th.sev?3:1]||pcs[1];mN(P,P.ctr,mcv(v,P.ctr==='theremin'?67:62),t,spb*e8*(P.ctr==='theremin'?1.9:.95),P.ctr==='theremin'?.07:.06)}
+  if(th.pad&&pos===0&&!low&&!busy)for(const v of pcs.slice(0,3))mN(P,th.pad,mcv(v,52),t,spb*e8,.06);
+  // bass
+  const b=th.bass,root=mcv(pcs[0],36),fifth=mcv(pcs[2],36);let bn=null;
+  if(b==='walk'){if(pos%2===0){const j=pos/2,nx=mcv(chordPcs(th,chordAt(th,(fb+1)%16))[0],36);bn=j===0?root:j===1?mcv(pcs[1],36):j===2?fifth:nx+(nx>fifth?-1:1)}}
+  else if(b==='stride'){if(st==='march'?pos%2===0:pos===0||pos===4)bn=pos%4===0?root:fifth}
+  else if(b==='funk'){if(pos===0||pos===3||pos===6||pos===7)bn=pos===3||pos===7?root+12:root}
+  else if(b==='tri'){bn=pos%2?root+12:root}
+  else if(b){if(st==='bossa'){if(pos===0||pos===3||pos===4||pos===7)bn=pos===3||pos===7?fifth:root}else if(spb===6){if(pos===0)bn=root}else if(pos===0||pos===4)bn=pos?fifth:root}
+  if(bn!=null)mN(P,b==='walk'||b==='stride'||b==='funk'?(b==='stride'?'felt':'upright'):b,bn,t,e8*(b==='tri'?.9:1.6),.16);
+  // comp
+  if(!busy){const C=th.comp;let pat=CPAT[C]||[0,4];if(st==='bossa')pat=[0,3,6];else if(st==='stride')pat=[2,6];else if(st==='march')pat=[1,3,5,7];else if(st==='waltz'||spb===6)pat=ARP.has(C)?[0,2,4]:[2,4];else if(st==='trem')pat=[0,1,2,3,4,5,6,7];
+    if(pat.includes(pos)){if(ARP.has(C)&&st!=='trem'){const i=pat.indexOf(pos),v=pcs[i%pcs.length]+(i>=pcs.length?12:0);mN(P,C,mcv(v,60)+(C==='sq'||C==='harp'?12:0),t,e8*1.6,.07)}
+      else{const vs=pcs.slice(0,low?2:4);vs.forEach((v,i)=>mN(P,C,mcv(v,st==='trem'?48:55),t+(C==='uke'?i*.012:0),st==='trem'?e8*.9:e8*(pos===0?3:1.8),st==='trem'?.04:.07))}}}
+  // percussion (+ sparse vinyl crackle on lo-fi and in rain)
+  const pc=P.perc||th.perc;if(pc&&!low){if(pc==='shaker')mPerc(P,'shaker',t,pos%2?1.4:.8);else if(pc==='brush'){if(pos===2||pos===6)mPerc(P,'brush',t,1)}else if(pc==='ride'){if(pos%2===0||pos===3||pos===7)mPerc(P,'ride',t,pos%2?.7:1)}
+    else if(pc==='hat'){mPerc(P,'hat',t,pos%2?1:.6);if(pos===0||pos===4)mKick(P,t,.8)}else if(pc==='kick'){if(pos===0||pos===4||pos===5)mKick(P,t,1);if(pos===2||pos===6)mPerc(P,'snare',t,.8);if(pos%2)mPerc(P,'hat',t,.8)}
+    else if(pc==='snare'){if(pos%2===0)mPerc(P,'snare',t,pos%4?.7:1)}else if(pc==='sleigh'){if(pos%2===0)mPerc(P,'sleigh',t,.9)}}
+  if((th.crk||P.crk)&&Math.random()<.18)mPerc(P,'crk',t+Math.random()*e8,1);if(P.whir&&pos===0)mPerc(P,'whir',t,1,spb*e8+.4);
+  if(P.k==='town'&&MUS.snow&&pos===0&&fb%2===0&&!low)mPerc(P,'sleigh',t,1.2)}
+// phrase-level choices for the town: season leads on A' and B, Halloween's organ + theremin, and the town leaning toward his taste
+function musPhrase(P,fb){const th=P.th;P.lead=null;P.ctr=th.ctr;P.crk=MUS.rain&&P.k==='town'?1:0;if(P.k!=='town'||!P.src||P.src.song==null)return;const hol=musHol();
+  if(hol==='halloween'){P.lead='organ';P.ctr='theremin';return}const mo=new Date().getMonth();if(fb>=4&&fb<12)P.lead=mo>=2&&mo<=4?'flute':mo>=5&&mo<=7?'pan':mo>=8&&mo<=10?'clar':'celesta';
+  if(MUS.snow&&fb>=8&&fb<12)P.lead='celesta';
+  if(SET.snd.picks!==false&&musOut()&&!asleepAt(hourAt(Date.now()))){const [g,v]=musTop();if(g&&Math.random()<.25+.35*Math.max(0,v)){P.lead=MSIG[g];if(g==='lofi')P.crk=1;MUS.st.lean=(MUS.st.lean||0)+1;MUS.leanG=g}}}
+function musTop(){const t=S.music.t;let g=null,v=-9;for(const k in t)if(t[k]>v){v=t[k];g=k}return[g,v]}
+function musOut(){try{return G.mode!=='trip'&&!mochaHome()&&!(placeAt(G.x,G.z))}catch(e){return false}}
+// ---- players: town (non-spatial), radio / jukebox / shop / cinema (B20 emitters), and MUSIC.play(id,emitter) for anyone else ----
+function musSrcKey(s){return s?(s.song!=null?'s'+s.song:s.rec?'r'+s.rec:'c'+s.rcp+s.seed):''}
+function musMk(k,src,eo,em){const P={k,src,eo,em:em||null,own:!em,out:null,th:null,nt:0,k0:0,kc:0,lead:null,ctr:null,lv:1,t0:Date.now()};P.th=musTheme(src);P.ctr=P.th.ctr;MUS.P.push(P);return P}
+function musSet(P,src,fade){if(musSrcKey(P.src)===musSrcKey(src))return;P.src=src;P.th=musTheme(src);P.ctr=P.th.ctr;P.k0=P.kc;P.lead=null;if(P.out&&fade){const c=AUD.c,t=c.currentTime;P.out.gain.cancelScheduledValues(t);P.out.gain.setValueAtTime(.12*P.lv,t);P.out.gain.linearRampToValueAtTime(P.lv,t+fade)}}
+function musKill(P,dl){dl=dl||0;const i=MUS.P.indexOf(P);if(i>=0)MUS.P.splice(i,1);if(P.out&&AUD.c){const t=AUD.c.currentTime;P.out.gain.cancelScheduledValues(t+dl);P.out.gain.setTargetAtTime(0,t+dl,.15);const o=P.out,e=P.own?P.em:null;AUD.q.push({t:performance.now()+1800+dl*1000,cl:1,fn:()=>{try{o.disconnect()}catch(_){}if(e)audDrop(e)}})}else if(P.own&&P.em)audDrop(P.em)}
+function musFind(k){return MUS.P.find(p=>p.k===k)}
+function musWire(P){const c=AUD.c;P.out=c.createGain();P.out.gain.value=0;if(P.k==='town'||(P.k==='ext0'&&!P.em))P.out.connect(P.k==='town'?MUS.tg:AUD.bus.music);else{if(!P.em)P.em=audEmitter(P.eo);if(!P.em){P.out=null;return}P.out.connect(P.em.in)}P.out.gain.setTargetAtTime(P.lv,c.currentTime,.4);P.nt=c.currentTime+.1}
+MUSIC={play(id,em,o){if(!RECBY[id]&&!RCP[id])return null;let P=MUS.P.find(p=>p.em&&p.em===em);const src=RECBY[id]?{rec:id}:{rcp:id,seed:wxHash(id)};if(P){musSet(P,src,1.5);return P}P=musMk('ext',src,null,em||null);if(!em)P.k='ext0';MUS.st.play=(MUS.st.play||0)+1;return P},
+  stop(em){const P=MUS.P.find(p=>p.em&&p.em===em);if(P){P.own=false;musKill(P)}},list:()=>MUS.P.map(p=>({k:p.k,src:musSrcKey(p.src),key:p.th.key,bpm:p.th.bpm,wired:!!p.out}))};
+// the town source: his request/call-in (when 'his picks can take over the town music' is on), keepers' DJ slots, else the hour's theme
+function townSrc(now){const M=S.music;if(MUS.hf!=null)return{song:MUS.hf};if(M.tk&&now<M.tk.until&&SET.snd.picks!==false)return{rec:M.tk.id};const d=new Date(now);if(d.getDay()===0&&d.getHours()===18)return{rec:'nightmarketfunk',dj:'basil'};return{song:d.getHours()}}
+function shopWant(){if(audOn())audLis();const x=AP.x,z=AP.z;let best=null,bd=30;for(const pid in SHOPM){const p=byId[pid];if(!p||!isOpen(p))continue;const d=Math.hypot(p.x-x,p.z-z);if(d<bd){bd=d;best=p}}return best}
+function shopSrc(pid){const r=SHOPM[pid],M=S.music,day=dkey(Date.now());if(r==='@'||((pid==='cafe'||pid==='records')&&M.tk&&Date.now()<M.tk.until))return{rec:M.tk&&Date.now()<M.tk.until?M.tk.id:RECORDS[(day+7)%15].id};return{rcp:r,seed:wxHash(pid+day)}}
+// 150 ms (400 ms LOW) scheduler with a .6 s look-ahead; on resume the next note is reset to now + .1
+function musTick(){if(!audOn()||!MUS)return;const c=AUD.c,ct=c.currentTime,low=audTier()==='LOW',la=.6,now=Date.now();MUS.cap=low?14:TOUCH?28:40;MUS.tickN++;
+  if(!MUS.tg){MUS.tg=c.createGain();MUS.tg.gain.value=1;MUS.tg.connect(AUD.bus.music);MUS.fog=c.createGain();MUS.fog.gain.value=0;MUS.tg.connect(MUS.fog);MUS.fog.connect(AUD.room)}
+  if(MUS.tickN%4===1)musSync(now);
+  for(const P of MUS.P){if(!P.out){musWire(P);if(!P.out)continue}if(P.nt<ct)P.nt=ct+.1;const e=P.em,far=e&&!e.solo&&audSpat(e.x,e.z,e.ref,e.max,e.pid,MUS.sp).g<.003;let n=0;
+    while(P.nt<ct+la&&n++<16){const th=P.th,rk=P.k==='town'&&MUS.rain?.92:1,bt=60/(th.bpm*rk),kk=P.kc-P.k0,on=kk%2===0,e8=th.sw>.5?(on?bt*th.sw:bt*(1-th.sw)):bt/2;if(!far)try{musSlot(P,P.kc,P.nt,bt/2)}catch(err){MUS.st.err=String(err&&err.message||err)}
+      if(P.k==='town'&&kk%th.spb===0){MUS.bt={t:P.nt,bt,spb:th.spb}}P.nt+=e8;P.kc++}}
+  for(let i=MUS.live.length-1;i>=0;i--){const v=MUS.live[i];if(ct>v.end+.25){for(const x of v.n)try{x.disconnect()}catch(_){}MUS.live.splice(i,1)}}}
+// which players should exist, and their levels (1 Hz-ish); the hour chime; rain/fog/snow variants
+function musSync(now){const c=AUD.c,t=c.currentTime,M=S.music;audLis();const inside=!!AP.pid,wk=WEATHER.kind;MUS.rain=wk==='rain'||wk==='drizzle';MUS.snow=wk==='snow';
+  let tw=musFind('town');const ts=townSrc(now);if(!tw)tw=musMk('town',ts);else if(musSrcKey(tw.src)!==musSrcKey(ts)){musSet(tw,ts,ts.song!=null&&tw.src.song!=null?2*4*60/tw.th.bpm:1.5)}
+  SONG.key=tw.th.key;SONG.h=ts.song!=null?ts.song:SONG.h;SONG.th=tw.th;
+  // radio at home
+  const mine=musMine(now),rs=M.now&&M.now.src==='radio'&&mochaHome()?(M.now.st==='drizzle'&&!M.now.id?ts:{rec:M.now.id||'rainylofi'}):null;let rp=musFind('radio');
+  if(rs){const w=MUS.radioW;if(!rp)rp=musMk('radio',rs,{type:'player',x:w.x,z:w.z,pid:'home',ref:4,max:30});else musSet(rp,rs,1.2)}else if(rp)musKill(rp);
+  let jp=musFind('jb');if(MUS.jb&&now<MUS.jb.until){if(!jp)jp=musMk('jb',{rec:MUS.jb.id},{type:'player',x:SQUARE.jukebox.x,z:SQUARE.jukebox.z,pid:null,ref:6,max:30})}else if(jp)musKill(jp);
+  const sh=shopWant();let sp=musFind('shop');if(sh){const s=shopSrc(sh.id);if(sp&&sp.pid!==sh.id){musKill(sp);sp=null}if(!sp){sp=musMk('shop',s,{type:'shop',x:sh.x,z:sh.z,pid:sh.id});sp.pid=sh.id}else musSet(sp,s,1.5)}else if(sp)musKill(sp);MUS.shopPid=sh?sh.id:null;
+  let cp=musFind('cine');if(MUS.cine.on){const s={rcp:'cine_'+MUS.cine.style,seed:wxHash(MUS.cine.film||'f')};if(!cp){cp=musMk('cine',s,{type:'shop',x:byId.cinema.x,z:byId.cinema.z,pid:'cinema',ref:6,max:30});cp.whir=1}}else if(cp){musCadence(cp);musKill(cp,3.2)}
+  // Listen in: his emitter solo at 70%, non-spatial; it switches off inside a place with its own music
+  if(MUS.li&&AP.pid&&AP.pid!=='home'&&SHOPM[AP.pid]){MUS.li=0;try{toast('🎧 listen in paused: this place has its own music')}catch(e){}npDraw()}
+  const sol=MUS.li?(mine&&mine.k==='jb'?jp:mine&&mine.k==='radio'?rp:null):null;for(const P of MUS.P)if(P.em)P.em.solo=P===sol?.7:0;
+  const tl=MUS.li&&sol?.12:MUS.li&&mine&&mine.k==='tk'?1:inside?.15:1;MUS.tg.gain.setTargetAtTime(tl,t,.5);for(const P of MUS.P)if(P.out&&P.k!=='town'){const lv=sol&&P!==sol?.15:1;if(lv!==P.lv){P.lv=lv;P.out.gain.setTargetAtTime(lv,t,.4)}}
+  MUS.lp=MUS.rain?1800:20000;AUD.musicLP.frequency.setTargetAtTime(MUS.lp,t,.8);MUS.fog.gain.setTargetAtTime(wk==='fog'?.35:0,t,1);
+  // the hour chime: an original 4-note bell phrase from Town Hall (one soft note in quiet hours), then the strikes; the new theme fades in over 2 bars
+  AUD.noClock=1;const hr=new Date(now).getHours();if(MUS.hr==null)MUS.hr=hr;else if(hr!==MUS.hr){MUS.hr=hr;musChime(hr)}
+  // shop sounds while you're inside
+  const fx=SHOPFX[AP.pid];if(fx&&Math.random()<.5)for(const [nm,p] of fx)if(Math.random()<p*2){const pl=byId[AP.pid];audShot(nm,{x:pl.x+(Math.random()-.5)*4,z:pl.z+(Math.random()-.5)*4,pid:AP.pid});break}}
+function musChime(hr){const q=(SET.snd.quiet&&(hr>=22||hr<7)),k=Math.pow(2,(((SONG.th&&SONG.th.root)||0)%12)/12),o={x:-47.5,z:33,pid:null,k};MUS.st.chime=(MUS.st.chime||0)+1;MUS.lastChime={hr,quiet:q,t:Date.now()};
+  if(q){audShot('chime1',o);return}audShot('chime4',o);if(hr>=7&&hr<=21)for(let i=0;i<(hr%12||12);i++)AUD.q.push({t:performance.now()+2900+i*1700,fn:()=>audShot('clock',{x:-47.5,z:33,pid:null})})}
+function musCadence(P){MUS.cine.end=(MUS.cine.end||0)+1;if(!P.out||!AUD.c)return;const t=AUD.c.currentTime+.05,th=P.th,b=60/th.bpm;[[4,b*1.5],[0,b*3]].forEach(([d,len],i)=>{const pcs=chordPcs(Object.assign({},th,{sev:i===0}),d);pcs.forEach(v=>mN(P,'felt',mcv(v,55)+12,t+i*b*1.5,len,.08));mN(P,'felt',mcv(pcs[0],36)+12,t+i*b*1.5,len,.14)})}
+// the cinema pianist's styles (stride/rag 108 for comedy and chases, a 3/4 waltz for romance, low tremolo for suspense, a march for adventure) + the projector whir
+Object.assign(RCP,{cine_rag:{m:'maj',bpm:108,lead:'felt',comp:'felt',bass:'stride',style:'stride',prog:0},cine_waltz:{m:'maj',bpm:96,lead:'felt',comp:'felt',bass:'upright',spb:6,prog:4},
+  cine_trem:{m:'hmin',bpm:72,lead:'felt',comp:'felt',bass:'upright',style:'trem',prog:5},cine_march:{m:'maj',bpm:112,lead:'felt',comp:'felt',bass:'stride',style:'march',prog:4}});
+const CINES={train:'rag',street:'waltz',boat:'rag',spooky:'trem',city:'trem',moon:'march',dino:'march',snow:'march',generic:'rag'};
+// ---- Mocha's music (1 Hz, from b21Frame, independent of sound): the radio at home, the jukebox, requests, call-ins, the cinema, phases ----
+function musMine(now){const M=S.music;if(MUS.jb&&now<MUS.jb.until&&MUS.jb.his)return{k:'jb',id:MUS.jb.id};if(M.now&&M.now.src==='radio')return{k:M.tk&&now<M.tk.until&&M.now.st==='drizzle'?'tk':'radio',id:M.tk&&now<M.tk.until&&M.now.st==='drizzle'?M.tk.id:M.now.id,st:M.now.st};if(M.tk&&now<M.tk.until)return{k:'tk',id:M.tk.id};return null}
+function musCtx(){const a=G.act||{},n=S.needs||{},h=hourAt(Date.now()),s0=sched(),toBed=((s0.bed-h)+24)%24;let mood=n.energy<25||toBed<1?'sleepy':n.social<30?'wistful':n.fun>70?'happy':'calm';
+  return{mood,wx:WEATHER.kind,act:String(a.doing||'')+' '+(a.fx||''),hol:musHol(),guests:a.fx==='hang'||(typeof W!=='undefined'&&W&&W.busy&&a.p==='home'),bed:toBed<1||mood==='sleepy',h}}
+// pickMusic(ctx): taste·genre + mood fit - recency over every source he has (his radio's 3 stations; owned records join in B34). May choose silence (reading); honors a validated mind 'record'.
+function pickMusic(ctx){ctx=ctx||{};const M=S.music,now=Date.now(),wx=ctx.wx||'',act=String(ctx.act||''),hol=ctx.hol,mood=ctx.mood||'calm',sc={};
+  const rec=ctx.record||(MUS&&MUS.mind&&now-MUS.mind.t<18e5?MUS.mind.id:null);if(rec&&RECBY[rec]&&!RECBY[rec].secret){const r=RECBY[rec];return{src:'radio',st:musStation(r),g:r.g,genre:r.g,id:r.id,ttl:r.ttl,why:'mind'}}
+  if(/read/.test(act)&&!ctx.noSilence&&Math.random()<.45)return{src:null,silence:1,why:'reading'};
+  for(const g in GENRES){let s=(M.t[g]||0)*.6;const f=(c,v)=>{if(c)s+=v};
+    f(/rain|drizzle/.test(wx),{lofi:2,ambient:.8,musicbox:.3}[g]||0);f(mood==='wistful',{musicbox:1.6,lofi:1,ambient:.5}[g]||0);f(mood==='sleepy'||ctx.bed,{musicbox:1.8,ambient:.9}[g]||0);f(mood==='happy',{citypop:.6,folk:.6,chiptune:.4,jazz:.3}[g]||0);
+    f(/paint|draw/.test(act),{jazz:1.2,ambient:.9}[g]||0);f(/cook|bak/.test(act),{jazz:1,folk:.9}[g]||0);f(hol==='halloween',{spooky:2.4}[g]||0);f(!!ctx.guests,{citypop:1,folk:.8,chiptune:.5,jazz:.4}[g]||0);
+    f(hol==='winter'&&new Date(now).getMonth()===11,{musicbox:.8}[g]||0);f(g==='spooky'&&hol!=='halloween',-.8);
+    const ri=M.r.slice(-4).map(id=>RECBY[id]&&RECBY[id].g);if(ri.includes(g))s-=.5;sc[g]=s+(ctx.det?0:Math.random()*.15)}
+  const g=Object.keys(sc).sort((a,b)=>sc[b]-sc[a])[0];
+  // the record within the genre: mood words and the occasion pick the variant (cooking = bossa/shanty, bedtime = lullaby, Halloween = spooky, winter holidays = snowglobe), minus recency
+  const L=RECORDS.filter(r=>r.g===g&&!r.secret);let best=L[0],bs=-9;for(const r of L){let s=Math.random()*.3;if(r.mood.includes(mood))s+=1;if(/rain|drizzle/.test(wx)&&r.mood.includes('rainy'))s+=1;if(/cook|bak/.test(act)&&/bossa|shanty/.test(r.recipe))s+=1.2;if((mood==='sleepy'||ctx.bed)&&r.recipe==='lullaby')s+=1.5;if(r.recipe==='holiday'&&!(hol==='winter'&&new Date(now).getMonth()===11))s-=1;if(M.r.slice(-3).includes(r.id))s-=.8;if(s>bs){bs=s;best=r}}
+  return{src:'radio',st:musStation(best),g,genre:g,id:best.id,ttl:best.ttl,why:'taste',score:+sc[g].toFixed(2)}}
+function musStation(r){for(const k of ['harbor','lantern'])if(RADIO[k].r.includes(r.id))return k;return'drizzle'}
+function musTasteSeed(){const M=S.music;if(M.seeded)return;const r=seeded(M.seed^0x5a5a),I=S.interests||{},tr=S.traits||{},bump=(g,v)=>M.t[g]=Math.max(-1,Math.min(1,(M.t[g]||0)+v));
+  for(const g in M.t)bump(g,(r()-.5)*.5);const iv=k=>Math.max(-2,Math.min(4,+I[k]||0))*.08;bump('lofi',iv('cozy')+iv('music')+(tr.coziness||0)*.2);bump('jazz',iv('art')+iv('music'));bump('ambient',iv('nature')+iv('art')*.5);
+  bump('folk',iv('ocean')+iv('nature')*.5);bump('citypop',iv('people')+(tr.sociability||0)*.2);bump('chiptune',iv('games')+iv('rides')*.5);bump('musicbox',iv('cozy')*.5+(tr.coziness||0)*.15);bump('spooky',iv('spooky')+iv('history')*.3-.15);M.seeded=1}
+function musChoose(why){const M=S.music,now=Date.now();MUS.nextPick=now+(20+Math.random()*20)*6e4;M.lt=now;if(M.tk&&now<M.tk.until&&M.tk.src!=='dj'&&!MUS.mind){M.now={src:'radio',id:M.tk.id,st:'drizzle',since:now};MUS.lastPick={why:'his request is on'};return M.now}
+  const p=pickMusic(musCtx());MUS.lastPick=Object.assign({why},p);
+  if(!p.src){if(M.now&&M.now.src==='radio'){M.now=null;if(Math.random()<.4)say('*clicks the radio off* reading time 📖',3,true)}return p}
+  const was=M.now&&M.now.id;M.st=p.st;M.now={src:'radio',id:p.id,st:p.st,since:now};M.r.push(p.id);M.r=M.r.slice(-12);
+  const t=M.t;t[p.g]=Math.min(1,(t[p.g]||0)+.03);for(const k in t)if(k!==p.g)t[k]=Math.round(t[k]*.995*100)/100;
+  if(was!==p.id&&Math.random()<.35)say(pick([`*clicks on the radio* ${RADIO[p.st].n}…`,`ooh, ${p.ttl} 📻`,`${RADIO[p.st].n} ${RADIO[p.st].f}, my favorite`]),3,true);musPhase();return p}
+function musPhase(){const M=S.music,now=Date.now(),e=Object.entries(M.t).sort((a,b)=>b[1]-a[1]);if(e[0][1]<.55||e[0][1]-e[1][1]<.35)return;if(M.ph&&(M.ph.g===e[0][0]||now-M.ph.t<14*864e5))return;
+  M.ph={g:e[0][0],t:now};const n=GNAME[e[0][0]];say(`I'm in a ${n} phase. Don't look at me.`,4.5);addEntry('Music',`I think I'm in a ${n} phase. It's all I want on the radio. Don't look at me.`,"Mocha's House")}
+function musicMind(id){id=String(id||'').toLowerCase().replace(/[^a-z]/g,'');if(!RECBY[id]||RECBY[id].secret)return false;MUS.mind={id,t:Date.now()};if(mochaHome()&&hasItem('radio'))musChoose('mind');return true}
+// the jukebox candidate (1 of his own coins, about 2 min, plays to the square only) and the free request box at Rain City Records
+function musCands(at){if(!MUS||Math.abs(at-Date.now())>6e4||G.mode==='trip')return null;const o=[],M=S.music,mi=(S.interests&&+S.interests.music)||0,jb=SQUARE&&SQUARE.jukebox,h=hourAt(at);
+  if(jb&&S.coins>=1&&h>=8&&h<22&&!(MUS.jb&&at<MUS.jb.until)&&at-M.jb>3*36e5&&(Math.hypot(G.x+30,G.z-33)<40||mi>=2)){const a=jb.ry,x=jb.x+Math.sin(a)*1.4,z=jb.z+Math.cos(a)*1.4;
+    o.push({p:'square',doing:'playing a song on the jukebox',tags:['music'],need:{fun:22},fx:'jukebox',hw:.2+Math.max(0,mi)*.2,at:[x,z],face:{x:jb.x,z:jb.z},lines:['Fed the jukebox in Lantern Square one of my coins. Worth it.']})}
+  const rp=byId.records;if(rp&&isOpen(rp,h)&&!M.rq&&!(M.tk&&at<M.tk.until)&&dkey(at)!==MUS.rqDay&&mi>=0)o.push({p:'records',s:'crates',doing:"dropping a request in Basil's box",tags:['music'],need:{fun:12,social:8},fx:'mreq',hw:.1+Math.max(0,mi)*.15,lines:["Wrote a request card for Drizzle FM and dropped it in Basil's box."]});
+  return o}
+function musJukebox(force){const M=S.music,now=Date.now();if(S.coins<1){if(force)say('no coins for the jukebox 🪙',3);return null}S.coins=Math.max(0,S.coins-1);M.jb=now;const p=pickMusic(Object.assign(musCtx(),{noSilence:1})),r=RECBY[p.id];
+  MUS.jb={id:r.id,until:now+12e4,his:1};M.now={src:'jb',id:r.id,st:null,since:now};MUS.st.jb=(MUS.st.jb||0)+1;try{sfx('coin')}catch(e){}say(pick([`*clink* ${r.ttl}!`,`one coin, one song: ${r.ttl} 🎶`]),3.5);
+  addEntry('Music',`Put one of my coins in the Lantern Square jukebox and picked ${r.ttl} by ${r.artist}. People by the fountain started tapping their feet. One person did a little spin.`,'Lantern Square');return MUS.jb}
+function musRequest(id,force){const M=S.music,now=Date.now();const r=RECBY[id]||RECBY[pickMusic(Object.assign(musCtx(),{noSilence:1})).id],d=new Date(now);d.setSeconds(0,0);d.setMinutes(d.getMinutes()<30?30:60);M.rq={id:r.id,at:+d,t:now};MUS.rqDay=dkey(now);
+  const k=typeof keeperAt==='function'?keeperAt('records'):null;if(k&&k.obj&&k.obj.visible)try{kSay(k,pick([`${r.ttl}? great pick. you'll hear it at ${fmtHM(+d)}.`,'request received! listen at the half hour 📻']),3.5)}catch(e){}return M.rq}
+function fmtHM(t){const d=new Date(t);let h=d.getHours()%12||12;return h+':'+String(d.getMinutes()).padStart(2,'0')}
+// his pick takes over the town music (Drizzle FM): a keeper reacts; the café and record-shop speakers carry it too
+function musTakeover(id,src,mins){const M=S.music,now=Date.now(),r=RECBY[id];if(!r)return null;M.tk={id,until:now+mins*6e4,src,t0:now};if(mochaHome()&&hasItem('radio'))M.now={src:'radio',id,st:'drizzle',since:now};MUS.st.tk=(MUS.st.tk||0)+1;
+  if(src==='req')addEntry('Music',`Dropped a request in Basil's box. He played ${r.ttl} at ${fmtHM(now)}. The whole street was ${GNAME[r.g]}.`,'Rain City Records');
+  try{const ks=KEEPERS.filter(k=>k.obj&&k.obj.visible);ks.sort((a,b)=>{a.obj.getWorldPosition(tmpV);const da=Math.hypot(tmpV.x-AP.x,tmpV.z-AP.z);b.obj.getWorldPosition(tmpV);return da-Math.hypot(tmpV.x-AP.x,tmpV.z-AP.z)});const k=ks.find(k=>k.id==='basil')&&Math.random()<.5?KB.basil:ks[0];
+    if(k)setTimeout(()=>{try{if(k.obj.visible)kSay(k,pick([`ooh, Mocha's pick on Drizzle FM! ${r.ttl} 📻`,`turn it up, it's Mocha's request`,`${r.ttl}! that ghost has taste`]),3.5)}catch(e){}},1500)}catch(e){}npDraw();return M.tk}
+function musCallIn(id,force){const M=S.music,now=Date.now();if(!S.phone)return{ok:false,why:'no phone'};if(!force&&(TX.typing||TX.job||msgOpen||G.mode==='trip'))return{ok:false,why:'busy texting'};
+  const want=RECBY[id]?RECBY[id]:GENRES[id]?(RECORDS.find(r=>r.g===id&&!r.secret&&!M.r.slice(-2).includes(r.id))||RECORDS.find(r=>r.g===id)):RECBY[pickMusic(Object.assign(musCtx(),{noSilence:1})).id];
+  M.ci.n++;M.ci.nx=now+(2+Math.random()*3)*36e5;G.phoneT=Math.max(G.phoneT||0,4);say(pick([`*calls Drizzle FM* hi! could you play ${want.ttl}?`,`📱 requesting ${want.ttl} on Drizzle FM!`]),4);
+  addEntry('Music',`Called in to Drizzle FM and asked for ${want.ttl}. They played it right away. I heard it drifting out of every door on the street.`,'');try{toast(`📻 Mocha called Drizzle FM: ${want.ttl}`)}catch(e){}
+  musTakeover(want.id,'call',30+Math.round(Math.random()*30));return{ok:true,id:want.id,chip:npText()}}
+function musState(dt){const M=S.music,now=Date.now();if(!M)return;musTasteSeed();
+  if(M.tk&&now>=M.tk.until){M.tk=null;if(M.now&&M.now.st==='drizzle'&&M.now.src==='radio'&&!M.now.id)M.now=null}if(MUS.jb&&now>=MUS.jb.until){MUS.jb=null;if(M.now&&M.now.src==='jb')M.now=null}
+  if(M.rq&&now>=M.rq.at){const id=M.rq.id;M.rq=null;musTakeover(id,'req',30+Math.round(Math.random()*30))}
+  const a=G.mode==='activity'?G.act:null;if(a&&a.fx==='jukebox'&&!a.jbd){a.jbd=1;musJukebox()}if(a&&a.fx==='mreq'&&!a.rqd){a.rqd=1;musRequest()}
+  // the radio at home: picks on activity change or every 20-40 min; off when he leaves, sleeps or goes on a trip
+  const asl=(G.act&&G.act.fx==='sleep')||G.sleep||G.mode==='trip',home=!asl&&(mochaHome()||(G.act&&G.act.p==='home'&&Math.hypot(G.x-byId.home.x,G.z-byId.home.z)<16));
+  if(home&&hasItem('radio')){if(G.act!==MUS.pa||now>MUS.nextPick){MUS.pa=G.act;musChoose('act')}}
+  else if(M.now&&M.now.src==='radio')M.now=null;
+  // call-ins: 1 to 3 a day with his phone, never mid-text
+  const dk=String(dkey(now));if(M.ci.d!==dk){M.ci={d:dk,n:0,w:1+Math.floor(seeded(wxHash(dk+'ci'))()*3),nx:now+(1+Math.random()*4)*36e5}}
+  if(S.phone&&!asl&&M.ci.n<M.ci.w&&now>M.ci.nx&&!(M.tk&&now<M.tk.until)&&!M.rq&&hourAt(now)>=9&&hourAt(now)<21&&!TX.typing&&!TX.job&&!msgOpen&&!(S.texts&&S.texts.length&&now-S.texts[S.texts.length-1].t<12e4))musCallIn();
+  // the cinema pianist: a real silent film starts him; The End stops him with a cadence
+  const mv=typeof MOVIE!=='undefined'?MOVIE:null,f=mv&&mv.film,run=!!(f&&T-mv.start<mv.len&&!/steamboat willie/i.test(f.title||''));
+  if(run&&!MUS.cine.on)MUS.cine={on:1,film:f.title,style:CINES[f.theme]||'rag',t:now,n:(MUS.cine.n||0)+1,end:MUS.cine.end||0};else if(!run&&MUS.cine.on){MUS.cine.on=0;MUS.cine.stop=now;if(!audOn())MUS.cine.end=(MUS.cine.end||0)+1}
+  npDraw()}
+// ---- the now-playing chip (HUD slot nowPlaying): shows his pick even when muted; tap = the card with cover art, the source and Listen in ----
+{const st=document.createElement('style');st.textContent=`.npChip{height:44px;max-width:min(230px,52vw);border-radius:22px;border:0;padding:0 14px;background:var(--paper);color:var(--ink);font:inherit;font-size:12.5px;font-weight:800;box-shadow:0 3px 0 rgba(0,0,0,.18);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;touch-action:manipulation}
+.npChip.li{background:#7a5cc8;color:#fff}#npCard{position:fixed;z-index:60;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));max-height:70vh;overflow:auto;background:var(--paper);color:var(--ink);border-radius:18px;box-shadow:0 8px 30px rgba(0,0,0,.35);padding:14px;display:none;font-size:13px;text-align:left}
+#npCard.on{display:block}#npCard .row{display:flex;gap:12px;align-items:center}#npCard canvas{width:96px;height:96px;border-radius:10px;flex:none}#npCard h4{margin:0 0 2px;font-size:16px}#npCard small{display:block;opacity:.75}#npCard .bt{display:flex;gap:8px;margin-top:12px}
+#npCard button{min-height:44px;min-width:44px;border-radius:12px;border:0;font:inherit;font-weight:800;padding:0 14px;background:rgba(0,0,0,.08);color:inherit;cursor:pointer}#npCard button.on{background:#7a5cc8;color:#fff}#npCard .x{position:absolute;top:6px;right:6px;background:transparent}
+@media (orientation:landscape),(min-width:820px){#npCard{left:auto;right:calc(12px + env(safe-area-inset-right));bottom:auto;top:calc(12px + env(safe-area-inset-top));width:320px;max-height:calc(100vh - 24px)}}`;document.head.appendChild(st)}
+const NPC=document.createElement('button');NPC.className='npChip';NPC.setAttribute('aria-label','now playing');NPC.onclick=e=>{e.stopPropagation();npOpen()};
+const NPD=document.createElement('div');NPD.id='npCard';document.body.appendChild(NPD);NPD.addEventListener('pointerdown',e=>e.stopPropagation());NPD.addEventListener('click',e=>e.stopPropagation());
+function npText(){if(!MUS)return'';const m=musMine(Date.now());if(!m)return'';const r=m.id&&RECBY[m.id],mu=SET.snd&&SET.snd.mode==='muted'?'🔇 ':'♪ ';
+  if(m.k==='tk')return`${mu}Drizzle FM · Mocha's pick: ${r?r.ttl:'?'}`;if(m.k==='jb')return`${mu}Mocha · the jukebox · ${r?r.ttl:''}`;const s=RADIO[m.st]||RADIO.drizzle;return`${mu}Mocha · ${s.n} ${s.f} · ${r?r.ttl:'Town Songbook'}`}
+function npDraw(){const t=npText(),on=!!t;if(NPC.textContent!==t)NPC.textContent=t;NPC.classList.toggle('li',!!MUS.li);if(on!==MUS.chipOn){MUS.chipOn=on;try{HUD.show('nowPlaying',on)}catch(e){}if(AUD&&AUD.np)AUD.np(on);if(!on&&NPD.classList.contains('on'))npClose()}if(NPD.classList.contains('on')&&MUS.cardK!==t)npOpen(1)}
+function npCover(cv0,r){const g=cv0.getContext('2d'),rr=seeded((r?r.seed:S.music.seed)^77),hue=Math.floor(rr()*360);g.fillStyle=`hsl(${hue},45%,38%)`;g.fillRect(0,0,96,96);
+  for(let i=0;i<6;i++){g.fillStyle=`hsla(${(hue+60*i+rr()*40)%360},65%,${55+rr()*20}%,.75)`;g.beginPath();g.arc(rr()*96,rr()*96,8+rr()*26,0,6.283);g.fill()}g.fillStyle='rgba(255,255,255,.9)';g.beginPath();g.arc(48,48,13,0,6.283);g.fill();g.fillStyle='#222';g.beginPath();g.arc(48,48,3,0,6.283);g.fill()}
+function npOpen(re){const m=musMine(Date.now());if(!m){npClose();return}const r=m.id&&RECBY[m.id],s=RADIO[m.st]||RADIO.drizzle,src=m.k==='jb'?'his jukebox pick, playing to Lantern Square':m.k==='tk'?'his request on Drizzle FM, playing all over town':`on his radio · ${s.n} ${s.f}`;MUS.cardK=npText();
+  NPD.innerHTML=`<button class="x" aria-label="close">✕</button><div class="row"><canvas width="96" height="96"></canvas><div><h4>${r?r.ttl:'Town Songbook'}</h4><small>${r?r.artist+' · '+GNAME[r.g]:'the hour\'s theme · key of '+(SONG.key||'')}</small><small>${src}</small><small>Mocha chose this himself.</small></div></div>
+  <div class="bt"><button data-li class="${MUS.li?'on':''}">🎧 Listen in${MUS.li?': on':''}</button></div><small style="margin-top:8px">Listen in plays what he's playing for your ears only, from anywhere. It never changes his choice.${SET.snd.mode==='muted'?' (Sound is off right now.)':''}</small>`;
+  npCover(NPD.querySelector('canvas'),r);NPD.querySelector('.x').onclick=npClose;NPD.querySelector('[data-li]').onclick=()=>{listenIn(!MUS.li);npOpen(1)};NPD.classList.add('on')}
+function npClose(){NPD.classList.remove('on')}
+function listenIn(on){MUS.li=on&&musMine(Date.now())?1:0;if(MUS.li)audGesture();npDraw();if(audOn())musSync(Date.now());return MUS.li}
+HUD.slot('nowPlaying',{el:NPC,on:false});
+// ---- note sprites: one Points pool of 6 note glyphs (1 draw) drifting from any building playing music within 60 of the camera ----
+function npAtlas(){const c=document.createElement('canvas');c.width=384;c.height=64;const g=c.getContext('2d'),C=['#ffd36e','#ff9fd0','#c8b4ff','#9ff0c8','#9fd8ff','#fff3d6'];
+  for(let i=0;i<6;i++){const x=i*64,ty=i%4;g.save();g.translate(x,0);g.lineCap='round';g.lineWidth=5;g.strokeStyle='rgba(30,20,50,.55)';g.fillStyle=C[i];
+    const head=(hx,hy)=>{g.beginPath();g.ellipse(hx,hy,9,7,-.4,0,6.283);g.fill()},stem=(sx,y0,y1)=>{g.beginPath();g.moveTo(sx,y0);g.lineTo(sx,y1);g.stroke();g.save();g.strokeStyle=C[i];g.lineWidth=3;g.beginPath();g.moveTo(sx,y0);g.lineTo(sx,y1);g.stroke();g.restore()};
+    if(ty===2){head(22,48);stem(30,46,12)}else if(ty===0){head(22,48);stem(30,46,12);g.fillRect(30,10,14,6)}else{head(16,50);head(42,44);stem(24,48,14);stem(50,42,8);g.save();g.translate(0,0);g.beginPath();g.moveTo(24,14);g.lineTo(50,8);g.lineWidth=7;g.strokeStyle=C[i];g.stroke();if(ty===3){g.beginPath();g.moveTo(24,22);g.lineTo(50,16);g.stroke()}g.restore()}
+    g.restore()}const t=new THREE.CanvasTexture(c);return t}
+function npInit(){const N=24,geo=new THREE.BufferGeometry(),pos=new Float32Array(N*3),gl=new Float32Array(N),al=new Float32Array(N);for(let i=0;i<N;i++)pos[i*3+1]=-999;
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('g',new THREE.BufferAttribute(gl,1));geo.setAttribute('a',new THREE.BufferAttribute(al,1));
+  const m=new THREE.ShaderMaterial({uniforms:{map:{value:npAtlas()},sc:{value:400}},transparent:true,depthWrite:false,
+    vertexShader:'attribute float g;attribute float a;varying float vg;varying float va;uniform float sc;void main(){vg=g;va=a;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=a>0.0?sc/max(1.0,-mv.z):0.0;gl_Position=projectionMatrix*mv;}',
+    fragmentShader:'uniform sampler2D map;varying float vg;varying float va;void main(){vec4 c=texture2D(map,vec2((vg+gl_PointCoord.x)/6.0,1.0-gl_PointCoord.y));if(c.a*va<0.03)discard;gl_FragColor=vec4(c.rgb,c.a*va);}'});
+  const pts=new THREE.Points(geo,m);pts.frustumCulled=false;pts.renderOrder=5;pts.visible=false;pts.name='b21notes';NP={N,pts,pos,gl,al,L:new Float32Array(N),V:new Float32Array(N*2),i:0,acc:0,live:0,src:[]};
+  try{const sc=new THREE.Scene();sc.add(pts);renderer.compile(sc,camera)}catch(e){}scene.add(pts)}
+function npSources(){const o=[],M=S.music,now=Date.now();if(M.now&&M.now.src==='radio'&&mochaHome()){const w=MUS.radioW;o.push(['home',w.x,3.4,w.z-.6],['home',byId.home.x,2.8,byId.home.z+byId.home.d/2+.6])}
+  if(MUS.jb&&now<MUS.jb.until)o.push(['jukebox',SQUARE.jukebox.x,2.3,SQUARE.jukebox.z]);if(MUS.cine.on){const p=byId.cinema,w=toWorld(p,0,p.d/2+.5);o.push(['cinema',w.x,4,w.z])}
+  if(MUS.shopPid){const p=byId[MUS.shopPid],w=toWorld(p,0,p.d/2+.5);o.push([p.id,w.x,3,w.z])}if(M.tk&&now<M.tk.until)for(const pid of ['records','cafe']){const p=byId[pid];if(p&&isOpen(p)){const w=toWorld(p,0,p.d/2+.5);o.push([pid,w.x,3,w.z])}}
+  try{if(typeof CB!=='undefined'&&CB&&CB.em&&CB.lastPlay)o.push(['cabin',CB.em.x,2.5,CB.em.z])}catch(e){}return o}
+function npFrame(dt){if(!NP)return;const cx=camS.tx,cz=camS.tz;if(NP.t0==null)NP.t0=0;NP.t0+=dt;if(NP.t0>.25){NP.t0=0;NP.src=npSources().filter(s=>Math.hypot(s[1]-cx,s[3]-cz)<60)}
+  NP.acc+=dt*(SET.saver?.6:1.4)*NP.src.length;while(NP.acc>1&&NP.src.length){NP.acc-=1;const s=NP.src[Math.floor(Math.random()*NP.src.length)],i=NP.i=(NP.i+1)%NP.N;NP.pos[i*3]=s[1]+(Math.random()-.5);NP.pos[i*3+1]=s[2];NP.pos[i*3+2]=s[3]+(Math.random()-.5);NP.gl[i]=Math.floor(Math.random()*6);NP.L[i]=3.2;NP.V[i*2]=(Math.random()-.5)*.5;NP.V[i*2+1]=(Math.random()-.5)*.5}
+  if(!NP.src.length)NP.acc=0;let live=0;for(let i=0;i<NP.N;i++){if(NP.L[i]<=0){NP.al[i]=0;continue}NP.L[i]-=dt;const l=NP.L[i];if(l<=0){NP.al[i]=0;continue}live++;const b=1+(BEAT.on?BEAT.b*.15:0);
+    NP.pos[i*3]+=NP.V[i*2]*dt+Math.sin(l*3+i)*.006;NP.pos[i*3+1]+=dt*.6*b;NP.pos[i*3+2]+=NP.V[i*2+1]*dt;NP.al[i]=Math.min(1,(3.2-l)*3,l*1.2)}
+  NP.live=live;NP.pts.visible=live>0;if(live){const ga=NP.pts.geometry.attributes;ga.position.needsUpdate=ga.a.needsUpdate=ga.g.needsUpdate=true;NP.pts.material.uniforms.sc.value=renderer.domElement.height/(2*Math.tan(camera.fov*Math.PI/360))*.85}}
+// ---- the radio on his sill (1 small mesh, 1 draw), shown once he has it ----
+function radioMesh(){const p=byId.home;if(!p||!p.obj)return;const tex=canvasTex(64,40,g=>{g.fillStyle='#2f6f6a';g.fillRect(0,0,64,40);g.fillStyle='#f2e6c9';g.fillRect(3,3,58,34);g.fillStyle='#5a4a3a';for(let y=8;y<34;y+=5)for(let x=7;x<34;x+=5){g.beginPath();g.arc(x,y,1.4,0,6.283);g.fill()}
+    g.fillStyle='#ffcf80';g.fillRect(38,8,20,10);g.fillStyle='#7a2f45';g.fillRect(46,8,2,10);g.fillStyle='#3a2a22';g.beginPath();g.arc(48,28,5,0,6.283);g.fill()});
+  const m=new THREE.Mesh(new THREE.BoxGeometry(.56,.34,.2),lam('#ffffff',{map:tex}));m.position.set(-1.55,2.25,-6.3);m.rotation.y=.12;m.name='b21radio';p.obj.add(m);MUS.radioM=m;m.visible=hasItem('radio')}
+// ---- BEAT (for Mocha's hem wobble and bob, keepers tapping a foot) and the diagnostics disclosure ----
+function b21Frame(dt){if(!MUS)return;MUS.acc+=dt;MUS.fc++;if(MUS.acc>=1){MUS.fps=Math.round(MUS.fc/MUS.acc);MUS.acc=0;MUS.fc=0;try{musState(1)}catch(e){MUS.st.err=String(e&&e.message||e)}if(MUS.radioM)MUS.radioM.visible=hasItem('radio');diagTick()}
+  const B=MUS.bt;if(B&&audOn()){const ct=AUD.c.currentTime,x=(ct-B.t)/B.bt;BEAT.on=1;BEAT.bpm=Math.round(60/B.bt);BEAT.ph=((x%1)+1)%1;BEAT.b=Math.pow(1-BEAT.ph,3)}else{BEAT.on=0;BEAT.b=0}
+  if(BEAT.on&&MUS.shopPid&&camS.mode==='walk')for(const k of KEEPERS){if(k.shop!==MUS.shopPid||!k.obj||!k.obj.visible)continue;const L=k.obj.userData&&k.obj.userData.legs;if(L&&L[1]&&L[1].rotation)L[1].rotation.x=-BEAT.b*.3}
+  npFrame(dt)}
+function diagUI(){const host=$('#tab-set');if(!host||host.querySelector('#diagD'))return;host.insertAdjacentHTML('beforeend',`<details class="set" id="diagD" style="display:block"><summary style="min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:800">🔧 Diagnostics</summary><div id="diagB" style="font:12px/1.6 ui-monospace,monospace;padding:4px 0 8px"></div></details>`);
+  const d=host.querySelector('#diagD');d.addEventListener('toggle',()=>{if(d.open)diagTick(1)})}
+function diagTick(force){const d=document.getElementById('diagD');if(!d||!d.open||curTab!=='set'||panel.classList.contains('hidden'))return;const b=document.getElementById('diagB');if(!b)return;
+  const tier=SET.saver?'low (battery saver)':ADAPT.drops>=2?'low':ADAPT.drops?'medium':'high';MUS.diagN=(MUS.diagN||0)+1;
+  b.innerHTML=`fps <b>${MUS.fps||0}</b> · draw calls <b>${GFX.calls}</b><br>triangles <b>${(GFX.tris/1000).toFixed(1)}k</b> · pixel ratio <b>${(+renderer.getPixelRatio()).toFixed(2)}</b><br>quality tier <b>${tier}</b> (resolution drops ${ADAPT.drops}) · shadows ${renderer.shadowMap.enabled?'on':'off'}<br>programs ${renderer.info.programs.length} · textures ${renderer.info.memory.textures} · geometries ${renderer.info.memory.geometries}<br>audio ${AUD&&AUD.c?AUD.c.state:'not started'} · music notes ${MUS.live.length}`}
+{const r1=TABS.R.set;TABS.R.set=()=>{if(r1)r1();try{diagUI()}catch(e){}}}
+{const rs0=renderSet;renderSet=function(){rs0.apply(this,arguments);try{diagUI()}catch(e){}}}
+// ---- the mind may name a record; the schema gets an optional 'record' field ----
+{const m0=applyMind;applyMind=function(r,f){try{if(r&&r.record)musicMind(r.record)}catch(e){}return m0.apply(this,arguments)}}
+// ---- palette additions: the hour chime (original 4-note phrase: do, sol, la, mi; sine f + 2.76f + 5.4f, 3 s), shop sounds ----
+Object.assign(SFXR,{chime4:()=>[0,7,9,4].flatMap((s,i)=>{const f=523.25*Math.pow(2,s/12),at=i*.62;return[AO(f,3,.16,{at}),AO(f*2.76,2,.05,{at}),AO(f*5.4,1.2,.025,{at})]}),chime1:()=>[AO(261.6,3,.09),AO(261.6*2.76,2,.03),AO(261.6*5.4,1.2,.012)],
+  clink:()=>[AO(2600+AR()*500,.25,.07),AO(5300,.1,.025)],steam:()=>[ANZ(4500,1.2,.05,{ft:'highpass',a:.15,h:1})],blip:()=>[AO(1760,.07,.08,{w:'square',ff:3000}),AO(2349,.09,.07,{at:.08,w:'square',ff:3000})],hum:()=>[AO(60,1.4,.05,{w:'triangle',h:1,a:.3}),AO(120,1.4,.02,{h:1,a:.3})]});
+SFT.chime4=SFT.chime1='clock';DUCKS.add('chime4');
+// ---- boot ----
+AUD.noClock=1;MUS={P:[],live:[],TC:new Map(),st:{notes:0},cap:28,tickN:0,hf:null,jb:null,li:0,cine:{on:0},acc:0,fc:0,fps:0,sp:{g:1,pan:0,lp:20000},chipOn:null,radioW:toWorld(byId.home,-1.55,-6.3),nextPick:0,lastAct:null,pa:null};
+musTasteSeed();if(!S.music.rad&&S.careAt&&S.careAt>Date.now()+864e5)try{S.careAt=mailAt(addDays(Date.now(),1))}catch(e){}
+MUS.tm=audTimer(musTick,()=>audTier()==='LOW'?400:150);try{radioMesh()}catch(e){}try{npInit()}catch(e){}npDraw();
+Object.assign(window.__mocha,{MUS,MUSIC,RECORDS,GENRES,RADIO,pickMusic,
+  song:h=>{const th=songFor(h==null?new Date().getHours():h);return{h:h==null?null:h,key:th.key,root:th.root,mode:th.mode,bpm:th.bpm,swing:th.sw,prog:MPROGN[th.pi],bars:16,form:"A A' B A",lead:th.lead,comp:th.comp,bass:th.bass,pad:th.pad,perc:th.perc,ctr:th.ctr,motif:th.mA.map(x=>x.join(':')).join(' '),mel:th.mel.map(b=>b.map(n=>n[1]).join(',')).join('|'),seed:S.music.seed}},
+  playHour:h=>{MUS.hf=h==null?null:((Math.floor(h)%24)+24)%24;if(audOn())musSync(Date.now());const t=musFind('town');return{hf:MUS.hf,key:t?t.th.key:null,bpm:t?t.th.bpm:null}},
+  music:o=>{const M=S.music,now=Date.now();o=o||{};if(o.cineEnd&&typeof MOVIE!=='undefined'&&MOVIE)MOVIE.start=T-MOVIE.len-1;if(o.request){musRequest(o.request)}if(o.rqDue&&M.rq)M.rq.at=now-1;if(o.tick)musState(1);if(o.pick)musChoose('hook');if(o.sync&&audOn())musSync(now);
+    const tw=musFind('town'),A=AUD;return{seed:M.seed,now:M.now?{...M.now}:null,rad:M.rad,hasRadio:hasItem('radio'),st:M.st,t:{...M.t},tk:M.tk?{...M.tk}:null,rq:M.rq?{...M.rq}:null,jb:MUS.jb?{...MUS.jb}:null,coins:S.coins,ph:M.ph,size:JSON.stringify(M).length,
+      town:tw?{src:musSrcKey(tw.src),key:tw.th.key,bpm:tw.th.bpm,lead:tw.lead||tw.th.lead}:null,players:MUS.P.map(p=>({k:p.k,src:musSrcKey(p.src),wired:!!p.out,em:p.em?{x:+p.em.x.toFixed(1),z:+p.em.z.toFixed(1),ref:p.em.ref,max:p.em.max,pid:p.em.pid||null,solo:p.em.solo}:null})),
+      lp:MUS.lp||20000,lpNow:A&&A.c?Math.round(A.musicLP.frequency.value):null,chip:npText(),chipOn:!!MUS.chipOn,chipShown:NPC.style.display!=='none'&&!!NPC.textContent,li:MUS.li,
+      notes:{live:NP?NP.live:0,vis:NP?NP.pts.visible:false,src:NP?NP.src.map(s=>s[0]):[],draws:1},cine:{...MUS.cine},timer:{live:!!(MUS.tm&&MUS.tm.h),ms:audTier()==='LOW'?400:150},notesLive:MUS.live.length,stats:{...MUS.st},
+      beat:{...BEAT},songKey:SONG.key,chime:MUS.lastChime||null,lastPick:MUS.lastPick||null,shop:MUS.shopPid,pkg:(S.mbox||[]).some(m=>m.g&&m.g.radio)||(S.mail||[]).some(m=>/transistor radio/.test(m.gift||''))}},
+  radio:id=>musCallIn(id,true),jukebox:()=>{const c=(musCands(Date.now())||[]).find(a=>a.fx==='jukebox')||{p:'square',doing:'playing a song on the jukebox',tags:['music'],need:{fun:22},fx:'jukebox',at:[SQUARE.jukebox.x+1,SQUARE.jukebox.z+1]};c.jbd=1;startAct(c);G.x=c.at[0];G.z=c.at[1];const r=musJukebox(true);if(audOn())musSync(Date.now());return r?{...r,coins:S.coins}:null},
+  listenIn:on=>{listenIn(on===undefined?!MUS.li:!!on);return{li:MUS.li,now:S.music.now?{...S.music.now}:null}},musicMind,diag:()=>{openTab('set');const d=document.getElementById('diagD');if(d){d.open=true;diagTick(1)}return d?document.getElementById('diagB').textContent:null}});
 {const hx=c=>'#'+c.getHexString();
 Object.assign(window.__mocha,{PAL,FAMOF,PATCH,RIM,RIMS,TOONG,TOONC,ToonM,ToonC,rbox,rimify,ghostMat,roadMat,
   grade:()=>({toon:PAL.toon,toonC:PAL.toonC,hemi:{sky:hx(hemi.color),ground:hx(hemi.groundColor),i:+hemi.intensity.toFixed(3)},sky:{top:hx(skyMat.uniforms.top.value),bot:hx(skyMat.uniforms.bot.value)},night:+nightAmt.toFixed(3),gold:+RIMS.gold.toFixed(3),
