@@ -156,28 +156,21 @@
   body.walk .stick{display:block}
   #joy{left:max(26px,env(safe-area-inset-left));bottom:calc(46px + env(safe-area-inset-bottom));opacity:.75;transition:opacity .2s}
   #joy.float{transition:none}
-  #look{right:max(26px,env(safe-area-inset-right));bottom:calc(46px + env(safe-area-inset-bottom));opacity:.75}
+  #joy{opacity:.4;pointer-events:none}#joy .lab{display:none}canvas#c{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}/* controls v3: the stick floats under the left thumb (the canvas spawns it); this faint base is only a hint */
   body.walk #chatwrap{display:none}body.walk.chatOpen #chatwrap{display:block;bottom:calc(196px + env(safe-area-inset-bottom))}
   #chatBtn{display:none}body.walk #chatBtn{display:flex}
   body.walk #dock{bottom:calc(214px + env(safe-area-inset-bottom))}
   body.walk.chatOpen #dock{bottom:calc(270px + env(safe-area-inset-bottom))}
   body.walk #hint{display:none}
   @media (max-width:760px),(max-height:520px){body.walk.panelOpen .stick{display:none}}
-  @media (max-width:760px){#joy,#look{width:124px;height:124px}}
+  @media (max-width:760px){#joy{width:124px;height:124px}}
   @media (orientation:landscape) and (max-height:520px){
     .stick{width:112px;height:112px}.stick .nub{width:50px;height:50px}
-    #joy{bottom:max(24px,env(safe-area-inset-bottom))}#look{bottom:max(24px,env(safe-area-inset-bottom))}
+    #joy{bottom:max(24px,env(safe-area-inset-bottom))}
     body.walk #dock{bottom:auto;top:max(8px,env(safe-area-inset-top));flex-direction:column;gap:8px}body.walk #dock .round{width:46px;height:46px;font-size:20px}body.walk.showMeters #meters{display:none!important}
     body.walk.chatOpen #chatwrap{bottom:max(10px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(46vw,420px)}
   }
   html:not(.touch) body.walk .stick{display:none}html:not(.touch) body.walk #chatwrap{display:block}html:not(.touch) #chatBtn{display:none!important}html:not(.touch) body.walk #dock{bottom:calc(86px + env(safe-area-inset-bottom))}
-  /* ---- cozy camera (SET.cam 'cozy', the default): the LOOK stick becomes two 52px rotate buttons, 45 degree steps ---- */
-  .rotB{display:none;position:absolute;top:3px;width:52px;height:52px;border-radius:50%;border:2.5px solid rgba(255,250,242,.9);background:var(--paper);box-shadow:0 4px 0 rgba(0,0,0,.2);font-size:26px;font-weight:800;line-height:1;align-items:center;justify-content:center;padding:0;margin:0;color:#26324a;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;cursor:pointer}
-  .rotB.l{left:3px}.rotB.r{right:3px}.rotB.on{transform:scale(.9)}.rlab{display:none}
-  body.cozy #look{width:124px;height:58px;border-radius:29px;background:none;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;opacity:.94;pointer-events:none;bottom:calc(79px + env(safe-area-inset-bottom))}
-  body.cozy #look .nub,body.cozy #look .lab{display:none}body.cozy #look .rotB{display:flex}body.cozy #look .rlab{display:block}
-  @media (orientation:landscape) and (max-height:520px){body.cozy #look{bottom:calc(51px + env(safe-area-inset-bottom))}}
-  @media (min-width:761px) and (min-height:521px){body.panelOpen #look{right:calc(min(400px,42vw) + 24px + env(safe-area-inset-right))}body.panelOpen.wideP #look{display:none!important}}
   .lbl{max-width:min(48vw,260px);overflow:hidden;text-overflow:ellipsis;transform-origin:50% 100%;transform:translate(-50%,-100%) scale(var(--ls,1))}
   /* ---- paintings grid + picture viewer (lightbox) ---- */
   .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:12px 9px;margin:6px 0 2px}
@@ -404,7 +397,6 @@
 <div id="hint">tap 🚶 to walk around on your own · drag to look · pinch or +/− to zoom</div>
 <div id="dock"><button class="pill" id="modeBtn">🚶 walk around</button><button class="round" id="chatBtn" title="talk to Mocha">💬</button><button class="round" id="msgBtn" title="messages" aria-label="messages">📱<span class="badge" id="msgBadge"></span></button><button class="round" id="mapBtn" title="map">🗺</button><button class="round" id="bookBtn" title="diary">📖</button></div>
 <div id="joy" class="stick"><div class="nub" id="knob">🚶</div><div class="lab">MOVE</div></div>
-<div id="look" class="stick"><div class="nub" id="lnub">👀</div><div class="lab">LOOK</div></div>
 <div id="near" class="pill"></div>
 <div id="bubble2"></div><div id="bubble3"></div>
 <div id="mapWrap" class="hidden"><div class="mapCard"><header><b>🗺 Map</b><span class="muted">tap anywhere to walk there</span><button class="x" id="mapClose">×</button></header><canvas id="bigmap" width="640" height="640"></canvas><div class="legend">👻 Mocha · 🟡 you · 🦝 Wendell · 🚆 the train · ? = places he hasn't found yet</div></div></div>
@@ -1207,7 +1199,7 @@ const traitWords=()=>{const t=S.traits,w=[];w.push(t.curiosity>.6?'very curious'
 const TOUCH=matchMedia('(pointer:coarse)').matches;if(TOUCH)document.documentElement.classList.add('touch');
 let SET={autoSend:TOUCH,mic:false,saver:false,pace:'normal',dots:false};try{Object.assign(SET,JSON.parse(localStorage.getItem('mocha-settings')||'{}'))}catch(e){}
 if(!SET.mind||typeof SET.mind!=='object')SET.mind={};if(!{light:1,normal:1,rich:1}[SET.mind.cap])SET.mind.cap='light';if(!SET.mind.u||typeof SET.mind.u!=='object')SET.mind.u={d:0,n:0,h:0,hn:0,by:{}};if(!SET.mind.u.by||typeof SET.mind.u.by!=='object')SET.mind.u.by={};
-if(SET.cam!=='free')SET.cam='cozy';// cozy camera (owner fix): the default for everyone, existing saves included
+if(SET.cam!=='std'){SET.cam='std';SET.lookS='normal';SET.lookInv=false;SET.camFollow=false}if(!{slow:1,normal:1,fast:1}[SET.lookS])SET.lookS='normal';// controls v3 (owner, Nov 3): the standard scheme for everyone; any old SET.cam ('cozy' / 'free') migrates to it
 function saveSet(){try{localStorage.setItem('mocha-settings',JSON.stringify(SET))}catch(e){}}
 let PHOTOS={};try{PHOTOS=JSON.parse(localStorage.getItem('mocha-photos')||'{}')}catch(e){}
 function savePhotos(){if(S.you&&Array.isArray(S.you.album)&&S.you.album.length>30)S.you.album=S.you.album.slice(-30);if(S.wend&&Array.isArray(S.wend.pol)&&S.wend.pol.length>12)S.wend.pol=S.wend.pol.slice(-12);if(Array.isArray(S.pins)&&S.pins.length>12)S.pins=S.pins.slice(-12);
@@ -4352,7 +4344,7 @@ function faceAtlas(c,iris,blush){const g=c.getContext('2d'),cs=c.width/8,OL='#3b
 // ---------- NEW: the walker's own face atlas, a copy of the game's faceAtlas() with: bigger eyes (ES), two clear catchlights,
 // a soft upper lid, subtler warmer cheeks, a wider open grin, and short chunky brows drawn in the walker's 'plain' mark cell (brows stay put through blinks) ----------
 const FACE_GUY={ES:1.14,EX:47,EY:61,blushA:.26,blushC:'#EC8C76',brow:10.5};   // eyes a touch lower and closer than round 1 (52/56), brows chunkier
-function faceAtlasGuy(c,iris,blush,brow,fh){const g=c.getContext('2d'),cs=c.width/8,OL='#3b2723',PU='#1E1A24',ES=FACE_GUY.ES;g.clearRect(0,0,c.width,c.height);
+function faceAtlasGuy(c,iris,blush,brow,fh,skin){const g=c.getContext('2d'),cs=c.width/8,OL='#3b2723',PU='#1E1A24',ES=FACE_GUY.ES;g.clearRect(0,0,c.width,c.height);
   const el=(x,y,rx,ry)=>{g.beginPath();g.ellipse(x,y,rx,ry,0,0,Math.PI*2);g.fill()};
   const cell=(i,vw,vh,f)=>{const x=(i%8)*cs,y=(i>>3)*cs;g.save();g.beginPath();g.rect(x,y,cs,cs);g.clip();g.translate(x,y);g.scale(cs/vw,cs/vh);g.lineCap=g.lineJoin='round';f();g.restore()};
   const eye=(cx,cy,o={})=>{const gx=o.gx||0,R=(o.big?1.08:1)*ES,sm=!!o.sm;
@@ -4391,12 +4383,15 @@ function faceAtlasGuy(c,iris,blush,brow,fh){const g=c.getContext('2d'),cs=c.widt
       sm=P=>{const n=P.length,m=i=>{const a=P[i%n],b=P[(i+1)%n];return[(X(a[0])+X(b[0]))/2,(Y(a[1])+Y(b[1]))/2]};g.beginPath();let q=m(n-1);g.moveTo(q[0],q[1]);for(let i=0;i<n;i++){q=m(i);g.quadraticCurveTo(X(P[i][0]),Y(P[i][1]),q[0],q[1])}g.closePath()};
     CH_C.set(brow).multiplyScalar(1.3);CH_C.r=Math.min(1,CH_C.r);CH_C.g=Math.min(1,CH_C.g);CH_C.b=Math.min(1,CH_C.b);const bc='#'+CH_C.getHexString();   // beard and mustache a shade lighter than the brows (closer to the hair)
     g.fillStyle=g.strokeStyle=fh===1?brow:bc;
-    if(fh===1){sm(mir([[0,-15],[-15,-16],[-27,-23],[-47,-25],[-61,-11],[-68,-9],[-67,-30],[-57,-49],[-36,-62],[0,-67]]));g.save();g.clip();g.globalAlpha=.5;g.fillRect(0,0,128,128);   // stubble: a half-tone shadow (alpha .5 passes the .4 alpha test) with darker grain
-      g.globalAlpha=.8;for(let i=0;i<620;i++){const a=Math.sin(i*12.9898)*43758.5453,b=Math.sin(i*78.233)*12543.137;g.beginPath();g.arc((a-Math.floor(a))*128,(b-Math.floor(b))*128,.75,0,Math.PI*2);g.fill()}g.restore()}
+    if(fh===1){const dots=(n,r)=>{g.fillStyle=brow;g.globalAlpha=.5;for(let i=0;i<n;i++){const a=Math.sin(i*12.9898+r)*43758.5453,b=Math.sin(i*78.233+r)*12543.137;g.beginPath();g.arc((a-Math.floor(a))*128,(b-Math.floor(b))*128,.55,0,Math.PI*2);g.fill()}};
+      // H2: LIGHT stubble (it read as a full beard): a soft warm shadow on the jaw and chin only, with fine grain that fades up the jaw and over the lip (the grain only shows close up)
+      g.save();sm(mir([[0,-13],[-9,-12.5],[-16,-15],[-20,-22],[-26,-34],[-38,-40],[-52,-37],[-62,-29],[-66,-33],[-61,-45],[-47,-57],[-26,-64],[0,-67]]));g.clip();dots(240,0);g.restore();
+      g.save();sm(mir([[0,-37],[-12,-36],[-22,-35],[-32,-39],[-46,-40],[-58,-34],[-65,-32],[-65,-37],[-60,-47],[-47,-57],[-26,-64],[0,-67]]));g.clip();
+      g.fillStyle='#'+new THREE.Color(skin||'#d9a88a').multiplyScalar(.8).lerp(new THREE.Color(brow),.1).getHexString();g.globalAlpha=.45;g.fillRect(0,0,128,128);dots(160,7);g.restore()}   // the shadow just passes the .4 alpha test; a darker skin tone stays a shadow at night (the patch is unlit)
     else if(fh===2){sm(mir([[0,-16.5],[-14,-18.5],[-21,-25],[-33,-31],[-52,-27],[-62,-9],[-70,-7],[-70,-31],[-61,-52],[-38,-66],[0,-69]]));g.fill();   // short beard: jaw, chin and a joined mustache, a little skin left round the mouth
       g.save();g.globalCompositeOperation='destination-out';g.beginPath();g.ellipse(X(0),Y(-30.5),10.5,16,0,0,Math.PI*2);g.fill();g.restore();
       g.save();g.strokeStyle='rgba(255,236,214,.16)';g.lineWidth=1.6;for(let i=-4;i<=4;i++){const lo=i*13,la=-50+Math.abs(i)*2.5;g.beginPath();g.moveTo(X(lo),Y(la));g.quadraticCurveTo(X(lo*1.04),Y(la-4),X(lo*1.02),Y(la-8));g.stroke()}g.restore()}
-    else if(fh===3){sm(mir([[0,-16.5],[-8,-16.8],[-15,-19],[-19,-23.5],[-17,-25.6],[-13,-22.6],[-7,-21.6],[0,-21.9]]));g.fill()}});   // mustache: two chunky lobes over the smile, tips curled down
+    else if(fh===3){sm(mir([[0,-14.2],[-5,-14],[-9.5,-15],[-13,-16.2],[-14.5,-15.4],[-13.5,-18],[-9,-19.6],[-4,-20.2],[0,-19.6]]));g.fill()}});   // H2: mustache: small, under the nose, clear of the smile; tips turned up with the grin
   return c}
 const FACE_C=faceAtlas(Object.assign(document.createElement('canvas'),{width:1024,height:512}),'#6B3E26',true),FACE=new THREE.CanvasTexture(FACE_C);FACE.anisotropy=4;
 const FACE_MAT=new THREE.MeshBasicMaterial({map:FACE,transparent:true,alphaTest:.4,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
@@ -4503,13 +4498,13 @@ function chibiAnim(g,dt,t){const u=g.userData,k=u.k,st=u.st;if(!k)return;g.getWo
   setFaceB18(g,{eye,mouth})}
 // ---------- THE NEW YOU: palettes (small int indices in S.you.look), parts, materials ----------
 // look = [sk,hc,hs,ec,jk,bt,sh,bp,blush,vc,fl,cap,tp,fh] (owner fix 2: tp top style, fh facial hair reserved); every jacket colour avoids hues 38-68 deg (no yellow, mustard or gold), here and in the B24 catalog
-const LOOKP={sk:['#f7d7c4','#f1c3a5','#e3a983','#c98e66','#a8714c','#8a5a3b','#6b4232'],hc:['#3a271d','#6b3e26','#b0552a','#d4ac74','#1f1b1f','#8b8f99','#c46a8a','#4a6fa5','#553829'/*new: chestnut*/],
-  hs:['soft bob','tufty crop','ponytail','space buns','curly crop','tousled swoop'/*new*/,'side-swept fringe'/*new*/],ec:[['warm brown','#6B3E26'],['hazel','#7d6a35'],['grey-blue','#5f7f99'],['dark','#2a1d18']],
+const LOOKP={sk:['#f7d7c4','#f1c3a5','#e3a983','#c98e66','#a8714c','#8a5a3b','#6b4232'],hc:['#3a271d','#6b3e26','#b0552a','#d4ac74','#1f1b1f','#8b8f99','#8c6a4a'/*H2: was pink*/,'#4a6fa5','#553829'/*new: chestnut*/],
+  hs:['short side part'/*H2: was soft bob*/,'tufty crop','messy crop'/*H2: was ponytail*/,'buzz cut'/*H2: was space buns*/,'curly crop','tousled swoop','side-swept fringe'],ec:[['warm brown','#6B3E26'],['hazel','#7d6a35'],['grey-blue','#5f7f99'],['dark','#2a1d18']],
   jk:[['Forest','#2F6B4F'],['Harbor Blue','#4f6b9a'],['Navy','#2B3F66'],['Teal','#2F8F8A'],['Puddle Blue','#70add9','plain']/*new: plain lining (c1)*/,['Cloud','#eceef1']/*new: the hoodie white; cool (hue 220) so it passes jacketOK*/],
   bt:[['shorts','#8a3b2e','sh'],['joggers','#4a4f5c','jg'],['overalls','#3d5a80','ov'],['khaki trousers','#bea98a','tr']/*new*/,['striped joggers','#7d5236','sj']/*new*/,['charcoal shorts','#3b3842','sh']/*new*/],
   sh:[['sneakers','#2f6fd0','sn'],['sneakers','#d24b4b','sn'],['sneakers','#efe9dd','sn'],['sneakers','#2b2b30','sn'],['rain boots','#b8322b','rb'],['rain boots','#2b3f66','rb'],['rain boots','#3f6e45','rb'],
       ['tan boots','#a87b5c','lb']/*new*/,['orange sneakers','#ec7a32','os']/*new*/,['rain boots','#70add9','rb']/*new: Puddle Blue*/],
-  fl:[['off'],['buffalo check','#b3262e','#1c1a1d'],['forest-navy','#2f5d3a','#24324f'],['plum-grey','#6d3b5e','#8a8a92']],vc:['soft','bright','low'],cap:[['none'],['KC-blue cap','#1d5aa6']],
+  fl:[['off'],['buffalo check','#b3262e','#1c1a1d'],['forest-navy','#2f5d3a','#24324f'],['plum-grey','#6d3b5e','#8a8a92']],vc:['mellow','bright','low'],cap:[['none'],['KC-blue cap','#1d5aa6']],
   tp:['rain jacket','knit-cuff jacket','zip hoodie']/*new*/,fh:['none','stubble','short beard','mustache']/*new: drawn in face cell 12, on the walker's beard patch*/};
 const LOOK_N=[7,9,7,4,6,6,10,2,2,3,4,2,3,4],LOOK_D=[1,8,5,0,1,3,7,1,1,2,0,0,1,0],YOU_VOICE=LOOKP.vc,YOU_FITS=[['Blue jacket',LOOK_D],['Hoodie',[1,8,5,0,5,4,8,0,1,2,0,0,2,0]],['Rainy day',[1,8,6,0,4,5,9,1,1,2,0,0,0,0]]];   // owner fix 2: the default is a guy (outfit A "Blue jacket"); skin 1 renders light peach through youPal's compensation
 function hueOf(hex){CH_C.set(hex);const h={};CH_C.getHSL(h);return h.h*360}
@@ -4524,7 +4519,8 @@ function youPal(L){const sk=LOOKP.sk[L[0]],hc=LOOKP.hc[L[1]],jk=LOOKP.jk[L[4]][1
   const P={sk,skd:sc(sk,.9),skc:lf(sk,.0),hc,hcd:sc(hc,.7),jk,jkl:lf(jk,.38),jkd:sc(jk,.78),ln0:ln[0],ln1:ln[1],bt,btd:lf(bt,.22),sh,so:'#f6f2ea',bp:YPX.bp,bpd:YPX.bpd,dk:'#38323a',wht:'#fbf7ef',tg:'#e9dcc2',
     f0:fl[1]||'#b3262e',f1:fl[2]||'#1c1a1d',cap:(LOOKP.cap[L[11]]||[])[1]||'#1d5aa6',capd:sc((LOOKP.cap[L[11]]||[])[1]||'#1d5aa6',.72),
     // new slots
-    hcl:lf(hc,.1),skn:sc(sk,.93),jkr:sc(jk,tp===2?.965:.84),jkk:sc(jk,tp===2?.97:.92),btn:sc(jk,.48),tee:YPX.tee,zp:'#b9bfc9',str:'#e2e2e6',stp:'#efe5d2',shd:sc(sh,.78),sod:'#4a3528',lc:'#efe2c8',sow:'#e4ded2',bps:YPX.bps};
+    hcl:lf(hc,.1),skn:sc(sk,.93),jkr:sc(jk,tp===2?.965:.84),jkk:sc(jk,tp===2?.97:.92),btn:sc(jk,.48),tee:YPX.tee,zp:'#b9bfc9',str:'#e2e2e6',stp:'#efe5d2',shd:sc(sh,.78),sod:'#4a3528',lc:'#efe2c8',sow:'#e4ded2',bps:YPX.bps,
+    hcb:'#'+CH_C.set(hc).lerp(new THREE.Color(sk),.22).getHexString()/*H2: buzz cut*/};
   for(const k in P)P[k]='#'+CH_C.set(P[k]).multiply(WCOMP).getHexString();return P}
 const HOOD_G=new THREE.SphereGeometry(1,16,12,Math.PI/2+.95,Math.PI*2-1.9,0,2.3);
 // front surface of the torso for the current top: details (placket, tee, zip, pockets) sit on it and tilt with it
@@ -4551,11 +4547,27 @@ function youParts(L,o){o=o||{};const PI=Math.PI,hs=L[1]!=null?L[2]:0,tp=L[12]|0,
   const tucked=()=>{for(const [lon,lat,roll,w,l] of [[-36,33,-12,.072,.115],[-17,35,-26,.08,.128],[4,37,-38,.08,.13],[24,40,-50,.075,.12],[41,44,-60,.064,.1]])lk('hc',lon,lat,.428,roll,[w,l,.046],{tip:-1})};
   // HEAD (neck node; head centre at y .4): round head, small round ears, a small skin-toned button nose, then the hair
   p(H,'s','sk',[0,.4,0],.4);for(const s of [-1,1])p(H,'s8','sk',[s*.395,.38,0],[.078,.1,.066]);p(H,'s8','skn',[0,.352,.396],[.04,.03,.03]);
-  if(hs<=4){p(H,'s','hc',[0,.44,-.07],[.43,.41,.43]);for(const [x,y,z,r] of [[-.155,.72,.27,.13],[0,.75,.305,.135],[.155,.72,.27,.13]])p(H,'s8','hc',[x,y,z],r)}
-  if(hs===0)for(const s of [-1,1])p(H,'s8','hc',[s*.335,.27,-.05],[.13,.2,.17]);
-  else if(hs===1)for(const [x,z,rz] of [[-.11,-.02,.35],[0,.02,0],[.11,-.02,-.35],[0,-.16,0]])p(H,'k','hc',[x,.88,z],[.065,.17,.065],[z<-.1?-.5:0,0,rz]);
-  else if(hs===2){p(H,'s8','hc',[0,.6,-.5],[.12,.19,.12],[.3,0,0]);p(H,'s8','hcd',[0,.69,-.43],.055)}else if(hs===3)for(const s of [-1,1]){p(H,'s','hc',[s*.25,.82,-.1],.14);p(H,'s8','hcd',[s*.21,.74,-.08],.05)}
-  else if(hs===4)for(let i=0;i<11;i++){const a=i/11*PI*2,y=.62+.2*Math.cos(i*1.7);p(H,'s8','hc',[Math.sin(a)*.36*(.7+.3*Math.cos(i)),y+.1,-.07+Math.cos(a)*.34*(.7+.3*Math.cos(i))-(Math.cos(a)>.6?.1:0)],.11)}
+  // H2: his look is always a guy's: styles 0-4 are rebuilt on the shell (no near-coincident dome, so no saw-tooth seam) with short sideburns;
+  // under a hood or cap each tucks down to the shell and a short fringe (nothing pokes through). 0 short side part, 1 tufty crop, 2 messy crop, 3 buzz cut, 4 curly crop
+  const sb=()=>{for(const s of [-1,1])lk('hc',s*76,10,.408,0,[.042,.085,.04])};
+  if(hs<=4&&hs!==3&&capped){shell(0);tucked();sb()}
+  else if(hs===0){shell(.01);sb();lk('skd',33,63,.46,4,[.018,.21,.02]);   // the part: a thin line of scalp on his left
+    lk('hc',-18,49,.452,-55,[.15,.29,.07],{lift:-.06});lk('hc',4,59,.456,-62,[.16,.3,.074]);lk('hc',-8,73,.458,-68,[.15,.26,.07]);   // combed up and over to his right in diagonal sweeps
+    lk('hc',-58,40,.452,-20,[.11,.18,.06],{lift:-.1});lk('hc',50,50,.449,14,[.09,.15,.05]);lk('hc',64,34,.447,22,[.08,.13,.046])}   // fuller over his right temple, short and flat on the part side; a smooth back
+  else if(hs===1){shell(0);sb();for(const [x,y,z,r] of [[-.155,.72,.27,.13],[0,.75,.305,.135],[.155,.72,.27,.13]])p(H,'s8','hc',[x,y,z],r);
+    for(const [x,z,rz] of [[-.11,-.02,.35],[0,.02,0],[.11,-.02,-.35],[0,-.16,0]])p(H,'k','hc',[x,.88,z],[.065,.17,.065],[z<-.1?-.5:0,0,rz])}
+  else if(hs===2){shell(.02);sb();   // messy crop: a short choppy fringe, tufts tipped up every which way, flicks at the sides and back
+    for(const [lon,lat,roll,l] of [[-34,42,14,.15],[-12,45,-8,.17],[10,44,10,.16],[32,42,-16,.14]])lk('hc',lon,lat,.452,roll,[.09,l,.06],{tip:-1,lift:-.25});
+    for(const [lon,lat,roll,lf] of [[-40,62,30,.45],[-8,64,-20,.5],[26,63,25,.45],[52,58,-30,.4],[-62,55,40,.35],[0,80,10,.5],[-30,78,-35,.45],[34,78,35,.45],[150,70,0,-.4],[-150,70,0,-.4],[180,55,0,-.3]])
+      lk('hc',lon,lat,.462,roll,[.1,.18,.07],{tip:1,lift:lf,tc:lon===-8?'hcl':0});
+    for(const s of [-1,1]){lk('hc',s*82,34,.452,s*30,[.1,.15,.06],{lift:-.2,tip:-1});lk('hc',s*130,26,.452,0,[.14,.2,.065],{lift:-.15})}lk('hc',180,30,.452,0,[.18,.22,.065],{lift:-.15})}
+  else if(hs===3){p(H,'sp:24,12,0,0,0,1.42','hcb',[0,.405,-.005],[.418,.428,.422],[-.58,0,0]);p(H,'sp:24,12,0,0,0,1.42','hcd',[0,.405,-.005],[.414,.424,.418],[-.58,0,0],{flip:1});   // buzz cut: a close crop that fits under anything
+    for(const s of [-1,1])lk('hcb',s*76,10,.404,0,[.04,.07,.03])}
+  else if(hs===4){shell(.02);sb();const cu=(lon,lat,r,c)=>{const a=lat*D2R,b=lon*D2R,R=.448+r*.35;p(H,'s8',c||'hc',[R*Math.cos(a)*Math.sin(b),.4+R*Math.sin(a),R*Math.cos(a)*Math.cos(b)],r)};
+    // curly crop: tight curls in rings over the crown, small curls along the hairline as the fringe; all close to the dome (no buns)
+    cu(0,90,.085);for(let i=0;i<6;i++)cu(i*60+15,73,.085,i%2?'hcl':0);for(let i=0;i<10;i++)cu(i*36,54,.082,i%3?0:'hcl');
+    for(let i=0;i<12;i++){const lon=i*30+15,f=Math.abs(((lon+180)%360)-180);if(f>=55)cu(lon,f>=140?8:f>=100?20:32,.078,i%2?'hcl':0)}
+    for(const lon of [-36,-18,0,18,36])cu(lon,45,.07)}
   else if(hs===5){ // new 'tousled swoop' (c2/c3): the shell; a chunky fringe over the top third of the forehead that sweeps up from his right brow to a quiff
     // over his left; volume at the temples (wider than the head, ears clear); rounded locks tilting up and back over the crown; flicks at the nape. No cones.
     // under a hood or cap only the shell and a tucked fringe are drawn, so no lock pokes through
@@ -4646,12 +4658,12 @@ function youLook(){const L=(S&&S.you&&Array.isArray(S.you.look))?S.you.look:LOOK
 function makeYou(){const L=youLook(),W=youWear(L,Y18.hood),pal=youPal(W),P=youParts(W,{hood:Y18.hood}),g=chibiRig(P,{mat:YMAT,faceMat:YFACE_MAT,pal,shadow:true,face:{ml:[-38,-17],bd:1}}),u=g.userData;
   const hu=new THREE.Mesh(mergeParts(P.HOODU,pal),YMAT),hd=new THREE.Mesh(mergeParts(P.HOODD,pal),YMAT);hu.castShadow=hd.castShadow=true;u.head.add(hu);u.pv.add(hd);hu.visible=!!Y18.hood;hd.visible=!Y18.hood;u.M.HOODU=hu;u.M.HOODD=hd;
   const ln=new THREE.Mesh(LANT_G,YFACE_MAT);ln.position.set(.24,.655,-.36);u.pv.add(ln);ln.visible=!!L[7];const lg=glow('#ffc070',1.25,.7,false);lg.position.copy(ln.position);lg.visible=false;u.pv.add(lg);
-  Object.assign(u,{lantern:ln,lglow:lg,pal,you:1,bob:0,emY:2.3});Y18.keys=youKeys(W,Y18.hood);Y18.hd=Y18.hood;faceAtlasGuy(YFACE_C,LOOKP.ec[L[3]][1],!!L[8],pal.hcd,L[13]|0);YFACE.needsUpdate=true;Y18.fid=L[3]+'|'+L[8]+'|'+L[1]+'|'+(L[13]|0);lanternUV(false);return g}
+  Object.assign(u,{lantern:ln,lglow:lg,pal,you:1,bob:0,emY:2.3});Y18.keys=youKeys(W,Y18.hood);Y18.hd=Y18.hood;faceAtlasGuy(YFACE_C,LOOKP.ec[L[3]][1],!!L[8],pal.hcd,L[13]|0,pal.sk);YFACE.needsUpdate=true;Y18.fid=L[3]+'|'+L[8]+'|'+L[1]+'|'+(L[13]|0)+'|'+L[0];lanternUV(false);return g}
 function lanternUV(on){const uv=LANT_G.attributes.uv,u0=LANT_G.userData.u0;for(let i=0;i<uv.count;i++)uv.setX(i,7/8+(on?0:1/16)+.002+u0[i]/16*.96);uv.needsUpdate=true}
 // apply a look array: recolour vertices for colour-only changes, swap the geometry of a node whose shape changed, redraw the walker's own face atlas for eyes/blush
 function applyLook(arr,o){o=o||{};const L=youFix({look:arr}).look;if(S&&S.you){S.you.look=L.slice()}const v=visitor,u=v.userData;if(!u||!u.you)return L;const W=youWear(L,Y18.hood),pal=youPal(W),K=youKeys(W,Y18.hood),P=youParts(W,{hood:Y18.hood});u.pal=pal;let rebuilt=0;
   for(const n in u.M){const m=u.M[n];if(!m||!P[n])continue;if(Y18.keys&&Y18.keys[n]===K[n])chRecolor(m.geometry,pal);else{const old=m.geometry;m.geometry=mergeParts(P[n],pal);old.dispose();rebuilt++}}
-  Y18.keys=K;Y18.hd=Y18.hood;const fid=L[3]+'|'+L[8]+'|'+L[1]+'|'+(L[13]|0);if(fid!==Y18.fid){Y18.fid=fid;faceAtlasGuy(YFACE_C,LOOKP.ec[L[3]][1],!!L[8],pal.hcd,L[13]|0);YFACE.needsUpdate=true}u.lantern.visible=!!L[7];Y18.night=-1;
+  Y18.keys=K;Y18.hd=Y18.hood;const fid=L[3]+'|'+L[8]+'|'+L[1]+'|'+(L[13]|0)+'|'+L[0];if(fid!==Y18.fid){Y18.fid=fid;faceAtlasGuy(YFACE_C,LOOKP.ec[L[3]][1],!!L[8],pal.hcd,L[13]|0,pal.sk);YFACE.needsUpdate=true}u.lantern.visible=!!L[7];Y18.night=-1;
   if(!o.quiet){try{save()}catch(e){}}return{look:L,rebuilt}}
 // ---------- the walker each frame (frame() calls b18Frame): pose from gestures, look-around, greets, hood in rain, lantern at night, night lift; watch mode keeps you in the world ----------
 function youGesture(name,dur,o){Y18.g=Object.assign({name,t:0,dur:dur||0,stick:!dur},o||{});const k=visitor.userData.k;if(name==='hop'&&k){k.hw=0;k.sv-=1.2}return name}
@@ -5057,14 +5069,11 @@ function rackFor(p){return p&&RACKS.find(r=>r.pid===p.id)}
 function mapDoorstep(x,z){const pb=PLACES.find(p=>{if(!p.w||!p.d||p.lot||p.kind==='plaza'||p.kind==='cemetery')return false;const c=Math.cos(p.ry),s=Math.sin(p.ry),lx=(x-p.x)*c-(z-p.z)*s,lz=(x-p.x)*s+(z-p.z)*c;return Math.abs(lx)<p.w/2+1.5&&Math.abs(lz)<p.d/2+1.5});
   if(pb){const d=DOORS.find(q=>q.p===pb&&q.kind!=='gate'&&!q.back)||DOORS.find(q=>q.p===pb);if(d){YOU.x=d.wx+d.nx*2.2;YOU.z=d.wz+d.nz*2.2;YOU.yaw=Math.atan2(-d.nx,-d.nz)}else if(pb.dx!=null){YOU.x=pb.dx;YOU.z=pb.dz}}
   if(!youFree(YOU.x,YOU.z))youUnstick();return pb?pb.id:null}
-function updateYou(dt,t){const k=KEYS_DOWN;let jx=JOY.x+((k.d||k.arrowright)?1:0)-((k.a||k.arrowleft)?1:0),jy=JOY.y+((k.s||k.arrowdown)?1:0)-((k.w||k.arrowup)?1:0);const m=Math.min(1,Math.hypot(jx,jy));
+function updateYou(dt,t){const k=KEYS_DOWN;let jx=JOY.x+((k.d||k.arrowright)?1:0)-((k.a||k.arrowleft)?1:0),jy=JOY.y+((k.s||k.arrowdown)?1:0)-((k.w||k.arrowup)?1:0);const m=Math.min(1,Math.hypot(jx,jy));CTL.jx=jx;CTL.jy=jy;
   const sat=youTick(dt,t,m);
-  if(m>.08&&!sat){const by=ctlBasis(),sy=Math.sin(by),cy=Math.cos(by);const dx=cy*jx+sy*jy,dz=-sy*jx+cy*jy,l=Math.hypot(dx,dz)||1,sp=(m>.85?9:5)*m,nx=clamp(YOU.x+dx/l*sp*dt,-200,165),nz=clamp(YOU.z+dz/l*sp*dt,-145,145);
+  if(m>.08&&!sat){const by=ctlBasis(jx,jy),sy=Math.sin(by),cy=Math.cos(by);const dx=cy*jx+sy*jy,dz=-sy*jx+cy*jy,l=Math.hypot(dx,dz)||1,sp=(m>.85?9:5)*m,nx=clamp(YOU.x+dx/l*sp*dt,-200,165),nz=clamp(YOU.z+dz/l*sp*dt,-145,145);
     youMove(nx,nz);
-    const ty=Math.atan2(dx,dz),df=Math.atan2(Math.sin(ty-YOU.yaw),Math.cos(ty-YOU.yaw));YOU.yaw+=df*Math.min(1,dt*12);YOU.moving=m;
-    if(ctlSwing(dt,t,jx,jy)&&t-lastLook>.7&&jy<.35){const want=YOU.yaw+Math.PI,d2=Math.atan2(Math.sin(want-camS.yaw),Math.cos(want-camS.yaw));camS.yaw+=d2*Math.min(1,dt*(.5+Math.abs(jx)*1.6)*m)}}else if(!TG.on)YOU.moving=0;
-  if(LOOK.x&&!ctlCozy()){camS.yaw-=LOOK.x*dt*2.2;lastLook=t}
-  if(k.q&&!ctlCozy()){camS.yaw+=dt*1.8;lastLook=t}if(k.e&&!ctlCozy()){camS.yaw-=dt*1.8;lastLook=t}
+    const ty=Math.atan2(dx,dz),df=Math.atan2(Math.sin(ty-YOU.yaw),Math.cos(ty-YOU.yaw));YOU.yaw+=df*Math.min(1,dt*12);YOU.moving=m}else{if(!TG.on)YOU.moving=0;if(m<=.08)CTL.bOn=0}
   if(sat)return;visitor.position.set(YOU.x,navFloor(YOU.x,YOU.z)+(YOU.moving?Math.abs(Math.sin(t*10))*.07:0),YOU.z);visitor.rotation.y=YOU.yaw;animateVisitor(t,YOU.moving)}
 function placeCam(dt){zoomTick(dt);if(CAM.update(dt)){}else if(camS.mode==='walk'){camS.tx+=(YOU.x-camS.tx)*Math.min(1,dt*8);camS.tz+=(YOU.z-camS.tz)*Math.min(1,dt*8);camS.ty+=(navFloor(YOU.x,YOU.z)+1.2-camS.ty)*Math.min(1,dt*4)}
   else{camS.tx+=(G.x-camS.tx)*Math.min(1,dt*2.5);camS.ty+=(G.y-camS.ty)*Math.min(1,dt*2);camS.tz+=(G.z-camS.tz)*Math.min(1,dt*2.5)}
@@ -5103,15 +5112,15 @@ try{if(localStorage.getItem('mocha-hint')){hintGone=true;$('#hint').style.displa
 function hideHint(){if(!hintGone){hintGone=true;$('#hint').style.opacity=0;try{localStorage.setItem('mocha-hint','1')}catch(e){}}}
 function twoState(){const [a,b]=[...ptrs.values()];return{d:Math.hypot(a.x-b.x,a.y-b.y),ang:Math.atan2(b.y-a.y,b.x-a.x),my:(a.y+b.y)/2}}
 cv.addEventListener('contextmenu',e=>e.preventDefault());
-cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}
-  if(camS.mode==='walk'&&e.pointerType!=='mouse'){const now=performance.now();
-    if(STICK.id!==null&&STICK.float&&now-STICK.t0<350&&STICK.moved<16){const sid=STICK.id,sx=STICK.lx,sy=STICK.ly;STICK.end();ptrs.set(sid,{x:sx,y:sy})}
-    else if(STICK.id===null&&ptrs.size<2&&e.clientX<innerWidth*.45&&e.clientY>innerHeight*.28){const f=ptrs.size?[...ptrs.values()][0]:null;if(!(f&&downAt&&now-downAt.t<350&&Math.hypot(f.x-downAt.x,f.y-downAt.y)<16)){STICK.start(e,true);return}}}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(ptrs.size===1)downAt={x:e.clientX,y:e.clientY,t:performance.now()};else{downAt=null;two={...twoState(),dist:camDist(),yaw:camS.yaw,pitch:camS.pitch}}});
-cv.addEventListener('pointermove',e=>{if(e.pointerId===STICK.id){STICK.move(e);return}const p=ptrs.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
-  if(ptrs.size===1){if(downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<6)return;hideHint();if(camS.mode==='walk'){if(!ctlCozy()){camS.yaw-=dx*.0075;lastLook=T}return}const sens=camS.mode==='walk'?.0075:.006;camS.yaw-=dx*sens;camS.pitch=clamp(camS.pitch+dy*sens*.65,.06,1.3);lastLook=T}
-  else if(ptrs.size===2&&two){const n=twoState();ZM.tgt=null;setDist(two.dist*two.d/Math.max(1,n.d));if(camS.mode==='walk'&&ctlTwo(n)){hideHint();return}camS.yaw=two.yaw-(n.ang-two.ang);camS.pitch=clamp(two.pitch+(n.my-two.my)*.004,.06,1.3);hideHint()}});
-cv.addEventListener('pointerup',e=>{if(e.pointerId===STICK.id){const q=STICK.float&&STICK.moved<6&&performance.now()-STICK.t0<450;STICK.end(e);if(q)tap(e.clientX,e.clientY);return}const was=ptrs.size;ptrs.delete(e.pointerId);if(ptrs.size<2)two=null;if(was===1&&downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<8){const held=performance.now()-downAt.t;if(held<600)tap(e.clientX,e.clientY);else if(held<2500&&camS.mode==='walk')tap(e.clientX,e.clientY,1)};downAt=null});
-cv.addEventListener('pointercancel',e=>{if(e.pointerId===STICK.id){STICK.end(e);return}ptrs.delete(e.pointerId);downAt=null;two=null});
+cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}if(camS.mode==='walk'&&ctlDown(e))return;
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,touch:e.pointerType==='touch',drag:0,t:performance.now()});if(STICK.id!==null)STICK.ov=1;if(ptrs.size===1)downAt={id:e.pointerId,x:e.clientX,y:e.clientY,t:performance.now(),ts:e.timeStamp||performance.now(),nt:STICK.id!==null};else{downAt=null;two={...twoState(),dist:camDist(),yaw:camS.yaw,pitch:camS.pitch}}});
+cv.addEventListener('pointermove',e=>{if(e.pointerId===STICK.id){STICK.move(e);return}const p=ptrs.get(e.pointerId);if(!p)return;if(e.pointerType==='mouse'&&!e.buttons){ctlDrop(e.pointerId);return}const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+  if(ptrs.size===1){if(camS.mode==='walk'){if(!p.drag){if(downAt&&downAt.id===e.pointerId&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<10)return;p.drag=1}hideHint();ctlLook(dx,dy);return}
+    if(downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<6)return;hideHint();camS.yaw-=dx*.006;camS.pitch=clamp(camS.pitch+dy*.006*.65,.06,1.3);lastLook=T}
+  else if(ptrs.size===2&&two){const n=twoState();ZM.tgt=null;setDist(two.dist*two.d/Math.max(1,n.d));hideHint();if(camS.mode==='walk')return;camS.yaw=two.yaw-(n.ang-two.ang);camS.pitch=clamp(two.pitch+(n.my-two.my)*.004,.06,1.3)}});
+cv.addEventListener('pointerup',e=>{if(e.pointerId===STICK.id){const q=!STICK.ov&&STICK.moved<10&&(e.timeStamp||performance.now())-STICK.ts<300;STICK.end();if(q)tap(e.clientX,e.clientY);return}const was=ptrs.size,mine=!!downAt&&downAt.id===e.pointerId&&!downAt.nt,w=camS.mode==='walk';ptrs.delete(e.pointerId);if(ptrs.size<2)two=null;
+  if(was===1&&mine&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<(w?10:8)){const held=w?(e.timeStamp||performance.now())-downAt.ts:performance.now()-downAt.t;if(held<(w?450:600))tap(e.clientX,e.clientY);else if(held>=600&&held<2500&&w)tap(e.clientX,e.clientY,1)};downAt=null});
+cv.addEventListener('pointercancel',e=>ctlDrop(e.pointerId));cv.addEventListener('lostpointercapture',e=>ctlDrop(e.pointerId));
 cv.addEventListener('wheel',e=>{e.preventDefault();ZM.tgt=null;setDist(camDist()*clamp(1+e.deltaY*(e.ctrlKey?.01:.001),.5,2))},{passive:false});
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
 addEventListener('keydown',e=>{if(msgOpen&&!LB.open){if(e.key==='Escape'){closeMsgs();e.preventDefault()}return}if(LB.open){const q=e.key;if(q==='Escape'){closeLB();e.preventDefault()}else if(q==='ArrowLeft'){stepLB(-1);e.preventDefault()}else if(q==='ArrowRight'){stepLB(1);e.preventDefault()}return}if(e.target.tagName==='INPUT')return;const k=e.key.toLowerCase();if(k==='+'||k==='='){zoomBy(.8);return}if(k==='-'||k==='_'){zoomBy(1.25);return}if(['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){KEYS_DOWN[k]=1;if(!['q','e'].includes(k)&&camS.mode!=='walk')setCamMode('walk');e.preventDefault()}if(k==='f')setCamMode('follow');if(k==='m')toggleMap()});
@@ -5125,44 +5134,84 @@ function tap(x,y,jog){ndc.set(x/innerWidth*2-1,-(y/innerHeight)*2+1);ray.setFrom
   if(camS.mode==='walk')tapWorld(x,y,jog)}
 $('#modeBtn').onclick=()=>{setCamMode(camS.mode==='walk'?'follow':'walk');hideHint()};
 $('#edge').onclick=()=>setCamMode('follow');
-const STICK=(()=>{const joy=$('#joy'),knob=$('#knob');const o={id:null,cx:0,cy:0};
-  o.start=(e,float)=>{o.id=e.pointerId;o.t0=performance.now();o.float=!!float;o.sx=o.lx=e.clientX;o.sy=o.ly=e.clientY;o.moved=0;const r=joy.getBoundingClientRect();if(float){joy.classList.add('float');joy.style.left=(e.clientX-r.width/2)+'px';joy.style.top=(e.clientY-r.height/2)+'px';joy.style.bottom='auto';o.cx=e.clientX;o.cy=e.clientY}else{o.cx=r.left+r.width/2;o.cy=r.top+r.height/2}joy.classList.add('live');o.move(e);hideHint()};
-  o.move=e=>{o.lx=e.clientX;o.ly=e.clientY;o.moved=Math.max(o.moved||0,Math.hypot(e.clientX-o.sx,e.clientY-o.sy));const R=joy.offsetWidth/2-14;let dx=e.clientX-o.cx,dy=e.clientY-o.cy;const l=Math.hypot(dx,dy);if(l>R){dx*=R/l;dy*=R/l}JOY.x=dx/R;JOY.y=dy/R;if(Math.hypot(JOY.x,JOY.y)<.12){JOY.x=JOY.y=0}knob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;knob.textContent=Math.hypot(dx,dy)>R*.88?'🏃':'🚶'};
-  o.end=()=>{o.id=null;JOY.x=JOY.y=0;knob.style.transform='translate(-50%,-50%)';knob.textContent='🚶';joy.classList.remove('live','float');joy.style.left='';joy.style.top='';joy.style.bottom=''};
-  joy.addEventListener('pointerdown',e=>{if(o.id!==null)return;try{joy.setPointerCapture(e.pointerId)}catch(_){}o.start(e,false);e.preventDefault()});
-  joy.addEventListener('pointermove',e=>{if(e.pointerId===o.id)o.move(e)});joy.addEventListener('pointerup',e=>{if(e.pointerId===o.id)o.end()});joy.addEventListener('pointercancel',e=>{if(e.pointerId===o.id)o.end()});
+const STICK=(()=>{const joy=$('#joy'),knob=$('#knob');const o={id:null,cx:0,cy:0,sx:0,sy:0,lx:0,ly:0,t0:0,ts:0,moved:0,R:48,touch:false,run:false,ov:0};
+  o.start=e=>{o.id=e.pointerId;o.touch=e.pointerType==='touch';o.t0=performance.now();o.ts=e.timeStamp||o.t0;o.sx=o.lx=o.cx=e.clientX;o.sy=o.ly=o.cy=e.clientY;o.moved=0;o.run=false;o.ov=ptrs.size?1:0;if(downAt)downAt.nt=1;JOY.x=JOY.y=0;const w=joy.offsetWidth||124;o.R=Math.max(30,w/2-14);
+    joy.classList.add('float','live');joy.style.left=(e.clientX-w/2)+'px';joy.style.top=(e.clientY-w/2)+'px';joy.style.bottom='auto';knob.style.transform='translate(-50%,-50%)';knob.textContent='🚶';hideHint()};
+  // a 10 px dead zone (a tap never walks), then analog to the rim (walk, then run past 85 %)
+  o.move=e=>{o.lx=e.clientX;o.ly=e.clientY;o.moved=Math.max(o.moved,Math.hypot(e.clientX-o.sx,e.clientY-o.sy));const R=o.R,rx=e.clientX-o.cx,ry=e.clientY-o.cy,l=Math.hypot(rx,ry),c=l>R?R/l:1,g=l>10?Math.min(1,(l-10)/(R-10))/l:0;
+    JOY.x=rx*g;JOY.y=ry*g;knob.style.transform=`translate(calc(-50% + ${rx*c}px),calc(-50% + ${ry*c}px))`;const run=g*l>.85;if(run!==o.run){o.run=run;knob.textContent=run?'🏃':'🚶'}};
+  o.end=()=>{o.id=null;JOY.x=JOY.y=0;o.run=false;knob.style.transform='translate(-50%,-50%)';knob.textContent='🚶';joy.classList.remove('live','float');joy.style.left='';joy.style.top='';joy.style.bottom=''};
   return o})();
-{const lk=$('#look'),ln=$('#lnub');let id=null;const mv=e=>{const r=lk.getBoundingClientRect(),R=r.width/2-14;let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);const l=Math.hypot(dx,dy);if(l>R){dx*=R/l;dy*=R/l}LOOK.x=dx/R;LOOK.y=dy/R;if(Math.hypot(LOOK.x,LOOK.y)<.1)LOOK.x=LOOK.y=0;ln.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`};
- lk.addEventListener('pointerdown',e=>{if(id!==null)return;id=e.pointerId;try{lk.setPointerCapture(id)}catch(_){}lk.classList.add('live');mv(e);hideHint();e.preventDefault()});lk.addEventListener('pointermove',e=>{if(e.pointerId===id)mv(e)});
- const end=e=>{if(e.pointerId!==id)return;id=null;LOOK.x=LOOK.y=0;ln.style.transform='translate(-50%,-50%)';lk.classList.remove('live')};lk.addEventListener('pointerup',end);lk.addEventListener('pointercancel',end)}
-// ---------- COZY CAMERA (owner, Nov 2: "it's more swiveling around I was having trouble with"). SET.cam: 'cozy' (default, existing saves too) | 'free' (Settings: Camera) ----------
-// cozy (walk mode): one steady heading CTL.h and no auto-swing; turning is a 45 degree step (the two round buttons in the HUD 'look' slot, a quick horizontal flick on the world, Q/E); a double-tap on a
-// button = the area's default heading. A slow one-finger drag leaves the camera alone and two fingers only pinch-zoom. The stick's basis is the TARGET heading, so the walker never curves mid-turn.
-// A prop or a solid building between the camera and the walker nudges the camera up / around within the step. CAM layers (room, talk, cabin, seat...) still take over; the heading comes back when they pop.
-// free: orbit as before minus the sideways auto-swing (a gentle realign only after 1.5 s straight ahead), drag = yaw only, tilt = a deliberate two-finger vertical drag, the look stick = linear yaw only
-const CTL={h:0,from:0,span:0,t:1,dur:.35,tapT:0,tapB:0,fl:null,oy:0,op:0,oyc:0,opc:0,occT:0,pOv:null,st:0,stT:0,n:0,rnT:0,room:null,box:null,occ:[[-30,33,1.6,4.1],[6,-72,3,46],[-64,-104,3.5,20]]},
-  CTLC=[[0,.15],[0,.3],[0,.45],[.2,.2],[-.2,.2],[.38,.3],[-.38,.3],[0,.6]];
-function ctlCozy(){return SET.cam!=='free'}
+// ---------- CONTROLS v3 (owner, Nov 3: "I really hate the controller... I want to be able to use it how you normally would"): the standard mobile third-person scheme ----------
+// walk mode, touch: a floating joystick for the LEFT thumb (anywhere in the left half below the top HUD band; a faint base rests bottom-left as a hint) and drag-to-look for the RIGHT thumb
+// (yaw ~1:1, pitch half of that, clamped), both at once; two non-stick fingers pinch-zoom; a quick tap (< 10 px, < 300 ms) still taps (tap-to-go, talk, interact) and a long-press still jogs.
+// No rotate buttons, no look stick, no flick, no auto-swing (unless Settings > Camera "follows behind you" is on). Desktop: WASD/arrows, a mouse drag (any button) looks, the wheel zooms, Q/E turn while held.
+// CTL.h / CTL.p = the player's heading / tilt; the camera glides to them (+ the v2 occluder nudge). The stick walks relative to CTL.h (kept while a CAM layer swings the view under a held stick).
+// NEVER STUCK: pointerup/cancel/lostpointercapture on the canvas, a window-level pointerup/cancel for strays, a document touchend/touchcancel guard, blur/visibilitychange/pagehide/orientation/resize,
+// overlays and takeover CAM layers (ctlBlocked) all let go, and ctlWatch() (every frame, allocation-free) drops a pointer the touch list no longer has.
+const CTL={h:0,p:.48,oy:0,op:0,oyc:0,opc:0,occT:0,st:0,fT:0,py:0,rnT:0,room:null,box:null,jx:0,jy:0,lkT:-9,lkL:0,inL:0,bOn:0,bas:0,ba:0,lt:0,lay:null,rel:0,vw:0,vh:0,occ:[[-30,33,1.6,4.1],[6,-72,3,46],[-64,-104,3.5,20]]},
+  CTLC=[[0,.15],[0,.3],[0,.45],[.2,.2],[-.2,.2],[.38,.3],[-.38,.3],[0,.6]],CTLS={slow:.0045,normal:.0065,fast:.0095},CTLP=[.12,1.1],CTLD=.48,CTLX={look:1,talk:1,tryon:1,scope:1,deco:1,moving:1};
 function ctlN(a){return Math.atan2(Math.sin(a),Math.cos(a))}
-function ctlPitch(d){return .62-.1*clamp((5.5-d)/2,0,1)}
-// the area's default heading: the camera on the door side of the place you are in or next to (within 6), else 0 (north up, like the map)
-function ctlHome(x,z){let best=null,bd=6;for(const p of PLACES){if(!p.w||!p.d)continue;const c=Math.cos(p.ry||0),s=Math.sin(p.ry||0),dx=x-p.x,dz=z-p.z,e=Math.max(Math.abs(dx*c-dz*s)-p.w/2,Math.abs(dx*s+dz*c)-p.d/2);if(e<bd){bd=e;best=p}}
-  if(!best)return 0;const ax=(best.dx!=null?best.dx:best.x)-best.x,az=(best.dz!=null?best.dz:best.z)-best.z,a=Math.hypot(ax,az)>1?Math.atan2(ax,az):(best.ry||0);return ctlN(Math.round(a/(Math.PI/4))*(Math.PI/4))}
-function ctlCan(){if(camS.mode!=='walk'||!ctlCozy())return false;try{if(TK.open)return false}catch(e){}return!document.body.classList.contains('ylOn')&&!(DECO&&DECO.on)}
-function ctlBasis(){if(!ctlCozy())return camS.yaw;if(!CAM.cur)return CTL.h;return CTL.t<1?CTL.from+CTL.span:camS.yaw}
-// dir +1: yaw +45 (the right button, Q, a flick to the left), -1: yaw -45 (the left button, E, a flick to the right), 0: the area's default heading
-function ctlRot(dir){if(camS.mode!=='walk')return null;const C=CTL;C.h=dir?ctlN(C.h+dir*Math.PI/4):ctlHome(YOU.x,YOU.z);C.from=camS.yaw;C.span=CAM.cur?(dir?dir*Math.PI/4:0):ctlN(C.h+C.oyc-camS.yaw);C.t=0;C.n++;lastLook=T;try{hideHint()}catch(e){}return ctlInfo()}
-function ctlSwing(dt,t,jx,jy){const C=CTL;if(ctlCozy())return false;if(t-C.stT>.25)C.st=0;C.stT=t;if(Math.abs(jx)<.22&&jy<-.55)C.st+=dt;else C.st=0;return C.st>1.5}
-function ctlTwo(n){if(ctlCozy())return true;camS.yaw=two.yaw-(n.ang-two.ang);const v=n.my-two.my;if(Math.abs(v)>28&&Math.abs(n.d-two.d)<40)camS.pitch=clamp(two.pitch+(v-Math.sign(v)*28)*.004,.06,1.3);lastLook=T;return true}
-function ctlMode(m){const C=CTL;C.pOv=null;C.t=1;C.oy=C.op=C.oyc=C.opc=0;C.st=0;if(m==='walk'&&ctlCozy()){C.h=ctlHome(YOU.x,YOU.z);camS.yaw=C.h;camS.pitch=ctlPitch(camS.dist)}}
-function ctlApply(ui){const cz=ctlCozy();document.body.classList.toggle('cozy',cz);if(cz){CTL.h=ctlN(Math.round(camS.yaw/(Math.PI/4))*(Math.PI/4));CTL.t=1;CTL.pOv=null}if(ui)try{HUD.layout()}catch(e){}return cz}
+// look: horizontal drag = yaw, vertical = pitch (half as fast, clamped: never under the ground, never straight down); inside a CAM layer it turns that layer's view (not when the layer is locked)
+function ctlLook(dx,dy){const C=CTL,c=CAM.cur;if(c&&c.lock)return;const s=CTLS[SET.lookS]||CTLS.normal,v=dy*s*.5*(SET.lookInv?-1:1);C.lkT=T;lastLook=T;
+  if(c){camS.yaw-=dx*s;camS.pitch=clamp(camS.pitch+v,CTLP[0],CTLP[1]);C.lkL=1}else{C.h=ctlN(C.h-dx*s);C.p=clamp(C.p+v,CTLP[0],CTLP[1])}}
+function ctlTurn(d){CTL.h=ctlN(CTL.h+d*Math.PI/4);CTL.lkT=T;return ctlInfo()}
+// the walk basis: your heading (or the layer's camera); while the stick is held and a CAM layer swings the view on its own, the old basis stays until the thumb changes direction or you look
+function ctlBasis(jx,jy){const C=CTL,c=CAM.cur,tb=c?camS.yaw:C.h;if(jx==null)return tb;const a=Math.atan2(jx,jy);
+  if(!C.bOn){C.bOn=1;C.bas=tb;C.ba=a;C.lt=0;C.lay=c;return tb}if(c!==C.lay){C.lay=c;C.lt=1}
+  if(T-C.lkT<.25||Math.abs(ctlN(a-C.ba))>.45){C.bas=tb;C.ba=a;C.lt=0}else if(!C.lt&&!SET.camFollow)C.bas=tb;return C.bas}
+function ctlMode(m){const C=CTL;C.oy=C.op=C.oyc=C.opc=0;C.st=C.fT=0;C.bOn=0;C.inL=0;if(m==='walk'){C.h=ctlN(camS.yaw);C.p=CTLD;camS.pitch=CTLD}else try{ctlRelease()}catch(e){}}
+function ctlApply(ui){document.body.classList.remove('cozy');if(ui)try{HUD.layout()}catch(e){}return false}
+// what may hold input: the stick only starts in the left half below the top HUD band, never under an overlay or a takeover CAM layer
+function ctlBand(){return Math.min(innerHeight*.2,150)}
+function ctlBlocked(){if(camS.mode!=='walk')return true;const b=document.body.classList;if(b.contains('talking')||b.contains('ylOn')||b.contains('decoOn')||b.contains('msgOpen')||b.contains('lbOpen')||mapOpen||(b.contains('panelOpen')&&(innerWidth<=760||innerHeight<=520)))return true;const c=CAM.cur;return!!(c&&CTLX[c.owner])}
+function ctlDown(e){const x=e.clientX,y=e.clientY,now=e.timeStamp||performance.now();if(e.pointerType==='mouse')return false;
+  // a second finger right next to a stick that has not engaged yet (< 200 ms, < 10 px): the two fingers pinch instead
+  if(STICK.id!==null){if(now-STICK.ts<200&&STICK.moved<10&&Math.hypot(x-STICK.sx,y-STICK.sy)<140){const id=STICK.id,t=STICK.touch,px=STICK.lx,py=STICK.ly,t0=STICK.t0;STICK.end();ptrs.set(id,{x:px,y:py,touch:t,drag:0,t:t0})}return false}
+  if(x>=innerWidth*.5||y<ctlBand()||ctlBlocked())return false;
+  if(ptrs.size===1&&downAt&&now-downAt.ts<200&&Math.hypot(x-downAt.x,y-downAt.y)<140){const f=ptrs.get(downAt.id);if(f&&Math.hypot(f.x-downAt.x,f.y-downAt.y)<10)return false}
+  STICK.start(e);return true}
+function ctlDrop(id){if(id===STICK.id)STICK.end();if(ptrs.delete(id)){downAt=null;two=null}}
+function ctlRelease(){if(STICK.id!==null)STICK.end();JOY.x=JOY.y=0;LOOK.x=LOOK.y=0;ptrs.clear();downAt=null;two=null;for(const k in KEYS_DOWN)KEYS_DOWN[k]=0;ZM.dir=0;CTL.bOn=0;CTL.rel++}
+// the live touch list (positions in fixed arrays, updated only by touch events)
+const TCH={n:0,t:0,x:new Float32Array(10),y:new Float32Array(10)};
+function ctlTouches(e){const L=e.touches,n=Math.min(10,L.length);TCH.n=L.length;TCH.t=performance.now();for(let i=0;i<n;i++){TCH.x[i]=L[i].clientX;TCH.y[i]=L[i].clientY}
+  if(e.type==='touchmove')return;if(!L.length){JOY.x=JOY.y=0;setTimeout(ctlLift,60)}else if(STICK.id!==null||ptrs.size)setTimeout(ctlLift,60)}
+// 60 ms after a finger lifts or lands (its own pointer event has had its turn): while fewer touches are down than fingers we track, drop the tracked finger farthest
+// from every live touch (by COUNT first: a pointermove can lag its touchmove by a frame, so positions alone never decide here). Pointers newer than the touch list are left alone.
+let CTLK=0,CTLW=null,CTLF=-1;
+function ctlD2(x,y){let b=1e18;const n=Math.min(TCH.n,10);for(let i=0;i<n;i++){const dx=TCH.x[i]-x,dy=TCH.y[i]-y,q=dx*dx+dy*dy;if(q<b)b=q}return b}
+function ctlCnt(p){if(p.touch&&p.t<=TCH.t)CTLK++}
+function ctlFar(p,id){if(!p.touch||p.t>TCH.t)return;const d=ctlD2(p.x,p.y);if(d>CTLF){CTLF=d;CTLW=id}}
+function ctlLift(){const s=STICK;for(let g=0;g<12;g++){const st=s.id!==null&&s.touch&&s.t0<=TCH.t;CTLK=st?1:0;ptrs.forEach(ctlCnt);if(CTLK<=TCH.n)return;
+  CTLF=-1;CTLW=null;ptrs.forEach(ctlFar);if(st&&ctlD2(s.lx,s.ly)>=CTLF)s.end();else if(CTLW!=null){ptrs.delete(CTLW);downAt=null;two=null}else return;CTL.rel++}}
+function ctlWP(p,id){if(p.touch&&p.t<=TCH.t&&ctlD2(p.x,p.y)>22500){ptrs.delete(id);downAt=null;two=null;CTL.rel++}}
+// every frame (from ctlTick), allocation-free: a stick under an overlay / takeover layer lets go; once the touch list has been quiet for 200 ms, more tracked fingers than touches
+// (or a tracked finger 150 px from every touch) means a lift was missed: that finger lets go; JOY without a stick is zeroed
+function ctlWatch(){const s=STICK;if(s.id===null){if(JOY.x||JOY.y)JOY.x=JOY.y=0}else if(ctlBlocked()){s.end();CTL.rel++}
+  if((s.id!==null||ptrs.size)&&TCH.t&&performance.now()-TCH.t>200){ctlLift();if(s.id!==null&&s.touch&&TCH.t>s.t0&&ctlD2(s.lx,s.ly)>22500){s.end();CTL.rel++}ptrs.forEach(ctlWP)}}
+['touchstart','touchmove','touchend','touchcancel'].forEach(t=>document.addEventListener(t,ctlTouches,{capture:true,passive:true}));
+addEventListener('pointerup',e=>{if(e.target!==cv)ctlDrop(e.pointerId)},true);addEventListener('pointercancel',e=>{if(e.target!==cv)ctlDrop(e.pointerId)},true);
+// HUD buttons under a 2nd finger: a tap while another finger holds the stick or looks gets no click from the browser (a multi-touch tap is no click), so these buttons press on pointerup then;
+// a native click that still follows (one press, never two) is eaten. One-finger taps are left to the browser's own click.
+const HBP={id:null,el:null,x:0,y:0,eat:null,sx:0,sy:0,until:0,own:0},HBS='#dock button,#emoteBtn,#emoteFan button,#near,#decoBtn,#wallet button';
+addEventListener('pointerdown',e=>{HBP.eat=null;if(e.pointerType!=='touch')return;const b=e.target&&e.target.closest&&e.target.closest(HBS);if(b){HBP.id=e.pointerId;HBP.el=b;HBP.x=e.clientX;HBP.y=e.clientY}},true);
+addEventListener('pointercancel',e=>{if(e.pointerId===HBP.id)HBP.id=HBP.el=null},true);
+addEventListener('pointerup',e=>{if(e.pointerId!==HBP.id)return;const b=HBP.el;HBP.id=HBP.el=null;if(!b||!b.isConnected||Math.hypot(e.clientX-HBP.x,e.clientY-HBP.y)>16)return;
+  if(e.isPrimary&&STICK.id===null&&!ptrs.size&&TCH.n<2)return;HBP.eat=b;HBP.sx=e.clientX;HBP.sy=e.clientY;HBP.until=performance.now()+700;HBP.own=1;try{b.click()}catch(_){}HBP.own=0},true);
+addEventListener('click',e=>{const b=HBP.eat;if(!b||HBP.own)return;HBP.eat=null;if(performance.now()<HBP.until&&(b.contains(e.target)||Math.hypot(e.clientX-HBP.sx,e.clientY-HBP.sy)<40)){e.stopPropagation();e.preventDefault()}},true);
+addEventListener('blur',ctlRelease);addEventListener('pagehide',ctlRelease);addEventListener('orientationchange',ctlRelease);document.addEventListener('visibilitychange',()=>{if(document.hidden)ctlRelease()});
+CTL.vw=innerWidth;CTL.vh=innerHeight;addEventListener('resize',()=>{if(innerWidth!==CTL.vw||innerHeight!==CTL.vh){CTL.vw=innerWidth;CTL.vh=innerHeight;ctlRelease()}});
+addEventListener('keyup',e=>{if(e.key==='Meta'||e.key==='Control'||e.key==='Alt')for(const k in KEYS_DOWN)KEYS_DOWN[k]=0});
+// an overlay opening (talk card, Your Look, decorate, messages, lightbox, the diary sheet, the map) lets go of the stick at once, not on the next frame
+try{const mo=new MutationObserver(()=>{if(STICK.id!==null&&ctlBlocked()){STICK.end();CTL.rel++}});mo.observe(document.body,{attributes:true,attributeFilter:['class']});mo.observe($('#mapWrap'),{attributes:true,attributeFilter:['class']})}catch(e){}
 // occluders between the camera and the walker: tall props (fountain column, Needle core, lighthouse) as cylinders [x,z,r,h], solid buildings without interiors as boxes (interiors already fade, B12)
 function ctlSeg(ax,ay,az,bx,by,bz,o){const dx=bx-ax,dz=bz-az,fx=ax-o[0],fz=az-o[1],A=dx*dx+dz*dz,B=2*(fx*dx+fz*dz),C=fx*fx+fz*fz-o[2]*o[2];if(A<1e-9)return C<0&&Math.min(ay,by)<o[3];const D=B*B-4*A*C;if(D<0)return false;
   const s=Math.sqrt(D),t0=Math.max(0,(-B-s)/(2*A)),t1=Math.min(1,(-B+s)/(2*A));return t0<=t1&&Math.min(ay+(by-ay)*t0,ay+(by-ay)*t1)<o[3]}
 function ctlBlk(ax,ay,az,bx,by,bz){const C=CTL;for(const o of C.occ){if(Math.hypot(bx-o[0],bz-o[1])<o[2]+.4)continue;if(ctlSeg(ax,ay,az,bx,by,bz,o))return true}
   if(!C.box)C.box=PLACES.filter(p=>p.solid&&!p.interior&&p.w&&p.d&&p.h&&!['needle','wheel','lighthouse'].includes(p.kind));
   for(const q of C.box){if(Math.abs(q.x-bx)>70||Math.abs(q.z-bz)>70||inBuilding(q,bx,bz))continue;if(occSeg(q,ax,ay,az,bx,by,bz))return true}return false}
-function ctlOk(oy,op){const C=CTL,d=camS.dist,tx=YOU.x,tz=YOU.z,ty=navFloor(tx,tz)+1.2,yw=C.h+oy,pi=clamp((C.pOv!=null?C.pOv:ctlPitch(d))+op,.06,1.25),cp=Math.cos(pi);
+function ctlOk(oy,op){const C=CTL,d=camS.dist,tx=YOU.x,tz=YOU.z,ty=navFloor(tx,tz)+1.2,yw=C.h+oy,pi=clamp(C.p+op,.06,1.25),cp=Math.cos(pi);
   return!ctlBlk(tx+Math.sin(yw)*cp*d,Math.max(1.5,ty+Math.sin(pi)*d),tz+Math.cos(yw)*cp*d,tx,ty-.3,tz)}
 function ctlOcc(){const C=CTL;if(ctlOk(0,0)){C.oy=C.op=0;return}if((C.oy||C.op)&&ctlOk(C.oy,C.op))return;for(const q of CTLC)if(ctlOk(q[0],q[1])){C.oy=q[0];C.op=q[1];return}C.oy=0;C.op=.6}
 // the room layer you (or Mocha) are in: rain is clipped out of its box (roof cut), place labels behind its walls hide (B23/B24 QA)
@@ -5172,24 +5221,24 @@ PATCH.push(PATCHI.c={id:'c',test:m=>!!m.userData.rclip,apply(sh){if(!sh.vertexSh
 rain.material.userData.rclip=1;rain.material.needsUpdate=true;
 function ctlRoom(){let r=null,c=null;try{if(RC.pid)r=byId[RC.pid];else if(CB&&CB.cut&&camS.mode==='walk')r=byId.cabin;c=r||(RIG.cutP&&RIG.cutT>.3?RIG.cutP:null)}catch(e){}
   CTL.room=r||null;const v=RNU.rcS.value;if(!c){v.set(0,0);return}const b=c.kind==='home'?HOCC[0]:c;RNU.rcP.value.set(b.x,b.z,Math.cos(b.ry||0),Math.sin(b.ry||0));v.set(b.w/2+.4,b.d/2+.4)}
-function ctlTick(dt){const C=CTL;
-  if(C.t<1){C.t=Math.min(1,C.t+dt/C.dur);const k=C.t*C.t*(3-2*C.t);camS.yaw=C.t<1?C.from+C.span*k:ctlN(C.from+C.span)}
+function ctlTick(dt){const C=CTL;ctlWatch();
   if((C.rnT-=dt)<=0){C.rnT=.2;ctlRoom()}
-  if(camS.mode!=='walk'||!ctlCozy()){C.oy=C.op=C.oyc=C.opc=0;return}if(CAM.cur)return;
-  if((C.occT-=dt)<=0){C.occT=.2;ctlOcc()}const f=Math.min(1,dt*3);C.oyc+=(C.oy-C.oyc)*f;C.opc+=(C.op-C.opc)*f;
-  if(C.t>=1){const d=ctlN(C.h+C.oyc-camS.yaw);camS.yaw=Math.abs(d)<1e-4?C.h+C.oyc:camS.yaw+d*Math.min(1,dt*6)}
-  const pt=clamp((C.pOv!=null?C.pOv:ctlPitch(camS.dist))+C.opc,.06,1.25);camS.pitch+=(pt-camS.pitch)*Math.min(1,dt*5);if(CAM.ret&&CAM.base)CAM.base.pitch=pt}
-function ctlInfo(){const C=CTL,b=$('#rotL'),r=b&&b.getBoundingClientRect(),lk=$('#look').getBoundingClientRect(),dg=a=>+(ctlN(a)*180/Math.PI).toFixed(2);
-  return{scheme:ctlCozy()?'cozy':'free',heading:dg(C.h),yaw:dg(camS.yaw),pitch:+camS.pitch.toFixed(3),dist:+camS.dist.toFixed(2),easing:C.t<1,nudge:[+C.oy.toFixed(2),+C.op.toFixed(2)],basis:dg(ctlBasis()),home:dg(ctlHome(YOU.x,YOU.z)),steps:C.n,
-    lookBtns:!!(r&&r.width>0),btns:[...document.querySelectorAll('.rotB')].map(e=>{const q=e.getBoundingClientRect();return[Math.round(q.left),Math.round(q.top),Math.round(q.width),Math.round(q.height)]}),look:[Math.round(lk.left),Math.round(lk.top),Math.round(lk.width),Math.round(lk.height)],
-    room:C.room?C.room.id:null,rain:[+RNU.rcS.value.x.toFixed(2),+RNU.rcS.value.y.toFixed(2)],cam:CAM.top()&&CAM.top().owner,pOv:C.pOv,mode:camS.mode}}
-{const lk=$('#look');lk.insertAdjacentHTML('beforeend','<button type="button" class="rotB l" id="rotL" aria-label="turn the view left">↺</button><button type="button" class="rotB r" id="rotR" aria-label="turn the view right">↻</button><div class="lab rlab">TURN</div>');
- for(const [id,d] of [['#rotL',-1],['#rotR',1]]){const b=$(id);b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();b.classList.add('on');setTimeout(()=>b.classList.remove('on'),140);const now=e.timeStamp;if(now-CTL.tapT<320&&CTL.tapB===d){CTL.tapT=0;ctlRot(0)}else{CTL.tapT=now;CTL.tapB=d;ctlRot(d)}});
-  b.addEventListener('click',e=>{e.stopPropagation();if(e.detail===0)ctlRot(d)});b.addEventListener('contextmenu',e=>e.preventDefault())}}
-cv.addEventListener('pointerdown',e=>{CTL.fl=camS.mode==='walk'&&STICK.id!==e.pointerId&&ptrs.size===1&&ptrs.has(e.pointerId)?{id:e.pointerId,x:e.clientX,y:e.clientY,t:e.timeStamp}:null});
-cv.addEventListener('pointerup',e=>{const f=CTL.fl;CTL.fl=null;if(!f||f.id!==e.pointerId||!ctlCan())return;const dx=e.clientX-f.x,dy=e.clientY-f.y;if(e.timeStamp-f.t<400&&Math.abs(dx)>=60&&Math.abs(dx)>Math.abs(dy)*1.7)ctlRot(dx>0?-1:1)});
-cv.addEventListener('pointercancel',()=>{CTL.fl=null});
-addEventListener('keydown',e=>{const k=(e.key||'').toLowerCase();if((k!=='q'&&k!=='e')||e.repeat||e.ctrlKey||e.metaKey||e.altKey)return;if(msgOpen||LB.open||/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)||e.target.isContentEditable)return;if(ctlCan())ctlRot(k==='q'?1:-1)});
+  if(camS.mode!=='walk'){C.oy=C.op=C.oyc=C.opc=0;C.inL=0;return}
+  const k=KEYS_DOWN,q=(k.q?1:0)-(k.e?1:0),cur=CAM.cur;if(q){if(!cur)C.h=ctlN(C.h+q*dt*1.8);else if(!cur.lock){camS.yaw+=q*dt*1.8;C.lkL=1}C.lkT=T;lastLook=T}
+  if(cur){if(!C.inL){C.inL=1;C.lkL=0}return}
+  // a CAM layer popped: if you looked around inside it the walk camera carries on from there, else it glides back to your heading
+  if(C.inL){C.inL=0;if(C.lkL){C.h=ctlN(camS.yaw);C.oy=C.oyc=0}C.lkL=0}
+  // "Camera follows behind you" (Settings, off by default): 1.5 s after the last look input, while walking mostly forward and neither turning nor strafing, ease in behind him
+  if(SET.camFollow&&YOU.moving>.08&&T-C.lkT>1.5&&Math.abs(C.jx)<.3){const d=ctlN(YOU.yaw+Math.PI-C.h);if(Math.abs(d)<.7&&Math.abs(ctlN(YOU.yaw-C.py))<dt*1.2)C.fT+=dt;else C.fT=0;if(C.fT>.4)C.h=ctlN(C.h+d*Math.min(1,dt*.9))}else C.fT=0;C.py=YOU.yaw;
+  if(T-C.lkT>.5&&(C.occT-=dt)<=0){C.occT=.2;ctlOcc()}const f=Math.min(1,dt*3);C.oyc+=(C.oy-C.oyc)*f;C.opc+=(C.op-C.opc)*f;
+  const fast=T-C.lkT<.3,d=ctlN(C.h+C.oyc-camS.yaw);camS.yaw=Math.abs(d)<1e-4?C.h+C.oyc:camS.yaw+d*Math.min(1,dt*(fast?18:6));
+  const pt=clamp(C.p+C.opc,.06,1.25);camS.pitch+=(pt-camS.pitch)*Math.min(1,dt*(fast?18:5));if(CAM.ret&&CAM.base){CAM.base.pitch=pt;CAM.base.yaw=C.h+C.oyc}}
+function ctlInfo(){const C=CTL,dg=a=>+(ctlN(a)*180/Math.PI).toFixed(2),s=STICK,lk=ptrs.size===1&&camS.mode==='walk'?ptrs.keys().next().value:null,j=$('#joy').getBoundingClientRect();
+  return{scheme:'standard',yaw:dg(camS.yaw),pitch:+camS.pitch.toFixed(3),dist:+camS.dist.toFixed(2),heading:dg(C.h),tilt:+C.p.toFixed(3),basis:dg(ctlBasis()),
+    stick:{on:s.id!==null,id:s.id,x:+JOY.x.toFixed(3),y:+JOY.y.toFixed(3),rect:[Math.round(j.left),Math.round(j.top),Math.round(j.width),Math.round(j.height)]},look:{on:lk!=null,id:lk},ptrs:ptrs.size,touches:TCH.n,
+    follow:!!SET.camFollow,sens:SET.lookS||'normal',invert:!!SET.lookInv,keys:Object.keys(KEYS_DOWN).filter(k=>KEYS_DOWN[k]),released:C.rel,blocked:ctlBlocked(),
+    rotBtns:document.querySelectorAll('.rotB').length,lookEl:!!document.getElementById('look'),nudge:[+C.oy.toFixed(2),+C.op.toFixed(2)],
+    room:C.room?C.room.id:null,rain:[+RNU.rcS.value.x.toFixed(2),+RNU.rcS.value.y.toFixed(2)],cam:CAM.top()&&CAM.top().owner,mode:camS.mode,going:!!TG.on}}
 ctlApply();
 $('#chatBtn').onclick=()=>{const on=document.body.classList.toggle('chatOpen');if(on)setTimeout(()=>$('#say').focus(),50)};
 [['#zIn',-1],['#zOut',1]].forEach(([sel,d])=>{const b=$(sel);const stop=()=>{if(ZM.dir===d)ZM.dir=0;b.classList.remove('on')};
@@ -5411,7 +5460,9 @@ function renderSet(){const seg=(k,opts)=>`<div class="seg">${opts.map(([v,l])=>`
   <div class="set"><div>Mic button<small>Keeps listening while it's on${SR?'':' (not supported in this browser, so use your keyboard\'s 🎤)'}.</small></div><input type="checkbox" class="tog" data-t="mic" ${SET.mic?'checked':''} ${SR?'':'disabled'}></div>
   <div class="set"><div>Battery saver<small>Lower frame rate, no shadows, lower resolution. Nothing runs at all when this page is closed or in the background.</small></div><input type="checkbox" class="tog" data-t="saver" ${SET.saver?'checked':''}></div>
   <div class="set"><div>Comic dot filter<small>Little printed halftone dots over the whole picture, like an old comic.</small></div><input type="checkbox" class="tog" data-t="dots" ${SET.dots?'checked':''}></div>
-  <div class="set" style="display:block"><div>Camera<small>Cozy keeps one steady angle while you walk: turn it with the ↺ ↻ buttons, a quick sideways swipe, or Q/E. Free lets you look around by dragging.</small></div>${seg('cam',[['cozy','Cozy (fixed angle)'],['free','Free (look around)']])}</div>
+  <div class="set" style="display:block"><div>Camera · look sensitivity<small>Walk with your left thumb, drag anywhere on the right side to look around, pinch to zoom. On a computer: WASD or arrows, drag the mouse, scroll to zoom.</small></div>${seg('lookS',[['slow','slow'],['normal','normal'],['fast','fast']])}</div>
+  <div class="set"><div>Invert vertical look<small>On: drag up to look down.</small></div><input type="checkbox" class="tog" data-t="lookInv" ${SET.lookInv?'checked':''}></div>
+  <div class="set"><div>Camera follows behind you<small>Off: the view only turns when you turn it. On: while you walk straight ahead it slowly swings in behind him.</small></div><input type="checkbox" class="tog" data-t="camFollow" ${SET.camFollow?'checked':''}></div>
   <div class="set" style="display:block"><div>How often his mind thinks<small>Only while you're watching. Fewer thoughts use less of your Claude usage.</small></div>${seg('pace',[['chatty','often'],['normal','normal'],['gentle','rarely']])}</div>
   <div class="set" style="display:block"><div>His mind's daily budget<small>his mind: <b id="mindUse">${mindUseTxt()}</b>. He only thinks while you're here and he's awake, at most 6 times an hour, and 4 in 10 are kept for your own messages. Without it he runs on his own instincts.</small></div><div class="seg">${[['light','light · 10'],['normal','normal · 25'],['rich','rich · 60']].map(([v,l])=>`<button data-mcap="${v}" class="${SET.mind.cap===v?'on':''}">${l}</button>`).join('')}</div></div>
   <div class="set" style="display:block"><div>Preview a season<small>Normally it follows the real calendar.</small></div><div class="seg">${['auto','spring','summer','fall','winter'].map(x=>`<button data-season="${x}" class="${(x==='auto'&&!SEASONS[(location.hash||'').slice(1)])||location.hash==='#'+x?'on':''}">${x}</button>`).join('')}</div></div>
@@ -5421,7 +5472,7 @@ function renderSet(){const seg=(k,opts)=>`<div class="seg">${opts.map(([v,l])=>`
   $('#tab-set').querySelectorAll('[data-t]').forEach(t=>t.onchange=()=>{SET[t.dataset.t]=t.checked;saveSet();if(t.dataset.t==='mic'){t.checked?startMic():stopMic()}if(t.dataset.t==='saver')applyPower();if(t.dataset.t==='dots')post.uniforms.dots.value=SET.dots?1:0;updateMicBtn()});
   $('#tab-set').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{SET[b.dataset.k]=b.dataset.v;saveSet();renderSet()});
   $('#tab-set').querySelectorAll('[data-mcap]').forEach(b=>b.onclick=()=>{SET.mind.cap=b.dataset.mcap;saveSet();renderSet()});
-  $('#tab-set').querySelectorAll('[data-k="cam"]').forEach(b=>b.addEventListener('click',()=>ctlApply(1)));
+  $('#tab-set').querySelectorAll('[data-k="lookS"],[data-t="lookInv"],[data-t="camFollow"]').forEach(b=>b.addEventListener('click',()=>ctlApply(1)));
   if(typeof sndSetUI==='function')sndSetUI($('#tab-set'));
   $('#tab-set').querySelectorAll('[data-season]').forEach(b=>b.onclick=()=>{location.hash=b.dataset.season==='auto'?'':b.dataset.season})}
 function renderTab(){const f=TABS.R[curTab];if(f)f()}
@@ -5719,8 +5770,8 @@ window.__you=()=>({x:+YOU.x.toFixed(1),z:+YOU.z.toFixed(1),yaw:+YOU.yaw.toFixed(
   catchUpTest:()=>{isNew=false;const n=catchUp();return n},tripUnpack,
   ferryPhase:ph=>{const cur=(T%FERRY.period)/FERRY.period;T+=((ph-cur+1)%1)*FERRY.period;return ferryPh()}};
 Object.assign(window.__mocha.cam,{stack:()=>CAM.stack(),push:(o,s)=>(CAM.push(o,s),CAM.stack()),pop:o=>CAM.pop(o),top:()=>CAM.cur&&CAM.cur.owner,tick:(n=60,dt=.05)=>{for(let i=0;i<n;i++)placeCam(dt);return{tx:camS.tx,ty:camS.ty,tz:camS.tz,dist:camS.dist,pitch:camS.pitch}},state:()=>({tx:camS.tx,ty:camS.ty,tz:camS.tz,dist:camS.dist,pitch:camS.pitch,yaw:camS.yaw,mode:camS.mode,range:zoomLim().slice()})});
-{const M=window.__mocha,c0=M.cam;M.cam=Object.assign(o=>{const r=c0(o);if(o&&camS.mode==='walk'){if(o.yaw!=null){CTL.h=camS.yaw;CTL.t=1;CTL.oy=CTL.oyc=0}if(o.pitch!=null)CTL.pOv=camS.pitch}return r},c0);
- Object.assign(M,{ctl:()=>ctlInfo(),rot:d=>ctlRot(d==null?1:+d),ctlSet:s=>{SET.cam=s==='free'?'free':'cozy';saveSet();ctlApply(1);return ctlInfo()},ctlTick:(n=1,dt=.05)=>{for(let i=0;i<n;i++)placeCam(dt);return ctlInfo()},CTL,
+{const M=window.__mocha,c0=M.cam;M.cam=Object.assign(o=>{const r=c0(o);if(o&&camS.mode==='walk'){if(o.yaw!=null){CTL.h=ctlN(camS.yaw);CTL.oy=CTL.oyc=0;CTL.bOn=0}if(o.pitch!=null)CTL.p=camS.pitch}return r},c0);
+ Object.assign(M,{ctl:()=>ctlInfo(),rot:d=>ctlTurn(d==null?1:+d),ctlSet:o=>{if(o&&typeof o==='object'){if(o.sens)SET.lookS=o.sens;if(o.invert!=null)SET.lookInv=!!o.invert;if(o.follow!=null)SET.camFollow=!!o.follow;saveSet()}return ctlInfo()},ctlRelease:()=>(ctlRelease(),ctlInfo()),ctlTick:(n=1,dt=.05)=>{for(let i=0;i<n;i++)placeCam(dt);return ctlInfo()},CTL,
   bub:(x,y,t)=>{const b=$('#bubble3');b.textContent=t||'oh hello there! lovely day for it';b._w=b._h=0;b.classList.add('show');b.style.visibility='visible';bubPos(b,x,y);const r=b.getBoundingClientRect();return{x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height)}}})}
 Object.assign(window.__mocha,{overlaps:()=>planOverlaps(),
   glowPts:()=>({n:GLOWPTS.n,cap:GLOWPTS.N,draws:1,points:GLOWPTS.pts.isPoints,shader:GLOWPTS.m.isShaderMaterial,bend:/bendP/.test(GLOWPTS.m.vertexShader),maxPt:GLOWPTS.u.uMax.value,from:GLOWPTS.from.reduce((a,k)=>(a[k]=(a[k]||0)+1,a),{}),converted:B8CONV,spritesLeft:nightGlows.filter(g=>g.parent).map(g=>+g.scale.x.toFixed(1))}),
@@ -5805,7 +5856,7 @@ function ylRender(){const L=youLook(),sw=(k,i,col,lab,on,cl)=>`<button class="yl
   const b=YL.el.querySelector('.ylBody'),sc=b?b.scrollTop:0;
   YL.el.innerHTML=`<div class="ylHead"><input id="ylName" maxlength="16" value="${esc(S.you.name)}" aria-label="your name"><span class="ylFrom">from ${esc(S.you.hometown)}</span><button class="ylBtn" id="ylRand" aria-label="randomize" title="randomize">🎲</button><button class="ylBtn ylDone" id="ylDone">done</button></div><div class="ylBody">`+
     row('skin',LOOKP.sk.map((c,i)=>sw(0,i,c,'skin tone '+(i+1),L[0]===i)).join(''))+row('hair',LOOKP.hc.map((c,i)=>sw(1,i,c,'hair colour '+(i+1),L[1]===i)).join(''))+row('hair style',LOOKP.hs.map((n,i)=>tx(2,i,n,L[2]===i)).join(''))+
-    row('eyes',LOOKP.ec.map((e,i)=>sw(3,i,e[1],e[0]+' eyes',L[3]===i)).join('')+tx(8,L[8]?0:1,L[8]?'blush on':'blush off',!!L[8]))+row('facial hair',LOOKP.fh.map((n,i)=>tx(13,i,n,(L[13]|0)===i)).join(''))+row('jacket colour',LOOKP.jk.map((e,i)=>sw(4,i,e[1],e[0],L[4]===i)).join(''))+
+    row('eyes',LOOKP.ec.map((e,i)=>sw(3,i,e[1],e[0]+' eyes',L[3]===i)).join('')+tx(8,L[8]?0:1,L[8]?'warm cheeks on':'warm cheeks off',!!L[8]))+row('facial hair',LOOKP.fh.map((n,i)=>tx(13,i,n,(L[13]|0)===i)).join(''))+row('jacket colour',LOOKP.jk.map((e,i)=>sw(4,i,e[1],e[0],L[4]===i)).join(''))+
     row('top',LOOKP.tp.map((n,i)=>tx(12,i,n,L[12]===i)).join(''))+
     row('bottoms',LOOKP.bt.map((e,i)=>tx(5,i,e[0],L[5]===i)).join(''))+row('shoes',LOOKP.sh.map((e,i)=>sw(6,i,e[1],e[0],L[6]===i,e[2]==='rb'||e[2]==='lb'?'boot':'')).join(''))+
     row('in the rain',`<button class="ylTx${S.you.flags.rainBoots!==false?' on':''}" data-rb="1">${S.you.flags.rainBoots!==false?'☔ rain boots on':'☔ rain boots off'}</button>`)+
@@ -7362,7 +7413,7 @@ bnn|124|Knit Beanie|clo|cloth|15|rd|hat knit warm|.22x.22|k=3;h=.17|threads bike
 bkh|125|Bucket Hat|clo|cloth|18|rd|hat rain|.3x.3|k=4;h=.11|threads||olive:6a7a4a,khaki:b8a888,denim:5a6a8a|minimal
 rbt|126|Rain Boots|clo|cloth|30|rd|boots rain puddles|.3x.25|k=5;h=.27|threads bikes||red:c94f4f,green:3f6f4a,navy:2a3a5a,black:2a2a33|cozy
 bpk|127|Big Backpack|clo|cloth|60|cr|backpack pockets hiking|.35x.25|k=6;h=.48|threads bikes||forest:3f5f3a,rust:a85a3a,navy:2a3a5a|cozy
-umb|128|Clear Bubble Umbrella|clo|cloth|25|rd|umbrella rain|.2x.2|k=7;h=.72|threads||clear:dfeff6,pink:f6d0dc,blue:cfe0f6|minimal
+umb|128|Clear Bubble Umbrella|clo|cloth|25|rd|umbrella rain|.2x.2|k=7;h=.72|threads||clear:dfeff6,amber:f3dfb4,blue:cfe0f6|minimal
 scf|129|Chunky Scarf|clo|cloth|20|wl|scarf warm|.4x.15|k=8;h=.1|threads thrift||red:c94f4f,grey:8a8a94,teal:2f7f7a|cozy
 mtn|130|Mittens|clo|cloth|15|wl|mittens warm|.25x.12|k=9;h=.15|threads|11,12,1,2|red:c94f4f,blue:6c8ebf,cream:f4ead8|cozy
 wht|131|Witch Hat|clo|cloth|28|pp wa|hat witchy halloween|.4x.4|k=10;h=.36|threads lantern|10|black:2a2a33,purple:4a2a5a,green:2f4f3a|spooky
@@ -8786,7 +8837,7 @@ function dTick1(){const D=DECO,h=S.you.home,f=S.you.flags;const q=toWorldInv(YOU
   if(f&&!f.moved&&camS.mode==='walk'&&!D.on&&!(MD&&MD.on)&&!(typeof navigator!=='undefined'&&navigator.webdriver&&!MD.auto)){MD.w=(MD.w||0)+1;if(MD.w>=3)mdOpen(1)}else if(camS.mode!=='walk')MD.w=0;
   mdBoxes()}
 // ---------- Moving Day ----------
-const MDLOOKS=[['Kansas City classic',[1,2,0,0,0,0,0,1,1,0,1,0]],['harbor drizzle',[3,1,2,1,1,1,1,1,1,1,0,0]],['plum & plaid',[0,4,3,2,3,2,4,0,0,2,3,1]],['trail day',[5,0,4,3,2,1,5,1,0,0,2,0]]];
+const MDLOOKS=[['Kansas City classic',[1,0,1,0,0,1,0,1,0,2,1,1,0,0]],['harbor drizzle',[3,1,6,1,1,5,5,1,1,2,0,0,0,0]],['plum & plaid',[0,4,0,2,3,2,7,0,0,2,3,0,1,0]],['trail day',[5,0,4,3,2,4,8,1,0,0,2,0,2,2]]];   // H2: four guy looks
 function mdOpen(step){const M=MD;step=step|0||1;if(DECO.on)dExit();M.on=1;M.step=step;const el=M.el,nm=(S.mem.userName||S.you.name||'').slice(0,16);let h='';
   if(step===1)h=`<p class="mdK">moving day · 1 of 3</p><h3>What should we paint on your mailbox?</h3><input id="mdName" maxlength="16" value="${dEsc(nm)}" aria-label="your name" placeholder="your name"><div class="mdB"><button data-m="later">later</button><button data-m="paint" class="go">🖌 paint it</button></div>`;
   else if(step===2)h=`<p class="mdK">moving day · 2 of 3</p><h3>Pick a starter look</h3><div class="mdL">${MDLOOKS.map((l,i)=>`<button data-l="${i}">${dEsc(l[0])}</button>`).join('')}</div><div class="mdB"><button data-m="later">later</button>${typeof lookOpen==='function'?'<button data-m="look">👕 customize</button>':''}<button data-m="next" class="go">next</button></div>`;
