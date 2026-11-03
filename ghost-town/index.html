@@ -55,7 +55,7 @@
   form#chat{display:flex;gap:8px;background:var(--paper);border-radius:999px;padding:6px;box-shadow:0 5px 0 rgba(0,0,0,.18)}
   form#chat input{flex:1;border:0;background:transparent;font:inherit;font-size:16px;padding:6px 10px;outline:none;color:var(--ink);min-width:0}
   form#chat button{border:0;background:var(--accent);color:#fff;font:inherit;font-weight:800;border-radius:999px;padding:8px 16px;cursor:pointer}
-  #bubble,#bubble2,#bubble3{position:fixed;left:0;top:0;transform:translate(-50%,-100%);background:var(--paper);border-radius:16px;padding:8px 12px;font-size:14px;max-width:250px;box-shadow:0 4px 0 rgba(0,0,0,.16);pointer-events:none;opacity:0;transition:opacity .3s;text-align:center;line-height:1.35;z-index:3}
+  #bubble,#bubble2,#bubble3{position:fixed;left:0;top:0;transform:translate(-50%,-100%);background:var(--paper);border-radius:16px;padding:8px 12px;font-size:14px;width:max-content;max-width:250px;box-shadow:0 4px 0 rgba(0,0,0,.16);pointer-events:none;opacity:0;transition:opacity .3s;text-align:center;line-height:1.35;z-index:3}
   #bubble:after,#bubble2:after,#bubble3:after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-7px;border:7px solid transparent;border-bottom:0;border-top-color:var(--paper)}
   #bubble.show,#bubble2.show,#bubble3.show{opacity:1}
   #bubble.think,#bubble2.think,#bubble3.think{font-style:italic;color:var(--teal)}
@@ -118,7 +118,7 @@
   #mochaPill{cursor:pointer}
   #panel{top:calc(70px + env(safe-area-inset-top));bottom:calc(86px + env(safe-area-inset-bottom));right:max(12px,env(safe-area-inset-right));width:min(400px,42vw);max-height:none;transition:transform .35s,opacity .35s,width .3s}
   #panel.wide{width:min(720px,72vw)}
-  #dock{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:calc(86px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;align-items:flex-end;z-index:4}
+  #dock{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:calc(86px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;align-items:flex-end;z-index:4;pointer-events:none}#dock>*{pointer-events:auto}
   .round{border:0;width:50px;height:50px;border-radius:50%;background:var(--paper);box-shadow:0 4px 0 rgba(0,0,0,.16);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
   body.panelOpen #dock{right:calc(min(400px,42vw) + 24px + env(safe-area-inset-right))}
   body.panelOpen.wideP #dock{right:calc(min(720px,72vw) + 24px)}
@@ -177,6 +177,7 @@
   body.cozy #look{width:124px;height:58px;border-radius:29px;background:none;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;opacity:.94;pointer-events:none;bottom:calc(79px + env(safe-area-inset-bottom))}
   body.cozy #look .nub,body.cozy #look .lab{display:none}body.cozy #look .rotB{display:flex}body.cozy #look .rlab{display:block}
   @media (orientation:landscape) and (max-height:520px){body.cozy #look{bottom:calc(51px + env(safe-area-inset-bottom))}}
+  @media (min-width:761px) and (min-height:521px){body.panelOpen #look{right:calc(min(400px,42vw) + 24px + env(safe-area-inset-right))}body.panelOpen.wideP #look{display:none!important}}
   .lbl{max-width:min(48vw,260px);overflow:hidden;text-overflow:ellipsis;transform-origin:50% 100%;transform:translate(-50%,-100%) scale(var(--ls,1))}
   /* ---- paintings grid + picture viewer (lightbox) ---- */
   .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:12px 9px;margin:6px 0 2px}
@@ -1085,7 +1086,7 @@ const HANGOUTS=[
   beats:['w:kettle\'s on. sit, sit','m:thank you wendell!','w:ah, that reminds me…','w:{story}','m:whoa. really?','w:true as the tide','m:tell me another one sometime'],yb:['yw:pull up a chair! plenty of tea','ym:*pours you a cup*'],d:'Had tea with Wendell. {x}'},
  {id:'checkers',n:'playing checkers with Wendell',w:'W',sp:{W:['fireA','fireB','fireC'],M:['couchA','couchB','couchC']},h:[13,21.5],tags:['friends','gaming'],prop:'board',out:{ck:1},
   beats:['w:red or black?','m:black! always black','w:learned that double jump on the 2am ferry','m:hey!! that\'s sneaky','w:ah, now you\'re thinking','m:king me!!','w:well I\'ll be','m:hehe'],
-  yb:['yw:pull up a chair! you can be the referee','yw:see, jump diagonal like this… two for one','ym:referee, was that legal??'],yd:'{you} dropped in for checkers. Wendell let them pick the next move. It was a bad move. We loved it.',d:'Played checkers by Wendell\'s fire. {x}'},
+  yb:['yw:pull up a chair! you can be the referee','yw:see, jump diagonal like this… two for one','ym:referee, was that legal??'],yd:'{you} dropped in for checkers. Wendell let him pick the next move. It was a bad move. We loved it.',d:'Played checkers by Wendell\'s fire. {x}'},
  {id:'jigsaw',n:'doing the jigsaw at Wendell\'s',w:'W',sp:{W:['teaA','teaB','fireC']},h:[10,21.5],tags:['friends','cozy'],prop:'puzzle',out:{puz:1},
   beats:['w:found an edge piece!','m:this one is sky. this one is also sky','w:it\'s all sky, that\'s the trouble','m:the corner! i found the corner!','w:one piece is always missing, you know','m:noooo'],yb:['yw:you\'ve got good eyes. try that blue one'],d:'Worked on the never-ending jigsaw on Wendell\'s table. {x}'},
  {id:'supper',n:'cooking supper with Wendell',w:'W',sp:{W:['stove','teaB','teaA']},need:{W:['stove']},h:[16.5,20],tags:['friends','cooking'],prop:'pot',out:{pantry:15},
@@ -1164,7 +1165,7 @@ function hangOutcome(act,t=Date.now(),live=true){const w=S.wend,h=HBY[act.hang]|
   if(o.paint&&live){try{makePainting('wendell','Wendell by the Fire',t,'give:wendell');const e0=S.diary[0];if(e0&&e0.tag==='Art')S.diary.shift()}catch(e){}}
   w.nc=0;const mo=new Date(t).getMonth()+1,cob=mo>=7&&mo<=9,f=act.film||'';
   let txt=h.d.replace('{x}',x).replace('{dishn}',cob?'blackberry cobbler':'tomato soup').replace('{film}',f?`"${f}"`:'an old movie').replace('{where}',host==='W'?' on his cabinet TV, "the late show"':' on my computer').replace('{factd}',act.fact||W_STARS[0]);
-  if(act.you){const nm=S.mem.userName||'A friend';txt+=' '+(h.yd||(host==='W'?`{you} dropped in and pulled up a chair. Wendell made them a cup of tea.`:`{you} dropped in and joined us. Best kind of surprise.`)).replace('{you}',nm)}
+  if(act.you){const nm=S.mem.userName||'A friend';txt+=' '+(h.yd||(host==='W'?`{you} dropped in and pulled up a chair. Wendell made him a cup of tea.`:`{you} dropped in and joined us. Best kind of surprise.`)).replace('{you}',nm)}
   addEntry('Wendell',txt,place,t);return S.diary[0]}
 // ====================================================================
 //  STATE
@@ -3936,12 +3937,13 @@ function setScreen(topic){const t=byId.home.screenTex;if(!t)return;const g=t.ima
 const MOVIE_LEN=150;let MOVIE=null;
 function keeperAt(pid){return KEEPERS.find(k=>k.shop===pid&&(TN[k.id]&&TN[k.id].b?TN[k.id].st==='work':k.obj.visible))}
 // speech bubbles stay on screen: the box is clamped inside the viewport (size cached per line; no per-frame layout reads)
-function bubPos(el,x,y){if(!el._w){el.style.left='0px';el._w=el.offsetWidth||120}const w=el._w,h=el._h||(el._h=el.offsetHeight||40),hw=w/2+8;el.style.left=(innerWidth<2*hw?innerWidth/2:clamp(x,hw,innerWidth-hw))+'px';el.style.top=bubBand(el,w,h,Math.max(h+8,y))+'px'}
+function bubPos(el,x,y){el._x=x;el._y=y;if(!el._w){el.style.left='0px';el._w=el.offsetWidth||120}const w=el._w,h=el._h||(el._h=el.offsetHeight||40),hw=w/2+8;el.style.left=(innerWidth<2*hw?innerWidth/2:clamp(x,hw,innerWidth-hw))+'px';el.style.top=bubBand(el,w,h,Math.max(h+8,y))+'px'}
+function bubNow(el){if(el._x!=null)bubPos(el,el._x,el._y)}
 // speech bubbles stay below the top HUD bands (status pill, sky, wallet, speaker...): rects cached every .5 s, no per-frame allocation
 const BUBR=[];let bubRT=-1e9;
 function bubBand(el,w,h,y){const now=performance.now();if(now-bubRT>500){bubRT=now;BUBR.length=0;try{const H=innerHeight;for(const b of HUD.bands())if(b.y+b.h<H*.42&&b.y<H*.3)BUBR.push(b.x,b.y,b.x+b.w,b.y+b.h)}catch(e){}}
   const cx=parseFloat(el.style.left)||0,l=cx-w/2-4,r=cx+w/2+4;for(let k=0;k<3;k++){let mv=false;for(let i=0;i<BUBR.length;i+=4){if(r<BUBR[i]||l>BUBR[i+2])continue;if(y-h<BUBR[i+3]+6&&y>BUBR[i+1]-2){y=BUBR[i+3]+6+h;mv=true}}if(!mv)break}return Math.min(y,innerHeight-8)}
-let kBub=null;function kSay(k,t,d=3.5){const b=$('#bubble3');b.textContent=t;b._w=b._h=0;b.classList.add('show');kBub={k,t:d};if(typeof babble==='function'&&k)babble(k.id,t,{obj:k.obj})}
+let kBub=null;function kSay(k,t,d=3.5){const b=$('#bubble3');b.textContent=t;b._w=b._h=0;bubNow(b);b.classList.add('show');kBub={k,t:d};if(typeof babble==='function'&&k)babble(k.id,t,{obj:k.obj})}
 function startMovie(a){const recent=S.seen.slice(-5);const f=a.film&&a.film.title?a.film:pick(FILMS.filter(x=>!recent.includes(x.title)))||pick(FILMS);a.film=f;MOVIE={film:f,start:T,len:MOVIE_LEN};setMarquee(f.title)}
 function arrive(){const a=G.act;if(a.fx==='hang'&&hangArrive(a))return;if(a.p==='needle'&&G.lift!=='deck')return;if(a.p==='lighthouse'&&!G.lh){G.lh={ph:'up',t:5};say('98 steps…',5,true)}if(a.fx==='sleep'&&S.bike&&Math.hypot(BK.x-34.5,BK.z-54.1)>30){BK.x=34.5;BK.z=54.1;BK.yaw=Math.PI/2;BK.y=bikeY(BK.x,BK.z)}if(a.fx==='bikeride'){if(S.bike&&bikeObj&&!G.biking)mountBike();G.loopI=1}
   {const k=keeperAt(a.p);if(k&&(a.hx==='trick'||a.hx==='vgive'))a.face=k;if(k&&a.hx==='trick'){setTimeout(()=>say(pick(['trick or treat! 🎃','trick or treat!! 👻🎃']),2.5),200);setTimeout(()=>kSay(k,pick(['happy halloween! here you go 🍬','ooh, spooky! take two! 🍬','what a costume! 🎃🍬'])),1400)}else if(k&&a.hx==='vgive'){setTimeout(()=>say('happy valentine\'s day! 💌',2.5),200);setTimeout(()=>kSay(k,pick(['aww, for me?! 💕','you\'re so sweet, mocha 💌'])),1400)}else if(k&&a.fx!=='ask'&&!(typeof talkArrive==='function'&&talkArrive(a,k))&&Math.random()<.7)setTimeout(()=>kSay(k,kHi(k)),600);if(k&&a.fx==='ask'){a.face=k;setTimeout(()=>say(a.question||pick(['can i ask you something?','i was wondering…','quick question!']),3),300)}}
@@ -4120,7 +4122,7 @@ function wPath(ax,az,bx,bz){const v=navTo(AG.wendell,ax,az,bx,bz,{}),o=[];for(le
 {const d0=wSchedule();W.dest=d0;if(d0==='inside'){wIn()}else{const sp=W_SPOTS[d0];W.x=sp.x;W.z=sp.z;W.doing=sp.doing}}
 function wSchedule(){return wDest(wBlock())}
 function wWhere(){return!W.inside?(W.path.length?'out walking':(W_SPOTS[W.dest]||{}).where||'around'):'inside his house'}
-const bubble2=$('#bubble2');let wBubT=0;function wSay(t,d=3.5){bubble2.textContent=t;bubble2._w=bubble2._h=0;bubble2.classList.add('show');wBubT=d;if(typeof babble==='function')babble('wendell',t)}
+const bubble2=$('#bubble2');let wBubT=0;function wSay(t,d=3.5){bubble2.textContent=t;bubble2._w=bubble2._h=0;bubNow(bubble2);bubble2.classList.add('show');wBubT=d;if(typeof babble==='function')babble('wendell',t)}
 let wGreetT=0;
 function updateW(dt,t){wGreetT-=dt;if((NAVT.t-=dt)<=0){NAVT.t=1;navTick()}if((WD.t-=dt)<=0){WD.t=1;wTick1()}
   if(W.hang)hangW(dt);else if(W.inv)invW(dt);
@@ -4350,7 +4352,7 @@ function faceAtlas(c,iris,blush){const g=c.getContext('2d'),cs=c.width/8,OL='#3b
 // ---------- NEW: the walker's own face atlas, a copy of the game's faceAtlas() with: bigger eyes (ES), two clear catchlights,
 // a soft upper lid, subtler warmer cheeks, a wider open grin, and short chunky brows drawn in the walker's 'plain' mark cell (brows stay put through blinks) ----------
 const FACE_GUY={ES:1.14,EX:47,EY:61,blushA:.26,blushC:'#EC8C76',brow:10.5};   // eyes a touch lower and closer than round 1 (52/56), brows chunkier
-function faceAtlasGuy(c,iris,blush,brow){const g=c.getContext('2d'),cs=c.width/8,OL='#3b2723',PU='#1E1A24',ES=FACE_GUY.ES;g.clearRect(0,0,c.width,c.height);
+function faceAtlasGuy(c,iris,blush,brow,fh){const g=c.getContext('2d'),cs=c.width/8,OL='#3b2723',PU='#1E1A24',ES=FACE_GUY.ES;g.clearRect(0,0,c.width,c.height);
   const el=(x,y,rx,ry)=>{g.beginPath();g.ellipse(x,y,rx,ry,0,0,Math.PI*2);g.fill()};
   const cell=(i,vw,vh,f)=>{const x=(i%8)*cs,y=(i>>3)*cs;g.save();g.beginPath();g.rect(x,y,cs,cs);g.clip();g.translate(x,y);g.scale(cs/vw,cs/vh);g.lineCap=g.lineJoin='round';f();g.restore()};
   const eye=(cx,cy,o={})=>{const gx=o.gx||0,R=(o.big?1.08:1)*ES,sm=!!o.sm;
@@ -4384,17 +4386,30 @@ function faceAtlasGuy(c,iris,blush,brow){const g=c.getContext('2d'),cs=c.width/8
   // mark row: the walker only ever wears 'plain', so its cell carries his brows (short and chunky, a slight arch, fuller at the inner end)
   cell(31,218,128,()=>{if(!brow)return;g.strokeStyle=g.fillStyle=brow;g.lineWidth=FACE_GUY.brow;for(const s of [-1,1]){g.beginPath();g.moveTo(109+s*20,23);g.quadraticCurveTo(109+s*30,13.5,109+s*41,19);g.stroke();
     g.beginPath();g.ellipse(109+s*21.5,22,5.5,6.5,0,0,Math.PI*2);g.fill()}});   // brow: a thick short arc with a slightly fuller inner end
+  // facial hair in cell 12 (the beard patch: lon -72..72, lat -6 at the top to -70 at the bottom; the mouth patch draws over it). Shapes are half outlines in degrees (lon,lat), mirrored and smoothed.
+  if(fh)cell(12,128,128,()=>{const X=lo=>3.84+(lo+72)*.8356,Y=la=>3.84+(-6-la)*1.88,mir=H=>H.concat(H.slice(1,-1).reverse().map(q=>[-q[0],q[1]])),
+      sm=P=>{const n=P.length,m=i=>{const a=P[i%n],b=P[(i+1)%n];return[(X(a[0])+X(b[0]))/2,(Y(a[1])+Y(b[1]))/2]};g.beginPath();let q=m(n-1);g.moveTo(q[0],q[1]);for(let i=0;i<n;i++){q=m(i);g.quadraticCurveTo(X(P[i][0]),Y(P[i][1]),q[0],q[1])}g.closePath()};
+    CH_C.set(brow).multiplyScalar(1.3);CH_C.r=Math.min(1,CH_C.r);CH_C.g=Math.min(1,CH_C.g);CH_C.b=Math.min(1,CH_C.b);const bc='#'+CH_C.getHexString();   // beard and mustache a shade lighter than the brows (closer to the hair)
+    g.fillStyle=g.strokeStyle=fh===1?brow:bc;
+    if(fh===1){sm(mir([[0,-15],[-15,-16],[-27,-23],[-47,-25],[-61,-11],[-68,-9],[-67,-30],[-57,-49],[-36,-62],[0,-67]]));g.save();g.clip();g.globalAlpha=.5;g.fillRect(0,0,128,128);   // stubble: a half-tone shadow (alpha .5 passes the .4 alpha test) with darker grain
+      g.globalAlpha=.8;for(let i=0;i<620;i++){const a=Math.sin(i*12.9898)*43758.5453,b=Math.sin(i*78.233)*12543.137;g.beginPath();g.arc((a-Math.floor(a))*128,(b-Math.floor(b))*128,.75,0,Math.PI*2);g.fill()}g.restore()}
+    else if(fh===2){sm(mir([[0,-16.5],[-14,-18.5],[-21,-25],[-33,-31],[-52,-27],[-62,-9],[-70,-7],[-70,-31],[-61,-52],[-38,-66],[0,-69]]));g.fill();   // short beard: jaw, chin and a joined mustache, a little skin left round the mouth
+      g.save();g.globalCompositeOperation='destination-out';g.beginPath();g.ellipse(X(0),Y(-30.5),10.5,16,0,0,Math.PI*2);g.fill();g.restore();
+      g.save();g.strokeStyle='rgba(255,236,214,.16)';g.lineWidth=1.6;for(let i=-4;i<=4;i++){const lo=i*13,la=-50+Math.abs(i)*2.5;g.beginPath();g.moveTo(X(lo),Y(la));g.quadraticCurveTo(X(lo*1.04),Y(la-4),X(lo*1.02),Y(la-8));g.stroke()}g.restore()}
+    else if(fh===3){sm(mir([[0,-16.5],[-8,-16.8],[-15,-19],[-19,-23.5],[-17,-25.6],[-13,-22.6],[-7,-21.6],[0,-21.9]]));g.fill()}});   // mustache: two chunky lobes over the smile, tips curled down
   return c}
 const FACE_C=faceAtlas(Object.assign(document.createElement('canvas'),{width:1024,height:512}),'#6B3E26',true),FACE=new THREE.CanvasTexture(FACE_C);FACE.anisotropy=4;
 const FACE_MAT=new THREE.MeshBasicMaterial({map:FACE,transparent:true,alphaTest:.4,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
 // face patches on the head sphere: [lon0,lon1,lat0,lat1,segU,segV,radius] (degrees); positions/index are shared per layout, uv is per character
-const FPATCH={mark:[-62,62,-38,34,6,4,1.014],eye:[-48,48,-16,26,6,3,1.024],mouth:[-22,22,-38,-17,3,2,1.026]},FGB=new Map();
-function faceGeo(fo){fo=fo||{};const r=fo.r||.4,ml=fo.ml||FPATCH.mouth.slice(2,4),key=r+'|'+ml;let B=FGB.get(key);
-  if(!B){const pos=[],idx=[],pt={};for(const nm of ['mark','eye','mouth']){const F=FPATCH[nm],lat0=nm==='mouth'?ml[0]:F[2],lat1=nm==='mouth'?ml[1]:F[3],nu=F[4],nv=F[5],R=r*F[6],s=pos.length/3,lu=new Float32Array((nu+1)*(nv+1)*2);
+const FPATCH={mark:[-62,62,-38,34,6,4,1.014],eye:[-48,48,-16,26,6,3,1.024],mouth:[-22,22,-38,-17,3,2,1.026],beard:[-72,72,-70,-6,16,8,1.012]/*walker only (fo.bd), finer so it never dips under the skull*/},FGB=new Map();
+function faceGeo(fo){fo=fo||{};const r=fo.r||.4,ml=fo.ml||FPATCH.mouth.slice(2,4),key=r+'|'+ml+(fo.bd?'|bd':'');let B=FGB.get(key);
+  if(!B){const pos=[],idx=[],pt={};for(const nm of fo.bd?['mark','eye','mouth','beard']:['mark','eye','mouth']){const F=FPATCH[nm],lat0=nm==='mouth'?ml[0]:F[2],lat1=nm==='mouth'?ml[1]:F[3],nu=F[4],nv=F[5],R=r*F[6],s=pos.length/3,lu=new Float32Array((nu+1)*(nv+1)*2);
       for(let j=0;j<=nv;j++)for(let i=0;i<=nu;i++){const lo=(F[0]+(F[1]-F[0])*i/nu)*Math.PI/180,la=(lat0+(lat1-lat0)*j/nv)*Math.PI/180;pos.push(R*Math.cos(la)*Math.sin(lo),R*Math.sin(la),R*Math.cos(la)*Math.cos(lo));const v=j*(nu+1)+i;lu[v*2]=i/nu;lu[v*2+1]=j/nv}
       for(let j=0;j<nv;j++)for(let i=0;i<nu;i++){const a=s+j*(nu+1)+i,b=a+1,c=a+nu+1,d=c+1;idx.push(a,b,d,a,d,c)}pt[nm]={s,n:(nu+1)*(nv+1),lu}}
     B={pos:new THREE.Float32BufferAttribute(pos,3),idx:new THREE.Uint16BufferAttribute(idx,1),n:pos.length/3,pt};FGB.set(key,B)}
-  const g=new THREE.BufferGeometry();g.setIndex(B.idx);g.setAttribute('position',B.pos);g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(B.n*2),2));g.userData.pt=B.pt;g.computeBoundingSphere();return g}
+  const g=new THREE.BufferGeometry();g.setIndex(B.idx);g.setAttribute('position',B.pos);g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(B.n*2),2));g.userData.pt=B.pt;
+  if(B.pt.beard){const P=B.pt.beard,A=g.attributes.uv.array;for(let v=0;v<P.n;v++){A[(P.s+v)*2]=.5+(.03+P.lu[v*2]*.94)/8;A[(P.s+v)*2+1]=.5+(.03+P.lu[v*2+1]*.94)/4}}   // the beard patch always samples cell 12 (inset 3%)
+  g.computeBoundingSphere();return g}
 function faceCell(kind,name){if(kind==='eye'){const i=F_EYES.indexOf(name);return i<0?0:i}if(kind==='mouth'){const i=F_MOUTHS.indexOf(name);return 16+(i<0?0:i)}const i=F_MARKS.indexOf(name);return 24+(i<0?7:i)}
 // setFace(obj,expr[,dur]): expr is a name ('^^','happy','ooh',...) or {eye,mouth,mark}; rewrites ONLY the uv slice of each changed patch (the texture never changes)
 function setFaceB18(obj,expr,dur){if(!obj)return null;const u=obj.userData||{},f=u.face;let e=typeof expr==='string'?(F_EXPR[expr]||(F_EYES.includes(expr)?{eye:expr}:F_MOUTHS.includes(expr)?{mouth:expr}:null)):expr;if(!e)return null;
@@ -4495,7 +4510,7 @@ const LOOKP={sk:['#f7d7c4','#f1c3a5','#e3a983','#c98e66','#a8714c','#8a5a3b','#6
   sh:[['sneakers','#2f6fd0','sn'],['sneakers','#d24b4b','sn'],['sneakers','#efe9dd','sn'],['sneakers','#2b2b30','sn'],['rain boots','#b8322b','rb'],['rain boots','#2b3f66','rb'],['rain boots','#3f6e45','rb'],
       ['tan boots','#a87b5c','lb']/*new*/,['orange sneakers','#ec7a32','os']/*new*/,['rain boots','#70add9','rb']/*new: Puddle Blue*/],
   fl:[['off'],['buffalo check','#b3262e','#1c1a1d'],['forest-navy','#2f5d3a','#24324f'],['plum-grey','#6d3b5e','#8a8a92']],vc:['soft','bright','low'],cap:[['none'],['KC-blue cap','#1d5aa6']],
-  tp:['rain jacket','knit-cuff jacket','zip hoodie']/*new*/,fh:['none','stubble','short beard','mustache']/*new, reserved*/};
+  tp:['rain jacket','knit-cuff jacket','zip hoodie']/*new*/,fh:['none','stubble','short beard','mustache']/*new: drawn in face cell 12, on the walker's beard patch*/};
 const LOOK_N=[7,9,7,4,6,6,10,2,2,3,4,2,3,4],LOOK_D=[1,8,5,0,1,3,7,1,1,2,0,0,1,0],YOU_VOICE=LOOKP.vc,YOU_FITS=[['Blue jacket',LOOK_D],['Hoodie',[1,8,5,0,5,4,8,0,1,2,0,0,2,0]],['Rainy day',[1,8,6,0,4,5,9,1,1,2,0,0,0,0]]];   // owner fix 2: the default is a guy (outfit A "Blue jacket"); skin 1 renders light peach through youPal's compensation
 function hueOf(hex){CH_C.set(hex);const h={};CH_C.getHSL(h);return h.h*360}
 function jacketOK(hex){const h=hueOf(hex);return!(h>=38&&h<=68)}
@@ -4628,15 +4643,15 @@ const YFACE_MAT=new THREE.MeshBasicMaterial({map:YFACE,transparent:true,alphaTes
 const LANT_G=(()=>{const g=new THREE.BoxGeometry(.075,.1,.075),uv=g.attributes.uv;g.userData.u0=Float32Array.from({length:uv.count},(_,i)=>uv.getX(i));for(let i=0;i<uv.count;i++)uv.setY(i,.25+.25*(.1+.8*uv.getY(i)));return g})();
 const Y18={hr:12,g:null,wx:null,wt:0,kb:null,wb:0,lantern:false,hood:false,night:-1,lt:0,mv:0,t4:0,lookT:5,lookH:0,lookY:0,face:'',nap:0,photos:0,fan:false,keys:null,fid:''};
 function youLook(){const L=(S&&S.you&&Array.isArray(S.you.look))?S.you.look:LOOK_D;return L.length===14?L:youFix({look:L}).look}
-function makeYou(){const L=youLook(),W=youWear(L,Y18.hood),pal=youPal(W),P=youParts(W,{hood:Y18.hood}),g=chibiRig(P,{mat:YMAT,faceMat:YFACE_MAT,pal,shadow:true,face:{ml:[-38,-17]}}),u=g.userData;
+function makeYou(){const L=youLook(),W=youWear(L,Y18.hood),pal=youPal(W),P=youParts(W,{hood:Y18.hood}),g=chibiRig(P,{mat:YMAT,faceMat:YFACE_MAT,pal,shadow:true,face:{ml:[-38,-17],bd:1}}),u=g.userData;
   const hu=new THREE.Mesh(mergeParts(P.HOODU,pal),YMAT),hd=new THREE.Mesh(mergeParts(P.HOODD,pal),YMAT);hu.castShadow=hd.castShadow=true;u.head.add(hu);u.pv.add(hd);hu.visible=!!Y18.hood;hd.visible=!Y18.hood;u.M.HOODU=hu;u.M.HOODD=hd;
   const ln=new THREE.Mesh(LANT_G,YFACE_MAT);ln.position.set(.24,.655,-.36);u.pv.add(ln);ln.visible=!!L[7];const lg=glow('#ffc070',1.25,.7,false);lg.position.copy(ln.position);lg.visible=false;u.pv.add(lg);
-  Object.assign(u,{lantern:ln,lglow:lg,pal,you:1,bob:0,emY:2.3});Y18.keys=youKeys(W,Y18.hood);Y18.hd=Y18.hood;faceAtlasGuy(YFACE_C,LOOKP.ec[L[3]][1],!!L[8],pal.hcd);YFACE.needsUpdate=true;Y18.fid=L[3]+'|'+L[8]+'|'+L[1];lanternUV(false);return g}
+  Object.assign(u,{lantern:ln,lglow:lg,pal,you:1,bob:0,emY:2.3});Y18.keys=youKeys(W,Y18.hood);Y18.hd=Y18.hood;faceAtlasGuy(YFACE_C,LOOKP.ec[L[3]][1],!!L[8],pal.hcd,L[13]|0);YFACE.needsUpdate=true;Y18.fid=L[3]+'|'+L[8]+'|'+L[1]+'|'+(L[13]|0);lanternUV(false);return g}
 function lanternUV(on){const uv=LANT_G.attributes.uv,u0=LANT_G.userData.u0;for(let i=0;i<uv.count;i++)uv.setX(i,7/8+(on?0:1/16)+.002+u0[i]/16*.96);uv.needsUpdate=true}
 // apply a look array: recolour vertices for colour-only changes, swap the geometry of a node whose shape changed, redraw the walker's own face atlas for eyes/blush
 function applyLook(arr,o){o=o||{};const L=youFix({look:arr}).look;if(S&&S.you){S.you.look=L.slice()}const v=visitor,u=v.userData;if(!u||!u.you)return L;const W=youWear(L,Y18.hood),pal=youPal(W),K=youKeys(W,Y18.hood),P=youParts(W,{hood:Y18.hood});u.pal=pal;let rebuilt=0;
   for(const n in u.M){const m=u.M[n];if(!m||!P[n])continue;if(Y18.keys&&Y18.keys[n]===K[n])chRecolor(m.geometry,pal);else{const old=m.geometry;m.geometry=mergeParts(P[n],pal);old.dispose();rebuilt++}}
-  Y18.keys=K;Y18.hd=Y18.hood;const fid=L[3]+'|'+L[8]+'|'+L[1];if(fid!==Y18.fid){Y18.fid=fid;faceAtlasGuy(YFACE_C,LOOKP.ec[L[3]][1],!!L[8],pal.hcd);YFACE.needsUpdate=true}u.lantern.visible=!!L[7];Y18.night=-1;
+  Y18.keys=K;Y18.hd=Y18.hood;const fid=L[3]+'|'+L[8]+'|'+L[1]+'|'+(L[13]|0);if(fid!==Y18.fid){Y18.fid=fid;faceAtlasGuy(YFACE_C,LOOKP.ec[L[3]][1],!!L[8],pal.hcd,L[13]|0);YFACE.needsUpdate=true}u.lantern.visible=!!L[7];Y18.night=-1;
   if(!o.quiet){try{save()}catch(e){}}return{look:L,rebuilt}}
 // ---------- the walker each frame (frame() calls b18Frame): pose from gestures, look-around, greets, hood in rain, lantern at night, night lift; watch mode keeps you in the world ----------
 function youGesture(name,dur,o){Y18.g=Object.assign({name,t:0,dur:dur||0,stick:!dur},o||{});const k=visitor.userData.k;if(name==='hop'&&k){k.hw=0;k.sv-=1.2}return name}
@@ -5186,7 +5201,7 @@ $('#chatBtn').onclick=()=>{const on=document.body.classList.toggle('chatOpen');i
 //  HTML OVERLAYS
 // ====================================================================
 const bubble=$('#bubble');let bubbleT=0;
-function say(t,dur=4.5,think){if(!t)return;bubble.textContent=t;bubble._w=bubble._h=0;bubble.classList.toggle('think',!!think);bubble.classList.add('show');bubbleT=dur;if(!think)G.talk=Math.min(dur,2);if(!think&&typeof babble==='function')babble('mocha',t)}
+function say(t,dur=4.5,think){if(!t)return;bubble.textContent=t;bubble._w=bubble._h=0;bubNow(bubble);bubble.classList.toggle('think',!!think);bubble.classList.add('show');bubbleT=dur;if(!think)G.talk=Math.min(dur,2);if(!think&&typeof babble==='function')babble('mocha',t)}
 let toastT;toast=t=>{if(isQuiet)return;bannerHide();const el=$('#toast');el.classList.remove('tap');el.onclick=null;el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),4000)};
 const labels=[];labelFor=p=>{if(labels.some(l=>l.p===p))return;const d=document.createElement('div');d.className='lbl'+(p.id==='home'?' home':p.secret?' new':'');d.dataset.base=(p.id==='home'?'🏠 ':p.secret?'✨ ':'')+p.name;d.textContent=d.dataset.base;$('#labels').appendChild(d);labels.push({p,el:d});if(p.walk)p.walk.visible=true};
 PLACES.filter(p=>known(p)&&!p.nolbl).forEach(p=>labelFor(p));
@@ -5790,7 +5805,7 @@ function ylRender(){const L=youLook(),sw=(k,i,col,lab,on,cl)=>`<button class="yl
   const b=YL.el.querySelector('.ylBody'),sc=b?b.scrollTop:0;
   YL.el.innerHTML=`<div class="ylHead"><input id="ylName" maxlength="16" value="${esc(S.you.name)}" aria-label="your name"><span class="ylFrom">from ${esc(S.you.hometown)}</span><button class="ylBtn" id="ylRand" aria-label="randomize" title="randomize">🎲</button><button class="ylBtn ylDone" id="ylDone">done</button></div><div class="ylBody">`+
     row('skin',LOOKP.sk.map((c,i)=>sw(0,i,c,'skin tone '+(i+1),L[0]===i)).join(''))+row('hair',LOOKP.hc.map((c,i)=>sw(1,i,c,'hair colour '+(i+1),L[1]===i)).join(''))+row('hair style',LOOKP.hs.map((n,i)=>tx(2,i,n,L[2]===i)).join(''))+
-    row('eyes',LOOKP.ec.map((e,i)=>sw(3,i,e[1],e[0]+' eyes',L[3]===i)).join('')+tx(8,L[8]?0:1,L[8]?'blush on':'blush off',!!L[8]))+row('jacket colour',LOOKP.jk.map((e,i)=>sw(4,i,e[1],e[0],L[4]===i)).join(''))+
+    row('eyes',LOOKP.ec.map((e,i)=>sw(3,i,e[1],e[0]+' eyes',L[3]===i)).join('')+tx(8,L[8]?0:1,L[8]?'blush on':'blush off',!!L[8]))+row('facial hair',LOOKP.fh.map((n,i)=>tx(13,i,n,(L[13]|0)===i)).join(''))+row('jacket colour',LOOKP.jk.map((e,i)=>sw(4,i,e[1],e[0],L[4]===i)).join(''))+
     row('top',LOOKP.tp.map((n,i)=>tx(12,i,n,L[12]===i)).join(''))+
     row('bottoms',LOOKP.bt.map((e,i)=>tx(5,i,e[0],L[5]===i)).join(''))+row('shoes',LOOKP.sh.map((e,i)=>sw(6,i,e[1],e[0],L[6]===i,e[2]==='rb'||e[2]==='lb'?'boot':'')).join(''))+
     row('in the rain',`<button class="ylTx${S.you.flags.rainBoots!==false?' on':''}" data-rb="1">${S.you.flags.rainBoots!==false?'☔ rain boots on':'☔ rain boots off'}</button>`)+
@@ -5798,7 +5813,7 @@ function ylRender(){const L=youLook(),sw=(k,i,col,lab,on,cl)=>`<button class="yl
     row('extras',tx(7,L[7]?0:1,L[7]?'🎒 backpack on':'🎒 backpack off',!!L[7])+tx(11,L[11]?0:1,L[11]?'🧢 KC-blue cap on':'🧢 KC-blue cap off',!!L[11]))+row('voice',LOOKP.vc.map((n,i)=>tx(9,i,n,L[9]===i)).join(''))+
     row('outfits',[0,1,2].map(i=>S.you.outfits[i]?`<button class="ylTx" data-wear="${i}">wear ${esc(ylFitName(i))}</button><button class="ylTx" data-save="${i}" aria-label="save outfit ${i+1}">save ${i+1}</button>`:`<button class="ylTx" data-save="${i}">＋ save as ${i+1}</button>`).join(''))+`</div>`;
   const nb=YL.el.querySelector('.ylBody');if(nb)nb.scrollTop=sc;const nm=$('#ylName');nm.onchange=nm.onblur=()=>{S.you.name=(nm.value||'').trim().slice(0,16)||'Jesse';save()};$('#ylDone').onclick=()=>lookClose();
-  $('#ylRand').onclick=()=>{const L2=youLook().slice();[0,1,2,3,4,5,6,7,10,11,12].forEach(i=>L2[i]=Math.floor(Math.random()*LOOK_N[i]));L2[8]=Math.random()<.75?1:0;applyLook(L2);ylRender()}}
+  $('#ylRand').onclick=()=>{const L2=youLook().slice();[0,1,2,3,4,5,6,7,10,11,12].forEach(i=>L2[i]=Math.floor(Math.random()*LOOK_N[i]));L2[8]=Math.random()<.75?1:0;L2[13]=Math.random()<.5?0:1+Math.floor(Math.random()*3);applyLook(L2);ylRender()}}
 function ylClick(e){const b=e.target.closest('button');if(!b||!YL.el.contains(b))return;const d=b.dataset;
   if(d.rb!=null){S.you.flags.rainBoots=S.you.flags.rainBoots===false;youDress();save();ylRender();return}
   if(d.k!=null){const L=youLook().slice();L[+d.k]=+d.i;applyLook(L);ylRender()}else if(d.save!=null){S.you.outfits[+d.save]=youLook().slice();save();ylRender()}else if(d.wear!=null&&S.you.outfits[+d.wear]){applyLook(S.you.outfits[+d.wear]);ylRender()}}
@@ -6102,7 +6117,8 @@ function npcStatus(id){const c=CASTB[id];if(!c)return'';if(id==='wendell')return
   return VDESC[v]?(v==='tip'||v==='usher'||v==='mail'?VDESC[v]:`${VDESC[v]}`):`${v} at ${pn}`}
 function townLine(){const L=TOWN.set.filter(T=>T.n.st==='visit'||T.n.st==='brk'||T.n.st==='out').slice(0,3).map(T=>`${T.c.name.split(' ')[0]} ${npcStatus(T.c.id)}`);return L.join('; ')}
 // ---------- adopt every planned character: keepers move to world space (once); B19 hours give way to plans ----------
-function townInit(){for(const c of CAST){try{if(!c.obj||!(c.k||TXC[c.id]))continue;const r=c.lod;if(!r)continue;if(c.k){c.obj.updateMatrixWorld(true);scene.attach(c.obj)}else if(c.hours){c.hrs=c.hours;delete c.hours}
+// owner fix: attach() turns a keeper whose shop faces away from +z into Euler (pi, y, pi), so every later rotation.y write (talk facing, stations, walking) came out mirrored; reset to a pure yaw
+function townInit(){for(const c of CAST){try{if(!c.obj||!(c.k||TXC[c.id]))continue;const r=c.lod;if(!r)continue;if(c.k){c.obj.updateMatrixWorld(true);scene.attach(c.obj);TWV.set(0,0,1).applyQuaternion(c.obj.quaternion);c.obj.rotation.set(0,Math.atan2(TWV.x,TWV.z),0)}else if(c.hours){c.hrs=c.hours;delete c.hours}
   const n=TN[c.id]={id:c.id,key:null,b:null,st:'',verb:null,x:c.obj.position.x,z:c.obj.position.z,ry:c.obj.rotation.y,inP:null,hide:false,walk:false,wt:0,stn:0,stT:0,sv:false,chat:0,w:{x:0,z:0,ry:0,inP:null,hide:false}};
   let a=AG[c.id];if(!a&&c.k)a=null;if(!a&&!c.k)a=agAdd(c.id,'cast',{home:c.home,keys:new Set([c.home].filter(Boolean)),awake:true});const T={c,n,a,r};r.T=T;r.drive=tDrive;r.post=tPost;r.inside=()=>!!n.inP&&!tInVis(n.inP);TOWN.set.push(T)}catch(e){console.warn('town',c.id,e)}}
   try{townTick(true)}catch(e){console.warn('townTick0',e)}}
@@ -6141,7 +6157,7 @@ function tkAgo(t){const m=(Date.now()-t)/6e4;return m<2?'just now':m<60?`${Math.
 @media (min-width:761px) and (min-height:521px){#talkCard{left:50%;right:auto;width:560px;transform:translateX(-50%)}}
 body.talking #joy,body.talking #look,body.talking #dock,body.talking #chatwrap,body.talking #near,body.talking #zoom,body.talking #edge,body.talking #hint,body.talking #emoteFan,body.talking #ptag,body.talking .npChip,body.talking .hudMore,body.talking .hudPop,body.talking .tkHide{display:none!important}
 #near.tk{pointer-events:auto;cursor:pointer;background:var(--accent);color:#fff;min-height:44px;line-height:28px;font-size:15px;box-sizing:border-box}
-.nbP{position:fixed;left:0;top:0;transform:translate(-50%,-100%);background:var(--paper);border-radius:16px;padding:8px 12px;font-size:14px;max-width:250px;box-shadow:0 4px 0 rgba(0,0,0,.16);pointer-events:none;opacity:0;transition:opacity .3s;text-align:center;line-height:1.35;z-index:3}
+.nbP{position:fixed;left:0;top:0;transform:translate(-50%,-100%);background:var(--paper);border-radius:16px;padding:8px 12px;font-size:14px;width:max-content;max-width:250px;box-shadow:0 4px 0 rgba(0,0,0,.16);pointer-events:none;opacity:0;transition:opacity .3s;text-align:center;line-height:1.35;z-index:3}
 .nbP:after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-7px;border:7px solid transparent;border-bottom:0;border-top-color:var(--paper)}.nbP.show{opacity:1}`;document.head.appendChild(st)}
 const CARD=document.createElement('div');CARD.id='talkCard';CARD.setAttribute('role','dialog');CARD.innerHTML='<div id="tkTab"></div><button id="tkX" aria-label="close">×</button><div id="tkYou"></div><div id="tkTxt" aria-live="polite"></div><form id="tkForm" autocomplete="off"><button type="button" class="mic" id="tkBack" aria-label="back">↩</button><input id="tkIn" maxlength="160" placeholder="say something…" enterkeyhint="send"><button type="button" class="mic" id="tkMic" aria-label="mic">🎤</button><button type="submit" aria-label="send">➤</button></form><div id="tkChips"></div>';document.body.appendChild(CARD);
 const TKT=$('#tkTxt'),TKC=$('#tkChips'),TKI=$('#tkIn');
@@ -6172,33 +6188,35 @@ function tkHold(id,on){const c=CASTB[id];if(!c)return;const n=TN[id];
   if(id==='wendell'){W.path=s.path||[];W.timer=Math.min(s.timer,rand(4,9))}}
 function tkFace(id){const c=CASTB[id];if(!c||!c.obj||c.obj.parent!==scene&&id!=='wendell')return;tkPos(id,TKW);const y=Math.atan2(YOU.x-TKW.x,YOU.z-TKW.z),n=TN[id];
   if(id==='wendell'){W.yaw+=Math.atan2(Math.sin(y-W.yaw),Math.cos(y-W.yaw))*.2;wObj.rotation.y=W.yaw;return}const o=c.obj,cur=n?n.ry:o.rotation.y,ny=cur+Math.atan2(Math.sin(y-cur),Math.cos(y-cur))*.2;if(n)n.ry=ny;o.rotation.y=ny}
-function tkMid(){tkPos(TK.id,TKW);TKV.x=(TKW.x+YOU.x)/2;TKV.z=(TKW.z+YOU.z)/2;TKV.y=navFloor(TKV.x,TKV.z)+(TK.id==='mocha'?.75:.35);return TKV}
+function tkMid(){tkPos(TK.id,TKW);const k=TK.mb||.5;TKV.x=TKW.x+(YOU.x-TKW.x)*k;TKV.z=TKW.z+(YOU.z-TKW.z)*k;TKV.y=navFloor(TKV.x,TKV.z)+(TK.id==='mocha'?.75:.35);return TKV}
 function tkYaw(){tkPos(TK.id,TKW);const dx=TKW.x-YOU.x,dz=TKW.z-YOU.z,a=Math.atan2(-dz,dx),b=a+Math.PI,d=y=>Math.abs(Math.atan2(Math.sin(y-camS.yaw),Math.cos(y-camS.yaw)));return d(a)<=d(b)?a:b}
 // two-shot picked once per opening: dist grows with the speakers' separation and the horizontal fov; candidate yaws are ray-tested to both heads (own shop walls are cut away), blocked -> look down over it and pull in
-const TKRC=new THREE.Raycaster(),TKCP=new THREE.Vector3(),TKH=[new THREE.Vector3(),new THREE.Vector3()];TKRC.near=.1;const TKCAM=new THREE.PerspectiveCamera();
+const TKRC=new THREE.Raycaster(),TKCP=new THREE.Vector3(),TKH=[new THREE.Vector3(),new THREE.Vector3()],TKNI=new Set(['doors','cabinLogs','tunOpen','tunSolid']),TKMB=new THREE.Vector3(),TKHT=[new THREE.Vector3(),new THREE.Vector3()];TKRC.near=.1;const TKCAM=new THREE.PerspectiveCamera();
 // B23 fix (cozy camera pass): the two-shot reads the SETTLED room (the walker may have just been placed inside), and a candidate also loses when it sits inside a building or a prop, is up against someone's
 // face, or leaves a speaker's head off screen; last resort: a high three-quarter shot. When the walker changed place the camera snaps to the shot instead of sweeping through walls.
 function tkRoom(){let p=null;try{if(!ROOMP)ROOMP=PLACES.filter(q=>q.interior&&q.w&&q.kind!=='lot');p=ROOMP.find(q=>q.kind==='home'?inHome(YOU.x,YOU.z):inBuilding(q,YOU.x,YOU.z))||null}catch(e){}return p||(RC.pid&&byId[RC.pid])||null}
 function tkBad(p){const x=TKCP.x,y=TKCP.y,z=TKCP.z;for(const F of FOOT){const q=F.p;if(q===p||q.kind==='lot')continue;const dx=x-F.x,dz=z-F.z;if(Math.abs(dx*F.c-dz*F.s)<F.hw+.5&&Math.abs(dx*F.s+dz*F.c)<F.hd+.5&&y<(q.h||8)+2.5)return 1}
   if(y<2.8){const h=COL.hit(x,z,.35);if(h&&h<4)return 1}for(const h of TKH)if(h.distanceTo(TKCP)<2.2)return 1;
   for(const c of CAST){if(c.id===TK.id||!tkVis(c))continue;c.obj.getWorldPosition(TKW2);if(Math.hypot(TKW2.x-x,TKW2.z-z)<1.3&&y<TKW2.y+2.6)return 1}return 0}
-function tkOff(m){const C=TKCAM;C.position.copy(TKCP);C.lookAt(m.x,m.y+1,m.z);C.updateMatrixWorld();let n=0;for(const h of TKH){TKW2.copy(h).project(C);if(TKW2.z>1||Math.abs(TKW2.x)>.84||Math.abs(TKW2.y)>.62)n++}return n}
+function tkOff(m){const C=TKCAM;C.position.copy(TKCP);C.lookAt(m.x,m.y+1,m.z);C.updateMatrixWorld();let n=0;for(const h of TKH){TKW2.copy(h).project(C);if(TKW2.z>1||Math.abs(TKW2.x)>.84||TKW2.y>.52||TKW2.y<-.62)n++}return n}
 function tkSettle(){visitor.position.set(YOU.x,navFloor(YOU.x,YOU.z),YOU.z);visitor.rotation.y=YOU.yaw;visitor.updateMatrixWorld(true);if(TK.c&&TK.c.obj)TK.c.obj.updateMatrixWorld(true);const m=tkMid();TK.jump=Math.hypot(camS.tx-m.x,camS.tz-m.z)>3}
 function tkSnap(sh){if(!TK.jump||!sh)return;const m=tkMid();camS.tx=m.x;camS.ty=m.y;camS.tz=m.z;camS.yaw=sh.yaw;camS.pitch=sh.pitch;camS.dist=sh.dist;TK.jump=false}
-function tkShot(){tkPos(TK.id,TKW);const dx=TKW.x-YOU.x,dz=TKW.z-YOU.z,sep=Math.hypot(dx,dz),a=Math.atan2(-dz,dx),
+function tkShot(){TK.mb=.5;tkPos(TK.id,TKW);const dx=TKW.x-YOU.x,dz=TKW.z-YOU.z,sep=Math.hypot(dx,dz),a=Math.atan2(-dz,dx),
   tH=Math.tan(camera.fov*Math.PI/360)*camera.aspect,dist=clamp((sep/2+.5)/(tH*.9),5.5,11),m=tkMid(),p=tkRoom();TKCAM.fov=camera.fov;TKCAM.aspect=camera.aspect;TKCAM.near=camera.near;TKCAM.far=camera.far;TKCAM.updateProjectionMatrix();
-  TKH[0].set(YOU.x,navFloor(YOU.x,YOU.z)+1.5,YOU.z);TKH[1].set(TKW.x,TK.id==='mocha'?TKW.y+.5:Math.max(navFloor(TKW.x,TKW.z),TKW.y)+1.4,TKW.z);
+  TKH[0].set(YOU.x,navFloor(YOU.x,YOU.z)+1.5,YOU.z);TKH[1].set(TKW.x,TK.id==='mocha'?TKW.y+.5:Math.max(navFloor(TKW.x,TKW.z),TKW.y)+1.4,TKW.z);TKHT[0].copy(TKH[0]).y+=.4;TKHT[1].copy(TKH[1]).y+=.38;
   const skip=new Set();for(const o of [visitor,mocha,TK.c&&TK.c.obj])if(o)o.traverse(q=>skip.add(q));if(p&&p.walls)for(const w of p.walls)if(w&&w[0])skip.add(w[0]);
-  const L=[];scene.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||skip.has(o))return;for(let q=o;q;q=q.parent)if(!q.visible&&!(p&&q===p.inner))return;const mt=Array.isArray(o.material)?o.material[0]:o.material;if(mt&&mt.transparent&&mt.opacity<.5)return;if(p&&((p.shell&&p.shell.indexOf(mt)>=0)||(p.roofShell&&p.roofShell.indexOf(mt)>=0)))return;
-    const g=o.geometry;if(!g)return;if(!g.boundingSphere)g.computeBoundingSphere();TKCP.copy(g.boundingSphere.center).applyMatrix4(o.matrixWorld);if(TKCP.distanceTo(m)-g.boundingSphere.radius*o.matrixWorld.getMaxScaleOnAxis()<dist+1)L.push(o)});
-  let best=null;const tryC=(yw,pi,D,pen)=>{if(p){const d=Math.atan2(Math.sin(yw-p.ry),Math.cos(yw-p.ry));yw=p.ry+clamp(d,-1.1,1.1)}
-    const c=Math.cos(pi);TKCP.set(m.x+Math.sin(yw)*c*D,Math.max(1.5,m.y+Math.sin(pi)*D),m.z+Math.cos(yw)*c*D);let hit=0;
-    for(const h of TKH){TKW2.copy(h).sub(TKCP);const l=TKW2.length();TKRC.set(TKCP,TKW2.normalize());TKRC.far=Math.max(1.01,l-.4);if(TKRC.intersectObjects(L,false).length)hit++}const bad=tkBad(p),off=tkOff(m);
-    const s=hit*10+bad*30+off*8+pen+Math.abs(Math.atan2(Math.sin(yw-camS.yaw),Math.cos(yw-camS.yaw)))*.3;if(!best||s<best.s)best={s,yaw:yw,pitch:pi,dist:D,hit:hit+bad+off}};
+  const L=[];scene.traverse(o=>{if(!o.isMesh||skip.has(o)||(o.isInstancedMesh&&(!o.count||o.count>200||TKNI.has(o.name))))return;for(let q=o;q;q=q.parent)if(!q.visible&&!(p&&q===p.inner))return;const mt=Array.isArray(o.material)?o.material[0]:o.material;if(mt&&((mt.transparent&&mt.opacity<.5)||mt.blending===THREE.AdditiveBlending))return;if(o.isInstancedMesh){L.push(o);return}if(p&&((p.shell&&p.shell.indexOf(mt)>=0)||(p.roofShell&&p.roofShell.indexOf(mt)>=0)))return;
+    const g=o.geometry;if(!g)return;if(!g.boundingSphere)g.computeBoundingSphere();TKCP.copy(g.boundingSphere.center).applyMatrix4(o.matrixWorld);if(TKCP.distanceTo(m)-g.boundingSphere.radius*o.matrixWorld.getMaxScaleOnAxis()<dist+sep*.25+1)L.push(o)});
+  let best=null;const tryC=(yw,pi,D,pen,k)=>{if(p){const d=Math.atan2(Math.sin(yw-p.ry),Math.cos(yw-p.ry));yw=p.ry+clamp(d,-1.1,1.1)}k=k||.5;let mm=m;if(k!==.5){mm=TKMB.set(TKW.x+(YOU.x-TKW.x)*k,0,TKW.z+(YOU.z-TKW.z)*k);mm.y=navFloor(mm.x,mm.z)+(TK.id==='mocha'?.75:.35)}
+    const c=Math.cos(pi);TKCP.set(mm.x+Math.sin(yw)*c*D,Math.max(1.5,mm.y+Math.sin(pi)*D),mm.z+Math.cos(yw)*c*D);let hit=0;
+    const ex=YOU.x-TKW.x,ez=YOU.z-TKW.z,el=Math.hypot(ex,ez)||1,cx=TKCP.x-TKW.x,cz=TKCP.z-TKW.z,wx=TKCP.x-YOU.x,wz=TKCP.z-YOU.z,nd=(ex*cx+ez*cz)/(el*(Math.hypot(cx,cz)||1)),yd=-(ex*wx+ez*wz)/(el*(Math.hypot(wx,wz)||1)),fc=TK.id==='board'?0:Math.max(0,-nd-.1)*4+Math.max(0,-yd-.45)*3;
+    const ry=(h,w)=>{TKW2.copy(h).sub(TKCP);const l=TKW2.length();TKRC.set(TKCP,TKW2.normalize());TKRC.far=Math.max(1.01,l-.4);if(TKRC.intersectObjects(L,false).length)hit+=w};ry(TKH[0],1);ry(TKH[1],1);ry(TKHT[0],.5);ry(TKHT[1],.5);const bad=tkBad(p),off=tkOff(mm);
+    const s=hit*10+bad*30+off*8+pen+fc+Math.abs(Math.atan2(Math.sin(yw-camS.yaw),Math.cos(yw-camS.yaw)))*.3;if(!best||s<best.s)best={s,yaw:yw,pitch:pi,dist:D,hit:hit+bad+off,off,mb:k}};
   for(const b of [a,a+Math.PI])for(const o of [0,.45,-.45])tryC(b+o,p?.42:.28,dist,Math.abs(o));
+  if(best.off)for(const k of [.62,.72,.38,.28])for(const b of [a,a+Math.PI])for(const o of [0,.45,-.45])tryC(b+o,p?.42:.28,dist,Math.abs(o)+.25,k);
   if(best.hit)for(const b of [a,a+Math.PI])for(const o of [0,.45,-.45])tryC(b+o,.62,Math.max(3.6,dist*.7),1.5+Math.abs(o));
   if(best.hit)for(const b of [a,a+Math.PI])for(const o of [.785,-.785])tryC(b+o,.95,clamp(dist*.9,6,10),3);
-  TK.shot=best;return best}
+  TK.mb=best.mb;TK.shot=best;return best}
 // ---------- the card ----------
 function tkSay(text,o={}){TK.full=String(text||'');TK.raw=o.raw!=null?o.raw:TK.full;TK.src=o.src||TK.src;TK.n=0;TKT.textContent='';$('#tkYou').textContent=o.you?`you: “${clip(o.you,70)}”`:'';if(TK.id==='mocha'&&!o.noBub)say(clip(TK.full,140),Math.max(3.5,TK.full.length/13));
   if(TK.id&&TK.id!=='mocha'&&TK.id!=='board')try{typeof babble==='function'&&babble(TK.id,TK.full)}catch(e){}}
@@ -6220,10 +6238,10 @@ function talkOpen(id,o={}){if(document.body.classList.contains('ylOn'))return nu
   try{if(!panel.classList.contains('hidden'))panelOpen(false)}catch(e){}try{if(msgOpen)closeMsgs()}catch(e){}if(YOU.seat)try{youStand()}catch(e){}
   if(o.place){if(camS.mode!=='walk')setCamMode('walk');tkPos(id,TKW);const n=TN[id],ry=id==='mocha'?G.yaw:id==='board'?0:n?n.ry:c.obj.rotation.y;
     const off=typeof o.place==='number'?o.place:0;for(const da of [0,.6,-.6,1.2,-1.2,Math.PI]){const x=TKW.x+Math.sin(ry+off+da)*1.8,z=TKW.z+Math.cos(ry+off+da)*1.8;if(da===Math.PI||youFree(x,z)){YOU.x=x;YOU.z=z;break}}try{AG.you.x=YOU.x;AG.you.z=YOU.z}catch(e){}TG.on=0}
-  TK.open=true;TK.hid=0;TK.id=id;TK.c=c;TK.page=0;TK.q=null;TK.inp=false;TK.src='';TK.intent='open';TK.shoulder=id==='mocha';CARD.classList.remove('inp');tkPos(id,TKW);YOU.yaw=Math.atan2(TKW.x-YOU.x,TKW.z-YOU.z);TK.r=Math.hypot(TKW.x-YOU.x,TKW.z-YOU.z)+1.5;
+  TK.open=true;TK.hid=0;TK.mb=.5;TK.id=id;TK.c=c;TK.page=0;TK.q=null;TK.inp=false;TK.src='';TK.intent='open';TK.shoulder=id==='mocha';CARD.classList.remove('inp');tkPos(id,TKW);YOU.yaw=Math.atan2(TKW.x-YOU.x,TKW.z-YOU.z);TK.r=Math.hypot(TKW.x-YOU.x,TKW.z-YOU.z)+1.5;
   const tb=$('#tkTab'),col=tkColor(id);tb.textContent=tkName(id);tb.style.background=col;tb.style.color=tkInk(col);
   document.body.classList.add('talking');for(const k in HUD.S){const s=HUD.S[k];if(!s.fixed&&s.el&&(s.zone==='bl'||s.zone==='br'||s.zone==='tc'))s.el.classList.add('tkHide')}CARD.classList.add('on');
-  {try{tkSettle()}catch(e){}let sh=null;try{sh=tkShot()}catch(e){}if(!sh)sh={dist:5.5,pitch:.28,yaw:tkYaw()};CAM.push('talk',{prio:2,target:tkMid,dist:sh.dist,pitch:sh.pitch,yaw:sh.yaw,range:[3.5,Math.max(9,sh.dist*1.3)],ease:2.5});tkSnap(sh)}try{youGesture('wave',1.6)}catch(e){}try{sfx('talk',{id})}catch(e){}
+  {try{tkSettle()}catch(e){}let sh=null;try{sh=tkShot()}catch(e){}if(!sh)sh={dist:5.5,pitch:.28,yaw:tkYaw()};CAM.push('talk',{prio:2,target:tkMid,dist:sh.dist,pitch:sh.pitch,yaw:sh.yaw,range:[3.5,Math.max(9,sh.dist*1.3)],ease:4});tkSnap(sh)}try{youGesture('wave',1.6)}catch(e){}try{sfx('talk',{id})}catch(e){}
   if(id==='mocha')tkSay(mochaReply('open'),{src:'mocha'});else if(id==='board')tkSay(boardText('news'),{src:'board'});
   else{tkHold(id,true);const r=relOf(id),first=!r,q=tkQDue(id);relOf(id,true);if(q){TK.q=q;TK.bang['q'+id]=dkey(Date.now());tkSay(tkVoice(id,(first?tkFirst(id)+' ':'')+q.q,'ask'),{src:'ask'})}else{const g=npcReply(id,first?'first':'hi');tkSay(g.text,{src:g.src,raw:g.raw})}}
   tkChipsRender();tkKb();save();return talkInfo()}
@@ -6421,7 +6439,7 @@ function tk1Hz(){const now=Date.now();
 // ---------- NPC bubbles: #bubble3 (kBub) + a pool of 2 more, assigned by priority, so pals can talk over each other ----------
 const NBP=[1,2].map(i=>{const el=document.createElement('div');el.id='nb'+i;el.className='nbP';document.body.appendChild(el);return{el,k:null,t:0,pr:0}});
 {const k0=kSay;kSay=function(k,t,d=3.5,pr=1){if(!k||!kBub||kBub.t<=0||kBub.k===k||(kBub.k&&k.obj&&kBub.k.obj===k.obj)){const r=k0(k,t,d);if(kBub)kBub.pr=pr;return r}
-  let b=NBP.find(x=>x.t>0&&x.k&&x.k.obj===k.obj)||NBP.find(x=>x.t<=0);if(!b){b=NBP.slice().sort((x,y)=>x.pr-y.pr||x.t-y.t)[0];if(b.pr>pr&&(kBub.pr||1)>pr)return}b.k=k;b.t=d;b.pr=pr;b.el.textContent=t;b.el._w=b.el._h=0;b.el.classList.add('show');try{typeof babble==='function'&&k.id&&babble(k.id,t,{obj:k.obj})}catch(e){}}}
+  let b=NBP.find(x=>x.t>0&&x.k&&x.k.obj===k.obj)||NBP.find(x=>x.t<=0);if(!b){b=NBP.slice().sort((x,y)=>x.pr-y.pr||x.t-y.t)[0];if(b.pr>pr&&(kBub.pr||1)>pr)return}b.k=k;b.t=d;b.pr=pr;b.el.textContent=t;b.el._w=b.el._h=0;bubNow(b.el);b.el.classList.add('show');try{typeof babble==='function'&&k.id&&babble(k.id,t,{obj:k.obj})}catch(e){}}}
 function talkInfo(){const r=CARD.getBoundingClientRect();return{open:TK.open,id:TK.id,name:TK.id?tkName(TK.id):null,text:TK.full,raw:TK.raw,src:TK.src,intent:TK.intent,shown:TK.n|0,chips:TK.chips.map(c=>c.l),page:TK.page,q:TK.q?TK.q.k:null,inp:TK.inp,kb:TK.kb,
   rect:TK.open?{x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height)}:null,talking:document.body.classList.contains('talking'),cam:CAM.stack().map(e=>e.owner+':'+e.prio),top:CAM.top()&&CAM.top().owner,shoulder:TK.shoulder,headYaw:+body.rotation.y.toFixed(3),flop:!!TK.flop,near:TK.near,
   rel:TK.id&&S.you.rel?S.you.rel[TK.id]||null:null,bang:TK.bangN||0}}
