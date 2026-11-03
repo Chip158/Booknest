@@ -6201,6 +6201,8 @@ function tkBad(p){const x=TKCP.x,y=TKCP.y,z=TKCP.z;for(const F of FOOT){const q=
 function tkOff(m){const C=TKCAM;C.position.copy(TKCP);C.lookAt(m.x,m.y+1,m.z);C.updateMatrixWorld();let n=0;for(const h of TKH){TKW2.copy(h).project(C);if(TKW2.z>1||Math.abs(TKW2.x)>.84||TKW2.y>.52||TKW2.y<-.62)n++}return n}
 function tkSettle(){visitor.position.set(YOU.x,navFloor(YOU.x,YOU.z),YOU.z);visitor.rotation.y=YOU.yaw;visitor.updateMatrixWorld(true);if(TK.c&&TK.c.obj)TK.c.obj.updateMatrixWorld(true);const m=tkMid();TK.jump=Math.hypot(camS.tx-m.x,camS.tz-m.z)>3}
 function tkSnap(sh){if(!TK.jump||!sh)return;const m=tkMid();camS.tx=m.x;camS.ty=m.y;camS.tz=m.z;camS.yaw=sh.yaw;camS.pitch=sh.pitch;camS.dist=sh.dist;TK.jump=false}
+// owner fix (verifier): the crown of each head is ray-tested too (half weight), small instanced props (B16 lamp fixtures) count as occluders and additive light beams do not,
+// a shot that shows the speaker's back costs more, and when the two stand far apart the aim slides toward the nearer head (TK.mb) so both stay on a narrow screen
 function tkShot(){TK.mb=.5;tkPos(TK.id,TKW);const dx=TKW.x-YOU.x,dz=TKW.z-YOU.z,sep=Math.hypot(dx,dz),a=Math.atan2(-dz,dx),
   tH=Math.tan(camera.fov*Math.PI/360)*camera.aspect,dist=clamp((sep/2+.5)/(tH*.9),5.5,11),m=tkMid(),p=tkRoom();TKCAM.fov=camera.fov;TKCAM.aspect=camera.aspect;TKCAM.near=camera.near;TKCAM.far=camera.far;TKCAM.updateProjectionMatrix();
   TKH[0].set(YOU.x,navFloor(YOU.x,YOU.z)+1.5,YOU.z);TKH[1].set(TKW.x,TK.id==='mocha'?TKW.y+.5:Math.max(navFloor(TKW.x,TKW.z),TKW.y)+1.4,TKW.z);TKHT[0].copy(TKH[0]).y+=.4;TKHT[1].copy(TKH[1]).y+=.38;
