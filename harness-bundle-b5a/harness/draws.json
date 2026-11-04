@@ -1,0 +1,1235 @@
+[
+ {
+  "step": "B7",
+  "note": "baseline ledger created by B7; perf1.js desktop 1100x820 @12:00, perf1p.js portrait 393x852 @15:00 and @21:00 (avg draw calls per frame incl. shadow + post passes). B7 adds no meshes (HUD is DOM); deltas are view noise (Mocha wanders, weather now from WX).",
+  "before": {
+   "desktop12": 1139,
+   "portrait15": 1039,
+   "portrait21": 738
+  },
+  "after": {
+   "desktop12": 1178,
+   "portrait15": 1001,
+   "portrait21": 750
+  },
+  "tris": {
+   "before": {
+    "desktop12": 163515,
+    "portrait15": 167915,
+    "portrait21": 165121
+   },
+   "after": {
+    "desktop12": 168935,
+    "portrait15": 149099,
+    "portrait21": 89985
+   }
+  },
+  "progs": {
+   "before": 24,
+   "after": 24
+  },
+  "gfx_portrait15": {
+   "before": {
+    "calls": 1038,
+    "geos": 586,
+    "tex": 69
+   },
+   "after": {
+    "calls": 1007,
+    "geos": 580,
+    "tex": 69
+   }
+  },
+  "budget_delta": 0
+ },
+ {
+  "step": "B8",
+  "note": "perf1p.js portrait 393x852 @15:00/@21:00, perf1.js desktop 1100x820 @12:00 (avg draws/frame incl. shadow pass). Savings: road dashes batched (~100 meshes -> 1/cell), round-1 lamps (pole+bulb+sprite each) -> 2 InstancedMesh + GLOWPTS + pools, 65 static glow sprites -> 1 Points draw, multi-material boxes share groups (grpPack), shop front wall shares one shell material. Added: 5 shops, Town Hall, Fogwell, cottage, cemetery, square, lots, wayfinding (PB batches per 36u cell: vc/sign/win/fogwin).",
+  "before": {
+   "desktop12": 1141,
+   "portrait15": 1007,
+   "portrait21": 749
+  },
+  "after": {
+   "desktop12": 957,
+   "portrait15": 898,
+   "portrait21": 650
+  },
+  "tris": {
+   "before": {
+    "desktop12": 161481,
+    "portrait15": 158477,
+    "portrait21": 84269
+   },
+   "after": {
+    "desktop12": 184836,
+    "portrait15": 168248,
+    "portrait21": 93402
+   }
+  },
+  "progs": {
+   "before": 24,
+   "after": "+1 (GLOWPTS ShaderMaterial), +instanced/instanceColor variants"
+  },
+  "budget_delta": 10,
+  "met": true
+ },
+ {
+  "step": "B9",
+  "note": "perf1p.js portrait 393x852 @15/@21 and perf1.js desktop @12 are noisy (Mocha wanders; night varies +-100 between two loads of the SAME backup). Deterministic check b9/drawcmp.js (portrait, 3 fixed CAM views, Mocha parked): 15:00 backup [867,739,1104] -> B9 [874,741,1114] (+7,+2,+10). B9 adds 3 draws total: DIM (every door leaf, plank, chalkboard, note, cat = 1 InstancedMesh, 1 material) + TUN open + TUN solid (doorway jambs), no shadows; door lamps merge into PB 'win'/'vc' chunks.",
+  "before": {
+   "desktop12": 957,
+   "portrait15": 898,
+   "portrait21": 650
+  },
+  "after": {
+   "desktop12": 1015,
+   "portrait15": 932,
+   "portrait21": 637
+  },
+  "deterministic": {
+   "h15": {
+    "before": [
+     867,
+     739,
+     1104
+    ],
+    "after": [
+     874,
+     741,
+     1114
+    ]
+   },
+   "h21_noise": {
+    "backupA": [
+     613,
+     264,
+     715
+    ],
+    "backupB": [
+     539,
+     361,
+     721
+    ],
+    "after": [
+     537,
+     407,
+     580
+    ]
+   }
+  },
+  "tris": {
+   "before": {
+    "desktop12": 184836,
+    "portrait15": 168248,
+    "portrait21": 93402
+   },
+   "after": {
+    "desktop12": 195400,
+    "portrait15": 172942,
+    "portrait21": 92510
+   }
+  },
+  "progs": {
+   "before": "B8",
+   "after": "+1 door InstancedMesh ToonM (cache key door9), +1 MeshBasic vertexColors BackSide (tunnels), +alphaTest variants of the front-wall ToonM"
+  },
+  "budget_delta": 20,
+  "met": true
+ },
+ {
+  "step": "B10",
+  "note": "B10 adds no meshes, materials, textures or programs (scene: geoms 691/691, tex 86/86, progs 31/31; mesh count 2106 vs 2102 = random decor). drawcmp (portrait, 3 fixed CAM views, Mocha parked) h15 [848,732,1124]->[872,699,1129], h21 [717,397,704]->[632,371,568] (noise: Wendell wanders); with Wendell forced inside (b10/drawcmp2.js) h15 [831,702,1083]->[852,707,1093]. Per-object diff of view 1 at the identical camera (b10/drawdiff.js): 843->841, differing only in randomly placed sphere groups and 2 boxes.",
+  "before": {
+   "portrait15_views": [
+    831,
+    702,
+    1083
+   ]
+  },
+  "after": {
+   "portrait15_views": [
+    852,
+    707,
+    1093
+   ]
+  },
+  "deterministic": {
+   "view1_same_camera": {
+    "before": 843,
+    "after": 841
+   }
+  },
+  "tris": {
+   "note": "unchanged (no geometry added)"
+  },
+  "progs": {
+   "before": 31,
+   "after": 31
+  },
+  "budget_delta": 5,
+  "met": true
+ },
+ {
+  "step": "B11",
+  "note": "drawcmp2 (portrait 393x852 @15:00, 3 fixed CAM views, Mocha parked, Wendell inside) and perf1p portrait @15. Structural delta: +1 Sky Needle capsule mesh (transparent ToonM, no shadow), +1 tap-to-go ring (MeshBasic, hidden when idle = 0 draws), +1 PB 'vc' chunk (benches/racks/lift rail land in existing 36u cells except one; vc merged meshes 250 -> 251). Max +2 in any single view (capsule + that chunk); benches (promenade 9, park 4, porches 2, hill 1, deck 2), 18 bike racks and the lift rail are batched into PB.",
+  "before": {
+   "portrait15_views": [
+    842,
+    697,
+    1082
+   ],
+   "perf1p_portrait15_avg": 932
+  },
+  "after": {
+   "portrait15_views": [
+    833,
+    711,
+    1090
+   ],
+   "perf1p_portrait15_avg": 934
+  },
+  "tris": {
+   "before": 172724,
+   "after": 176634
+  },
+  "progs": {
+   "before": 30,
+   "after": 30
+  },
+  "budget_delta": 2,
+  "met": true
+ },
+ {
+  "step": "B12",
+  "note": "drawcmp2 (portrait 393x852 @15:00, 3 fixed CAM views, Mocha parked) and perf1p portrait @15. Interiors of 11 shops rebuilt with the LAYOUTS kit and merged per material into p.inner (3-6 static draws each); p.inner culled at 10 Hz (shell fading / door open within 30 / camera inside / glass library within 45). Biggest wins: the glass library (105 -> ~10 draws, always visible) and the bookstore's loose book boxes.",
+  "before": {
+   "portrait15_views": [
+    835,
+    703,
+    1088
+   ],
+   "perf1p_portrait15_avg": 901
+  },
+  "after": {
+   "portrait15_views": [
+    748,
+    662,
+    843
+   ],
+   "perf1p_portrait15_avg": 802
+  },
+  "tris": {
+   "before": 170854,
+   "after": 145151
+  },
+  "progs": {
+   "note": "not measured; new materials are ToonM variants (floor/rail/art maps, emissive pendant/fridge/tank, transparent glass)"
+  },
+  "budget_delta": -20,
+  "met": true,
+  "per_interior_static_draws": {
+   "cinema": 4,
+   "library": 3,
+   "records": 4,
+   "thrift": 4,
+   "petstore": 4,
+   "grocery": 4,
+   "cafe": 4,
+   "market": 3,
+   "arcade": 4,
+   "studio": 6,
+   "bookstore": 3
+  }
+ },
+ {
+  "step": "B13",
+  "note": "drawcmp3 (portrait 393x852, 3 fixed CAM views, Mocha parked; min/max of 10 samples) + perf1p portrait. Per-object tallies (b13/probe3.js, probe12.js) show the only static change at these views is +1 (the bakery takeaway hatch, baked onto its back wall, no shadow); the new interiors are culled in p.inner, the lean-to rides the B8 town batch, planks/chalkboards are DIM instances. Remaining differences are dynamic actors (unowned 'Mesh' draws swing 98..216 run to run).",
+  "before": {
+   "portrait15_views_minmax": [
+    [
+     753,
+     753
+    ],
+    [
+     662,
+     664
+    ],
+    [
+     844,
+     845
+    ]
+   ],
+   "portrait21_views_minmax": [
+    [
+     446,
+     779
+    ],
+    [
+     234,
+     714
+    ],
+    [
+     374,
+     854
+    ]
+   ],
+   "drawcmp2_15": [
+    748,
+    665,
+    840
+   ],
+   "perf1p_portrait15_avg": 831,
+   "perf1p_portrait21_avg": 556
+  },
+  "after": {
+   "portrait15_views_minmax": [
+    [
+     757,
+     758
+    ],
+    [
+     665,
+     665
+    ],
+    [
+     855,
+     878
+    ]
+   ],
+   "portrait21_views_minmax": [
+    [
+     441,
+     773
+    ],
+    [
+     239,
+     719
+    ],
+    [
+     373,
+     852
+    ]
+   ],
+   "drawcmp2_15": [
+    736,
+    666,
+    831
+   ],
+   "perf1p_portrait15_avg": 795,
+   "perf1p_portrait21_avg": 552
+  },
+  "static_delta_by_tally": {
+   "view1": 0,
+   "view2": 1,
+   "view3": 0
+  },
+  "tris": {
+   "before": 151117,
+   "after": 147347
+  },
+  "progs": {
+   "note": "new materials: B13M lampA/B/C, mush, brew, fire (emissive ToonM), the phone-screen MeshBasic, Luma's DoubleSide wing ToonM; door atlas DATL widened 512->1024 (one texture, +2 MB)"
+  },
+  "budget_delta": 4,
+  "met": true,
+  "per_interior_static_draws": {
+   "bakery": 4,
+   "threads": 3,
+   "nursery": 5,
+   "evergreen": 4,
+   "lantern": 6,
+   "phones": 4,
+   "bikes": 3,
+   "station": 3
+  }
+ },
+ {
+  "step": "B14",
+  "note": "drawcmp3 (portrait 393x852, 3 fixed CAM views, Mocha parked at home, Wendell forced inside; min/max of 10 samples) + perf1p portrait @15. Mocha's furnished interior (~85 loose meshes) is merged into p.inner per material (6 draws; 8 with the empty-house set shown) and culled with the B12 10 Hz pass while his shell is opaque; candle/floor-lamp sprites moved to GLOWPTS. Wendell's cottage rebuilt: exterior props ride the PB town batch, interior = LAYOUTS.neighbor merged into 4 draws, culled unless cut away. Per-owner tallies (b13/probe12.js -> b14/p12-*.txt): view1 home 144 -> 59 per frame; view2 neighbor 27 -> 17 per frame even while cut away (every owned group down); the view2 dc rise is unowned actors/shadow noise.",
+  "before": {
+   "portrait15_views_minmax": [
+    [
+     734,
+     734
+    ],
+    [
+     660,
+     660
+    ],
+    [
+     831,
+     854
+    ]
+   ],
+   "portrait21_views_minmax": [
+    [
+     440,
+     772
+    ],
+    [
+     244,
+     244
+    ],
+    [
+     374,
+     876
+    ]
+   ],
+   "perf1p_portrait15_avg": 797
+  },
+  "after": {
+   "portrait15_views_minmax": [
+    [
+     625,
+     625
+    ],
+    [
+     698,
+     698
+    ],
+    [
+     781,
+     785
+    ]
+   ],
+   "portrait21_views_minmax": [
+    [
+     374,
+     374
+    ],
+    [
+     231,
+     729
+    ],
+    [
+     352,
+     824
+    ]
+   ],
+   "perf1p_portrait15_avg": 659
+  },
+  "tris": {
+   "before": 147815,
+   "after": 156263
+  },
+  "progs": {
+   "note": "no new shader programs of note: cottage walls reuse wallTex/railMat/floorMat ToonM; the TV screen is one MeshBasic (CanvasTexture 128x96); nest set = BAKEM vc + one emissive bulb ToonM"
+  },
+  "per_home_interior_draws": {
+   "home": 6,
+   "home_with_nest": 8,
+   "neighbor": 4
+  },
+  "budget_delta": "<=14 per home interior",
+  "met": true
+ },
+ {
+  "step": "B15",
+  "note": "drawcmp3 (portrait 393x852, 3 fixed CAM views, Mocha parked, Wendell inside; min/max of 10) + perf1p portrait @15. B15 adds no meshes: recolors, colored toon ramps, PATCH pipeline + cache key, RIM uniform, precompile. Differences are dynamic-actor noise.",
+  "before": {
+   "portrait15_views_minmax": [
+    [
+     636,
+     636
+    ],
+    [
+     682,
+     684
+    ],
+    [
+     799,
+     822
+    ]
+   ],
+   "portrait21_views_minmax": [
+    [
+     363,
+     673
+    ],
+    [
+     243,
+     741
+    ],
+    [
+     353,
+     806
+    ]
+   ],
+   "perf1p_portrait15_avg": 665
+  },
+  "after": {
+   "portrait15_views_minmax": [
+    [
+     642,
+     642
+    ],
+    [
+     682,
+     684
+    ],
+    [
+     781,
+     804
+    ]
+   ],
+   "portrait21_views_minmax": [
+    [
+     360,
+     670
+    ],
+    [
+     238,
+     734
+    ],
+    [
+     361,
+     833
+    ]
+   ],
+   "perf1p_portrait15_avg": 677
+  },
+  "tris": {
+   "before": 156713,
+   "after": 162245
+  },
+  "progs": {
+   "backup_h12": 30,
+   "after_h12": 37,
+   "delta": 7,
+   "after_compile_at_load": 33,
+   "compile_ms_swiftshader": "111-398",
+   "keys": [
+    "",
+    "b",
+    "door9",
+    "br",
+    "hz",
+    "bs"
+   ],
+   "note": "+7: rim variants (br: Mocha ToonC transparent/double-side, pet clones) and hidden night/holiday materials compiled up front by renderer.compile; crossing sunset (16:00->18:30 jump) compiles 0 new programs"
+  },
+  "budget_delta": "0 draws",
+  "met": true
+ },
+ {
+  "step": "B16",
+  "note": "probe3 per-object tally (portrait 393x852, drawcmp3 view 1 = default home view, h15, Mocha parked, Wendell inside): static delta = +1 b16fx (hearth cones + sunbeams, one additive mesh) +1 b16pts (smoke/embers/dust Points); everything else equal (unowned dynamic 'Mesh' noise +5). WLT LUT, porches, the ghost card (DIM instance), Wendell's bug light (GLOWPTS + POOLS) add 0 draws. drawcmp3 raw (incl. shadow passes) and gfx() main-pass numbers are in b16/drawcmp3.out and b16/gfxcmp.out (noisy).",
+  "before": {
+   "probe3_default_h15_main": 354,
+   "drawcmp3_h15": [
+    [
+     631,
+     632
+    ],
+    [
+     690,
+     690
+    ],
+    [
+     793,
+     797
+    ]
+   ],
+   "drawcmp3_h21": [
+    [
+     353,
+     665
+    ],
+    [
+     237,
+     733
+    ],
+    [
+     362,
+     374
+    ]
+   ]
+  },
+  "after": {
+   "probe3_default_h15_main_per_frame": 361,
+   "static_delta": 2,
+   "drawcmp3_h15": [
+    [
+     627,
+     627
+    ],
+    [
+     698,
+     698
+    ],
+    [
+     783,
+     787
+    ]
+   ],
+   "drawcmp3_h21": [
+    [
+     362,
+     672
+    ],
+    [
+     254,
+     752
+    ],
+    [
+     354,
+     807
+    ]
+   ]
+  },
+  "tris": {
+   "before": 254346,
+   "after": 253462
+  },
+  "progs": {
+   "backup_h12": 37,
+   "after_h12": 40,
+   "delta": 3,
+   "keys_added": [
+    "bw"
+   ],
+   "note": "bw = window materials with the LUT patch (ToonM map+emissiveMap, lam emissiveMap, skyline emissive-only), + the FX Points ShaderMaterial + the vertex-colour additive MeshBasic"
+  },
+  "lights": {
+   "before": 4,
+   "after": 5,
+   "note": "L2 created at boot before the first render/compile; count constant after boot"
+  },
+  "budget_delta": "+2 draws or fewer",
+  "met": true
+ },
+ {
+  "step": "B17",
+  "note": "Deterministic probe (b17/shots.js probe, portrait 393x852, h18:30, Mocha parked at home, Wendell inside, locked CAM on the cottage): idle main pass 341 (backup) vs 331 (B17; dynamic-actor noise), checkers hangout 340 (+2 props board+items, Mocha now in frame). Static additions: caps shelf 1 InstancedMesh in p.inner (+1 only while the cottage interior is visible); hang props 2 draws only during a hangout (hidden idle); soup pot on Wendell 1 draw only while carrying. Programs 40 -> 40. perf1.js desktop h12 raw (incl. shadow pass): backup avg 713/max 737, B17 avg 699/max 722 (noisy).",
+  "before": {
+   "probe_idle_main": 341,
+   "perf1_desktop_h12": {
+    "avg": 713,
+    "max": 737,
+    "tris": 177320
+   },
+   "progs": 40
+  },
+  "after": {
+   "probe_idle_main": 331,
+   "probe_hang_main": 340,
+   "perf1_desktop_h12": {
+    "avg": 699,
+    "max": 722,
+    "tris": 173340
+   },
+   "progs": 40
+  },
+  "tris": {
+   "probe_idle": [
+    129198,
+    128798
+   ],
+   "probe_hang": 131418
+  },
+  "progs": [
+   40,
+   40
+  ]
+ },
+ {
+  "step": "B20",
+  "note": "Sound A adds no meshes, lights, materials or textures (Web Audio only; one HUD DOM button). perf1.js desktop h12 raw (incl. shadow pass), track B copy: backup avg 711/max 733, B20 avg 716/max 741 (noise, +0 structural).",
+  "before": {
+   "perf1_desktop_h12": {
+    "avg": 711,
+    "max": 733,
+    "tris": 172212
+   }
+  },
+  "after": {
+   "perf1_desktop_h12": {
+    "avg": 716,
+    "max": 741,
+    "tris": 172932
+   }
+  },
+  "tris": [
+   172212,
+   172932
+  ],
+  "progs": "unchanged (no new materials)"
+ },
+ {
+  "step": "B18",
+  "track": "A",
+  "note": "perf1.js desktop h12 (follow view; the walker is hidden there) is structurally unchanged. Walk-mode probe (b18/walkdraws.js, portrait 393x852, main pass via __mocha.drawInfo after entering walk mode): h15 299 -> 285 (old walker 17 meshes: 4 leg parts, body, 3 buttons, hood, tip, face disc, 2 eyes, 2 arms, lantern box, glow; new walker 8 base meshes HEAD/FACE/BODY/HOOD(up or down)/ARM x2/LEG x2 + lantern glass 1 + night glow 1 = 9-10). h21 77 vs 81 (noisy: shadow-map frames swing to 350). Emote pops add 1 draw per active pop. Programs 40 -> 42: ToonC+vertexColors+rim (CHIBI_MAT/YMAT share it) and MeshBasic map+alphaTest .4 (FACE_MAT, YFACE_MAT and EMO_MAT share it). Textures +3 at boot (FACE atlas, walker's own face atlas, emote atlas; YOU_RAMP is a tiny DataTexture); setFace never adds textures.",
+  "before": {
+   "perf1_desktop_h12": {
+    "avg": 711,
+    "max": 730,
+    "tris": 171732
+   },
+   "walk_portrait_h15": 299,
+   "walk_portrait_h21": 77,
+   "progs": 40,
+   "tex_walk_h15": 107
+  },
+  "after": {
+   "perf1_desktop_h12": {
+    "avg": 704,
+    "max": 730,
+    "tris": 171750
+   },
+   "walk_portrait_h15": 285,
+   "walk_portrait_h21": 81,
+   "progs": 42,
+   "tex_walk_h15": 109
+  },
+  "tris": {
+   "perf1_desktop_h12": [
+    171732,
+    171750
+   ]
+  },
+  "progs": [
+   40,
+   42
+  ],
+  "budget": "walker <=10 draws, test chibi <=8",
+  "met": true
+ },
+ {
+  "step": "B19",
+  "track": "A",
+  "note": "perf1.js desktop h12 (default follow view) is noise-level: run 1 backup 712/737 vs B19 722/742, run 2 backup 722/742 vs B19 697/728 (avg of runs 717 -> 710). Per-object probe (b19/probe12.js, desktop h12, frustum-tested): backup 715 calls with Wendell's old raccoon (32 unbaked shadow-casting meshes) visible though he is inside his cottage; B19 716 calls: +1 main draw (Tabitha's LOD1 stand-in at the library steps is in frustum), Wendell hidden while inside an unfaded shell (CHARLOD), 5 more LOD1 stand-ins within 85 but off-frustum (0 draws). Keepers: old makeCritter (baked per group, castShadow on every part) -> chibi 7-8 draws, shadows only on the 4 nearest LOD0. Crowd test (test-B19.js, portrait 393x852 h15, 20 characters around the square fountain): 8 LOD0 + 12 LOD1, 4 shadow casters, character share 95 draws (main + shadow); frame 420-435 without the crowd -> 532-550 with it (delta ~112-115); main pass only (shadow map frozen) with the crowd 136-153. The 300 frame budget is exceeded by the BASE scene's shadow pass at the square (~280 shadow draws), not by the characters. Programs: +1 (MG_MAT ToonC vertexColors DoubleSide transparent; CAST_GMAT shares the ToonC+vertexColors program family; MGF_MAT MeshBasic vertexColors).",
+  "before": {
+   "perf1_desktop_h12": [
+    {
+     "avg": 712,
+     "max": 737
+    },
+    {
+     "avg": 722,
+     "max": 742
+    }
+   ],
+   "probe12_calls": 715
+  },
+  "after": {
+   "perf1_desktop_h12": [
+    {
+     "avg": 722,
+     "max": 742
+    },
+    {
+     "avg": 697,
+     "max": 728
+    }
+   ],
+   "probe12_calls": 716,
+   "crowd_square_portrait_h15": {
+    "base": [
+     435,
+     420
+    ],
+    "with_crowd": [
+     550,
+     532
+    ],
+    "main_pass_frozen_shadows": [
+     153,
+     136
+    ],
+    "char_share": 95
+   }
+  },
+  "tris": {
+   "perf1_desktop_h12": [
+    172932,
+    176848
+   ]
+  },
+  "budget": "characters <= 8x8 + 1 per LOD1; castShadow on 4 nearest LOD0",
+  "met": true
+ },
+ {
+  "step": "B24",
+  "note": "Catalog engine. Shop displays are parented to p.inner, so they cost 0 draws from outside (interiors culled). Inside a shop the merged display adds exactly its mesh count: deterministic re-render inside Evergreen 349 vs 347 with the display hidden (+2; max 3 = toon+rim, emissive basic, decal atlas). castShadow=false, so no shadow-pass draws. perf1.js desktop h12 (default follow view, incl. shadow pass): backup avg 713/max 735, B24 avg 708/max 738 (noise, +0 structural). Programs +3 (toon vc+rim, basic vc, toon vc+map+alphaTest+rim), precompiled at boot; thumbnails add basic vc+map when first rendered. catMem peak 2.08 MB after all 16 display shops (cap 5.5 MB LRU).",
+  "before": {
+   "perf1_desktop_h12": {
+    "avg": 713,
+    "max": 735,
+    "tris": 172332
+   },
+   "evergreen_inside_rerender": 347
+  },
+  "after": {
+   "perf1_desktop_h12": {
+    "avg": 708,
+    "max": 738,
+    "tris": 172590
+   },
+   "evergreen_inside_rerender": 349
+  },
+  "tris": [
+   172332,
+   172590
+  ],
+  "progs": "+3 (precompiled)"
+ },
+ {
+  "step": "B22",
+  "track": "A",
+  "note": "perf1 desktop h12 default view before/after (noise ~+-20). Static additions: Hank's birdhouse+table (1 draw) and Sol's easel+canvas (2 draws), only within 70 of the camera; shared props (broom/book/mug, salmon while tossing, party hat on a birthday, <=4 umbrellas when wet) 1 draw each when shown. Keepers moved to world space but stay hidden by r.inside() whenever their interior is culled, so the character share is unchanged; CHARLOD n0<=8. Portrait 15:00 default view measured 656-668 calls in test-B22 (base scene is already far over the 250 budget, see B19 note).",
+  "before": {
+   "perf1_desktop_h12": {
+    "avg": 705,
+    "max": 731,
+    "tris": 176746
+   }
+  },
+  "after": {
+   "perf1_desktop_h12": {
+    "avg": 708,
+    "max": 738,
+    "tris": 177569
+   },
+   "portrait_h15_default": [
+    656,
+    668
+   ]
+  },
+  "tris": {
+   "before": 176746,
+   "after": 177569
+  },
+  "progs": "+0 (MeshBasic map for the canvas reuses an existing program family; props use CHIBI_MAT)",
+  "budget": "+5 draws",
+  "met": true
+ },
+ {
+  "step": "B25",
+  "note": "Wallet and shopping. Display items, SOLD/'sold to Mocha' cards and window glow plates merge into the existing B24 catalog display (<=3 draws per shop, unchanged); the purchase lift-off is 1 temporary merged mesh for 0.9 s. No lights, no new programs (cards use the B24 decal/emissive materials). perf1 noise is +-30.",
+  "before": {
+   "perf1_desktop_h12": {
+    "avg": 699,
+    "max": 730,
+    "tris": 171990
+   }
+  },
+  "after": {
+   "perf1_desktop_h12": {
+    "avg": 695,
+    "max": 728,
+    "tris": 171732
+   }
+  },
+  "tris": {
+   "before": 171990,
+   "after": 171732
+  },
+  "progs": "+0",
+  "budget": "+0 static (+1-3 transient during a purchase)",
+  "met": true
+ },
+ {
+  "step": "B23",
+  "note": "talk card, bubbles and the near pill are DOM; Mocha's head turn reuses his body group; the '!' emote reuses B18's pooled billboard (<=2 transient draws, only near the walker). No lights, no new programs, no new meshes. perf1 noise is +-30.",
+  "before": {
+   "perf1_desktop_h12": {
+    "avg": 712,
+    "max": 736,
+    "tris": 177467
+   }
+  },
+  "after": {
+   "perf1_desktop_h12": {
+    "avg": 700,
+    "max": 732,
+    "tris": 176849
+   }
+  },
+  "tris": {
+   "before": 177467,
+   "after": 176849
+  },
+  "progs": "+0",
+  "budget": "+0 static (+0-2 transient '!' emotes)",
+  "met": true
+ },
+ {
+  "step": "B26",
+  "note": "Your log cabin. Exterior = 11 draws + 2 shadow casters (logs InstancedMesh 85 instances + roof): logs, exterior vc batch, front-wall vc batch, roof (shadow), back windows, front windows (WLT), door leaf, porch sign, porch lantern, peanuts, mailbox flag, mailbox name plate; +1 drip mesh only in rain, +1 scaffold only on a build day (max 14 + 2 shadow). Interior (only while cut away / door open): 1 vc batch + <=3 catMerge item draws + <=3 small anim objects. Fire-pit sparks/halo reuse GLOWPTS, ground pools reuse POOLS, chimney smoke reuses FXP, hearth cones FXM: 0 draws. No lights (scene light count 5 -> 5, also after rebuilds). perf1 noise +-30.",
+  "before": {
+   "perf1_desktop_h12": {
+    "avg": 710,
+    "max": 736,
+    "tris": 172572
+   }
+  },
+  "after": {
+   "perf1_desktop_h12": {
+    "avg": 722,
+    "max": 747,
+    "tris": 182365
+   }
+  },
+  "tris": {
+   "before": 172572,
+   "after": 182365
+  },
+  "progs": "+0 (43 -> 43 at h12)",
+  "budget": "exterior <= 16 draws",
+  "met": true
+ },
+ {
+  "step": "B27",
+  "note": "Decorate mode, autoArrange, Moving Day. Default view: +0 static draws (placed items still merge into B26's <=3 catMerge draws; yard items add <=3 only when the yard has items; wallpaper/floor add 1 per papered surface, only inside the cutaway). Moving Day porch boxes: 3 small draws only until unpacked. Decorating (transient): ghost <=2 + footprint 1 + grid 1 + dust Points 1 (0.6 s); the lamp-seat pairing glow reuses one GLOWPTS slot. No lights; programs: MeshBasic vertexColors (+map) for the translucent ghost = existing families (+0-1). perf1 noise is +-30.",
+  "before": {
+   "perf1_desktop_h12": {
+    "avg": 710,
+    "max": 736,
+    "tris": 181387
+   }
+  },
+  "after": {
+   "perf1_desktop_h12": {
+    "avg": 707,
+    "max": 739,
+    "tris": 181507
+   }
+  },
+  "tris": {
+   "before": 181387,
+   "after": 181507
+  },
+  "progs": "+0 static (+0-1 while decorating: translucent MeshBasic ghost)",
+  "budget": "+0 static (+<=5 transient while decorating)",
+  "met": true
+ },
+ {
+  "step": "B3-merge",
+  "note": "Batch 3 merge (track A B18 B19 B22 B23 + track B B20 B24 B25 B26 B27) + glue. perf1p portrait default view, columns base / trackA / trackB / merged. 15:00 avg 654 / 671 / 659 / 658; 21:00 avg 457 / 460 / 451 / 459 (max 721/696/730/695). Merge adds no draws beyond the tracks (+4 at 15:00 vs base). Umbrella (2 draws) only in rain when owned. Programs 47 after boot, all precompiled (glue re-runs renderer.compile after B27). Portrait budget 250 was already exceeded in base (known).",
+  "before": {
+   "perf1p_portrait_h15": {
+    "avg": 654,
+    "max": 655,
+    "tris": 155628
+   },
+   "perf1p_portrait_h21": {
+    "avg": 457,
+    "max": 721,
+    "tris": 75590
+   }
+  },
+  "after": {
+   "perf1p_portrait_h15": {
+    "avg": 658,
+    "max": 658,
+    "tris": 165026
+   },
+   "perf1p_portrait_h21": {
+    "avg": 459,
+    "max": 695,
+    "tris": 89975
+   }
+  },
+  "tris": {
+   "before": 155628,
+   "after": 165026
+  },
+  "progs": "47 at boot, 0 late (was 45 + 2 late from B26/B27)",
+  "budget": "merge adds <= the sum of track deltas",
+  "met": true
+ },
+ {
+  "step": "B21",
+  "note": "Sound B. Own delta measured in-page by toggling the two B21 objects and re-rendering: +2 (the note Points pool, 1 draw, hidden when no notes live; Mocha's radio mesh, 1 draw, castShadow off). perf1 desktop h12 avg 705 -> 725 is run-to-run noise from where Mocha wanders (follow view); smoke-extra 15:00 with/without B21 objects: desktop 476/478, portrait 405/407, landscape 697/699.",
+  "before": {
+   "perf1_desktop_h12": {
+    "avg": 705,
+    "max": 738,
+    "tris": 186504
+   }
+  },
+  "after": {
+   "perf1_desktop_h12": {
+    "avg": 725,
+    "max": 756,
+    "tris": 188444
+   }
+  },
+  "tris": {
+   "before": 186504,
+   "after": 188444
+  },
+  "progs": "49 at boot (notes ShaderMaterial precompiled at boot via renderer.compile on a temp scene)",
+  "budget": "+2 (1 Points + 1 radio mesh)",
+  "met": true
+ },
+ {
+  "step": "B28",
+  "note": "B28 adds no meshes, lights, materials or textures (state, bonds, listening, UI in the panel only). perf1 desktop h12 difference is follow-view noise.",
+  "before": {
+   "perf1_desktop_h12": {
+    "avg": 737,
+    "max": 751,
+    "tris": 187558
+   }
+  },
+  "after": {
+   "perf1_desktop_h12": {
+    "avg": 712,
+    "max": 741,
+    "tris": 186366
+   }
+  },
+  "tris": {
+   "before": 187558,
+   "after": 186366
+  },
+  "progs": "unchanged (no new materials)",
+  "budget": "+0",
+  "met": true
+ },
+ {
+  "step": "B33",
+  "note": "perf1 desktop h12 Nov 1 (fresh state: every B33 keepsake hidden) before/after; 721->725 is run-to-run noise. When active: 2 porch jack-o'-lanterns = 2 draws each (vc toon + unlit face) + 2 GLOWPTS slots (no extra draw), Mocha's row = 2 draws (Mar-Oct after planting), interior keepsakes 1 draw each (key, mug, portrait, 2 polaroid frames) only while that interior renders.",
+  "before": {
+   "perf1_desktop_h12": {
+    "avg": 721,
+    "max": 744,
+    "tris": 186828
+   }
+  },
+  "after": {
+   "perf1_desktop_h12": {
+    "avg": 725,
+    "max": 738,
+    "tris": 186341
+   }
+  },
+  "tris": {
+   "before": 186828,
+   "after": 186341
+  },
+  "progs": "+0 at default (ToonM vertexColors, MeshBasic vertexColors, ToonM map reuse existing programs)",
+  "budget": "+0 by default; up to +4 exterior (October jacks) +2 (spring row)",
+  "met": true
+ },
+ {
+  "step": "LF2",
+  "track": "T",
+  "before": {
+   "desktop_avg": 696,
+   "max": 713,
+   "tris": 186260
+  },
+  "after": {
+   "desktop_avg": 632,
+   "max": 648,
+   "tris": 172416
+  },
+  "note": "perf1 at 12:00 DAY=11-03: idle sea adds 0 draws (SEA.m/SEA.fx invisible); the drop is the follow camera at 18 instead of 24 (fewer objects in view). During an event +2 draws (paired toggles: D=[2,2,2,2,2,2]); programs 48 -> 48 (+0); seaFrame mean .12-.14 ms, p90 .2 ms (desktop SwiftShader, stepped breach); no new lights",
+  "progs": "+0",
+  "tris_event": "adult+calf 9.8k verts (2 adults+calf 15.0k max)"
+ },
+ {
+  "step": "B27Sa",
+  "track": "S",
+  "before": {
+   "desktop_avg": 678,
+   "max": 705,
+   "tris": 185060
+  },
+  "after": {
+   "desktop_avg": 603,
+   "max": 632,
+   "tris": 160116
+  },
+  "portrait": [
+   {
+    "file": "backup-B27Sa.html",
+    "tris": 165586,
+    "fps8s": "2.00",
+    "avg": 648,
+    "max": 648
+   },
+   {
+    "file": "index.html",
+    "tris": 150282,
+    "fps8s": "1.75",
+    "avg": 542,
+    "max": 542
+   },
+   {
+    "file": "backup-B27Sa.html",
+    "tris": 89059,
+    "fps8s": "2.25",
+    "avg": 432,
+    "max": 669
+   },
+   {
+    "file": "index.html",
+    "tris": 71927,
+    "fps8s": "2.75",
+    "avg": 353,
+    "max": 577
+   }
+  ],
+  "progs": "+1 (49 after vs 48 on BASE-LF, test-B15 program count; budget +1): the new variants are the instanced+instanceColor toon litter and the instanced fog-off cloud material; the post shader only gains uniforms",
+  "note": "perf1 desktop h12 and perf1p portrait 15:00/21:00 at DAY=11-03, backup-B27Sa (BASE-LF) -> track S file. Frozen toggle ledger in /tmp/harness/b27s/ledger.json (F1 litter 6 IM->1, F2 clouds 70 meshes->1 IM frustum-packed, F3 market+grocery baked, dash batch hidden, +1 blob IM). No new lights.",
+  "portrait_note": "perf1p portrait rows: 15:00 backup then after, 21:00 backup then after"
+ },
+ {
+  "step": "LF3",
+  "track": "S",
+  "before": {
+   "desktop_avg": 556,
+   "max": 586,
+   "tris": 183415
+  },
+  "after": {
+   "desktop_avg": 538,
+   "max": 552,
+   "tris": 183419
+  },
+  "progs": "after prewarm 50 (catalog main/emi/dec + preview atlas variant now compile in the PREWARM job instead of at first use); 0 links after prewarm across menus, previews, selfie, trip start (test-LF3)",
+  "menus_probe": {
+   "1x": {
+    "before": {
+     "A1_maxHandler": [
+      871,
+      "tab feed"
+     ],
+     "A2_delay_p95": 33,
+     "A2_delay_max": 77,
+     "A3_toDataURL": 98,
+     "A3_readPixels": 60,
+     "A4_longestTask": [
+      877,
+      "tab feed"
+     ],
+     "A10_idle_p50": 13,
+     "errs": []
+    },
+    "after": {
+     "A1_maxHandler": [
+      59,
+      "tab town (cal)"
+     ],
+     "A2_delay_p95": 27,
+     "A2_delay_max": 66,
+     "A3_toDataURL": 5,
+     "A3_readPixels": 12,
+     "A4_longestTask": [
+      96,
+      "talk open (mocha)"
+     ],
+     "A10_idle_p50": 9,
+     "errs": []
+    }
+   },
+   "4x": {
+    "before": {
+     "A1_maxHandler": [
+      1129,
+      "tab feed"
+     ],
+     "A2_delay_p95": 180,
+     "A2_delay_max": 391,
+     "A3_toDataURL": 98,
+     "A3_readPixels": 60,
+     "A4_longestTask": [
+      1222,
+      "tab feed"
+     ],
+     "A10_idle_p50": 46,
+     "errs": []
+    },
+    "after": {
+     "A1_maxHandler": [
+      148,
+      "messages open"
+     ],
+     "A2_delay_p95": 181,
+     "A2_delay_max": 327,
+     "A3_toDataURL": 4,
+     "A3_readPixels": 10,
+     "A4_longestTask": [
+      352,
+      "talk open (mocha)"
+     ],
+     "A10_idle_p50": 53,
+     "errs": []
+    }
+   }
+  },
+  "files": "/tmp/harness/b27s/lf3/{before,after}-{1x,4x}.json"
+ },
+ {
+  "step": "LF4",
+  "day": "11-03",
+  "tool": "perf1.js desktop 12:00 (PHONE on SwiftShader) + test-LF4 frozen in-page round trips (portrait 15:00/21:00)",
+  "before": {
+   "desktop": {
+    "tris": 195312,
+    "avg": 531,
+    "max": 561
+   }
+  },
+  "after": {
+   "desktop": {
+    "tris": 195312,
+    "avg": 531,
+    "max": 557
+   }
+  },
+  "phoneParity": {
+   "portrait15": {
+    "calls": 535,
+    "tris": 227017,
+    "progs": 50,
+    "tex": "102 (103 after a HIGH/ULTRA visit: cached 64x64 blue-noise tile)"
+   },
+   "portrait21": {
+    "calls": 261,
+    "tris": 135201,
+    "progs": 50
+   },
+   "postShaderVsStart": "0 px differ (max diff 0) at 15:00 and 21:00",
+   "roundTrip": "0 px differ"
+  },
+  "tris": "PHONE +0",
+  "progs": "PHONE +0, HIGH +0, ULTRA +0 (uniform branches; no SAO/bloom built)",
+  "ultra": {
+   "draws": "+0 (shadow 4096, MSAA target, 16 taps, dither, x1.6 far, x2 density at boot)",
+   "rtMB_1100x820": 169.6,
+   "rtMB_2560x1440": 143.5,
+   "drawnMP_2560x1440": 8.29
+  },
+  "high": {
+   "draws": "+0",
+   "rtMB_1920x1080": 99.2
+  }
+ },
+ {
+  "step": "LF5",
+  "day": "11-01 (perf1 default)",
+  "tool": "perf1.js desktop default view, backup-LF5.html vs merged index.html",
+  "before": {
+   "desktop": {
+    "avg": 56,
+    "max": 82,
+    "tris": 23232
+   }
+  },
+  "after": {
+   "desktop": {
+    "avg": 56,
+    "max": 69,
+    "tris": 13140
+   }
+  },
+  "delta": "0 draws, 0 programs, 0 textures: LF5 is DOM/CSS only (name cards, bubble arbiter, context button, notice lane); tris/max vary with the live scene between runs",
+  "progs": "unchanged (no new materials)",
+  "note": "cafe front measured separately: 360 calls on the backup (over the 250 budget), pre-existing; SwiftShader stalls frames 2-3 s there"
+ }
+]

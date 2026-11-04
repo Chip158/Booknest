@@ -1,0 +1,11 @@
+const {chromium}=require('playwright');const fs=require('fs');
+const three=fs.readFileSync('/tmp/three/node_modules/three/build/three.min.js','utf8');
+(async()=>{const b=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+  const ctx=await b.newContext({viewport:{width:393,height:852},isMobile:true,hasTouch:true,deviceScaleFactor:2});const p=await ctx.newPage();
+  await p.route('**/three.min.js',r=>r.fulfill({body:three,contentType:'application/javascript'}));
+  await p.goto('file:///home/user/Booknest/ghost-town/index.html');await p.waitForTimeout(3500);
+  const tabs=await p.evaluate(()=>[...document.querySelectorAll('#panel button')].map(b=>(b.dataset.tab||'')+'|'+b.textContent.trim()).join(' ; '));console.log(tabs);
+  await p.evaluate(()=>{document.querySelector('#bookBtn').click()});await p.waitForTimeout(500);
+  await p.evaluate(()=>{const t=[...document.querySelectorAll('#panel button')].find(b=>b.dataset.tab==='set'||/⚙/.test(b.textContent));if(t)t.click()});await p.waitForTimeout(600);
+  await p.evaluate(()=>{const e=document.querySelector('#tab-set [data-t="dots"]');if(e)e.scrollIntoView({block:'center'})});await p.waitForTimeout(400);
+  await p.screenshot({path:'/tmp/harness/s1/settings-portrait.png'});await b.close()})();

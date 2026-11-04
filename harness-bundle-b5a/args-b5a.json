@@ -1,0 +1,64 @@
+{
+ "label": "b5a",
+ "sizeKB": 1830,
+ "steps": [
+  {
+   "id": "B35",
+   "title": "Gathering, field notes, fishing, the crab pot and crow trinkets"
+  },
+  {
+   "id": "B39",
+   "title": "The Fogwell condo"
+  },
+  {
+   "id": "B40",
+   "title": "Townsfolk homes, ghost friends and the October layer"
+  }
+ ],
+ "tracks": [
+  {
+   "name": "A",
+   "ids": [
+    "B35",
+    "B40"
+   ]
+  },
+  {
+   "name": "B",
+   "ids": [
+    "B39"
+   ]
+  }
+ ],
+ "after": [],
+ "extra": {
+  "B35": "Time budget about 90 minutes.",
+  "B39": "The owner asked for a sophisticated condo build-out with multiple residents who each have their own rooms. Use LF1's immersive interior rules and the interior kit look (Addendum S, B27Ta). Time budget about 150 minutes.",
+  "B40": "Time budget about 120 minutes. The October layer must look like Halloween-town in the Pacific Northwest, in the Addendum S autumn style."
+ },
+ "notes": "BATCH 5A ON A SECOND MACHINE (Nov 4). Base = /tmp/harness/base-b5a.html = the PUBLISHED look-and-feel build (commit 80aa956; the owner plays it with a real save). On the main machine, batch 4 (Mocha's inner life, wants, workshop, cabin visits, nest, Wendell II, records) is being integrated and the look polished at the same time; the orchestrator will 3-way merge this batch afterwards (common base 80aa956). Follow the look-and-feel CONVENTIONS from /tmp/harness/lookfeel/plan.md sections 4-5: add world objects via worldAdd(o) (never scene.add after boot), register late materials with PREWARM.add, interiors follow LF1's immersive rules (IN, rooms; characters inside appear only inside), every bubble/notice goes through LF5's pop-up manager (one bubble at a time, the notices lane, quiet while busy), controls are v3 (never touch CTL internals; camera moments push CAM layers), Mocha's size helpers mFloatY/mSeatY (LF2), quality tiers via TIER (LF4), and Addendum S art direction (/tmp/harness/style/addendum-S.md; the reference images are not on this machine). Batch-4 systems (B28-B34) are NOT in this base: where a step needs them (Mocha's wants, day plan, bonds), call guarded and list INTEGRATION items. Keep camera/HUD/rooms changes minimal and list them as INTEGRATION items. Lossless save migration. NEVER revert the three.js loader or the split #err texts; never bring back rotate buttons or girl-coded options.",
+ "outOfScope": "batch 4 features (integrated on the main machine), shifts/favors/Town tab (B36), the town economy and Mocha's jobs (B37), the council and petitions (B38), sky/weather/holiday lights/winter market/quality tiers (B41), the art critique loop (B42)",
+ "qaShots": "fishing from a pier at 16:00, the condo exterior and one unit inside, a townsperson's home at night, Lantern Square on Oct 31 at 19:00",
+ "lenses": [
+  {
+   "key": "state",
+   "prompt": "LENS: state, migration and runtime. Saves from 80aa956 (play the base for a few game hours via hooks), e7d8990 and the old batch-2 save (/tmp/harness/batch2-publish.html) load in the new build with nothing lost; catchUp over 3 days; unbounded arrays (field notes, catches, trinkets, condo units, homes); the db doc size (remoteState under 256KB after 30 simulated days); timers while hidden; per-frame allocation; shader recompiles and PREWARM; draws per fixed view vs the base on PHONE; worldAdd/IN compliance (nothing new draws inside rooms it does not belong to)."
+  },
+  {
+   "key": "outdoors",
+   "prompt": "LENS: gathering, field notes, fishing, the crab pot and crow trinkets (B35). Do they work for the owner's walker and for Mocha autonomously, feel cozy and rewarding, persist, and stay cheap? Fishing spots and the crab pot on the piers vs the orca (LF2's sea must not collide), the peanut dish and crows at the cabin porch. Screenshots to {OUT}/b35/."
+  },
+  {
+   "key": "condo",
+   "prompt": "LENS: the Fogwell condo (B39): exterior (Addendum S style), entering through the door into LF1's immersive interior, floors and units, residents with their own rooms and lives, the vacant unit the owner can rent as a second home (decorate mode works there), new townsfolk moving in; lazy interior builds and disposal; perf. Screenshots to {OUT}/b39/."
+  },
+  {
+   "key": "homes",
+   "prompt": "LENS: townsfolk homes, ghost friends and the October layer (B40). Townsfolk go home at night into their homes; ghost friends feel spooky-cute and original; the October layer (test with DAY=10-20 and 10-31) turns the town into Halloween-town PNW in the Addendum S style and switches off cleanly in November; nothing leaks indoors. Screenshots to {OUT}/b40/."
+  },
+  {
+   "key": "playtest",
+   "prompt": "LENS: playtest as the owner on an iPhone (393x852) and the Duo (900x1000) with controls v3: fish from a pier, check the crab pot, leave peanuts for the crows, visit the condo and peek at the vacant unit, visit a townsperson's home at night, fake the date to Oct 31 and walk the town, then reload. Report anything confusing, broken, ugly or annoying, with screenshots in {OUT}/play/."
+  }
+ ]
+}
