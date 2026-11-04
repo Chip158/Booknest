@@ -1491,7 +1491,7 @@ function postInfo(){const U=post.uniforms,f=TIER.f;return{ts:U.ts.value,taps:U.t
 // test helper: feed a frame-interval series (ms) through ADAPT at the current tier; returns the steps taken
 function tierAdaptTest(o){const T=TIER,out=[],f0=ADAPT.from;T.adSW=1;ADAPT.from=0;T.ad={t:0,n:0};let now=performance.now();for(const ms of(o&&o.samples)||[]){now+=ms;const k=T.dn.length;tierAdapt(ms,now);if(T.dn.length>k){out.push(T.dn[T.dn.length-1]);ADAPT.from=0}}ADAPT.from=f0;T.adSW=0;return{steps:out,info:tierInfo()}}
 cv.addEventListener('webglcontextrestored',()=>{if(TIER.n>1)tierSet(1,{keep:1,now:1})});// after a lost context the session continues at PHONE
-STYLE.hooks.push(m=>{const g0=m.gfx;Object.assign(m,{tier:v=>v===undefined?tierInfo():tierSet(v,{now:1}),tierGuess:c=>tierGuess(c),tierCaps:()=>tierCaps(),tierAdapt:o=>tierAdaptTest(o),tierMem:(w,h,n)=>w?tierMemAt(w,h,n):tierMem(),post:()=>postInfo(),lf4dbg:()=>({renderer,post,postScene,postCam,rt,scene,camera,TIER}),
+STYLE.hooks.push(m=>{const g0=m.gfx;Object.assign(m,{tier:v=>v===undefined?tierInfo():tierSet(v,{now:1}),tierGuess:c=>tierGuess(c),tierCaps:()=>tierCaps(),tierAdapt:o=>tierAdaptTest(o),tierMem:(w,h,n)=>w?tierMemAt(w,h,n):tierMem(),post:Object.assign(()=>postInfo(),{uniforms:post.uniforms,material:post}),/* merge glue: __mocha.post() is LF4's info; .uniforms keeps round-1 callers working */lf4dbg:()=>({renderer,post,postScene,postCam,rt,scene,camera,TIER}),
  gfx:()=>{const r=g0?g0():{},q=tierMem();return Object.assign(r,{tier:TIER.n,tierName:TIER.name,drawnMP:+q.mp.toFixed(2),rtMB:+q.mb.toFixed(1)})}})});
 const CAPM=new THREE.MeshBasicMaterial({color:'#2A1C18'});CAPM.name='CAPM';// LF1 pre-block: the dark cap on the top faces of back and side walls (the cutaway's section line)
 class ToonM extends THREE.MeshToonMaterial{constructor(o){o=Object.assign({},o||{});delete o.flatShading;delete o.shininess;delete o.specular;super(o);this.gradientMap=TOONG}}
@@ -3554,7 +3554,7 @@ function bannerHide(){try{if(BAN.el&&HUD.S.banner&&HUD.S.banner.on){clearTimeout
 function doorBanner(d){if(!BAN.el||isQuiet)return;const p=d.p,o=occOf(p.id),who=o.ids.map(i=>AG[i]).filter(a=>a&&a.kind!=='you').map(a=>a.kind==='keeper'?KB[a.id].name:a.id==='mocha'?'Mocha':'Wendell');
   const parts=[p.name];if(who.length)parts.push(who.slice(0,2).join(' & ')+(who.length>1?' are in':' is in'));if(p.hours)parts.push(isOpen(p)?'open till '+fmtH(p.hours[1]):'closed');
   const sv=S.you.doors||(S.you.doors=[]),first=!sv.includes(p.id);if(first){sv.push(p.id);if(sv.length>40)sv.splice(0,sv.length-40)}
-  BAN.el.innerHTML=esc(parts.join(' · '))+(first?' <b>✨ first visit!</b>':'');BAN.el.classList.toggle('first',first);$('#toast').classList.remove('show');HUD.show('banner',true);clearTimeout(BAN.t);BAN.t=setTimeout(()=>HUD.show('banner',false),2500)}
+  parts.shift();if(first)parts.push('✨ first visit');popName(p,parts.join(' · ')||ncSub(p),true)}// LF5: a paper name card (title + one line) in the same banner slot
 // ---------- door notes (pool of 4, atlas cells, readable in the near pill) ----------
 function notesSync(){const want=[];for(const k in WLT.brk){const b=WLT.brk[k];if(Date.now()<b.until)want.push([k,b.label])}if(!mochaHome()){const p=G.mode==='trip'?null:byId[G.act&&G.act.p];want.push(['home',G.mode==='trip'?'off on a little trip! back soon -M':`out at ${p&&p.id!=='home'?p.name.replace(/^the /i,''):'the neighborhood'} -M`])}
   if(!(W.dest==='inside'||W.dest==='yard'||W.dest==='porch'))want.push(['neighbor',`out at ${wWhere().replace(/^out walking$/,'a stroll')} -W`]);
@@ -5147,7 +5147,10 @@ function setScreen(topic){const t=byId.home.screenTex;if(!t)return;const g=t.ima
 const MOVIE_LEN=150;let MOVIE=null;
 function keeperAt(pid){return KEEPERS.find(k=>k.shop===pid&&(TN[k.id]&&TN[k.id].b?TN[k.id].st==='work':k.obj.visible))}
 // speech bubbles stay on screen: the box is clamped inside the viewport (size cached per line; no per-frame layout reads)
-function bubPos(el,x,y){el._x=x;el._y=y;if(!el._w){el.style.left='0px';el._w=el.offsetWidth||120}const w=el._w,h=el._h||(el._h=el.offsetHeight||40),hw=w/2+8;el.style.left=(innerWidth<2*hw?innerWidth/2:clamp(x,hw,innerWidth-hw))+'px';el.style.top=bubBand(el,w,h,Math.max(h+8,y))+'px'}
+function bubMeasure(el){let c=bubMeasure.c;if(!c){c=bubMeasure.c=document.createElement('canvas').getContext('2d');c.font='14px ui-rounded,"SF Pro Rounded","Nunito","Segoe UI",system-ui,sans-serif'}// LF5: no forced layout per new line
+  const mw=Math.min(232,innerWidth*.68)-24,tw=c.measureText(el.textContent||'').width*(el.classList.contains('think')?1.03:1),ln=Math.max(1,Math.ceil(tw*1.06/mw));el._w=Math.round(Math.min(tw,mw)+26);el._h=Math.round(ln*18.2+16)}
+function bubPos(el,x,y){el._x=x;el._y=y;const fr=!el._w;if(fr)bubMeasure(el);const w=el._w,h=el._h||40,hw=w/2+8;let L=innerWidth<2*hw?innerWidth/2:clamp(x,hw,innerWidth-hw);el.style.left=L+'px';let Y=bubBand(el,w,h,Math.max(h+8,y));
+  if(!fr&&el._sl!=null&&el.classList.contains('show')&&Math.abs(L-el._sl)<160&&Math.abs(Y-el._st)<160){L=el._sl+(L-el._sl)*.35;Y=el._st+(Y-el._st)*.35}el._sl=L;el._st=Y;el.style.left=L+'px';el.style.top=Y+'px'}// LF5: eased follow, snap on a new line
 function bubNow(el){if(el._x!=null)bubPos(el,el._x,el._y)}
 // speech bubbles stay below the top HUD bands (status pill, sky, wallet, speaker...): rects cached every .5 s, no per-frame allocation
 const BUBR=[];let bubRT=-1e9;
@@ -6851,7 +6854,7 @@ txOnNew=m=>{if(m.from==='him'){if(msgOpen&&document.visibilityState==='visible')
     const fl=!msgOpen&&Date.now()-TX.viaBar<5*60e3&&getComputedStyle($('#chatwrap')).display!=='none';
     if(fl)showHimMsg(m.text);
     if(fl&&!m.pic&&document.visibilityState==='visible'){m.read=true;txBadge()}
-    else{txBadge(true);if(!isQuiet){toast(`💬 Mocha: ${m.text.length>110?m.text.slice(0,108)+'…':m.text}`);const el=$('#toast');el.classList.add('tap');el.onclick=()=>{el.classList.remove('show','tap');openMsgs()}}}}}
+    else{txBadge(true);if(!isQuiet){toast(`💬 Mocha: ${m.text.length>110?m.text.slice(0,108)+'…':m.text}`,{tap:openMsgs})}}}}
   if(msgOpen)renderMsgs()};
 txRefresh=()=>{txBadge();if(msgOpen)renderMsgs();chatPHupdate()};
 $('#msgBtn').onclick=()=>msgOpen?closeMsgs():openMsgs();$('#msgClose').onclick=closeMsgs;
@@ -6961,9 +6964,11 @@ function frameUI(dt){
   if(camS.mode==='walk'&&!onScreen&&G.mode!=='trip'&&(!IN.on||IN.see('mocha'))&&IN.k<.5){const cx=innerWidth/2,cy=innerHeight/2;let dx=bp.x-cx,dy=bp.y-cy;if(!bp.vis){dx=-dx;dy=-dy}const m=Math.max(Math.abs(dx)/(cx-34),Math.abs(dy)/(cy-90),1e-3),ox=dx/m,oy=dy/m;if(edge.style.display!=='flex'||(EDGE.t-=dt)<=0){EDGE.t=.5;EDGE.r=[...document.querySelectorAll('#dock>*,#zoom,.stick,#near,.hudS,.hudMore,body.panelOpen #panel,body.msgOpen #msgs')].map(e=>e.getBoundingClientRect()).filter(r=>r.width).map(r=>[r.left-23,r.top-23,r.right+23,r.bottom+23])}let k=1;while(k>.05&&EDGE.r.some(r=>{const x=cx+ox*k,y=cy+oy*k;return x>r[0]&&x<r[2]&&y>r[1]&&y<r[3]}))k-=.04;edge.style.display='flex';edge.style.left=(cx+ox*k)+'px';edge.style.top=(cy+oy*k)+'px'}else edge.style.display='none';
   if(!IN.on&&UIQ.level<2&&performance.now()>=UIQ.hot){
   lblT-=dt;const decl=lblT<=0;if(decl){lblT=.2;LCAND.length=0;if(!LBOX.length){PLACES.forEach(q=>{if(q.w&&q.d&&q.h&&q.kind!=='needle'&&q.kind!=='wheel'&&q.kind!=='home')LBOX.push(q)});LBOX.push(HOCC[0],HOCC[1])}}
-  for(const L of labels){const p=L.p,el=L.el;const y=p.kind==='needle'?p.deckY+16:p.kind==='wheel'?33:p.kind==='spot'?4:p.kind==='park'?6:p.kind==='hill'?9:p.kind==='troll'?9:p.kind==='station'?p.h+8.4:(p.h||6)+(p.id==='home'?9:3);const pp=project(p.x,y,p.z);el.style.left=pp.x+'px';el.style.top=pp.y+'px';if(!decl)continue;
+  for(const L of labels){const p=L.p,el=L.el;if(p!==POP.front&&el.style.opacity!=='1')continue;// LF5
+    const y=p.kind==='needle'?p.deckY+16:p.kind==='wheel'?33:p.kind==='spot'?4:p.kind==='park'?6:p.kind==='hill'?9:p.kind==='troll'?9:p.kind==='station'?p.h+8.4:(p.h||6)+(p.id==='home'?9:3);const pp=project(p.x,y,p.z);el.style.left=pp.x+'px';el.style.top=pp.y+'px';if(!decl)continue;
     const cp=camera.position,dist=Math.hypot(cp.x-p.x,cp.z-p.z),w=el._w||(el._w=el.offsetWidth)||120,rx=pp.x-w/2,ry=pp.y-22;
-    let ok=pp.vis&&dist<(camS.mode==='walk'?70:120)&&pp.dr<(p.h||4)&&rx>=4&&rx+w<=innerWidth-4&&ry>=4&&pp.y<=innerHeight-4&&!(p.w&&p.d&&p.kind!=='home'&&inBuilding(p,cp.x,cp.z));
+    let ok=pp.vis&&dist<(camS.mode==='walk'?70:120)&&pp.dr<(p.h||4)&&rx>=4&&rx+w<=innerWidth-4&&ry>=4&&pp.y<=innerHeight-4&&!(p.w&&p.d&&p.kind!=='home'&&inBuilding(p,cp.x,cp.z));if(p!==POP.front)ok=false;// LF5
+
     if(ok){for(const B of LBOX){if(B!==p&&B.of!==p&&!(B.of&&(B===HOCC[1]?B.of.occT:B.of.occH)>0)&&!inBuilding(B,cp.x,cp.z)&&occSeg(B,cp.x,cp.y,cp.z,p.x,y,p.z)){ok=false;break}}}
     if(ok&&CTL.room&&CTL.room!==p){const R=CTL.room.kind==='home'?HOCC[0]:CTL.room;if(inBuilding(R,cp.x,cp.z)||occSeg(R,cp.x,cp.y,cp.z,p.x,y,p.z))ok=false}
     if(L.ls!==(L.ls=camS.mode==='walk'?Math.round(clamp(.66+dist/45,.75,1)*20)/20:1))el.style.setProperty('--ls',L.ls);
@@ -6973,7 +6978,8 @@ function frameUI(dt){
     if(bubble.style.visibility!=='hidden'){const fp=project(G.x,mocha.position.y,G.z);LTK.push(bp.x-45,bp.y,90,Math.max(30,fp.y-bp.y));if(bubble.classList.contains('show')){const q=bubble.getBoundingClientRect();LTK.push(q.left,q.top,q.width,q.height)}}
     LCAND.sort(lblCmp);for(const L of LCAND){if(!lblHit(L.rx,L.ry,L.rw,22)){L.on=true;LTK.push(L.rx,L.ry,L.rw,22)}}
     for(const L of labels){const o=L.on?'1':'0';if(L.el.style.opacity!==o)L.el.style.opacity=o}}}
-  if(camS.mode==='walk'){const dm=Math.hypot(YOU.x-G.x,YOU.z-G.z),dw=Math.hypot(YOU.x-W.x,YOU.z-W.z);let tx=typeof talkPill==='function'?talkPill():'';const ip=inPill();if(ip){if(!IN.on&&tx)INX.pillK=null;else{tx=ip;$('#near').classList.remove('tk')}}if(tx);else if(dm<12&&G.mode!=='trip'&&IN.see('mocha'))tx=`👻 Mocha is right here · ${statusText()}`;else if(W.visible&&dw<9)tx=`🦝 Wendell · ${W.doing}`;else{const nt=noteNear(YOU.x,YOU.z);if(nt)tx=`📝 a note on the door: “${nt}”`}const nr=$('#near');if(nr.textContent!==tx){const k0=nr.textContent.codePointAt(0)|0;nr.textContent=tx;nr.style.display=tx?'block':'none';if(HUD.n&&k0!==(tx.codePointAt(0)|0))try{HUD.layout()}catch(e){}}else nr.style.display=tx?'block':'none'}}
+  if(camS.mode==='walk')popPrompt();// LF5: one context button (talk, go outside, stand, knock, sit, enter, shop, read a note)
+  popTick(dt)}// LF5: name cards, one world bubble, the notice lane, quiet while busy
 applyOutfit();applyGear();applyPower();applyPaintings();labels.forEach(({p,el})=>{if(p.hours&&!isOpen(p))el.textContent=el.dataset.base+' · closed'});hud();renderTab();connect();
 // what he was doing when the page went away (reload / iOS tab eviction): pick it back up if he was only gone a few minutes
 function nowSnap(){if(!G.rs)return S.now||null;const a=G.act;if(!a||!a.p||a.npc||S.trip||(G.mode!=='activity'&&G.mode!=='travel')||/^(trip|tripback|away|ferry|ride|movie|bikeride)$/.test(a.fx||''))return null;let j;try{j=JSON.stringify(a,(k,v)=>k==='face'||k==='bd'?undefined:v)}catch(_){return null}return j.length<3000?{x:+G.x.toFixed(1),z:+G.z.toFixed(1),m:G.mode,u:G.mode==='activity'?Date.now()+Math.max(0,G.timer)*1e3:0,a:JSON.parse(j)}:null}
@@ -7741,6 +7747,140 @@ Object.assign(window.__mocha,{TK,npcReply,newsPush,spreadNews,talkScan,talkOpen,
   askYou:(id,qid,ans)=>tkAnswer(id,qid,ans),FACTS,mochaNow,walk:()=>{if(camS.mode!=='walk')setCamMode('walk');return camS.mode},you:()=>({name:youName(),home:S.you.hometown,rel:S.you.rel,facts:S.you.facts,hangAsk:S.mem.hangAsk||null})});
 Object.assign(window.__mocha.town,{news:()=>(S.town.news||[]).map(n=>({t:n[0],kind:n[1],text:n[2],place:n[3],knowers:CAST.filter(c=>nHas(n[4],nBit(c.id))).map(c=>c.id),mocha:nHas(n[4],NB_M),you:nHas(n[4],NB_U)})),
   spread:(days=1)=>{const a=spreadNews(+days||1);save();return{added:a,news:window.__mocha.town.news()}},push:(kind,text,place)=>newsPush(kind||'misc',text,place)});
+// ==== LF5 elegant pop-ups: ONE calm layer over the world. Name cards (the 'banner' slot), one world bubble (arbiter), the context button (#near), the notice lane (#toast queue); quiet while busy ====
+const POP={busy:false,q:null,ft:0,front:null,area:null,mp:undefined,fp:null,pk:null,pl:'',pa:null,
+  nc:{on:0,t:'',s:'',key:null,until:0,off:0,t0:-1e9,seen:{},q:null},
+  ntc:{cur:null,q:[],until:0,gap:0,rl:{},n:0,merged:0},bub:{who:null,el:null},bands:[],bT:-1e9,etx:null,stat:{maxB:0,maxN:0,hud:0}};
+const POP_AREA={'Downtown':'Main Street and the shops','Lantern Square':'the heart of town','Waterfront':'piers, ferries and gulls','Maple Row':'home sweet home','Uptown':'Fog Street and the Needle','Eastside':'the park and the station'};
+const POP_KIND={park:'a stroll under the maples',needle:'the best view in town',wheel:'one more go around',spot:'a quiet spot',hill:'a little climb',lighthouse:'the light by the water'};
+function popBusy(){const c=document.body.classList;return SHEETS.m.size>0||TK.open||c.contains('panelOpen')||c.contains('msgOpen')||c.contains('talking')||c.contains('ylOn')||c.contains('decoOn')||c.contains('lbOpen')||!!(SHOP&&SHOP.mode)||!!mapOpen}
+// ---- name cards (paper, serif title + one line) in the HUD 'banner' slot: ~2.5 s, then a calm fade ----
+function ncSub(p){const D={home:"Mocha's house · 13 Maple Row",neighbor:"Wendell's cottage · 11 Maple Row",cabin:'your log cabin · 12 Maple Row'};if(D[p.id])return D[p.id];
+  if(p.hours)return isOpen(p)?'open till '+fmtH(p.hours[1]):'closed · opens '+fmtH(p.hours[0]);return POP_KIND[p.kind]||''}
+function ncShow(t,s,key,force){const N=POP.nc,now=performance.now();if(!BAN.el||isQuiet||!t)return false;
+  if(POP.busy){N.q={t,s,key,at:now};return false}
+  if(N.on&&N.key===key&&!N.off){N.until=now+2500;if(N.s!==s){N.s=s;const e=BAN.el.querySelector('.ncS');if(e)e.textContent=s}return true}
+  BAN.el.innerHTML=`<b class="ncT">${esc(t)}</b>`+(s?`<span class="ncS">${esc(s)}</span>`:'');BAN.el.classList.add('nc');BAN.el.classList.remove('out','first');
+  N.on=1;N.off=0;N.t=t;N.s=s;N.key=key;N.until=now+2500;N.t0=now;if(key)N.seen[key]=now;HUD.show('banner',true);ntcPlace();try{sfx('page')}catch(e){}return true}
+function popName(p,sub,force){if(typeof p==='string')p=byId[p];if(!p||!p.name)return false;const N=POP.nc,now=performance.now();
+  if(!force&&N.seen[p.id]&&now-N.seen[p.id]<45e3)return false;return ncShow(p.name,sub!=null?sub:ncSub(p),p.id,force)}
+function ncTick(now){const N=POP.nc;if(!N.on)return;if(!N.off&&now>=N.until){N.off=now+450;BAN.el.classList.add('out')}else if(N.off&&now>=N.off){N.on=0;N.off=0;N.key=null;HUD.show('banner',false);ntcPlace()}}
+// ---- notices: one lane under the status pill, a queue, 2.5 s each, merged when similar, rate-limited, tap to dismiss ----
+const ntcKey=t=>t.replace(/[+\-]?\d[\d,.]*/g,'#');
+function ntcPush(t,o){t=String(t||'').trim();if(!t||isQuiet)return;o=o||{};const N=POP.ntc,k=ntcKey(t),now=performance.now(),num=(t.match(/\d[\d,]*/g)||[]);
+  const add=/coin|🪙|^\+/.test(t)&&num.length===1;
+  const m=N.cur&&N.cur.k===k&&now<N.until-200?N.cur:N.q.find(x=>x.k===k);
+  if(m){if(add&&m.add){const a=+(m.t.match(/\d[\d,]*/)[0].replace(/,/g,'')),b=+num[0].replace(/,/g,'');m.t=m.t.replace(/\d[\d,]*/,String(a+b))}else m.t=t;m.n++;N.merged++;if(o.tap)m.tap=o.tap;
+    if(m===N.cur){const el=$('#toast');el.textContent=m.t;N.until=Math.max(N.until,now+1500)}return}
+  if(N.rl[k]&&now-N.rl[k]<8000&&N.rl[k+'|t']===t)return;// the same line again within 8 s: once is enough
+  N.q.push({t,k,n:1,add,tap:o.tap||null,at:now});if(N.q.length>6)N.q.shift()}
+function ntcShow(x){const N=POP.ntc,el=$('#toast'),now=performance.now();N.cur=x;N.until=now+2500;N.rl[x.k]=now;N.rl[x.k+'|t']=x.t;N.n++;bannerHideSoft();
+  el.textContent=x.t;el.classList.toggle('tap',true);el.onclick=e=>{e.stopPropagation();const f=N.cur&&N.cur.tap;ntcHide();if(f)try{f()}catch(err){}};el.classList.add('show');ntcPlace();try{sfx('tok')}catch(e){}}
+function ntcHide(back){const N=POP.ntc,el=$('#toast');if(back&&N.cur)N.q.unshift(N.cur);N.cur=null;N.gap=performance.now()+350;el.classList.remove('show');el.onclick=null}
+function ntcTick(now){const N=POP.ntc;if(N.cur&&now>=N.until)ntcHide();if(!N.cur&&!POP.busy&&N.q.length&&now>=N.gap)ntcShow(N.q.shift())}
+// the lane sits under the name card when both are up (one rect read per change, never per frame)
+function ntcPlace(){const el=$('#toast');el.style.top='';if(!POP.nc.on||!POP.ntc.cur||!BAN.el)return;const b=BAN.el.getBoundingClientRect(),r=el.getBoundingClientRect();if(b.width&&r.top<b.bottom+6&&r.bottom>b.top-6&&r.left<b.right&&r.right>b.left)el.style.top=Math.round(b.bottom+8)+'px'}
+function bannerHideSoft(){}// name cards and notices share the top centre now: they stack instead of hiding each other
+// ---- quiet while busy: cards, sheets, menus, talk, Your Look, decorate and the map pause names, bubbles and notices ----
+function popPause(){const N=POP.ntc;if(N.cur)ntcHide(true);const C=POP.nc;if(C.on){C.q={t:C.t,s:C.s,key:C.key,at:performance.now()};C.on=0;C.off=0;HUD.show('banner',false)}}
+function popResume(){const N=POP.ntc;N.gap=performance.now()+600;const q=POP.nc.q;POP.nc.q=null;if(q&&performance.now()-q.at<6000)setTimeout(()=>{if(!POP.busy)ncShow(q.t,q.s,q.key)},400)}
+// ---- what is in front of you (4 Hz): name cards on arrival, the faint label, areas, and Mocha's arrivals in follow mode ----
+function popFronts(){if(POP.fp)return POP.fp;POP.fp=[];for(const p of PLACES){if(!p.name||p.lot||p.kind==='lot'||p.id==='cabin'&&!byId.cabin)continue;const f=p.w&&p.d?toWorld(p,0,p.d/2+1):{x:p.x,z:p.z};POP.fp.push({p,x:f.x,z:f.z,r:p.w&&p.d?6:8})}return POP.fp}
+function popScan(){const now=performance.now();
+  if(camS.mode==='walk'&&!IN.on){let best=null,bd=1e9;for(const f of popFronts()){const d=Math.hypot(YOU.x-f.x,YOU.z-f.z);if(d<f.r+(POP.front===f.p?2:0)&&d<bd){let ok=true;try{ok=known(f.p)}catch(e){}if(ok){bd=d;best=f.p}}}
+    if(best!==POP.front){POP.front=best;if(best&&!POP.busy)popName(best)}
+    let ar=null,ad=1e9;for(const D of DISTRICTS){const d=Math.hypot(YOU.x-D[1],YOU.z-D[2]);if(d<ad){ad=d;ar=D}}
+    if(ar&&ad<34&&ar!==POP.area){const was=POP.area;POP.area=ar;if(was&&!POP.front&&!POP.busy&&now-POP.nc.t0>4000&&(!POP.nc.seen[ar[0]]||now-POP.nc.seen[ar[0]]>9e4))ncShow(ar[0],POP_AREA[ar[0]]||'',ar[0])}}
+  else POP.front=null;
+  if(camS.mode==='follow'){const a=G.act,p=G.mode==='activity'&&a&&a.p&&byId[a.p]?a.p:null;if(p!==POP.mp){const was=POP.mp;POP.mp=p;if(p&&was!==undefined&&IN.see('mocha')&&!POP.busy){const d=a.doing&&!/\{/.test(a.doing)?'Mocha is '+a.doing:ncSub(byId[p]);ncShow(byId[p].name,d,'m:'+p)}}}
+  else if(POP.mp!==undefined&&camS.mode==='walk')POP.mp=undefined}
+// ---- one world bubble: Mocha first, then whoever you are talking to, then the nearest speaker; off-screen, unseen or HUD-overlapping bubbles never show ----
+const POPB=[{el:bubble,w:'mocha'},{el:bubble2,w:'wendell'},{el:$('#bubble3'),w:'k'},...NBP.map(b=>({el:b.el,w:'p',b}))];
+function popSplit(t){const W=t.split(/\s+/),P=[];let c='';for(const w of W){if(c&&(c+' '+w).length>52){P.push(c);c=w}else c=c?c+' '+w:w}if(c)P.push(c);return P.length?P:[t]}
+function popExt(s,sec){if(s.w==='mocha')bubbleT=Math.max(bubbleT,sec);else if(s.w==='wendell')wBubT=Math.max(wBubT,sec);else if(s.w==='k'){if(kBub)kBub.t=Math.max(kBub.t,sec)}else if(s.b)s.b.t=Math.max(s.b.t,sec)}
+function popPage(el){if(!el._pg)return;el._pi++;if(el._pi>=el._pg.length){el._pg=null;el.classList.remove('pg');return}const last=el._pi===el._pg.length-1;el._pgS=el._pg[el._pi]+(last?'':' ›');el.textContent=el._pgS;el._w=el._h=0;bubNow(el);el._pt=2.6;if(last)el.classList.remove('pg')}
+POPB.forEach(s=>{s.el.addEventListener('click',e=>{if(s.el._pg){e.stopPropagation();popPage(s.el)}})});
+function popBub(dt){const now=performance.now(),Wd=innerWidth,Hd=innerHeight,B=POP.bands;if(now-POP.bT>500){POP.bT=now;B.length=0;try{for(const b of HUD.bands())B.push(b.x,b.y,b.x+b.w,b.y+b.h);for(const e of [SHOP.tagEl,$('#toast')])if(e&&(e.classList.contains('on')||e.classList.contains('show'))){const r=e.getBoundingClientRect();if(r.width)B.push(r.left,r.top,r.right,r.bottom)}}catch(e){}}
+  const tk=TK.open?TK.id:null;let best=null,bs=1e9;
+  for(const s of POPB){const el=s.el;s.who=null;let obj=null,live=false;
+    if(s.w==='mocha'){live=bubbleT>0;obj=mocha;s.who='mocha'}else if(s.w==='wendell'){live=wBubT>0;obj=wObj;s.who='wendell'}else if(s.w==='k'){live=!!kBub&&kBub.t>0;if(kBub&&kBub.k){obj=kBub.k.obj;s.who=kBub.k.id||kBub.k.name||'npc'}}else{live=s.b.t>0&&!!s.b.k;if(s.b.k){obj=s.b.k.obj;s.who=s.b.k.id||s.b.k.name||'npc'}}
+    s.why='idle';if(!live||!el.classList.contains('show'))continue;
+    const tx=el.textContent;if(tx!==el._pgS){if(tx.length>58){const P=popSplit(tx);el._pg=P;el._pi=0;el._pgS=P[0]+' ›';el.textContent=el._pgS;el._w=el._h=0;bubNow(el);el._pt=2.6;el.classList.add('pg');popExt(s,P.length*2.6+.4)}else{el._pg=null;el._pgS=tx;el.classList.remove('pg')}}
+    else if(el._pg&&(el._pt-=dt)<=0)popPage(el);
+    s.why='hidden';if(el.style.visibility==='hidden')continue;s.why='unseen';
+    if(s.who==='mocha'?!IN.see('mocha')||G.mode==='trip':s.who==='wendell'?!IN.see('wendell')||!W.visible:obj&&(!obj.visible||(s.who&&s.who!=='npc'?!IN.see(s.who):!inObjSeen(obj))))continue;// behind a wall or in another room: not shown
+    s.why='offscreen';const x=el._x,y=el._y;if(x==null||x<6||x>Wd-6||y<14||y>Hd-6)continue;// the speaker is off-screen (Mocha keeps the edge chip)
+    s.why='busy';if(POP.busy&&s.who!==tk)continue;s.why='hud';
+    const L=el._sl!=null?el._sl:x,T=el._st!=null?el._st:y,w=el._w||120,h=el._h||40,a0=L-w/2,a1=T-h-2,a2=L+w/2,a3=T+8;let hit=false;
+    for(let i=0;i<B.length;i+=4)if(a0<B[i+2]&&a2>B[i]&&a1<B[i+3]&&a3>B[i+1]){hit=true;break}
+    if(hit){POP.stat.hud++;continue}
+    s.why='rank';const sc=s.who==='mocha'?0:s.who===tk?1:2+Math.hypot(x-Wd/2,y-Hd*.45)/3000;if(sc<bs){bs=sc;best=s}}
+  for(const s of POPB){const off=s!==best;if(s.el._off!==off){s.el._off=off;s.el.classList.toggle('popOff',off)}}
+  POP.bub.who=best?best.who:null;POP.bub.el=best?best.el:null}
+// Mocha off-screen: the edge chip carries his line
+function popEdge(){const e=POP.edge||(POP.edge=$('#edge'));let t=POP.etx;if(!t||!e.contains(t)){t=POP.etx=document.createElement('span');t.className='edT';e.appendChild(t)}
+  const on=e.style.display==='flex'&&bubbleT>0&&bubble.classList.contains('show')&&!POP.busy;if(on){const s=bubble.textContent;if(t.textContent!==s)t.textContent=s;const r=(parseFloat(e.style.left)||0)>innerWidth/2;if(t._r!==r){t._r=r;t.classList.toggle('l',r);t.classList.toggle('r',!r)}}if(t._on!==on){t._on=on;t.classList.toggle('on',on)}}
+// ---- the context button (#near): one paper button above the right thumb, only when facing something you can use ----
+function popPrompt(){const nr=$('#near'),now=performance.now();if(now<(POP.prT||0)){nr.style.display=POP.pl?'block':'none';return}POP.prT=now+125;let tx=typeof talkPill==='function'?talkPill():'',k=tx?'talk':null;POP.pa=null;
+  const ip=inPill();if(ip){if(!IN.on&&tx)INX.pillK=null;else{tx=ip;k='in';nr.classList.remove('tk')}}
+  if(!tx&&YOU.seat){tx='🧍 Stand up';k='stand'}
+  if(!tx&&KNOCK.el&&KNOCK.d&&HUD.S.knock&&HUD.S.knock.on){tx=KNOCK.el.textContent;k='knock';POP.pa=KNOCK.d}
+  if(!tx&&!TG.on){let bs=null,bi=-1,bd=1.9;if(!POP.sT||now>POP.sT){POP.sT=now+250;POP.sc=null;
+      for(const s of SEATS){const sp=s.p&&byId[s.p],inb=!!(sp&&sp.w&&INX.set&&INX.set.has(s.p)&&inBuilding(sp,s.x,s.z));if(IN.on?s.p!==IN.pid||!inb:inb)continue;const dd=Math.hypot(YOU.x-s.x,YOU.z-s.z);if(dd>bd+2.5)continue;for(let i=0;i<s.cap;i++){if(s.occ[i])continue;const q=seatSlot(s,i),d2=Math.hypot(YOU.x-q.x,YOU.z-q.z);if(d2<bd){bd=d2;bs=s;bi=i}}}POP.sc=bs?[bs,bi]:null}
+    if(POP.sc&&!POP.sc[0].occ[POP.sc[1]]){tx='🪑 Sit';k='sit';POP.pa=POP.sc}}
+  if(!tx&&!IN.on&&!TG.on){inEnt();let bp=null,bd=2.8;for(const q of INX.ENT){const d=inDoorOf(q.id);if(!d)continue;const dd=Math.hypot(YOU.x-d.wx,YOU.z-d.wz);if(dd<bd&&((d.wx-YOU.x)*Math.sin(YOU.yaw)+(d.wz-YOU.z)*Math.cos(YOU.yaw))>-.4&&(d.cab||!doorLocked(d))){bd=dd;bp=[q,d]}}
+    if(bp){tx='🚪 Enter '+bp[0].name.replace(/^the /i,'');k='enter';POP.pa=bp}}
+  if(!tx&&SHOP.in&&(!IN.on||SHOP.in===IN.pid)){tx='🛍 Shop';k='shop'}// B25's "see everything here" chip folds in here
+  if(!tx){const nt=noteNear(YOU.x,YOU.z);if(nt){tx='📝 Read the note';k='note';POP.pa=nt}}
+  POP.pk=k;POP.pl=tx;
+  if(nr.textContent!==tx){nr.textContent=tx;nr.style.display=tx?'block':'none';if(HUD.n)try{HUD.layout()}catch(e){}}else nr.style.display=tx?'block':'none'}
+function popPromptTap(e){const k=POP.pk,a=POP.pa;if(!k||k==='talk'||k==='in')return;e.stopImmediatePropagation();
+  if(k==='stand')youStand();else if(k==='knock'){if(a)doKnock(a.pid)}else if(k==='sit'){if(a)youSit(a[0],a[1])}else if(k==='note'){ntcPush('📝 “'+a+'”')}else if(k==='shop'){openAll(SHOP.in)}
+  else if(k==='enter'&&a){const [q,d]=a;INX.arm={k:'in',pid:q.id,d,until:inNow()+15000};if(Math.hypot(YOU.x-d.wx,YOU.z-d.wz)<1.6&&(d.cab||!doorLocked(d))){INX.arm=null;inStart(q.id,'you',d,'in')}else try{tapGo(d.wx+d.nx*.5,d.wz+d.nz*.5,{why:'door'})}catch(err){}}
+  POP.pk=null;POP.pl='';POP.prT=0;$('#near').style.display='none';$('#near').textContent=''}
+$('#near').addEventListener('click',popPromptTap,true);
+// ---- the frame hook (from frameUI) ----
+function popTick(dt){if(!POP.hk){POP.hk=1;try{popHooks(window.__mocha)}catch(e){}}const now=performance.now(),b=popBusy();
+  if(b!==POP.busy){POP.busy=b;document.body.classList.toggle('lf5busy',b);if(b)popPause();else popResume()}
+  const q=b||IN.on||camS.mode!=='walk';if(q!==POP.q){POP.q=q;document.body.classList.toggle('lf5q',q)}
+  if((POP.ft-=dt)<=0){POP.ft=.2;try{popScan()}catch(e){}}
+  ncTick(now);ntcTick(now);popBub(dt);popEdge();
+  let nb=0;for(const s of POPB)if(!s.el._off&&s.el.classList.contains('show'))nb++;if(nb>POP.stat.maxB)POP.stat.maxB=nb}
+toast=(t,o)=>{if(isQuiet)return;ntcPush(t,o)};
+{const st=document.createElement('style');st.textContent=`
+#bubble,#bubble2,#bubble3,.nbP{background:#FFF8EC;color:#3A2A20;border-radius:14px;padding:7px 12px;font-size:14px;line-height:1.3;max-width:min(232px,68vw);box-shadow:0 0 0 1px rgba(201,160,106,.55),0 4px 12px rgba(58,42,32,.16);transform:translate(-50%,-100%) scale(.88);transform-origin:50% 100%;transition:opacity .18s ease,transform .18s ease;will-change:transform}
+#bubble:after,#bubble2:after,#bubble3:after,.nbP:after{border-top-color:#FFF8EC}
+#bubble.show,#bubble2.show,#bubble3.show,.nbP.show{transform:translate(-50%,-100%) scale(1)}
+#bubble.popOff,#bubble2.popOff,#bubble3.popOff,.nbP.popOff{opacity:0!important;transform:translate(-50%,-100%) scale(.88)!important;pointer-events:none!important}
+#bubble.pg,#bubble2.pg,#bubble3.pg,.nbP.pg{pointer-events:auto;cursor:pointer}
+.b9ban.nc{background:#FFF8EC;color:#3A2A20;border-radius:14px;padding:8px 22px 9px;box-shadow:0 0 0 1px rgba(201,160,106,.75),0 6px 16px rgba(58,42,32,.18);display:flex;flex-direction:column;align-items:center;gap:2px;animation:ncIn .3s ease-out both;transition:opacity .45s ease,transform .45s ease;font-weight:600}
+.b9ban.nc .ncT{font:600 17px/1.2 'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;color:#3A2A20;margin:0;letter-spacing:.01em}
+.b9ban.nc .ncT:after{content:'';display:block;height:1px;width:70%;margin:4px auto 0;background:linear-gradient(90deg,transparent,#C9A06A,transparent)}
+.b9ban.nc .ncS{font-size:12px;font-weight:600;color:#7A5A44;letter-spacing:.02em}
+.b9ban.nc.out{opacity:0;transform:translateY(-6px)}
+@keyframes ncIn{from{opacity:0;transform:translateY(-8px) scale(.97)}to{opacity:1;transform:none}}
+#toast{background:#FFF8EC;color:#3A2A20;font-weight:700;font-size:13.5px;box-shadow:0 0 0 1px rgba(201,160,106,.7),0 4px 12px rgba(58,42,32,.16);transition:opacity .25s ease,transform .25s ease}
+#toast.show.tap{pointer-events:auto;cursor:pointer}
+body.lf5busy #toast,body.lf5busy #near{display:none!important}
+.lbl{background:rgba(255,248,236,.8);color:#3A2A20;font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;font-weight:600;box-shadow:0 0 0 1px rgba(201,160,106,.45)}
+body.lf5q .lbl{opacity:0!important}
+#edge .edT{position:absolute;top:50%;transform:translateY(-50%);background:#FFF8EC;color:#3A2A20;border-radius:12px;padding:5px 10px;font-size:12.5px;font-weight:600;white-space:nowrap;max-width:min(52vw,220px);overflow:hidden;text-overflow:ellipsis;pointer-events:none;box-shadow:0 0 0 1px rgba(201,160,106,.6),0 2px 8px rgba(58,42,32,.15);display:none}
+#edge .edT.on{display:block}#edge .edT.l{right:48px}#edge .edT.r{left:48px}
+#knockBtn,#shAllBtn{display:none!important}
+body.walk #near{top:auto!important;left:auto!important;right:max(14px,env(safe-area-inset-right));bottom:calc(150px + env(safe-area-inset-bottom));transform:none!important;max-width:min(64vw,300px);background:#FFF8EC!important;color:#3A2A20!important;border-radius:22px;min-height:44px;line-height:20px;padding:12px 18px;font-size:15px;font-weight:700;box-shadow:0 0 0 1.5px #C9A06A,0 4px 12px rgba(58,42,32,.22)!important;pointer-events:auto;cursor:pointer;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;box-sizing:border-box;animation:ctxIn .18s ease-out}
+@keyframes ctxIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+@media (orientation:landscape) and (max-height:520px){body.walk #near{bottom:calc(128px + env(safe-area-inset-bottom));right:calc(max(14px,env(safe-area-inset-right)) + 62px)}}
+@media (min-width:761px) and (min-height:521px){body.walk.panelOpen #near{right:calc(min(400px,42vw) + 24px)}}`;document.head.appendChild(st)}
+function popHooks(M){Object.assign(M,{POP,
+  popups:()=>{const rr=e=>{const r=e.getBoundingClientRect();return{x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height)}};const N=POP.ntc,nr=$('#near');
+    return{names:{on:!!POP.nc.on,text:POP.nc.on?POP.nc.t:'',sub:POP.nc.on?POP.nc.s:'',key:POP.nc.key,rect:POP.nc.on&&BAN.el?rr(BAN.el):null},
+      bubbles:POPB.filter(s=>!s.el._off&&s.el.classList.contains('show')&&s.el.style.visibility!=='hidden'&&getComputedStyle(s.el).display!=='none').map(s=>({who:s.who,text:s.el.textContent,rect:rr(s.el)})),
+      notices:{showing:N.cur?N.cur.t:null,queue:N.q.map(x=>x.t),n:N.n,merged:N.merged,rect:N.cur?rr($('#toast')):null},prompt:{on:getComputedStyle(nr).display!=='none'&&!!nr.textContent,label:nr.textContent,kind:POP.pk,rect:nr.textContent?rr(nr):null},paused:POP.busy,
+      why:POPB.map(s=>s.who+':'+(s.el._off?s.why:'on')),labels:[...document.querySelectorAll('.lbl')].filter(e=>e.style.opacity==='1'&&getComputedStyle(e).opacity!=='0').map(e=>e.textContent),front:POP.front&&POP.front.id,stat:{...POP.stat}}},
+  nameCard:pid=>{const p=byId[pid];if(!p)return null;POP.nc.seen[pid]=0;popName(p,null,true);return{on:!!POP.nc.on,text:POP.nc.t,sub:POP.nc.s}},
+  notice:(t,o)=>{ntcPush(t,o);return{showing:POP.ntc.cur?POP.ntc.cur.t:null,queue:POP.ntc.q.map(x=>x.t)}},
+  say:(id,text,d)=>{if(typeof text!=='string'||!(id==='mocha'||id==='wendell'||CASTB[id]))return say(id,text,d);if(id==='mocha')say(text,d||4.5);else if(id==='wendell')wSay(text,d||3.5);else npcSay(id,text,d||3.2);return id},// LF5 (id,text); B20's say(text,dur) still works
+  popTick:(n=1,dt=.05)=>{for(let i=0;i<n;i++)popTick(dt);return window.__mocha.popups()}})}// installed on the first frame, after B20's say export
 // ====================================================================
 //  B12 runtime: layoutLint(), interior culling (10 Hz) and the room camera (CAM 'room', prio 1)
 // ====================================================================
