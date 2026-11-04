@@ -1,0 +1,15 @@
+smoke 15 exit 0 133s :: 3/3 OK
+smoke 1 exit 1 46s :: 0/3 OK
+B18 exit 1 267s :: PASS duo: Your Look is a side sheet with CAM look on top and nothing overlapping {"look":{"on":true,"cam":"look","stack":[{"owner":"look","prio":3,"dist":3.2,"range":[2.2,8],"pitch":0.4528165947449255 :: FAILS=2
+B19 exit 1 109s :: PASS after the crowd: LOD stats sane {"n0":1,"n1":10,"h":27,"sh":0} PASS no page errors (desktop 22:00) [] 1 FAILED  :: FAILS=2
+B22 exit 0 143s :: PASS WEEKLY stages identical across reloads {"a":[684,936,"0","2,#9ec9e8"],"b":[684,936,"0","2,#9ec9e8"]} PASS desktop: no page errors [] ALL PASS  :: FAILS=0
+B23 exit 0 159s :: PASS duo: CAM talk popped on close PASS duo: no page errors [] ALL PASS  :: FAILS=0
+B20 exit 0 134s :: PASS desktop: sound sheet open, speaker clear of it {"ov":[],"sp":[636,12,44,44]} PASS desktop: no page errors [] ALL PASS  :: FAILS=0
+B24 exit 0 107s ::   PASS the catalog page (you tab) shows silhouette, seen and owned states with thumbnails and 19 category chips   PASS no page errors 24/24 PASS  :: FAILS=0
+B25 exit 0 211s ::   PASS after reload the slot is still SOLD; newDay(20261102) restocks it; the purchase stays stored; youSize 980 B   PASS no page errors 24/24 PASS  :: FAILS=0
+B26 exit 1 127s ::   PASS the you tab shows the cabin card (jar, 16 paint swatches); S.you.home is 280 B   PASS no page errors 14/16 PASS  :: FAILS=2
+B27 exit 0 232s :: PASS desktop: no page errors  52/52 PASS  :: FAILS=0
+B21 exit 0 64s :: PASS the same seed gives the same theme across reloads PASS no page errors [] ALL PASS  :: FAILS=0
+ALLDONE
+smoke 1 RETRY exit 0 94s :: 3/3 OK
+SHOTS exit 0
