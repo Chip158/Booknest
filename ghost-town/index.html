@@ -252,7 +252,7 @@
   form#msgForm button{border:0;width:42px;height:42px;border-radius:50%;flex:none;font:inherit;font-size:19px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
   #msgSend{background:#4b80dd;color:#fff}#msgSend:disabled{background:#d3d9e6;cursor:default}#msgMic{background:var(--soft);display:none}#msgMic.on{background:var(--accent);color:#fff;animation:pulse 1.4s infinite}
   .msg.him{align-self:flex-start;background:var(--paper);color:var(--ink);border-radius:16px 16px 16px 4px;box-shadow:0 3px 0 rgba(0,0,0,.12)}
-  #toast.tap{pointer-events:auto;cursor:pointer}
+  #toast.show.tap{pointer-events:auto;cursor:pointer}
   body.msgOpen #chatwrap,body.msgOpen #hint{display:none!important}
   body.msgOpen #panel{visibility:hidden}
   body.msgOpen #dock,body.msgOpen.panelOpen.wideP #dock{right:calc(min(400px,42vw) + 24px + env(safe-area-inset-right))}
@@ -1212,9 +1212,9 @@ function migrate(){S.you=youFix(S.you);S.wend=wendFix(S.wend);S.town=townFix(S.t
   if(typeof cabinFix==='function')cabinFix(S.you);
   if(typeof decoFix==='function')decoFix(S.you);
   if(typeof musicFix==='function')S.music=musicFix(S.music,isNew);
-  if(typeof natFix==='function')natFix(S.you);
-  if(typeof b40Fix==='function')b40Fix(S.you);
-  if(typeof condoFix==='function')S.condo=condoFix(S.condo);// B39
+  try{if(typeof natFix==='function')natFix(S.you)}catch(e){}
+  try{if(typeof b40Fix==='function')b40Fix(S.you)}catch(e){}
+  try{if(typeof condoFix==='function')S.condo=condoFix(S.condo)}catch(e){S.condo={rent:{},due:0}}// B39
   (S.hobbies||[]).forEach(h=>{if(!h)return;if(!own(byId,h.p)){h.p='home';h.s='couch'}const sp=byId[h.p].spots;if(h.s&&sp&&!own(sp,h.s))h.s=h.p==='home'?'couch':null})}migrate();
 let dirty=true,hiddenAt=0;
 function save(){if(!hiddenAt)S.lastSeen=Date.now();try{S.now=nowSnap()}catch(_){}dirty=true;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){try{localStorage.removeItem(KEY+'-bak');localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}}}
@@ -3391,6 +3391,7 @@ function capMeshes(root,p,pg){if(!root||!pg||!p||!p.w)return;let a=root;while(a&
     const g=o.geometry;if(!g.boundingBox)g.computeBoundingBox();B.copy(g.boundingBox).applyMatrix4(M.multiplyMatrices(I,o.matrixWorld));if(B.min.y>fy+1.6||B.max.y<fy+.2)return;
     const sx=B.max.x-B.min.x,sz=B.max.z-B.min.z;if(sx*sz<.25||sx>p.w*.85||sz>p.d*.85||sx*sz>p.w*p.d*.4)return;
     const x0=Math.max(B.min.x,-W2),x1=Math.min(B.max.x,W2),z0=Math.max(B.min.z,-D2),z1=Math.min(B.max.z,D2);if(x1-x0<.05||z1-z0<.05)return;sol.push([x0,z0,x1,z1])})}
+const COLX=[];// late solid boxes [x,z,halfW,halfD] (axis-aligned), checked by COL.hit at runtime (B40 shed)
 const COLP=[];// B11: extra solid circles [x,z,r] recorded while places build (headstones)
 function buildPlace(p){const grp=new THREE.Group();grp.position.set(p.x,0,p.z);grp.rotation.y=p.ry;CAPT=p;CAPTG=grp;
   ({home:dollhouse,npchome,cinema,grocery,petstore:petStore,library,market,needle,wheel,dock,lighthouse,troll,hill,conservatory,gumwall,park,civic:civicB,condo:condoB,cottage:cottageB,cemetery:cemeteryB,lot:lotB,plaza:plazaB}[p.kind]||shop)(p,grp);scene.add(grp);p.obj=grp;doorBuild(p,grp);CAPT=CAPTG=null}
@@ -3558,7 +3559,7 @@ function doKnock(pid){const d=DBY[pid];if(!d)return null;const r=answerKnock(pid
 // ---------- entry banner (HUD slot 'banner') + the "Knock?" chip; banner and toast never show together ----------
 const BAN={el:null,t:null};
 function bannerHide(){try{if(BAN.el&&HUD.S.banner&&HUD.S.banner.on){clearTimeout(BAN.t);HUD.show('banner',false)}}catch(e){}}
-function doorBanner(d){if(!BAN.el||isQuiet)return;const p=d.p,o=occOf(p.id),who=o.ids.map(i=>AG[i]).filter(a=>a&&a.kind!=='you').map(a=>a.kind==='keeper'?KB[a.id].name:a.id==='mocha'?'Mocha':'Wendell');
+function doorBanner(d){if(!BAN.el||isQuiet)return;const p=d.p,o=occOf(p.id),who=o.ids.map(i=>AG[i]).filter(a=>a&&a.kind!=='you').map(a=>a.kind==='keeper'&&KB[a.id]?KB[a.id].name:a.id==='mocha'?'Mocha':a.id==='wendell'?'Wendell':(typeof CASTB!=='undefined'&&CASTB[a.id]&&CASTB[a.id].name)||'someone');
   const parts=[p.name];if(who.length)parts.push(who.slice(0,2).join(' & ')+(who.length>1?' are in':' is in'));if(p.hours)parts.push(isOpen(p)?'open till '+fmtH(p.hours[1]):'closed');
   const sv=S.you.doors||(S.you.doors=[]),first=!sv.includes(p.id);if(first){sv.push(p.id);if(sv.length>40)sv.splice(0,sv.length-40)}
   parts.shift();if(first)parts.push('✨ first visit');popName(p,parts.join(' · ')||ncSub(p),true)}// LF5: a paper name card (title + one line) in the same banner slot
@@ -6172,6 +6173,7 @@ const COL=(()=>{const cx=[],cz=[],cr=[],sg=[];
       for(let k=ST[c];k<ST[c+1];k++){const q=IT[k];if(q>=0){const dx=x-this.CX[q],dz=z-this.CZ[q],rr=this.CR[q]+r;if(dx*dx+dz*dz<rr*rr)return 1;continue}
         const s=-1-q,o=s*4,ax=SG[o],az=SG[o+1],ex=SG[o+2]-ax,ez=SG[o+3]-az,t=clamp(((x-ax)*ex+(z-az)*ez)/(ex*ex+ez*ez),0,1),px=ax+ex*t-x,pz=az+ez*t-z;
         if(px*px+pz*pz<(r+.06)*(r+.06)){const d=SD[s];if(d>=0){if(DOORS[d].ang>=.8)continue;return 3}return 2}}
+      for(let k=0;k<COLX.length;k++){const b=COLX[k];if(Math.abs(x-b[0])<b[2]+r&&Math.abs(z-b[1])<b[3]+r)return 1}
       const lx=(x-96)/(15+r),lz=(z-22)/(9+r);return lx*lx+lz*lz<1?4:0}}})();COLOK=true;
 // interior furniture: p.grid (local .5 cells); the wall band is left to the wall segments so doorways stay smooth
 function gridHit(x,z){const p=placeOf(x,z);if(!p||!p.w||p.kind==='lot')return 0;if(!p.grid)regrid(p);const c=Math.cos(p.ry),s=Math.sin(p.ry),lx=(x-p.x)*c-(z-p.z)*s,lz=(x-p.x)*s+(z-p.z)*c,W2=p.w/2,D2=p.d/2;
@@ -7792,7 +7794,7 @@ function ntcPush(t,o){t=String(t||'').trim();if(!t||isQuiet)return;o=o||{};const
   N.q.push({t,k,n:1,add,tap:o.tap||null,at:now});if(N.q.length>6)N.q.shift()}
 function ntcShow(x){const N=POP.ntc,el=$('#toast'),now=performance.now();N.cur=x;N.until=now+2500;N.rl[x.k]=now;N.rl[x.k+'|t']=x.t;N.n++;bannerHideSoft();
   el.textContent=x.t;el.classList.toggle('tap',true);el.onclick=e=>{e.stopPropagation();const f=N.cur&&N.cur.tap;ntcHide();if(f)try{f()}catch(err){}};el.classList.add('show');ntcPlace();try{sfx('tok')}catch(e){}}
-function ntcHide(back){const N=POP.ntc,el=$('#toast');if(back&&N.cur)N.q.unshift(N.cur);N.cur=null;N.gap=performance.now()+350;el.classList.remove('show');el.onclick=null}
+function ntcHide(back){const N=POP.ntc,el=$('#toast');if(back&&N.cur)N.q.unshift(N.cur);N.cur=null;N.gap=performance.now()+350;el.classList.remove('show','tap');el.onclick=null}
 function ntcTick(now){const N=POP.ntc;if(N.cur&&now>=N.until)ntcHide();if(!N.cur&&!POP.busy&&N.q.length&&now>=N.gap)ntcShow(N.q.shift())}
 // the lane sits under the name card when both are up (one rect read per change, never per frame)
 function ntcPlace(){const el=$('#toast');el.style.top='';if(!POP.nc.on||!POP.ntc.cur||!BAN.el)return;const b=BAN.el.getBoundingClientRect(),r=el.getBoundingClientRect();if(b.width&&r.top<b.bottom+6&&r.bottom>b.top-6&&r.left<b.right&&r.right>b.left)el.style.top=Math.round(b.bottom+8)+'px'}
@@ -9436,9 +9438,9 @@ function mochaShelf(pid,o,t){if(!pid||!DISPLAY[pid]||!(DISPLAY[pid]||[]).length|
   for(const e of stockFor(pid,curDay())){if(mHas(sd.sold[pid],e.slot)||mHas(sd.m[pid],e.slot))continue;const it=CAT.by[e.code],nm=it.name.toLowerCase(),sc=(ws.some(w=>nm.includes(w))?2:0)+(o.cat&&it.cat===o.cat?1:0);if(sc>bs){bs=sc;best=e}}
   return best?mochaBuy(pid,best.slot):null}
 // selling: Pearl buys anything at 50%; Gus fish and crabs, Hank produce, Willa plants and mushrooms (B35 supplies most of these)
-const SELLF={thrift:()=>true,market:it=>/fish|crab/.test(it.tags.join(' ')),grocery:it=>/produce|veg|fruit/.test(it.tags.join(' ')),nursery:it=>it.cat==='plnt'||it.cat==='seed'||/mushroom/.test(it.tags.join(' '))};
+const SELLF={thrift:it=>!(it&&it.tags&&it.tags.includes('keep')),market:it=>/fish|crab/.test(it.tags.join(' ')),grocery:it=>/produce|veg|fruit/.test(it.tags.join(' ')),nursery:it=>it.cat==='plnt'||it.cat==='seed'||/mushroom/.test(it.tags.join(' '))};
 const sellPrice=c=>Math.max(1,Math.round(((CAT.by[c]||YOUX[c]||{}).price||2)*.5));
-function sellList(pid){const f=SELLF[pid];if(!f)return[];const out=[];for(const k of ['pk','store'])for(const e of stk(S.you[k])){const it=CAT.by[e.code]||(YOUX[e.code]&&YOUX[e.code].tags?YOUX[e.code]:null);if(it&&f(it)||!it&&pid==='thrift')out.push({where:k,code:e.code,v:e.v,n:e.n,price:sellPrice(e.code),name:nameOf(e.code)})}return out}
+function sellList(pid){const f=SELLF[pid];if(!f)return[];const out=[];for(const k of ['pk','store'])for(const e of stk(S.you[k])){const it=CAT.by[e.code]||(YOUX[e.code]&&YOUX[e.code].tags?YOUX[e.code]:null);if(it&&f(it)||!it&&pid==='thrift'&&!(YOUX[e.code]&&YOUX[e.code].tags&&YOUX[e.code].tags.includes('keep')))out.push({where:k,code:e.code,v:e.v,n:e.n,price:sellPrice(e.code),name:nameOf(e.code)})}return out}
 function sellItem(pid,where,code,v){if(!SELLF[pid]||!sellList(pid).some(x=>x.where===where&&x.code===code&&x.v===(v|0)))return{ok:false};takeItem(where,code,v);const p=sellPrice(code);addCoins(p,'sell',null);stampShop(pid);keeperReact(pid,'sell');save();return{ok:true,price:p,coins:S.you.coins}}
 // ---------- the day: rollover on load, on visible and once a minute; the cozy stamp card; the Neighbor Dividend ----------
 const MSPEC={1:'snm',2:'cnd',3:'ssp',4:'ssf',5:'mbh',6:'bfd',7:'pcn',8:'jff',9:'gpl',10:'jol',11:'hwr',12:'sng'},MONN=['','January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -9454,7 +9456,7 @@ function collectGazette(){const y=S.you;if(y.day.div||!gazReady())return 0;const
 function todayCard(){const k=curDay(),y=S.you,d=new Date(Math.floor(k/1e4),Math.floor(k/100)%100-1,k%100,12),mo=d.getMonth()+1,R=seeded(catHash('today:'+k));
   const shops=CATD.pids.filter(p=>p!=='library').slice().sort((a,b)=>catHash(a+k)-catHash(b+k)).slice(0,4),picks=[];
   for(const pid of shops){const e=stockFor(pid,k).find(x=>x.pick);if(e){const kp=keeperOf(pid);picks.push({pid,shop:byId[pid].name,keeper:kp?kp.name.split(' ')[0]:'',code:e.code,name:nameOf(e.code),price:priceOf(pid,e),was:CAT.by[e.code].price,line:pickLine(pid)})}}
-  let crab=null;try{if(typeof crabStatus==='function')crab=crabStatus()}catch(e){}
+  let crab=null;try{if(typeof crabStatus==='function'){const st=crabStatus();crab=st&&st.has&&st.down?(st.ready?'your crab pot is ready to pull':`crab pot soaking · ${st.left} h to go`):null}}catch(e){}
   return{k,date:d.toDateString(),gazette:{ready:gazReady(),collected:!!y.day.div,amt:divAmt(),care:careToday()},picks,stamps:{n:y.vis,card:y.vis%7,toNext:7-y.vis%7,special:nameOf(MSPEC[mo])},streak:y.streak.n,nightMarket:false,crab,tip:pick(['the bakery sells out of marionberry pie by noon','rain jackets are always in season here','Pearl gift-wraps anything for 2 coins'].slice(0,1+Math.floor(R()*3)))}}
 // ---------- UI: wallet pill, coin pool, price tag, item card / grid sheet ----------
 function shopScan(){const wk=camS.mode==='walk';let inP=null;if(wk)for(const pid of CATD.pids){const p=byId[pid];if(p&&inBuilding(p,YOU.x,YOU.z)){inP=pid;break}}
@@ -9606,7 +9608,7 @@ function cabinFix(y){if(!y||typeof y!=='object')return y;let h=y.home;if(!h||typ
   const e=Array.isArray(h.ext)?h.ext:[],R=h.rooms&&typeof h.rooms==='object'&&!Array.isArray(h.rooms)?h.rooms:{},rm={};
   for(const k of ['great','loft','back','porch','green','yard'])if(R[k]&&typeof R[k]==='object')rm[k]={wp:I(R[k].wp,0,99,0),fl:I(R[k].fl,0,99,0),it:recs(R[k].it,2600)};if(!rm.great)rm.great={wp:0,fl:0,it:''};
   y.home={lv:I(h.lv,1,6,1),ext:[0,1,2,3].map(i=>I(e[i],0,3,0)),jar:I(h.jar,0,999999,0),rooms:rm,yard:recs(h.yard,2600),porch:I(h.porch,0,1,1),br:h.br==='kit'?'kit':'bed',paint:I(h.paint,0,1,0),
-    pit:I(h.pit,0,4e12,0),hf:I(h.hf,0,4e12,0),pea:I(h.pea,0,4e12,0),bu:I(h.bu,0,99999999,0),bl:I(h.bl,0,6,0),fl:I(h.fl,0,65535,0),mb:I(h.mb,0,9,0),ks:str(h.ks,900)};return y}
+    pit:I(h.pit,0,4e12,0),hf:I(h.hf,0,4e12,0),pea:I(h.pea,0,4e12,0),bu:I(h.bu,0,99999999,0),bl:I(h.bl,0,6,0),fl:I(h.fl,0,65535,0),mb:I(h.mb,0,9,0),ks:str(h.ks,900),jk:I(h.jk,0,1,0)};return y}
 // B25's "reset my cabin": clears the layout only (level, jar, paint, coins and keepsakes stay)
 function cabinReset(){if(!S||!S.you||!S.you.home)return;const h=S.you.home;for(const k in h.rooms)h.rooms[k].it='';h.yard='';try{cabBuild()}catch(e){}save();toast('🏡 your cabin is tidied back to its built-ins')}
 const CABUP=[null,null,{n:'sleeping loft with a dormer',c:600,r:'loft'},{n:'back room',c:1200,r:'back'},{n:'wraparound porch with a swing',c:900,r:'porch'},{n:'greenhouse lean-to',c:1500,r:'green'},{n:'cedar hot tub',c:2500,r:'yard'}];
@@ -10061,7 +10063,7 @@ function natPool(day){const mo=Math.floor(day/100)%100,fall=mo>=9&&mo<=11,d0=new
     ['nfdf',8,'forest'],['nfhm',6,'forest'],['nffn',6,'forest']];
   if(fall)P.push(['nfml',8,'forest'],['nfac',5,'forest'],['nfap',6,'fruitM'],['nfap',5,'fruitC']);if(mo===8)P.push(['nfap',3,'fruitC'],['nfbb',8,'fruitC'],['nfbb',6,'forest']);if(mo>=6&&mo<=7)P.push(['nfch',7,'fruitM'],['nfch',5,'fruitC']);
   if(fall&&wet)P.push(['nfct',6,'lake'],['nfct',3,'forest']);if(mo===10)P.push(['nfpk',7,'patch']);if(mo===12)P.push(['nfhl',7,'forest']);if(mo>=3&&mo<=4)P.push(['nfcb',8,'sq']);return P}
-function natOK(x,z){try{if(!youFree(x,z))return false}catch(e){if(!walkable(x,z))return false}if(PLACES.some(p=>p.w&&inBuilding(p,x,z)))return false;try{if(styleFootprints().some(f=>Math.hypot(f.x-x,f.z-z)<f.r*.6))return false}catch(e){}return true}
+function natOK(x,z){try{if(!youFree(x,z))return false}catch(e){if(!walkable(x,z))return false}if(PLACES.some(p=>p.w&&p.kind!=='plaza'&&!(p.kind==='lot'&&p.cls!=='yours')&&inBuilding(p,x,z)))return false;try{if(styleFootprints().some(f=>Math.hypot(f.x-x,f.z-z)<f.r*.6))return false}catch(e){}return true}
 // spawns(day): PURE per date (seeded by the day key) -> [{i,code,x,z,cls}]; memoized per day
 function natSpawns(day){day=+day||curDay();if(NAT.mem&&NAT.mem.k===day)return NAT.mem.L;const R=seeded(catHash('b35:'+day)),P=natPool(day),tw=P.reduce((a,p)=>a+p[1],0),n=8+Math.floor(R()*7),L=[];
   for(let t=0;t<120&&L.length<n;t++){let r=R()*tw,p=P[0];for(const q of P){r-=q[1];if(r<=0){p=q;break}}const Z=NZ[p[2]],z=Z[Math.floor(R()*Z.length)],x=z[0]+(R()*2-1)*z[2],zz=z[1]+(R()*2-1)*z[3];
@@ -10073,8 +10075,9 @@ function natGeo(c){const g=c===0?new THREE.SphereGeometry(.16,8,4):c===1?new THR
   if(c===0)g.scale(1,.3,1);if(c===2)g.rotateZ(Math.PI/2);if(c===5)g.rotateX(-Math.PI/2);if(c===3)g.translate(0,.12,0);if(c===4||c===1)g.translate(0,c===4?.1:.06,0);
   const P=g.attributes.position,ao=new Float32Array(P.count),col=new Float32Array(P.count*3);for(let i=0;i<P.count;i++){const a=clamp(.62+P.getY(i)*3,.62,1.06);ao[i]=a;col[i*3]=col[i*3+1]=col[i*3+2]=a}
   g.setAttribute('ao',new THREE.BufferAttribute(ao,1));g.setAttribute('color',new THREE.BufferAttribute(col,3));return g}
-function natBuild(){const day=curDay();if(NAT.day===day)return;NAT.day=day;NAT.ims.forEach(im=>{im.parent&&im.parent.remove(im);im.geometry.dispose()});NAT.ims=[];
-  if(!NAT.grp){NAT.grp=new THREE.Group();NAT.grp.name='b35nat';scene.add(NAT.grp);NAT.mat=new ToonM({color:'#ffffff',vertexColors:true})}
+function natBuild(){const day=curDay();if(S.you.day.k!==day)try{dayCheck()}catch(e){}if(NAT.day===day&&NAT.g===S.you.day.g)return;NAT.day=day;NAT.g=S.you.day.g;// rebuilt when the day or the gathered mask changes (midnight, cloud-save adoption)
+  NAT.ims.forEach(im=>{im.parent&&im.parent.remove(im);im.geometry.dispose()});NAT.ims=[];
+  if(!NAT.grp){NAT.grp=new THREE.Group();NAT.grp.name='b35nat';worldAdd(NAT.grp);NAT.mat=NAT.mat||new ToonM({color:'#ffffff',vertexColors:true})}
   const L=natSpawns(day),d=new THREE.Object3D(),cc=new THREE.Color();for(let c=0;c<6;c++){const S2=L.filter(s=>s.cls===c);if(!S2.length)continue;const im=new THREE.InstancedMesh(natGeo(c),NAT.mat,S2.length);im.name='b35find'+c;im.castShadow=false;im.receiveShadow=false;
     S2.forEach((s,k)=>{d.position.set(s.x,navFloor(s.x,s.z)+.02,s.z);d.rotation.set(0,catHash(s.code+s.i)%628/100,0);d.scale.setScalar(natGot(s.i)?0:1);d.updateMatrix();im.setMatrixAt(k,d.matrix);im.setColorAt(k,cc.set(FN[s.code][7]))});
     im.userData.L=S2;im.geometry.computeBoundingSphere();const xs=S2.map(s=>s.x),zs=S2.map(s=>s.z),mx=(Math.min(...xs)+Math.max(...xs))/2,mz=(Math.min(...zs)+Math.max(...zs))/2;im.geometry.boundingSphere.center.set(mx,0,mz);im.geometry.boundingSphere.radius=Math.max(...S2.map(s=>Math.hypot(s.x-mx,s.z-mz)))+1;
@@ -10090,26 +10093,28 @@ function fnSticker(c){if(FNST[c])return FNST[c];const f=FN[c]||['?','?','Shore',
   x.beginPath();x.arc(0,0,31,0,Math.PI*2);x.fillStyle=f[7];x.globalAlpha=.35;x.fill();x.globalAlpha=1;x.font='40px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(f[1],0,3);
   try{return FNST[c]=cv.toDataURL()}catch(e){return''}}
 // gather(i): pick up today's find i -> pockets + a sticker + its fact
-function natGather(i,o){o=o||{};const L=natSpawns(),s=L[i];if(!s)return{ok:false,why:'none'};if(natGot(i))return{ok:false,why:'got'};const it=YOUX[s.code];if(!canPut(it)){if(!NAT.full){NAT.full=1;toast('your pockets are full. it\'ll keep sparkling here')}return{ok:false,why:'full'}}
-  const where=putItem(s.code,0);S.you.day.g=mSet(S.you.day.g,i);natHide(i);const lg=fnLog(s.code),f=FN[s.code];try{sfx('pickup',{you:1,x:s.x,z:s.z})}catch(e){}try{youGesture('hop',.7);youExpr('happy',2)}catch(e){}
-  toast(`${f[1]} ${f[0]}${lg.first?` · new sticker! 📚 +${lg.pay}`:''} · ${f[3]}`);save();return{ok:true,code:s.code,name:f[0],where,first:lg.first,pay:lg.pay,sticker:fnSticker(s.code),fact:f[3]}}
+function natGather(i,o){o=o||{};if(S.you.day.k!==curDay())try{dayCheck()}catch(e){}const L=natSpawns(),s=L[i];if(!s)return{ok:false,why:'none'};if(natGot(i))return{ok:false,why:'got'};const it=YOUX[s.code];if(!canPut(it)){if(!NAT.full){NAT.full=1;toast('your pockets are full. it\'ll keep sparkling here')}return{ok:false,why:'full'}}
+  const where=putItem(s.code,0);S.you.day.g=mSet(S.you.day.g,i);natHide(i);NAT.g=S.you.day.g;const lg=fnLog(s.code),f=FN[s.code];try{sfx('pickup',{you:1,x:s.x,z:s.z})}catch(e){}try{youGesture('hop',.7);youExpr('happy',2)}catch(e){}
+  toast(`${f[1]} ${f[0]}${lg.first?` · new sticker! 📚 +${lg.pay}`:''} · ${s.code==='nfct'?'Never eat a wild mushroom unless an expert identifies it.':f[3]}`);save();/* the safety clause leads for chanterelles (the 3-line lane clips long facts; the book keeps the full one) */return{ok:true,code:s.code,name:f[0],where,first:lg.first,pay:lg.pay,sticker:fnSticker(s.code),fact:f[3]}}
 // critters: <=2 two-frame billboard sprites in walk mode, within 30; tap to log (look, never catch)
-function critPool(){const mo=new Date().getMonth()+1;let wet=false;try{wet=WX.wet()}catch(e){}const P=['khum','kjay','kher'];if(wet)P.push('kslg','kslg','kfrg');if(mo>=3&&mo<=6)P.push('kfrg');if(mo>=4&&mo<=9)P.push('kgld','kgld');if(YOU.x<-45)P.push('ksea','kott','kher');return P}
+function critPool(){const mo=new Date().getMonth()+1;let wet=false;try{wet=WX.wet()}catch(e){}let dk=false;try{dk=isDark()}catch(e){}const P=dk?['kher']:['khum','kjay','kher'];if(wet)P.push('kslg','kslg','kfrg');if(mo>=3&&mo<=6)P.push('kfrg');if(mo>=4&&mo<=9&&!dk)P.push('kgld','kgld');if(YOU.x<-45)P.push('ksea','kott','kher');return P}
 function critMake(c){const cv=document.createElement('canvas');cv.width=128;cv.height=64;const x=cv.getContext('2d');x.font='44px serif';x.textAlign='center';x.textBaseline='middle';
   for(let f=0;f<2;f++){x.save();x.translate(32+f*64,34+(f?-3:0));if(f)x.scale(1.06,.94);x.fillStyle='rgba(58,36,32,.25)';x.beginPath();x.ellipse(0,22,18,5,0,0,Math.PI*2);x.fill();x.fillStyle=FN[c][7];x.fillText(FN[c][1],0,0);x.restore()}
   const t=new THREE.CanvasTexture(cv);t.repeat.set(.5,1);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));sp.scale.set(1.3,.65,1);sp.name='b35crit';return sp}
 function critSpawn(c){if(NAT.crit.length>=2)return null;c=c||pick(critPool());const water=c==='ksea'||c==='kott';let x=0,z=0,ok=false;
   for(let t=0;t<16&&!ok;t++){const a=Math.random()*Math.PI*2,r=8+Math.random()*12;x=YOU.x+Math.sin(a)*r;z=YOU.z+Math.cos(a)*r;ok=water?!walkable(x,z):natOK(x,z)}if(!ok)return null;
-  const sp=critMake(c),y=water?.25:navFloor(x,z)+.35+(c==='khum'||c==='kgld'?1.2:0);sp.position.set(x,y,z);scene.add(sp);const k={c,sp,t:0,life:7};NAT.crit.push(k);return k}
-function critKill(k){scene.remove(k.sp);k.sp.material.map.dispose();k.sp.material.dispose();NAT.crit.splice(NAT.crit.indexOf(k),1)}
+  const sp=critMake(c),y=water?.25:navFloor(x,z)+.35+(c==='khum'||c==='kgld'?1.2:0);sp.position.set(x,y,z);worldAdd(sp);const k={c,sp,t:0,life:7};NAT.crit.push(k);return k}
+function critKill(k){if(k.sp.parent)k.sp.parent.remove(k.sp);k.sp.material.map.dispose();k.sp.material.dispose();NAT.crit.splice(NAT.crit.indexOf(k),1)}
 function natSpot(c){if(!FN[c]||FN[c][5]!==-1||!/^k/.test(c))return{ok:false};const lg=fnLog(c),f=FN[c];try{sfx('spot',{you:1})}catch(e){}toast(`👀 ${f[0]}${lg.first?` · sighting logged! 📚 +${lg.pay}`:''} · ${f[3]}`);save();return{ok:true,c,name:f[0],first:lg.first,pay:lg.pay,fact:f[3]}}
 function critTap(x,y){for(const k of NAT.crit){const q=project(k.sp.position.x,k.sp.position.y,k.sp.position.z);if(q.vis&&Math.hypot(q.x-x,q.y-y)<44){natSpot(k.c);critKill(k);return true}}return false}
 // sparkles: one Points object, 6 points on the nearest uncollected finds (25, or 40 with binoculars)
 function natSpark(){if(NAT.spk)return NAT.spk;const cv=document.createElement('canvas');cv.width=cv.height=32;const x=cv.getContext('2d'),g=x.createRadialGradient(16,16,0,16,16,16);g.addColorStop(0,'rgba(255,250,230,1)');g.addColorStop(.3,'rgba(255,230,170,.6)');g.addColorStop(1,'rgba(255,220,150,0)');x.fillStyle=g;x.fillRect(0,0,32,32);
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(18),3));geo.setDrawRange(0,0);const p=new THREE.Points(geo,new THREE.PointsMaterial({size:.55,map:new THREE.CanvasTexture(cv),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
-  p.frustumCulled=false;p.name='b35spark';scene.add(p);return NAT.spk=p}
+  p.frustumCulled=false;p.name='b35spark';worldAdd(p);return NAT.spk=p}
+// LF3 prewarm: the finds' instanced toon program, the sparkle points, a critter sprite, the buoy and B40's glow mushrooms compile at boot, not on the first walk
+PREWARM.add('b35:finds',()=>{NAT.mat=NAT.mat||new ToonM({color:'#ffffff',vertexColors:true});const im=new THREE.InstancedMesh(new THREE.BoxGeometry(.1,.1,.1),NAT.mat,1);im.setColorAt(0,new THREE.Color(1,1,1));return im});PREWARM.add('b35:spark',()=>natSpark());PREWARM.add('b35:crit',()=>new THREE.Sprite(new THREE.SpriteMaterial({map:natSpark().material.map,transparent:true,depthWrite:false})));PREWARM.add('b35:buoy',()=>{const b=crabBuoy().clone();b.visible=true;return b});PREWARM.add('b40:mush',()=>typeof B40==='object'&&B40.mush||null);
 // ---------- fishing: the ripple ring ----------
-function fishPick(t){const d=new Date(t),mo=d.getMonth()+1,h=d.getHours(),odd=d.getFullYear()%2===1,dusk=h<8||h>=17;let wet=false;try{wet=WX.wet(t)}catch(e){}
+function fishPick(t){const d=new Date(t),mo=d.getMonth()+1,h=d.getHours()+d.getMinutes()/60,odd=d.getFullYear()%2===1,sr=typeof SUN==='object'&&SUN?SUN.rise:7,ss=typeof SUN==='object'&&SUN?SUN.set:17,dusk=Math.abs(h-sr)<1.5||Math.abs(h-ss)<1.5;// salmon bite best around sunrise and sunset (Reed's tip)let wet=false;try{wet=WX.wet(t)}catch(e){}
   const W={prch:6,flnd:5,hrng:mo>=2&&mo<=5?7:4,quil:3,ling:3,coho:mo>=7&&mo<=11?(wet?7:5):.5,chin:mo>=6&&mo<=9||mo<=2?4:1,pink:odd&&mo>=7&&mo<=9?7:0,stee:mo===12||mo<=4?.5:.15};
   if(dusk){W.coho*=1.6;W.chin*=1.6}let tw=0;for(const k in W)tw+=W[k];let r=Math.random()*tw;for(const k in W){r-=W[k];if(r<=0)return k}return'prch'}
 const FSIZE={coho:[20,30],chin:[24,36],pink:[18,24],ling:[22,36],quil:[10,18],prch:[8,14],flnd:[12,20],hrng:[7,10],stee:[24,32]};
@@ -10118,9 +10123,10 @@ function fishRule(sp,clip,t){if(sp==='quil')return'rock';if(sp==='stee')return's
 function fishOv(){if(NAT.ov)return NAT.ov;const o=document.createElement('div');o.id='b35fish';o.innerHTML='<div class="b35sh"></div><div class="b35sh"></div><div class="b35sh"></div><div class="b35lure"></div><div class="b35ring"></div><div class="b35reel"><i></i><b></b></div><p class="b35hint"></p><button class="b35x" aria-label="stop fishing">✕</button>';
   document.body.appendChild(o);o.querySelector('.b35x').onclick=e=>{e.stopPropagation();fishEnd()};const dn=e=>{if(e.target.closest('.b35x'))return;e.preventDefault();fishDown(performance.now())},up=()=>{if(NAT.fi)NAT.fi.hold=0};
   o.addEventListener('pointerdown',dn);o.addEventListener('pointerup',up);o.addEventListener('pointercancel',up);o.addEventListener('pointerleave',up);return NAT.ov=o}
-function fishEdge(){if(!walkable(YOU.x,YOU.z))return null;for(let i=0;i<8;i++){const a=YOU.yaw+(i?(i%2?1:-1)*Math.ceil(i/2)*Math.PI/4:0),dx=Math.sin(a),dz=Math.cos(a);if(!walkable(YOU.x+dx*1.5,YOU.z+dz*1.5))return{dx,dz}}return null}
+const B35CD=new THREE.Vector3();// camera-forward first, so the cast lands up-screen where it can be seen and tapped
+function fishEdge(){if(!walkable(YOU.x,YOU.z))return null;camera.getWorldDirection(B35CD);const a0=Math.atan2(B35CD.x,B35CD.z);for(let d=1.5;d<=3;d+=1.5)for(let i=0;i<8;i++){const a=a0+(i?(i%2?1:-1)*Math.ceil(i/2)*Math.PI/4:0),dx=Math.sin(a),dz=Math.cos(a);if(!walkable(YOU.x+dx*d,YOU.z+dz*d))return{dx,dz}}return null}
 function fishCast(o){o=o||{};const y=S.you;if(!(y.gear&1)&&!o.force)return{ok:false,why:'rod'};if(y.day.fish>=10){toast('🎣 the fish have gone quiet. try again tomorrow');return{ok:false,quiet:true}}
-  const e=fishEdge()||(o.force?{dx:-1,dz:0}:null);if(!e)return{ok:false,why:'edge'};const ov=fishOv(),now=performance.now(),lx=YOU.x+e.dx*7,lz=YOU.z+e.dz*7;
+  const e=fishEdge()||(o.force?(camera.getWorldDirection(B35CD),{dx:B35CD.x/(Math.hypot(B35CD.x,B35CD.z)||1),dz:B35CD.z/(Math.hypot(B35CD.x,B35CD.z)||1)}):null);if(!e)return{ok:false,why:'edge'};const ov=fishOv(),now=performance.now(),lx=YOU.x+e.dx*7,lz=YOU.z+e.dz*7;
   NAT.fi={ph:'cast',t0:now,lx,lz,sp:null,meet:0,bite:now+600+(o.wait!=null?o.wait:2000+Math.random()*4000),hold:0,p:0,ten:0,idle:0,seg:0,run:0,auto:o.reel==='auto'};ov.classList.add('on');document.body.classList.add('b35fishing');
   try{sfx('plip',{you:1,x:lx,z:lz})}catch(_){}fishHint('waiting for a shadow to turn your way…');return{ok:true,ph:'cast'}}
 function fishHint(t){const h=NAT.ov&&NAT.ov.querySelector('.b35hint');if(h&&h.textContent!==t)h.textContent=t}
@@ -10129,7 +10135,7 @@ function fishDown(now){const F=NAT.fi;if(!F)return;if(F.ph==='ring'){const d=now
     else{fishHint(d<0?'too soon! it darted off. another will come.':'it slipped away. no worries');F.ph='wait';F.bite=now+1500+Math.random()*3000}return}if(F.ph==='reel'){F.hold=1;return}if(F.ph==='wait'||F.ph==='cast')fishHint('patience… watch the shadows')}
 function fishLand(){const F=NAT.fi,y=S.you,now=Date.now(),clip=(F.sp==='coho'||F.sp==='chin')?Math.random()<.6:true,rule=fishRule(F.sp,clip,now);y.day.fish=Math.min(99,(y.day.fish|0)+1);const lg=fnLog(F.sp),f=FN[F.sp],me=(y.name||'Jesse');
   try{if(typeof newsPush==='function')newsPush('you',`${me.toLowerCase()} caught a ${f[0]} off the pier today`,'pier',now)}catch(_){}try{sfx('catch',{you:1})}catch(_){}
-  const c={sp:F.sp,name:f[0],size:F.size,fact:f[3],sticker:fnSticker(F.sp),released:!!rule,note:rule?FREL[rule]:'',clip,price:clamp(Math.round(f[4]*(.8+F.size/FSIZE[F.sp][1]*.4)),2,25),first:lg.first,pay:lg.pay};F.ph='card';F.card=c;fishCard(c);save();return c}
+  const c={sp:F.sp,name:f[0],size:F.size,fact:f[3],sticker:fnSticker(F.sp),released:!!rule,note:rule?FREL[rule]:'',clip,price:clamp(Math.round(f[4]*(.8+F.size/FSIZE[F.sp][1]*.4)),2,25),first:lg.first,pay:lg.pay};F.ph='card';F.card=c;fishHint('');fishCard(c);save();return c}
 function fishLose(why){const F=NAT.fi;if(!F)return;F.ph='wait';F.bite=performance.now()+2000+Math.random()*3000;fishHint(why||'it swam away. no harm done')}
 function fishEnd(){NAT.fi=null;if(NAT.ov)NAT.ov.classList.remove('on');document.body.classList.remove('b35fishing');natCardClose()}
 function natCardClose(){if(NAT.card){NAT.card.remove();NAT.card=null}}
@@ -10145,10 +10151,11 @@ function fishCard(c){const F=NAT.fi,again=()=>{if(NAT.fi){if(S.you.day.fish>=10)
 function fishBite(o){o=o||{};if(S.you.day.fish>=10){toast('🎣 the fish have gone quiet. try again tomorrow');return{quiet:true}}if(!NAT.fi||NAT.fi.ph==='card'){natCardClose();const r=fishCast(Object.assign({force:1,wait:0},o));if(!r.ok)return r}
   const F=fishRing(o);F.auto=o.reel==='auto'||!!o.instant;if(o.instant){F.ph='reel';return fishLand()}return{ph:F.ph,sp:F.sp,size:F.size,meet:F.meet,now:performance.now()}}
 function fishFrame(dt){const F=NAT.fi,ov=NAT.ov;if(!F||!ov)return;const now=performance.now();dt=Math.min(.25,Math.max(0,(now-(F.lt||now))/1000));F.lt=now;const q=project(F.lx,0,F.lz),lu=ov.querySelector('.b35lure'),rg=ov.querySelector('.b35ring'),rl=ov.querySelector('.b35reel');
-  const ck=Math.min(1,(now-F.t0)/600),sx=innerWidth/2,sy=innerHeight*.8,lx=q.vis?q.x:sx,ly=q.vis?q.y:innerHeight*.45,ax=sx+(lx-sx)*ck,ay=sy+(ly-sy)*ck-Math.sin(ck*Math.PI)*120;lu.style.transform=`translate(${ax|0}px,${ay|0}px)`;
+  const ck=Math.min(1,(now-F.t0)/600),sx=innerWidth/2,sy=innerHeight*.8,lx=clamp(q.vis?q.x:sx,40,(VW||innerWidth)-40),ly=clamp(q.vis?q.y:innerHeight*.45,innerHeight*.2,innerHeight*.7),ax=sx+(lx-sx)*ck,ay=sy+(ly-sy)*ck-Math.sin(ck*Math.PI)*120;lu.style.transform=`translate(${ax|0}px,${ay|0}px)`;
   ov.querySelectorAll('.b35sh').forEach((s,i)=>{const a=now/2400+i*2.1,r=60+i*24,tw=F.ph==='ring'&&i===0?1-Math.min(1,(now-F.rs)/1200):1;s.style.transform=`translate(${(lx+Math.cos(a)*r*tw)|0}px,${(ly+Math.sin(a*1.3)*r*.35*tw)|0}px) rotate(${(a*57)|0}deg)`});
   if(F.ph==='cast'&&ck>=1)F.ph='wait';if(F.ph==='wait'&&now>=F.bite)fishRing();
-  if(F.ph==='ring'){const k=1-(now-F.rs)/1200,s=Math.max(.15,1+k*2.6);rg.style.display='block';rg.style.borderWidth=(2+F.cls*2)+'px';rg.style.transform=`translate(${lx|0}px,${ly|0}px) translate(-50%,-50%) scale(${s.toFixed(3)})`;
+  if(F.ph==='ring'){const k=1-(now-F.rs)/1200,s=Math.max(.38,.45+k*3.2);// inner ring meets the lure plus halo (about 20 px) exactly at F.meet
+   rg.style.display='block';rg.style.borderWidth=(2+F.cls*2)+'px';rg.style.transform=`translate(${lx|0}px,${ly|0}px) translate(-50%,-50%) scale(${s.toFixed(3)})`;
     if(F.auto&&Math.abs(now-F.meet)<30)fishDown(now);else if(now>F.meet+100)fishLose('it slipped away. no worries')}else rg.style.display='none';
   if(F.ph==='reel'){rl.style.display='block';const blue=!F.run;if(now>=F.seg){F.run=F.run?0:1;F.seg=now+(F.run?400+Math.random()*400:500+Math.random()*500)}if(F.auto)F.hold=F.run?0:1;
     if(F.hold&&blue){F.p+=dt*1000/F.dur*1.5;F.idle=0;F.ten=Math.max(0,F.ten-dt)}else if(F.hold){F.ten+=dt*1.2}else{F.idle+=dt;F.ten=Math.max(0,F.ten-dt*2)}
@@ -10161,22 +10168,22 @@ function crabPull(o){o=o||{};const y=S.you,st=crabStatus();if(!st.ready)return{o
   for(let i=0;i<n;i++){let sp=R()<.65?'dung':'rrck',male=R()<.55,size=+(sp==='dung'?5+R()*2.2:4+R()*2).toFixed(1);if(i===0&&o.first==='dungF'){sp='dung';male=false;size=6.6}
     const rule=sp==='dung'?(!male?'dungF':size<6.25?'dungS':null):size<5?'rrS':null;out.push({sp,sex:male?'male':'female',size,keep:!rule,note:rule?FREL[rule]:'',price:sp==='dung'?clamp(Math.round(size*2),6,15):clamp(Math.round(size*1.5),6,15)})}
   let sur=null;const r2=R();if(!y.crab.b&&r2<.06){sur='bttl';y.crab.b=1}else if(r2<.14)sur='boot';else if(r2<.2)sur='nfsd';
-  y.crab.t=0;out.forEach(c=>{fnLog(c.sp);if(c.keep)putItem(c.sp,0)});if(sur){putItem(sur,0);fnLog(sur)}try{sfx('splash',{you:1})}catch(e){}save();
+  y.crab.t=0;out.forEach(c=>{fnLog(c.sp);if(c.keep){if(canPut(YOUX[c.sp]))putItem(c.sp,0);else{c.keep=false;c.full=1;c.note='your pockets are full, so it went back'}}});if(sur){if(canPut(YOUX[sur]))putItem(sur,0);else if(sur==='bttl')y.crab.b=0;fnLog(sur)}try{sfx('splash',{you:1})}catch(e){}save();
   const li=out.map(c=>`<li>${FN[c.sp][1]} ${c.sex} ${esc(FN[c.sp][0])}, ${c.size}″ · ${c.keep?'kept':'🤍 released: '+esc(c.note)}</li>`).join('');
   const sx=sur==='bttl'?'<p class="b35note">🍾 a message in a bottle, sealed with lighthouse wax: <i>"if found, please say hi to our Mocha"</i></p>':sur==='boot'?'<p class="b35note">🥾 an old boot. Pearl will call it "vintage".</p>':sur?'<p class="b35note">🪙 a sand dollar rode up with them!</p>':'';
   if(out.some(c=>!c.keep))heartUp();if(!o.quiet)natCard(`<h4>🦀 the crab pot</h4><ul>${li}</ul>${sx}<p>${esc(FN.dung[3])}</p>`,[['done',null]]);return{ok:true,crabs:out,surprise:sur}}
 function crabReady(o){o=o||{};const y=S.you;y.gear|=2;const t=Date.now()-8.1*36e5;y.crab.t=y.crab.t?Math.min(y.crab.t,t):t;const st=crabStatus();if(o.peek)return st;return crabPull(o)}
 // buoy: one cone, only while the pot is down; it bobs when ready
-function crabBuoy(){if(NAT.buoy)return NAT.buoy;const m=new THREE.Mesh(new THREE.ConeGeometry(.22,.5,8),new ToonM({color:'#D9542E'}));m.name='b35buoy';m.position.set(-100.6,.1,14);m.visible=false;m.castShadow=false;scene.add(m);return NAT.buoy=m}
+function crabBuoy(){if(NAT.buoy)return NAT.buoy;const m=new THREE.Mesh(new THREE.ConeGeometry(.22,.5,8),new ToonM({color:'#D9542E'}));m.name='b35buoy';m.position.set(-100.6,.1,14);m.visible=false;m.castShadow=false;worldAdd(m);return NAT.buoy=m}
 // ---------- crow trinkets: peanuts out overnight -> at most one seeded trinket the next morning, in your mailbox ----------
 function crowGift(o){o=o||{};const y=S.you,h=y.home||{},k=curDay();if(y.crow.d===k)return{ok:false,why:'today',got:null};const pea=+h.pea||0;if(!pea||dkey(pea)>=k&&!o.force)return{ok:false,why:'nopeanuts',got:null};
   if(new Date().getHours()<6&&!o.force)return{ok:false,why:'early',got:null};y.crow.d=k;h.pea=0;const R=seeded(catHash('crow:'+k));if(R()>=.75&&!o.sure){save();return{ok:true,got:null}}
-  const code=['tcap','tbtn','tgls','tbel'][Math.floor(R()*4)],who=R()<.5?'Jot':'a neighborhood crow';putItem(code,0);const lg=fnLog(code);h.mb=Math.min(9,(h.mb|0)+1);try{sfx('mail',{you:1})}catch(e){}
+  const code=['tcap','tbtn','tgls','tbel'][Math.floor(R()*4)],who=R()<.5?'Jot':'a neighborhood crow';if(!canPut(YOUX[code])){y.crow.d=0;h.pea=pea;return{ok:false,why:'full',got:null}}putItem(code,0);const lg=fnLog(code);h.mb=Math.min(9,(h.mb|0)+1);try{sfx('mail',{you:1})}catch(e){}
   toast(`📬 ${who} left something in your mailbox: a ${FN[code][0].replace(/ \(.*/,'')}! ${FN[code][3]}`);save();return{ok:true,got:code,who,first:lg.first}}
 // ---------- the contextual chip (fishing edge, pier end) ----------
 function natChipEl(){if(NAT.chip)return NAT.chip;const c=document.createElement('div');c.id='b35chip';c.className='b35chip';HUD.slot('b35chip',{el:c,zone:'tc',order:4,prio:7,modes:['walk'],on:false});c.addEventListener('pointerdown',e=>e.stopPropagation());
   c.onclick=e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a,y=S.you;if(a==='rod'||a==='pot'){const pr=a==='rod'?8:12;if(y.coins<pr){toast(`not quite enough coins (${pr} 🪙)`);return}addCoins(-pr,a);y.gear|=a==='rod'?1:2;toast(a==='rod'?'🎣 Gus: "a good rod! FISH ON!" (8 🪙)':'🦀 Gus: "drop it off the pier end!" (12 🪙)');save()}
-    else if(a==='fish')fishCast();else if(a==='drop')crabDrop();else if(a==='pull')crabPull();NAT.chipK='';natChipScan()};return NAT.chip=c}
+    else if(a==='fish')fishCast();else if(a==='drop')crabDrop();else if(a==='pull')crabPull();NAT.chipK=null;natChipScan()};return NAT.chip=c}
 function natChipScan(){const c=natChipEl(),y=S.you,wk=camS.mode==='walk'&&!NAT.fi&&!(typeof IN==='object'&&IN.on);let h='';
   if(wk&&YOU.x<-50&&fishEdge())h+=y.gear&1?'<button data-a="fish">🎣 fish here</button>':'<button data-a="rod">🎣 Gus\'s rod · 8 🪙</button>';
   if(wk&&YOU.x<-92&&YOU.z>8&&YOU.z<20){const st=crabStatus();h+=!st.has?'<button data-a="pot">🦀 crab pot · 12 🪙</button>':!st.down?'<button data-a="drop">🦀 drop the crab pot</button>':st.ready?'<button data-a="pull">🦀 pull the crab pot</button>':`<button data-a="" disabled>🦀 soaking · ${st.left} h</button>`}
@@ -10213,7 +10220,7 @@ function youTabB35(){const el=$('#tab-you');if(!el||el.querySelector('#b35you'))
 .b35reel{display:none;left:50%!important;top:auto!important;bottom:calc(120px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(70vw,320px);height:18px;border-radius:9px;background:#E9DCC4;border:2px solid #3A2420;overflow:hidden}
 .b35reel i,.b35reel b{position:absolute;left:0;top:0;bottom:0;display:block}.b35reel i{background:#6FA8DC;transition:background .2s}.b35reel.run i{background:#E8913A}.b35reel b{top:auto;height:4px;background:#8C2C24}
 .b35reel.pull{box-shadow:0 0 14px #6FA8DC}.b35reel.run{box-shadow:0 0 14px #E8913A}
-.b35hint{position:absolute;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));transform:translateX(-50%);margin:0;padding:6px 12px;border-radius:12px;background:rgba(233,220,196,.92);color:#3A2420;font:700 14px ui-rounded,system-ui,sans-serif;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.b35hint{position:absolute;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));transform:translateX(-50%);margin:0;padding:6px 12px;border-radius:12px;background:rgba(233,220,196,.92);color:#3A2420;font:700 14px ui-rounded,system-ui,sans-serif;white-space:normal;text-align:center;width:max-content;max-width:min(86vw,420px);pointer-events:none}.b35hint:empty{display:none}
 .b35x{position:absolute;right:calc(12px + env(safe-area-inset-right));top:calc(12px + env(safe-area-inset-top));min-width:44px;min-height:44px;border:0;border-radius:22px;background:#E9DCC4;color:#3A2420;font:800 18px system-ui}
 .b35chip{display:flex;gap:6px}.b35chip button{min-height:44px;border:0;border-radius:22px;padding:0 14px;background:#E9DCC4;color:#3A2420;font:800 14px ui-rounded,Nunito,system-ui,sans-serif;box-shadow:0 3px 10px rgba(0,0,0,.2);white-space:nowrap}
 .b35card{position:fixed;z-index:46;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(92vw,380px);max-height:62vh;overflow:auto;padding:14px 16px 12px;background:#E9DCC4;color:#3A2420;border-radius:6px 14px 14px 6px;border-left:8px solid #8C2C24;box-shadow:0 8px 28px rgba(0,0,0,.35);font:500 14px/1.4 Georgia,serif}
@@ -10252,11 +10259,11 @@ const B40PAR=['hollis','clem','vesper','tabitha','odalie','marigold','jot','dale
 // rest at home (keepers and the new cast), pal visits at the host's home; Oct 31: candy at the door 17-20 + the 15:00 parade; October Saturdays: Hollis in the square patch
 {const r0=tRhy;tRhy=function(id,dow){let s=r0(id,dow);const c=CASTB[id];if(!s||!c)return s;const k=B40K[id],q=B40C[id];if(k&&c.k)s=s.split(c.k.shop+'.back rest').join(k+'.home rest');if(q)s=s.split(`${c.home||'home'}.home rest`).join(q+'.home rest');return s}}
 {const p0=tPlan;tPlan=function(id,date=Date.now()){const v=p0(id,date);if(v.b40)return v;v.b40=1;const od=octDay(date),c=CASTB[id];if(!od||!c)return v;const dow=new Date(date).getDay();
-  if(od===31&&c.k)v.push([17,20,'in',c.k.shop,'door','candy']);const pi=B40PAR.indexOf(id);if(od===31&&pi>=0)v.push([15,16.5,'out','parade',String(pi),'parade']);
-  if(id==='hollis'&&dow===6)v.push([9,17,'out','sqpatch',null,'stall']);return v}}
+  if(id==='hollis'&&dow===6)v.push([9,17,'out','sqpatch',null,'stall']);// pushed first: the later Oct 31 parade block wins (blockAt takes the last match)
+  if(od===31&&c.k)v.push([17,20,'in',c.k.shop,'door','candy']);const pi=B40PAR.indexOf(id);if(od===31&&pi>=0)v.push([15,16.5,'out','parade',String(pi),'parade']);return v}}
 {const v0=palVisits;palVisits=function(dk){return v0(dk).map(p=>{const h=B40VIS[p.a+'-'+p.b]||B40VIS[p.b+'-'+p.a];if(h)p.w=h;return p})}}
 {const w0=tWhere;tWhere=function(T,b){const o=w0(T,b);if(b&&HOMEPT[b[3]]&&/^(rest|rainrest|visit)$/.test(b[5])){const h=HOMEPT[b[3]];o.x=h.x;o.z=h.z;o.hide=true;o.inP=null}return o}}
-{const s0=npcStatus;npcStatus=function(id){const n=TN[id],b=n&&n.b;if(b&&HOMEPT[b[3]]&&/^(rest|rainrest)$/.test(b[5])&&!n.walk){const H=HOMEPT[b[3]],h=townHour();return H.train?'on the train home to Ballard Junction':(h>=22||h<6?'asleep at ':'at home at ')+H.name}return s0(id)}}
+{const s0=npcStatus;npcStatus=function(id){const n=TN[id],b=n&&n.b;if(b&&HOMEPT[b[3]]&&/^(rest|rainrest)$/.test(b[5])&&!n.walk){const H=HOMEPT[b[3]],h=townHour();return H.train?(h>=b[0]&&h<b[0]+1.25?'on the train home to Ballard Junction':h>=22||h<6?'asleep at home in Ballard Junction':'at home in Ballard Junction'):(h>=22||h<6?'asleep at ':'at home at ')+H.name}return s0(id)}}
 {const k0=townTick;townTick=function(force){k0(force);for(const T of TOWN.set){const b=T.n.b;if(T.a&&b&&HOMEPT[b[3]]&&T.n.hide&&!T.n.walk)T.a.tp=b[3]}}}
 try{TPC.clear()}catch(e){}
 const B40={homes:{},silN:0,ghost:{mode:'loops',hs:null},oct:{},tt:null,hats:null,broom:null,hay:null,maze:null,ring:{on:false,cas:0,f0:0,n:0},acc:0,acc2:0,mush:null,pools:[],kids:null,lit:{}};
@@ -10272,13 +10279,14 @@ function b40Wins(){for(const k of ['pink','blue']){const H=HOMEPT[k],P=H.pos;let
 function b40Light(){const h=townHour();for(const k in HOMEPT){const H=HOMEPT[k];if(H.train)continue;const w=homeWho(k),aw=w.filter(o=>o.awake),vis=w.some(o=>o.visit),lv=aw.length?1:w.length?.12:0;B40.lit[k]=lv;
     if(k==='pink'||k==='blue'){WLT.force[k+':main']=lv;WLT.force[k+':up']=vis?1:aw.length?.5:0}else if(k==='willa'){for(const s of WLT.S)if(s&&s.pid==='willa')WLT.force[s.key]=lv?(s.room==='main'?lv:lv*.6):null}}}
 // ---------- the houseboat (hull + cabin box) and the pumpkin-patch shed: one vertex-coloured mesh ----------
+COLX.push([-36,-26.4,1.75,1.45]);// the pumpkin-patch shed is solid from load (COL is built at boot, before b40Props runs)
 function b40Props(){const P=[],hb=[-78,-40.6],sh=[-36,-26.4];
   P.push({g:'b',c:'#2f5f6f',p:[hb[0],.1,hb[1]],s:[9,1.1,3.6]},{g:'b',c:'#f4ead8',p:[hb[0],.72,hb[1]],s:[9.2,.14,3.8]},{g:'b',c:'#c94f4f',p:[hb[0]+.6,1.9,hb[1]],s:[5,2.2,2.8]},{g:'b',c:'#3c4a5a',p:[hb[0]+.6,3.1,hb[1]],s:[5.6,.22,3.2]},
    {g:'b',c:'#ffd98a',p:[hb[0]-.8,2.1,hb[1]+1.41],s:[.8,.7,.04]},{g:'b',c:'#ffd98a',p:[hb[0]+2,2.1,hb[1]+1.41],s:[.8,.7,.04]},{g:'b',c:'#5a3a2a',p:[hb[0]+.6,1.6,hb[1]+1.42],s:[.8,1.6,.04]},{g:'c',c:'#8a6a4a',p:[hb[0]+.6,.9,hb[1]+2.6],s:[.06,1.8,.06]},
    {g:'b',c:'#8a6a4a',p:[hb[0]+.6,.75,hb[1]+2.3],s:[1,.08,1.6]},{g:'c',c:'#e8a03a',p:[hb[0]-3.6,3.6,hb[1]],s:[.05,1.6,.05]},{g:'b',c:'#e8a03a',p:[hb[0]-3.3,4.1,hb[1]],s:[.6,.4,.02]});
   P.push({g:'b',c:'#8a5a3a',p:[sh[0],1.2,sh[1]],s:[3.4,2.4,2.8]},{g:'k',c:'#5a3a2a',p:[sh[0],2.95,sh[1]],s:[2.6,1.2,2.2],r:[0,Math.PI/4,0]},{g:'b',c:'#3a2a20',p:[sh[0],.95,sh[1]+1.41],s:[1,1.9,.04]},
    {g:'s8',c:'#e9883a',p:[sh[0]-1.2,.3,sh[1]+1.9],s:.3},{g:'s8',c:'#e9a03a',p:[sh[0]+1.3,.25,sh[1]+1.8],s:.25},{g:'b',c:'#d9c79a',p:[sh[0]+1.4,.3,sh[1]+.6],s:[.9,.5,.6]});
-  const m=new THREE.Mesh(mergeParts(P,null),CHIBI_MAT);m.name='b40homes';m.castShadow=false;m.receiveShadow=true;worldAdd(m);try{COLP.push([sh[0],sh[1],1.8])}catch(e){}return m}
+  const m=new THREE.Mesh(mergeParts(P,null),CHIBI_MAT);m.name='b40homes';m.castShadow=false;m.receiveShadow=true;worldAdd(m);return m}
 // ---------- silhouettes: 4 planes from one 256x64 atlas (ears, antlers, owl tufts, round), 2 Hz, the 4 nearest lit side windows of the pink/blue houses ----------
 const B40SIL={m:null,P:[],sp:{juniper:0,sol:2,rosalind:0,tabitha:0,willa:3,honey:0}};
 function b40SilBuild(){const t=canvasTex(256,64,g=>{g.clearRect(0,0,256,64);g.fillStyle='#fff';const head=(cx)=>{g.beginPath();g.ellipse(cx,40,15,14,0,0,7);g.fill();g.beginPath();g.ellipse(cx,66,26,14,0,0,7);g.fill()};
@@ -10304,6 +10312,7 @@ function b40GhostInit(){B40G.forEach((id,i)=>{const c=CASTB[id];if(!c||!c.obj)re
 const B40HS=[[6.4,95.4],[13.6,104.2],[8.2,104.6],[14.2,96]];
 function ghostMode(t=Date.now()){const s=Math.floor(t/1e3)%120,wk=wxKind(t);if(octDay(t)===31&&hourAt(t)<20.5&&hourAt(t)>=17)return'trick';if(s>=80&&wk==='clear')return'ring';return s<45?'loops':s<80?'hide':'loops'}
 function b40GhostFrame(T0){const now=Date.now(),on=ghostOn(now),mode=ghostMode(now);B40.ghost.mode=mode;const G=GLOWPTS;let up=false;
+  if(!on){if(!B40.ghost.off){B40.ghost.off=1;const H=ghostHours(now);B40G.forEach(id=>{const c=CASTB[id];if(c){c.hours=H;if(c.b40&&c.b40.gi>=0)glowSet(c.b40.gi,0)}})}return}B40.ghost.off=0;// battery: nothing per frame while the ghosts are not out
   B40G.forEach((id,i)=>{const c=CASTB[id];if(!c||!c.obj||!c.b40)return;const o=c.obj,b=c.b40;c.hours=ghostHours(now);let x,z,y=.3;
     if(mode==='ring'){const a=T0*.6+i*2.094;x=10+Math.sin(a)*2.4;z=100+Math.cos(a)*2.4;y=.35+Math.abs(Math.sin(T0*2+i))*.2;o.rotation.y=a+Math.PI/2}
     else if(mode==='hide'){const seek=i===1;if(seek){const a=T0*.35;x=10+Math.sin(a)*4.5;z=100+Math.cos(a*1.3)*3.5;o.rotation.y=a}else{const q=B40HS[(i+Math.floor(now/4e4))%4];x=q[0]+(i?.3:-.3);z=q[1]-.7;y=-.25+Math.max(0,Math.sin(T0*.8+i*3))*.35}}
@@ -10315,7 +10324,7 @@ function b40Ghosts(){const now=Date.now();return{on:ghostOn(now),hours:ghostHour
   return{id,visible:!!o.visible&&CHARLOD.vis(o),x:+TWV.x.toFixed(1),y:+TWV.y.toFixed(2),z:+TWV.z.toFixed(1),inCemetery:Math.hypot(TWV.x-10,TWV.z-100)<12.5,lvl:c.lod?c.lod.lvl:null,bond:bondOf(id),glow:c.b40?GLOWPTS.A[c.b40.gi]:0,opacity:o.userData.M.BODY.material.opacity}})}}
 // HIS act: visiting my ghost friends (night, while they are out); weighted by sociability and the full moon (no user term)
 const GHOST_ACT={p:'cemetery',doing:'visiting my ghost friends',tags:['people','nature'],need:{social:30,fun:15},fx:'ghosts',night:1,lines:['Floated over to the old cemetery to see Fennel, Tuffet and Hush.'],
-  get hw(){const t=Date.now();if(!ghostOn(t))return -30;const tr=S&&S.traits||{};return(+tr.sociability||.5)*1.6+moonFull(t)*1.4+.4}};
+  get hw(){const t=Date.now();if(!ghostOn(t)||ghostMode(t)==='trick')return -30;const tr=S&&S.traits||{};return(+tr.sociability||.5)*1.6+moonFull(t)*1.4+.4}};
 ACTS.push(GHOST_ACT);
 function ghostOutcome(act,t,live){const tr=S.traits||{};for(const n in act.need||{})S.needs[n]=clamp(S.needs[n]+act.need[n],0,100);S.xp+=10;S.visits.cemetery=(S.visits.cemetery||0)+1;S.recent.unshift('cemetery');S.recent.length=Math.min(S.recent.length,6);
   const r=seeded(catHash('ghost:'+Math.floor(t/36e5)));const who=B40G.filter((x,i)=>i===0||r()<.7);who.forEach(id=>S.know[id]=(S.know[id]||0)+1);const ls=B40GL[Math.floor(r()*B40GL.length)],nm=who.map(id=>CASTB[id].name);
@@ -10374,7 +10383,7 @@ const B40KIDS=[['a little witch','#2a2438','#7a4ab0'],['a pumpkin','#e9883a','#4
 function b40KidsBuild(){const L=[];for(let i=0;i<3;i++){const P=[{g:'k',c:'#888',p:[0,.45,0],s:[.32,.9,.32]},{g:'s8',c:'#f2d0b0',p:[0,1.02,0],s:.22},{g:'k',c:'#333',p:[0,1.38,0],s:[.2,.42,.2]},{g:'c',c:'#e9883a',p:[.3,.42,.08],s:[.1,.14,.1]}];
     const m=new THREE.Mesh(mergeParts(P,null),CHIBI_MAT);m.visible=false;m.name='b40kid';worldAdd(m);L.push(m)}return L}
 function trickVisit(force){const t=Date.now(),y=S.you;if(!y)return null;if(!force&&(!trickOn(t)||!cabJack()))return null;const dk=dkey(t);if(y.tt.d!==dk){y.tt.d=dk;y.tt.n=0}if(!force&&(y.tt.n>=6||t-y.tt.at<5*6e4))return null;
-  const r=seeded(catHash('tot:'+dk+':'+y.tt.n)),g=[0,1,2].map(()=>B40KIDS[Math.floor(r()*B40KIDS.length)]),names=g.map(k=>k[0]);y.tt.n++;y.tt.at=t;
+  const r=seeded(catHash('tot:'+dk+':'+y.tt.n)),g=B40KIDS.map(k=>[r(),k]).sort((a,b)=>a[0]-b[0]).slice(0,3).map(x=>x[1]),names=g.map(k=>k[0]);y.tt.n++;y.tt.at=t;
   const msg=pick(['thank you for the candy!! 🎃','best house on Maple Row','we will come back next year ♥','your porch pumpkin is the spookiest (good spooky)']),who=`${names[0]}, ${names[1]} and ${names[2]}`,e={t,n:who,m:msg,k:'trick'};
   let signed=false;try{if(typeof gbSign==='function'){gbSign(e);signed=true}}catch(er){}if(!signed){y.gb.push(e);if(y.gb.length>30)y.gb.splice(0,y.gb.length-30)}
   let thanks=null;try{if(typeof putItem==='function'&&YOUX.b40d&&r()<.6&&putItem('b40d'))thanks='b40d'}catch(er){}
@@ -11351,7 +11360,7 @@ function fwDist(){const W=innerWidth,H=Math.max(1,innerHeight),asp=W/H;if(W<H)re
 function fwCam(snap){const P=byId.fogwell,dist=fwDist(),pit=innerWidth<innerHeight?.78:.62;const e=CAM.push('floor',{prio:2,target:fwTarget,ty:0,dist,pitch:pit,yaw:P.ry+(IN.yo||.3),range:[dist*.72,dist*1.3],ease:3});if(snap)try{inSnap(e)}catch(x){}return e}
 // ---------- entering / leaving (wrapped around LF1's inEnter / inLeave, which run at the black swap) ----------
 function fwOn(){FGW.on=1;for(const sp of FGW.lsp)sp.b=.9;FGW.yf=1;FGW.want=null;FGW.ride=null;fwShow(1);try{HUD.show('floors',true)}catch(e){}fwAmbrose(true)}
-function fwOff(){FGW.on=0;for(const sp of FGW.lsp)sp.b=0;FGW.ride=null;CAM.pop('floor',true);fwDrop();try{HUD.show('floors',false)}catch(e){}FGW.ui&&FGW.ui.classList.remove('open')}
+function fwOff(){FGW.on=0;FGW.sNo=0;for(const sp of FGW.lsp)sp.b=0;FGW.ride=null;CAM.pop('floor',true);fwDrop();try{HUD.show('floors',false)}catch(e){}FGW.ui&&FGW.ui.classList.remove('open')}
 {const e0=inEnter;inEnter=function(pid,q){const r=e0.apply(this,arguments);if(pid==='fogwell'&&IN.pid==='fogwell')try{fwOn()}catch(e){console.error('B39 fwOn',e)}return r}}
 {const l0=inLeave;inLeave=function(q){if(IN.pid==='fogwell'||FGW.on)try{fwOff()}catch(e){console.error('B39 fwOff',e)}return l0.apply(this,arguments)}}
 // who is drawn on the shown floor: Ambrose (and anyone without a floor) is in the lobby; the walker on his own floor
@@ -11364,13 +11373,13 @@ function fwRide(n,o){n=fwFloorN(n);o=o||{};if(!n||FGW.ride)return false;if(!FGW.
 function fwPlaceYou(q,face){const P=byId.fogwell,w=toWorld(P,q.x,q.z);YOU.x=w.x;YOU.z=w.z;if(face!=null)YOU.yaw=face;YOU.moving=0;try{tapStop()}catch(e){}if(AG.you){AG.you.x=YOU.x;AG.you.z=YOU.z}try{INX.lx=YOU.x;INX.lz=YOU.z}catch(e){}}
 function fwLocal(x,z){const P=byId.fogwell;return inLocal(P,x,z,{x:0,z:0})}
 function fwRideTick(dt){const R=FGW.ride;if(!R)return;R.t+=dt;const doors=a=>{for(const d of FGW.D||[])if(d.k==='elev')d.a=a;fwDoorSync()};
-  if(R.ph==='board'){const l=fwLocal(YOU.x,YOU.z);if(Math.hypot(l.x-FWCAR.x,l.z-FWCAR.z)<1.1||R.t>12){fwPlaceYou(FWCAR,Math.PI/2);R.ph='close';R.t=0}return}
+  if(R.ph==='board'){const l=fwLocal(YOU.x,YOU.z),bd=Math.hypot(l.x-FWCAR.x,l.z-FWCAR.z);if(R.t>.5&&(R.bd!=null&&bd>R.bd+1.5||R.t>12&&bd>2.5)){FGW.ride=null;FGW.want=null;return}R.bd=R.bd==null?bd:Math.min(R.bd,bd);if(bd<1.1||R.t>12){fwPlaceYou(FWCAR,Math.PI/2);R.ph='close';R.t=0}return}
   if(camS.mode==='walk')fwPlaceYou(FWCAR);
   if(R.ph==='close'){doors(Math.max(0,1-R.t/.6));if(R.t>=.6){R.ph='move';R.t=0;FGW.ev.push(['doors','closed',+T.toFixed(2)])}}
   else if(R.ph==='move'){const k=Math.min(1,R.t/3),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;fwDial(R.from+(R.to-R.from)*e);if(R.t>=3){FGW.yf=R.to;fwShow(R.to);fwDial(R.to);doors(0);R.ph='open';R.t=0;fwDing()}}
   else if(R.ph==='open'){doors(Math.min(1,R.t/.6));if(R.t>=.6){if(camS.mode==='walk')fwPlaceYou(FWOUT,Math.PI/2);FGW.ev.push(['arrive',FWN[R.to-1],+T.toFixed(2)]);FGW.ride=null}}}
 function fwDing(){FGW.ev.push(['ding',FWN[(FGW.cur||1)-1],+T.toFixed(2)]);if(FGW.ev.length>40)FGW.ev.splice(0,FGW.ev.length-40);const P=byId.fogwell,w=toWorld(P,FWCAR.x,FWCAR.z);try{if(typeof sfx==='function')sfx('elevator',{x:w.x,z:w.z,pid:'fogwell'})}catch(e){}}
-function fwStairs(n){n=fwFloorN(n);if(!n||!FGW.on)return false;FGW.yf=n;fwShow(n);fwPlaceYou({x:n===6?7.5:FWSTAIR.x-.6,z:FWSTAIR.z},-Math.PI/2);FGW.ev.push(['stairs',FWN[n-1],+T.toFixed(2)]);return true}
+function fwStairs(n){n=fwFloorN(n);if(!n||!FGW.on)return false;FGW.yf=n;fwShow(n);fwPlaceYou({x:n===6?6.6:FWSTAIR.x-1.4,z:FWSTAIR.z},-Math.PI/2);FGW.sNo=1;FGW.sT=performance.now()+1000;FGW.ev.push(['stairs',FWN[n-1],+T.toFixed(2)]);return true}
 // ---------- the per-frame tick (from b12Frame): presence -> windows (1 Hz), the ride, doors, triggers inside, the walker kept on his floor ----------
 function fwTick(dt){if(!(dt>0))dt=.016;const now=performance.now();if(now>FGW.t1){FGW.t1=now+1000;try{fwWin()}catch(e){FGW.err='win '+e.message}try{fwWho()}catch(e){FGW.err='who '+e.message}}
   if(!FGW.on)return;if(!IN.on||IN.pid!=='fogwell'){fwOff();return}
@@ -11383,7 +11392,8 @@ function fwTick(dt){if(!(dt>0))dt=.016;const now=performance.now();if(now>FGW.t1
   if(walk&&!FGW.ride&&FGW.yf===FGW.cur){// walking into the car rides to the picked floor (or one up); the stair door climbs (or goes to the picked floor)
     const nx=FGW.want&&FGW.want!==FGW.yf?FGW.want:(FGW.yf%6)+1;
     if(Math.hypot(l.x-FWCAR.x,l.z-FWCAR.z)<.8&&YOU.moving){FGW.want=null;fwRide(nx,{walk:true});FGW.ride.ph='close';FGW.ride.t=0;fwPlaceYou(FWCAR,Math.PI/2)}
-    else{const sx=FGW.cur===6?7.6:FWSTAIR.x;if(Math.hypot(l.x-sx-.35,l.z-FWSTAIR.z)<.55&&YOU.moving){FGW.want=null;fwStairs(nx)}}}
+    else{const sx=FGW.cur===6?7.6:FWSTAIR.x,sd=Math.hypot(l.x-sx-.35,l.z-FWSTAIR.z);if(sd>1.2)FGW.sNo=0;// re-arm only after stepping away, plus a 1 s cooldown; the stairs never wrap R->L
+      if(sd<.55&&YOU.moving&&!FGW.sNo&&!(now<(FGW.sT||0))){const sn=FGW.want&&FGW.want!==FGW.yf?FGW.want:(FGW.yf===6?5:FGW.yf+1);FGW.want=null;fwStairs(sn)}}}
   fwAmbrose(false)}
 {const b0=b12Frame;b12Frame=function(dt){b0(dt);try{fwTick(dt)}catch(e){FGW.err='tick '+e.message}}}
 // Ambrose greets the walker once a day in the lobby (talk card: he is a CAST character; a bond when B28's bondAdd exists)
@@ -11401,7 +11411,7 @@ function fwUI(){const el=FGW.ui;if(!el)return;const n=FGW.cur||1;el.querySelecto
   el.addEventListener('pointerdown',e=>e.stopPropagation());el.addEventListener('click',e=>{e.stopPropagation();const b=e.target.closest('button');if(!b)return;if(b.classList.contains('fwT')){el.classList.toggle('open');return}fwPick(+b.dataset.f);el.classList.remove('open')});
   FGW.ui=el;HUD.slot('floors',{el,zone:'rc',order:1,prio:7,on:false})}
 // ---------- the state (S.condo: only the rent; everything else is derived) and renting 5C (STRETCH core: the lease; decorating it is B27's) ----------
-function condoFix(c){c=c&&typeof c==='object'&&!Array.isArray(c)?c:{};const r={};if(c.rent&&typeof c.rent==='object')for(const k of Object.keys(c.rent).slice(0,3))if(FWUB[k]&&!FWUB[k][1]&&c.rent[k]==='you')r[k]='you';return{rent:r,due:+c.due||0}}
+function condoFix(c){c=c&&typeof c==='object'&&!Array.isArray(c)?c:{};const r={};if(c.rent&&typeof c.rent==='object'&&!Array.isArray(c.rent))for(const k of Object.keys(c.rent).slice(0,3))if(k==='5C'&&c.rent[k]==='you')r[k]='you';return{rent:r,due:+c.due||0}}
 function fwRent(unit){unit=String(unit||'5C').toUpperCase();const U=FWUB[unit];if(!U)return{ok:false,why:'no such unit'};if(U[1])return{ok:false,why:unit+' is '+(CASTB[U[1]]?CASTB[U[1]].name:U[1])+"'s home"};if(!S.condo)S.condo=condoFix(null);
   if(S.condo.rent[unit]==='you')return{ok:true,unit,already:true,due:S.condo.due};const c=S.you&&+S.you.coins||0;if(c<150)return{ok:false,why:'150 coins a month; you have '+c};
   S.you.coins=c-150;S.condo.rent[unit]='you';S.condo.due=Date.now()+30*864e5;try{save()}catch(e){}try{toast('🔑 '+unit+' at the Fogwell is yours · 150 a month')}catch(e){}return{ok:true,unit,due:S.condo.due,coins:S.you.coins}}
