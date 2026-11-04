@@ -1270,10 +1270,10 @@ const STYLE={shadowHalf:0,skyHooks:[],poolsDay:0,hooks:[],shots:{},
 let WORLD=null;function worldAdd(o){(WORLD&&WORLD.parent?WORLD:scene).add(o);return o}
 const IN={on:0,pid:null,who:null,ph:'idle',k:0,t:0,door:null,pend:null,lock:0,hid:[],walls:[],cap:[],n:0,last:0,swapMs:0,yo:.3,P:null,fy:0,
   see(id){return!WORLD||inSeeId(id)}};// LF1: see(id) = is that character drawn (in this room, or outdoors when IN is off). Track S reads on, pid, ph and see(id)
-const UIQ={level:0,hot:0,frz:false,rn:0,rT:0,rps:0,skip:0,fps(){if(!TOUCH||!this.level)return 1e9;return SHEETS.has('look')?24:this.level===1?15:1e9},render(T,dt){if(performance.now()<this.hot){this.skip++;return false}if(this.level>=2&&Math.floor(T*4)===Math.floor((T-dt)*4))return false;this.rn++;return true},tick(now){if(now-this.rT>=1000){this.rps=Math.round(this.rn*1000/Math.max(1,now-this.rT));this.rn=0;this.rT=now}}};// LF3 M1: 15 fps behind half sheets (touch), 24 behind Your Look, 4 Hz renders behind full covers, no render while a finger is on a sheet
+const UIQ={level:0,hot:0,hs:0,frz:false,rn:0,rT:0,rps:0,skip:0,fps(){if(!TOUCH||!this.level)return 1e9;return SHEETS.has('look')?24:this.level===1?15:1e9},render(T,dt){if(this.hs&&performance.now()<this.hot){this.hs=0;this.skip++;return false}if(this.level>=2&&Math.floor(T*4)===Math.floor((T-dt)*4))return false;this.rn++;return true},tick(now){if(now-this.rT>=1000){this.rps=Math.round(this.rn*1000/Math.max(1,now-this.rT));this.rn=0;this.rT=now}}};// LF3 M1: 15 fps behind half sheets (touch), 24 behind Your Look, 4 Hz renders behind full covers, no render while a finger is on a sheet
 const SHEETS={m:new Map(),set(id,c){c?this.m.set(id,c):this.m.delete(id);UIQ.level=this.level()},level(){let l=0;for(const c of this.m.values())l=Math.max(l,c==='full'?2:1);return l},has(c){for(const v of this.m.values())if(v===c)return true;return false}};
 const TIER={n:1,name:'phone',boot:1,auto:true,autoN:1,guess:1,sig:'',farOut:1200,f:{dens:1,far:1,glow:1},aniso:4,built:{dens:1,aniso:4},caps:{},save:null,probe:null,drops:0,sd:0,prDrop:0,off:{},dn:[],fail:[],applied:false,rt:null,hud:null,lastF:0,
- fps(){const n=this.n;return n===0||SET.saver?20:n===1?(TOUCH?30:60):n===2?(this.caps.phone?30:60):(this.caps.phone?60:120)}};function tierInit(){try{tierBoot()}catch(e){TIER.fail.push('init:'+e.message)}}tierInit();
+ fps(){const n=this.n;return n===0||SET.saver?20:n===1?(TOUCH?30:60):n===2?(this.caps.phone||(this.caps.touch&&this.auto)?30:60):(this.caps.phone?60:120)}};function tierInit(){try{tierBoot()}catch(e){TIER.fail.push('init:'+e.message)}}tierInit();
 const PREWARM={L:[],done:false,add(n,f){this.L.push([n,f])}};
 STYLE.hooks.push(m=>Object.assign(m,{lf:()=>({IN:{on:IN.on,pid:IN.pid,ph:IN.ph},uiq:{level:UIQ.level,sheets:Object.fromEntries(SHEETS.m)},tier:{n:TIER.n,name:TIER.name},prewarm:PREWARM.L.length,world:!!WORLD}),
  lfForce:{in(on,pid){IN.on=on?1:0;IN.pid=on?(pid||null):null;poolSync();return{on:IN.on,pid:IN.pid}}}}));
@@ -1283,7 +1283,7 @@ let VW=innerWidth,VH=innerHeight;
 const LF3={fr:0,boot:0,mode:'',hudT:0,lT:0,lc:null,lchg:[],pg:0,flow:'idle',flowT:0,preT:0,pre:null,thPre:null};
 const IDLE={q:[],ran:0};function idle(fn){if(!IDLE.q.includes(fn))IDLE.q.push(fn);if(IDLE.q.length>48)IDLE.q.shift()}
 function lf3Flow(n){LF3.flow=n;LF3.flowT=performance.now()}
-{const uiHot=e=>{const t=e.target;if(!t||!t.closest||t.closest('#c,#ylDrag,.stick,#joy,#look,#decoPad'))return;UIQ.hot=performance.now()+150};
+{const uiHot=e=>{const t=e.target;if(!t||!t.closest||t.closest('#c,#ylDrag,.stick,#joy,#look,#decoPad'))return;UIQ.hot=performance.now()+150;UIQ.hs=1};// fix: idle/catalog work waits 150 ms, the world render skips at most one frame per press/release
  document.addEventListener('pointerdown',uiHot,{capture:true,passive:true});document.addEventListener('pointerup',uiHot,{capture:true,passive:true})}
 // ---- PIX: paintings and postcards as <canvas> cells. A placeholder at once, the real paint in idle slices (nearest the viewport first), released beyond three screens. No encodes, no data URLs.
 const PIX={mk:new Map(),src:new Map(),cap:22,q:[],ios:new Map(),queued:0,painted:0,released:0,ms:0,lastMs:0,
@@ -1437,7 +1437,7 @@ function tierNoise(){if(TIER.bn)return TIER.bn;const N=64,a=new Float32Array(N*N
  const idx=Array.from(a.keys()).sort((i,j)=>a[i]-a[j]),d=new Uint8Array(N*N*4);idx.forEach((i,r)=>{const v=Math.round(r*255/(N*N-1));d[i*4]=d[i*4+1]=d[i*4+2]=v;d[i*4+3]=255});
  const t=new THREE.DataTexture(d,N,N,THREE.RGBAFormat);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.minFilter=t.magFilter=THREE.NearestFilter;t.generateMipmaps=false;t.needsUpdate=true;return TIER.bn=t}
 // the live parts. LOW keeps today's saver path (castShadow off, PR 1); PHONE, HIGH and ULTRA never toggle castShadow or the shadow map type (no program changes among them)
-function applyTier(sw){const T=TIER,n=T.n,f=T.f=tierF(n);T.name=f.name;const first=!T.applied;T.applied=true;
+function applyTier(sw){const T=TIER,n=T.n,f=T.f=tierF(n);T.rzK=String(f.msaa);T.name=f.name;const first=!T.applied;T.applied=true;
  try{const cs=n>0;if(sun.castShadow!==cs){sun.castShadow=cs;sun.shadow.needsUpdate=true}
   if(cs){const sz=f.shadow.size;if(sun.shadow.mapSize.x!==sz){sun.shadow.mapSize.set(sz,sz);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}sun.shadow.needsUpdate=true}if(sun.shadow.radius!==f.shadow.radius)sun.shadow.radius=f.shadow.radius}
   const r0=T.rt;let rs=false;if(Math.abs(renderer.getPixelRatio()-f.pr)>1e-3){renderer.setPixelRatio(f.pr);rs=true}tierRT(f);if(rs||T.rt!==r0)resize();
@@ -1452,7 +1452,7 @@ function tierSet(v,o){const T=TIER,m={low:0,phone:1,high:2,ultra:3};o=o||{};let 
  if(!o.keep){SET.gfx=T.auto?'auto':['low','phone','high','ultra'][n];SET.saver=n===0;saveSet()}T.off={};T.prDrop=0;const go=()=>{T.n=n;applyTier(true);tierSync()};
  if(o.now||!T.applied)go();else tierFade(go);return tierInfo()}
 // ADAPT, demote only: under .65x the cap (60 at most) for 4 s, step down one live feature: bloom, SAO, depth tilt-shift, 4096 shadows, pixel ratio -.25, then the tier
-function tierAdapt(raw,now){const T=TIER,A=T.ad||(T.ad={t:0,n:0});if(T.noAdapt||(T.caps.soft&&!T.adSW)||!(raw>0)||raw>=500||now<ADAPT.from)return;A.t+=raw;A.n++;if(A.t>4000){const fps=A.n*1000/A.t;A.t=A.n=0;if(fps<.65*Math.min(TIER.fps(),60))tierStep()}}
+function tierAdapt(raw,now){const T=TIER,A=T.ad||(T.ad={t:0,n:0});if(T.noAdapt||(T.caps.soft&&!T.adSW)||(ADAPT.uc&&!T.adSW)||!(raw>0)||raw>=500||now<ADAPT.from)return;A.t+=raw;A.n++;if(A.t>4000){const fps=A.n*1000/A.t;A.t=A.n=0;if(fps<.65*Math.min(TIER.fps(),60))tierStep()}}
 function tierStep(){const T=TIER,f=T.f;let s=null;if(f.bloom==='mip')s='bloom';else if(f.ao==='sao')s='sao';else if(f.tsMode==='depth')s='dts';else if(f.shadow.size>2048)s='shadow';else if(f.pr>1.01)s='pr';else if(T.n>1)s='tier';if(!s)return null;
  if(s==='pr'){T.prDrop+=.25;ADAPT.drops++}else if(s==='tier')T.n--;else T.off[s]=1;T.dn.push(s);tierDrop(s);applyTier(true);tierSync();return s}
 // drops are saved; 2 in a session lower the saved (auto) tier one step, never below PHONE
@@ -1482,7 +1482,7 @@ function tierMemAt(w,h,n=3){const o=TIER.off,d=TIER.prDrop;TIER.off={};TIER.prDr
 // Settings: Graphics row (Auto · <pick> / Battery saver / Phone / High / Ultra); live parts behind the fade, structural ones after a reload
 function tierNote(){const T=TIER;let s='';if(T.n===3&&T.caps.touch)s+='Ultra may get warm and use more battery. ';const d=T.f.dens-T.built.dens;if(d)s+=`${d>0?'More trees and longer views':'Lighter scenery'} after reload. <button data-gfxreload style="min-height:44px;margin-left:4px">Reload</button>`;return s}
 function tierRow(){const T=TIER,cur=SET.gfx||'auto',nm=['Saver','Phone','High','Ultra'],o=[['auto','Auto · '+nm[T.autoN]],['low','Battery saver'],['phone','Phone'],['high','High'],['ultra','Ultra']];
- return`<div class="set" style="display:block" id="gfxRow"><div>Graphics<small>Auto picks for this device. High and Ultra add softer shadows, a crisper miniature blur, more leaves and longer views.</small></div><div class="seg">${o.map(([v,l])=>`<button data-gfx="${v}" class="${cur===v?'on':''}">${l}</button>`).join('')}</div><div id="gfxNote" class="muted" style="font-size:12px;margin-top:6px">${tierNote()}</div></div>`}
+ return`<div class="set" style="display:block" id="gfxRow"><div>Graphics<small>Auto picks for this device. High and Ultra add crisper shadows, smoother edges, a finer miniature blur, more leaves and longer views.</small></div><div class="seg">${o.map(([v,l])=>`<button data-gfx="${v}" class="${cur===v?'on':''}">${l}</button>`).join('')}</div><div id="gfxNote" class="muted" style="font-size:12px;margin-top:6px">${tierNote()}</div></div>`}
 function tierSync(){const h=document.getElementById('gfxRow');if(!h)return;h.querySelectorAll('[data-gfx]').forEach(b=>b.classList.toggle('on',b.dataset.gfx===(SET.gfx||'auto')));const nt=document.getElementById('gfxNote');if(nt)nt.innerHTML=tierNote();const sv=document.querySelector('#tab-set [data-t="saver"]');if(sv)sv.checked=!!SET.saver}
 function tierWire(host){const h=host&&host.querySelector('#gfxRow');if(!h)return;h.onclick=e=>{const b=e.target.closest('[data-gfx]');if(b){tierSet(b.dataset.gfx);tierSync();return}if(e.target.closest('[data-gfxreload]'))location.reload()}}
 function tierInfo(){const T=TIER;return{n:T.n,name:T.name,auto:T.auto,autoN:T.autoN,boot:T.boot,guess:T.guess,sig:T.sig,probe:T.probe||{fps:null,cpuP95:null,gpuMs:null,at:null},drops:T.drops,sessionDrops:T.sd,demoted:T.dn.slice(),fail:T.fail.slice(),caps:Object.assign({},T.caps),
@@ -1661,7 +1661,7 @@ function shop(p,grp){const brick=p.id==='bookstore'||p.id==='market'||p.id==='st
   const sg=sign(p.name,Math.min(9,p.w*.8),fw,0,p.h-1.1,p.d/2+.06);sg.material.userData.alpha=true;sg.material.transparent=true;L.push(sg.material);
   if(p.id==='cafe'){}// B27Sb (S9): the umbrella tables gave way to the café terrace (bistro sets, chalkboard, barrel, crates, strand and bunting in DB)
   if(p.id==='records'){const disc=cyl(1.4,1.4,.15,'#111111',0,p.h+2.2,p.d/2-1,grp,24);disc.rotation.x=Math.PI/2;p.spin=disc;const lb=cyl(.5,.5,.18,'#e9b949',0,0,0,null);disc.add(lb)}
-  if(p.id==='arcade'){const n=glow('#ff5fa2',10,.5);n.position.set(0,p.h+1,p.d/2);grp.add(n);box(p.w+6,.8,p.d+9,'#8a6a4a',0,-.25,2.5,grp,false);for(let i=0;i<8;i++)cyl(.4,.4,3,'#5a4632',(i%2?1:-1)*(p.w/2+2),-1.5,-p.d/2+i*2.2,grp,8)}
+  if(p.id==='arcade'){const n=glow('#ff5fa2',10,.5);n.position.set(0,p.h+1,p.d/2);n.userData.inX=1;grp.add(n);box(p.w+6,.8,p.d+9,'#8a6a4a',0,-.25,2.5,grp,false).userData.inX=1;for(let i=0;i<8;i++)cyl(.4,.4,3,'#5a4632',(i%2?1:-1)*(p.w/2+2),-1.5,-p.d/2+i*2.2,grp,8)}
   if(p.id==='phones'){const ex=new THREE.Group();grp.add(ex);const sb=new THREE.Group();sb.position.set(3.1,0,p.d/2+1.5);sb.rotation.y=-.25;ex.add(sb);for(const s of [-1,1]){const b=box(1.1,1.5,.06,'#30365e',0,.75,s*.22,sb);b.rotation.x=-s*.28}
     const sg=canvasPlane(.95,1.2,c=>{c.fillStyle='#fffaf2';c.fillRect(0,0,64,80);c.fillStyle='#e9886b';c.font='bold 13px ui-rounded,system-ui';c.textAlign='center';c.fillText('NEW!',32,18);c.fillStyle='#30365e';c.font='bold 10px ui-rounded,system-ui';c.fillText('phones',32,34);c.fillText('cases',32,48);c.fillText('charms',32,62);c.fillStyle='#ffcf5a';c.fillRect(16,68,32,4)},64,80);sg.position.set(0,.78,.27);sg.rotation.x=-.28;sb.add(sg);bake(ex)}
   if(p.id==='bikes'){const ex=new THREE.Group();grp.add(ex);const rx=-(p.w/2+1.6);for(const z of [-1.6,1.6]){const a=new THREE.Mesh(new THREE.TorusGeometry(.42,.05,6,12,Math.PI),lam('#5a5a66'));a.rotation.y=Math.PI/2;a.position.set(rx,0,z);ex.add(a)}box(.08,.08,3.3,'#5a5a66',rx,.42,0,ex,false);
@@ -3517,7 +3517,8 @@ function occDel(pid,id){const s=OCC.get(pid);if(s)s.delete(id)}
 function occOf(pid){const s=OCC.get(pid),ids=s?[...s]:[];const L=ids.map(i=>AG[i]).filter(Boolean),pr=L.find(a=>a.home===pid||a.staffOf===pid)||L[0];return{ids,room:pr?pr.room:null,awake:L.some(a=>a.awake),act:pr?pr.act:''}}
 function placeAt(x,z){for(const p of DPL){if(p.kind==='home'?inHome(x,z):p.kind==='lot'?false:inBuilding(p,x,z))return p.id}return null}
 function occRebuild(){OCC.clear();agRead();for(const a of AGENTS){a.place=agWhere(a);if(a.place)occAdd(a.place,a.id)}return OCC.size}
-function mochaHome(){try{return G.mode!=='trip'&&mocha.visible!==false&&(inHome(G.x,G.z)||(G.act&&G.act.p==='home'&&G.mode==='activity'))}catch(e){return false}}
+function mochaPresent(){return G.mode!=='trip'&&!(G.lh&&G.lh.ph!=='top')}// presence, not drawing: LF1's IN.see hides him from rooms the camera is not in
+function mochaHome(){try{return mochaPresent()&&(inHome(G.x,G.z)||(G.act&&G.act.p==='home'&&G.mode==='activity'))}catch(e){return false}}
 function mochaAwake(){try{return!G.sleep&&!asleepAt(hourAt(Date.now()))}catch(e){return true}}
 function wHomeAwake(){const h=new Date().getHours();return(W.dest==='inside'||W.dest==='yard'||W.dest==='porch')&&!W.path.length&&!(h>=22||h<7)}
 function agRead(){const h=hourAt(Date.now()),m=AG.mocha;m.x=G.x;m.z=G.z;m.gone=G.mode==='trip';m.awake=mochaAwake();m.act=(G.act&&G.act.doing)||G.mode;m.moving=G.mode==='travel';m.go=G.mode==='travel'&&G.act?G.act.p:null;m.room=m.place&&byId[m.place]&&byId[m.place].rooms?((G.act&&G.act.p===m.place&&G.act.s&&spotRoom(m.place,G.act.s))||roomAt(m.place,G.x,G.z)):(G.act&&G.act.p===m.place?(G.act.s||'main'):null);
@@ -3819,7 +3820,7 @@ const sails=[];for(let i=0;i<4;i++){const g=new THREE.Group();box(1.2,.6,4,'#fff
 // ---------- LF2: THE SEA. An original chibi orca and calf (one dynamic CHIBI_MAT mesh SEA.m: CPU bend + fluke stroke, merged with literal-hex keys) and one 64-instance FX mesh SEA.fx
 // (droplet, foam, ring, mist; POOLS's program: MeshBasic+map+additive+instanceColor). 0 draws idle, 2 during an event. seaBuild() runs from the line after `const PIERS=`
 // (CHIBI_MAT and PIERS are declared below this block); seaFrame(dt) runs from frame(). Viewer-aware: an event starts only inside the camera's view, never through piers/ferry/sails.
-const SEA={m:null,fx:null,R:{},ev:null,pend:null,st:{clk:0,due:120+Math.random()*180,last:-1e9},last:[],n:{breach:0,spout:0,dolphins:0},ms:0,dtE:1/60,pier:{t:0,last:-1e9},maxV:0,
+const SEA={m:null,fx:null,R:{},ev:null,pend:null,st:{clk:0,due:120+Math.random()*180,last:-1e9,rt:0},last:[],n:{breach:0,spout:0,dolphins:0},ms:0,dtE:1/60,pier:{t:0,last:-1e9},maxV:0,
   p:null,FXN:64,fr:new THREE.Frustum(),M4:new THREE.Matrix4(),E:new THREE.Euler(),V:new THREE.Vector3(),sph:new THREE.Sphere(),stat:{}};
 function seaRz(pts,rmax,u){let k=0;while(k<pts.length-2&&pts[k+1][0]<u)k++;const a=pts[k],b=pts[k+1],f=Math.min(1,Math.max(0,(u-a[0])/(b[0]-a[0]))),s=f*f*(3-2*f);return(a[1]+(b[1]-a[1])*s)*rmax}
 function seaAnimal(L,rmax,pts,pal,finH){const P=[],NP=19;for(let i=0;i<=NP;i++){const u=i/NP;P.push(new THREE.Vector2(Math.max(.001,seaRz(pts,rmax,u)),-L/2+u*L))}
@@ -3935,9 +3936,10 @@ function seaFrame(dt){if(!SEA.m)return;const t0=performance.now();SEA.dtE+=(dt-S
   // the pier-end trigger: the walker within 6 of a pier's west end, looking west, for 6 s -> an event 4-12 s later, 30-45 out in his view (once per 3 min)
   if(camS.mode==='walk'&&!ev&&!SEA.pend){let P0=null;for(const p of PIERS)if(YOU.x>=p[0]&&YOU.x<=p[1]&&YOU.z>=p[2]&&YOU.z<=p[3]){P0=p;break}
     camera.getWorldDirection(SEA.V);const w=P0&&YOU.x-P0[0]<6&&SEA.V.x/Math.max(.01,Math.hypot(SEA.V.x,SEA.V.z))<-.5;SEA.pier.t=w?SEA.pier.t+dt:0;
-    if(SEA.pier.t>=6&&S0.clk-SEA.pier.last>=180&&seaGate()){const a=seaAnchor('spout',{x0:YOU.x,z0:YOU.z,d:[30,45]});if(a){SEA.pier.last=S0.clk;SEA.pier.t=0;SEA.pend=Object.assign(a,{at:S0.clk+rand(4,12),kind:seaRoll(hourAt(Date.now()),true),trig:'pier'})}}}
-  if(!ev){if(SEA.pend&&S0.clk>=SEA.pend.at){const q=SEA.pend;if(seaGate()){SEA.pend=null;ev=seaStart(q.kind,q)}else q.at=S0.clk+1}
-    else if(!SEA.pend&&S0.clk>=S0.due){if(!seaGate())S0.due=S0.clk+2;else{const kd=seaRoll(hourAt(Date.now()));if(!kd)S0.due=S0.clk+rand(240,420);else{const a=seaAnchor(kd);if(!a)S0.due=S0.clk+1.5;else{S0.due=S0.clk+rand(240,420);S0.last=S0.clk;ev=seaStart(kd,a)}}}}}
+    if(SEA.pier.t>=6&&S0.clk-SEA.pier.last>=180&&seaGate()){const kd=seaRoll(hourAt(Date.now()),true),a=seaAnchor(kd,{x0:YOU.x,z0:YOU.z,d:[30,45]});if(a){SEA.pier.last=S0.clk;SEA.pier.t=0;SEA.pend=Object.assign(a,{at:S0.clk+rand(4,12),kind:kd,trig:'pier'})}}}
+  if(camS.mode!=='walk'&&!ev&&!SEA.pend&&(G.ride==='ferry'||G.ride==='wheel')&&S0.clk-S0.last>=150&&S0.due-S0.clk>20)S0.due=S0.clk+rand(5,20);// fix: watch mode, Mocha on the ferry or the wheel -> a sighting soon (open water is in his frame there)
+  if(!ev){if(SEA.pend&&S0.clk>=SEA.pend.at){const q=SEA.pend;if(!seaGate())q.at=S0.clk+1;else if(!seaMask(q.x,q.z)){q.at=S0.clk+1;if((q.w=(q.w|0)+1)>15)SEA.pend=null}else{SEA.pend=null;ev=seaStart(q.kind,q)}}
+    else if(!SEA.pend&&S0.clk>=S0.due){if(!seaGate())S0.due=S0.clk+2;else{const kd=seaRoll(hourAt(Date.now()),S0.rt);if(!kd){S0.rt=0;S0.due=S0.clk+rand(240,420)}else{const a=seaAnchor(kd);if(!a){S0.rt=1;S0.due=S0.clk+1.5}else{S0.rt=0;S0.due=S0.clk+rand(240,420);S0.last=S0.clk;ev=seaStart(kd,a)}}}}}
   if(ev){const fr=ev.frz!=null;if(!fr)ev.t+=dt;const t=fr?(ev.kind==='breach'?.6+ev.frz*2.4:ev.frz*1.8):ev.t;
     SEA.sph.center.set(ev.x+ev.fx*3,0,ev.z+ev.fz*3);SEA.sph.radius=16;SEA.M4.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);SEA.fr.setFromProjectionMatrix(SEA.M4);
     const inV=SEA.fr.intersectsSphere(SEA.sph);if(inV||!fr){const any=seaPoseAll(ev,t,!fr,!inV);SEA.m.visible=any&&inV}else SEA.m.visible=false;
@@ -3973,7 +3975,7 @@ STYLE.hooks.push(M=>{M.mochaSize=()=>{const B=new THREE.Box3(),bb=new THREE.Box3
   const fl=navFloor(G.x,G.z),E=eyes.map(e=>{const m=e.children[0];if(!m.geometry.boundingBox)m.geometry.computeBoundingBox();return sc(new T3.Box3().copy(m.geometry.boundingBox).applyMatrix4(m.matrixWorld))}),S=sc(B),umb=S0umb(),ay=mocha.position.y+1.42*growScale()+(umb?.84*growScale():0),ap=project(G.x,ay,G.z),hp=project(G.x,B.max.y,G.z);
   return{gs:+growScale().toFixed(3),top:+(B.max.y-fl).toFixed(3),hem:+(B.min.y-fl).toFixed(3),width:+Math.max(B.max.x-B.min.x,B.max.z-B.min.z).toFixed(3),eyePx:+Math.min(E[0].h,E[1].h).toFixed(1),eyeGap:+Math.abs(E[0].cx-E[1].cx).toFixed(1),px:+S.h.toFixed(1),headPxY:+hp.y.toFixed(1),anchorPxY:+ap.y.toFixed(1),zoom:zoomLim(),topRest:+(G.y-fl+1.02*growScale()).toFixed(3),followDist:camS.mode==='walk'?(camS.fol?camS.fol.dist:null):+camS.dist.toFixed(2),y:+G.y.toFixed(3),floor:+fl.toFixed(3)}}});
 STYLE.hooks.push(M=>{M.lf2Seats=()=>{const gs=growScale(),h=a=>a-.5*gs,r=(top,alt)=>({top:+top.toFixed(3),alt:+alt.toFixed(3),hem:+(h(alt)-top).toFixed(3)}),s=SEATS[0],sb=s?s.y0+s.h:0,N=NEL,lh=byId.lighthouse,w=byId.wheel.gond[0];w.getWorldPosition(tmpV);const wy=tmpV.y;
-  return{gs,bench:s?r(sb,mSeatY(sb)):null,cinema:r(1.33,mSeatY(1.33)),ferry:r(3.785,mFloatY(3.785)),bed:r(1.88,mSeatY(1.88)),wheel:Object.assign(r(wy-1.05,mSeatY(wy-1.05)),{floorHem:+(h(mSeatY(wy-1.05))-(wy-1.8)).toFixed(3)}),needleCar:r(1,mFloatY(1)),needleDeck:r(N.yt+.15,mFloatY(N.yt+.15)),lighthouse:r(lh.h,mSeatY(lh.h+.28)),
+  return{gs,bench:s?r(sb,mSeatY(sb)):null,cinema:r(1.33,mSeatY(1.33)),ferry:r(4.6,mFloatY(4.6)),bed:r(1.88,mSeatY(1.88)),wheel:Object.assign(r(wy-1.05,mSeatY(wy-1.05)),{floorHem:+(h(mSeatY(wy-1.05))-(wy-1.8)).toFixed(3)}),needleCar:r(1,mFloatY(1)),needleDeck:r(N.yt+.15,mFloatY(N.yt+.15)),lighthouse:r(lh.h,mSeatY(lh.h+.28)),
    bike:bikeObj?{seat:+(bikeY(G.x,G.z)+bikeObj.userData.seatY*gs/1.3).toFixed(3),alt:+rideY().toFixed(3),hem:+(rideY()-.5*gs-(bikeY(G.x,G.z)+bikeObj.userData.seatY*gs/1.3)).toFixed(3)}:null}}});
 function S0umb(){return S.wearing.some(id=>{const o=S.owned.find(x=>x.id===id);return o&&o.item==='umbrella'})}
 // sky things
@@ -4858,7 +4860,7 @@ function updateSky(dt){const d=new Date();if(d.getDate()!==keysDay||d.getTimezon
   skyMat.uniforms.top.value.copy(cA);skyMat.uniforms.bot.value.copy(cB);scene.fog.color.copy(cB);
   scene.fog.near=WEATHER.kind==='fog'?20:80;scene.fog.far=WEATHER.kind==='fog'?140:240;
   hemi.intensity=(hi*(1-o*.2)+.15)*lerp(.62,.78,nightAmt)*lerp(1.1,1.22,nightAmt);hemi.color.copy(HEMC[0]).lerp(HEMC[2],nightAmt);sun.intensity=si*(1-o*.6)*lerp(.64,.42,nightAmt);hemi.groundColor.copy(HEMC[1]).lerp(HEMC[3],nightAmt);rimSky(dt,h);
-  const sa=clamp((h-SUN.rise)/(SUN.set-SUN.rise),0,1)*Math.PI;sun.position.set(camS.tx+Math.cos(sa)*60,20+Math.max(.15,Math.sin(sa))*60,camS.tz+30);sun.target.position.set(camS.tx,0,camS.tz);{const se=STYLE.shadowHalf||Math.min(90,Math.max(50,Math.round(STYLE.effDist()*1.3/5)*5)),sc=sun.shadow.camera;if(sc.right!==se){sc.left=sc.bottom=-se;sc.right=sc.top=se;sc.updateProjectionMatrix();sun.shadow.needsUpdate=true}}sun.color.set(nightAmt>.5?'#b4c6ff':h<9||h>16?'#ffd6b0':'#fff4e6');
+  const sa=clamp((h-SUN.rise)/(SUN.set-SUN.rise),0,1)*Math.PI;sun.position.set(camS.tx+Math.cos(sa)*60,20+Math.max(.15,Math.sin(sa))*60,camS.tz+30);sun.target.position.set(camS.tx,0,camS.tz);{const se=STYLE.shadowHalf||(IN.on?Math.min(90,Math.max(50,Math.round(STYLE.effDist()*1.3/5)*5)):clamp(Math.round(STYLE.effDist()*1.3/5)*5,25,90)),sc=sun.shadow.camera;if(sc.right!==se){sc.left=sc.bottom=-se;sc.right=sc.top=se;sc.updateProjectionMatrix();sun.shadow.needsUpdate=true}}sun.color.set(nightAmt>.5?'#b4c6ff':h<9||h>16?'#ffd6b0':'#fff4e6');
   nightAmt=clamp((.62-si)/.4,0,1);post.uniforms.night.value=nightAmt;{const frz=nightAmt>=.85,sq=UIQ.level>=1,hz=sq?1:2;UIQ.frz=frz||sq;sun.shadow.autoUpdate=!UIQ.frz;if(UIQ.frz&&Math.floor(T*hz)!==Math.floor((T-dt)*hz))sun.shadow.needsUpdate=true}LUXS.si=si;nightGlows.forEach(g=>g.material.opacity=g.userData.op*(.15+nightAmt*.85));
   stars.material.opacity=nightAmt*(1-o);moon.material.opacity=nightAmt*(1-o*.8)+.05;fireflies.material.opacity=nightAmt*.8*(WEATHER.kind==='rain'?.2:1);
   clouds.forEach(c=>{c.m.opacity=.45+o*.45;c.m.color.set(day>.3?(o>.5?'#d5dbe3':'#ffffff'):'#4b5577');c.m.emissiveIntensity=day>.3?.5:.04});
@@ -5218,7 +5220,7 @@ function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;S.pantry=
   {rideStep(dt);seatStep(dt);let q=needleStep(dt);if(q!=null)ty=q;q=lhStep(dt);if(q!=null)ty=q;q=benchY();if(q!=null&&ty==null)ty=q}
   G.x=clamp(G.x+G.vx*dt,-220,170);G.z=clamp(G.z+G.vz*dt,-150,150);
   if(G.ride==='wheel'){const gd=byId.wheel.gond[G.gond||0];gd.getWorldPosition(tmpV);G.x=tmpV.x;G.z=tmpV.z;ty=mSeatY(tmpV.y-1.05)}   // LF2: the gondola box spans y-1.8..y-.2; he sits with his eyes over its rim
-  if(G.ride==='ferry'){G.x=ferry.position.x;G.z=ferry.position.z+3;ty=mFloatY(3.785)}
+  if(G.ride==='ferry'){G.x=ferry.position.x+2.4;G.z=ferry.position.z;ty=mFloatY(4.6+ferry.position.y)}// fix: on the top deck (7x4.2 at y 4.6), beside the funnel, not overboard
   if(G.biking&&bikeObj)ty=rideY();
   const sp=Math.hypot(G.vx,G.vz);
   let fc=null;if(G.mode==='activity'&&G.act&&G.act.face){const f=G.act.face;if(f.obj){f.obj.getWorldPosition(tmpV);fc={x:tmpV.x,z:tmpV.z}}else fc=f}
@@ -5254,7 +5256,8 @@ function updateMocha(dt,t){const sleeping=G.mode==='activity'&&G.sleep;S.pantry=
   const h=byId.home;if(!IN.on){const hIn=false,hOcc=h.occH>0;const fade=hOcc;
   if(h.hideW){const c=Math.cos(h.ry),sn=Math.sin(h.ry),dx=camera.position.x-h.x,dz=camera.position.z-h.z,lx=dx*c-dz*sn,lz=dx*sn+dz*c;for(let i=0;i<h.hideW.length;i++){const g=h.hideW[i],hid=hOcc||(hIn&&(g[1]==='z'?lz*g[2]>h.d/2:lx*g[2]>h.w/2));if(g[3]!==hid){g[3]=hid;for(let k=0;k<g[0].length;k++)g[0][k].visible=!hid}}
     const th=h.occT>0;if(h.tower&&h.towerHid!==th){h.towerHid=th;for(let k=0;k<h.tower.length;k++)h.tower[k].visible=!th}}
-h.shell.forEach(m=>{m.opacity+=((fade?0:1)-m.opacity)*Math.min(1,dt*3);m.transparent=m.opacity<.999;m.depthWrite=m.opacity>.9;m.visible=m.opacity>.04});h.roofShell.forEach(m=>{m.opacity+=((fade?0:1)-m.opacity)*Math.min(1,dt*3);m.transparent=m.opacity<.999;m.depthWrite=m.opacity>.9;m.visible=m.opacity>.04})}
+const cp=camera.position,H0=HOCC[0],hk=fade&&cp.y<H0.h+2.5&&inBuilding(H0,cp.x,cp.z)?1:Math.min(1,dt*3);// fix: camera inside the house box -> the shell goes at once (no half-faded gable over the view)
+h.shell.forEach(m=>{m.opacity+=((fade?0:1)-m.opacity)*hk;m.transparent=m.opacity<.999;m.depthWrite=m.opacity>.9;m.visible=m.opacity>.04});h.roofShell.forEach(m=>{m.opacity+=((fade?0:1)-m.opacity)*hk;m.transparent=m.opacity<.999;m.depthWrite=m.opacity>.9;m.visible=m.opacity>.04})}
   if(h.screenGlow)h.screenGlow.material.opacity=G.mode==='activity'&&G.act&&G.act.s==='desk'?.6:.2;
   if(h.rp&&G.mode==='activity'&&G.act&&/record|music|ukulele|song/i.test(G.act.doing||''))h.rp.rotation.y+=dt*4}
 function muse(){const o=[];if(S.pets.length){const pt=pick(S.pets);o.push(pick([`come on, ${pt.name}!`,`${pt.name}, stay close`,`good ${pt.species==='crow'||pt.species==='bat'?'flying':'walking'}, ${pt.name}`]))}if(S.pantry<15)o.push('i should get groceries…');const g=S.goal;if(g)o.push(`goal: ${g.text}`);if(S.mem.userName)o.push(`wonder what ${S.mem.userName} is up to`);
@@ -5935,7 +5938,7 @@ function youEmote(n){const v=visitor;if(!v.userData.you)return null;try{const sn
 function makeVisitor(){return makeYou()}
 const visitor=makeVisitor();scene.add(visitor);visitor.visible=false;
 function setCamMode(m){const was=camS.mode;if(m==='walk'&&was!=='walk')youSpawn();if(m!=='walk'&&was==='walk'){try{youStand();tapStop()}catch(e){}}camS.mode=m;ZM.tgt=null;ZM.dir=0;document.body.classList.toggle('walk',m==='walk');const b=$('#modeBtn');if(b)b.textContent=m==='walk'?'👻 watch Mocha':'🚶 walk around';visitor.visible=m==='walk';
-  if(m==='walk'){if(was!=='walk')camS.fol={yaw:camS.yaw,pitch:camS.pitch,dist:camS.dist};camS.dist=7;camS.pitch=.3;camS.yaw=YOU.yaw+Math.PI;camS.tx=YOU.x;camS.tz=YOU.z}else{document.body.classList.remove('chatOpen');const f=camS.fol;if(was==='walk'&&f){camS.yaw=f.yaw;camS.pitch=f.pitch;camS.dist=f.dist}else camS.dist=Math.max(camS.dist,11)}ctlMode(m);$('#edge').style.display='none';$('#near').style.display='none';if(CAM.base)Object.assign(CAM.base,{yaw:camS.yaw,pitch:camS.pitch,dist:camS.dist});HUD.layout()}
+  if(m==='walk'){if(was!=='walk')camS.fol={yaw:camS.yaw,pitch:camS.pitch,dist:camS.dist};camS.dist=7;camS.pitch=.3;camS.yaw=YOU.yaw+Math.PI;camS.tx=YOU.x;camS.tz=YOU.z}else{document.body.classList.remove('chatOpen');const f=camS.fol;if(was==='walk'&&f){camS.yaw=f.yaw;camS.pitch=f.pitch;camS.dist=f.dist}else camS.dist=Math.max(camS.dist,11)}ctlMode(m);$('#edge').style.display='none';$('#near').style.display='none';$('#near').style.bottom='';if(CAM.base)Object.assign(CAM.base,{yaw:camS.yaw,pitch:camS.pitch,dist:camS.dist});HUD.layout()}
 const JOY={x:0,y:0},LOOK={x:0,y:0};let lastLook=-9;
 const PIERS=[[-101,-61,-37,-13],[-99,-61,9,19],[-89,-61,41,51],[-85,-61,-86,-74]];
 try{seaBuild()}catch(e){console.error('LF2 seaBuild',e)}
@@ -6913,15 +6916,17 @@ async function syncRemote(ref,tries){let snap=null;try{snap=await Promise.race([
 // ====================================================================
 //  MAIN LOOP
 // ====================================================================
-function resize(){const w=innerWidth,h=innerHeight;VW=w;VH=h;const pr=renderer.getPixelRatio();renderer.setSize(w,h,false);cv.style.width=w+'px';cv.style.height=h+'px';camera.aspect=w/h;{const ar=w/h,fb=w<h?64:50;LENS.fb=fb;LENS.fs=ar<.75?46:ar<=1.25?44:40;camera.fov=LENS.cl[CAM.cur&&CAM.cur.owner]?fb:LENS.fs;STYLE.fovK=Math.tan(fb*Math.PI/360)/Math.tan(camera.fov*Math.PI/360)}camera.updateProjectionMatrix();rt.setSize(Math.round(w*pr),Math.round(h*pr));if(TIER.rt)TIER.rt.setSize(Math.round(w*pr),Math.round(h*pr));post.uniforms.res.value.set(w*pr,h*pr);post.uniforms.size.value=4.5*pr}
+function resize(){const w=innerWidth,h=innerHeight;VW=w;VH=h;const pr=renderer.getPixelRatio();renderer.setSize(w,h,false);cv.style.width=w+'px';cv.style.height=h+'px';camera.aspect=w/h;{const ar=w/h,fb=w<h?64:50;LENS.fb=fb;LENS.fs=ar<.75?46:ar<=1.25?44:40;camera.fov=LENS.cl[CAM.cur&&CAM.cur.owner]?fb:LENS.fs;STYLE.fovK=Math.tan(fb*Math.PI/360)/Math.tan(camera.fov*Math.PI/360)}camera.updateProjectionMatrix();rt.setSize(Math.round(w*pr),Math.round(h*pr));if(TIER.rt)TIER.rt.setSize(Math.round(w*pr),Math.round(h*pr));post.uniforms.res.value.set(w*pr,h*pr);post.uniforms.size.value=4.5*pr;
+  if(TIER.applied&&TIER.n>=2){clearTimeout(TIER.rzT);TIER.rzT=setTimeout(()=>{try{const f=tierF(TIER.n);if(Math.abs(renderer.getPixelRatio()-f.pr)>1e-3||String(f.msaa)!==TIER.rzK)applyTier(true)}catch(e){}},400)}}// fix: a resize re-runs HIGH/ULTRA's pixel budget and MSAA choice
 addEventListener('resize',resize);resize();
 let last=performance.now(),T=0,hudT=0;
 function applyPower(){if(TIER.applied){tierSet(SET.saver?'low':SET.gfx==='low'?'auto':SET.gfx);tierSync();return}sun.castShadow=!SET.saver;sun.shadow.needsUpdate=true;renderer.setPixelRatio(SET.saver?1:Math.min(devicePixelRatio||1,TOUCH?1.5:1.75));resize();if(typeof adaptRest==='function')adaptRest(4000)}
 const edge=$('#edge'),EDGE={t:0,r:[]};
 let lblT=0,lblHT=0;const LBOX=[],LCAND=[],LTK=[],LHUD=[];const lblCmp=(a,b)=>a.d-b.d;
-function lblHit(x,y,w,h){for(let i=0;i<LTK.length;i+=4){if(x<LTK[i]+LTK[i+2]+4&&LTK[i]<x+w+4&&y<LTK[i+1]+LTK[i+3]+4&&LTK[i+1]<y+h+4)return true}return false}const GFX={calls:0,tris:0},ADAPT={t:0,n:0,drops:0,from:performance.now()+6000};function adaptRest(ms){ADAPT.from=performance.now()+ms;ADAPT.t=ADAPT.n=0}document.addEventListener('visibilitychange',()=>{if(!document.hidden)adaptRest(3000)});// on slow phones, gently lower the render resolution to keep things smooth
+function lblHit(x,y,w,h){for(let i=0;i<LTK.length;i+=4){if(x<LTK[i]+LTK[i+2]+4&&LTK[i]<x+w+4&&y<LTK[i+1]+LTK[i+3]+4&&LTK[i+1]<y+h+4)return true}return false}const GFX={calls:0,tris:0},ADAPT={t:0,n:0,drops:0,from:performance.now()+6000};function adaptRest(ms){ADAPT.from=performance.now()+ms;ADAPT.t=ADAPT.n=0;if(TIER.ad)TIER.ad.t=TIER.ad.n=0}document.addEventListener('visibilitychange',()=>{if(!document.hidden)adaptRest(3000)});// on slow phones, gently lower the render resolution to keep things smooth
 function frame(now){const fps=Math.min(TIER.fps(),UIQ.fps());if(now-last<1000/fps-2){lf3Idle(now);requestAnimationFrame(frame);return}const raw=now-last,dt=Math.min(.08,Math.max(0,raw/1000));last=now;T+=dt;const sd=STYLE.freeze?0:dt;
-  if(TIER.n<2&&TOUCH&&!SET.saver&&raw<500&&now>ADAPT.from){ADAPT.t+=raw;ADAPT.n++;if(ADAPT.t>4000){if(ADAPT.n*1000/ADAPT.t<19){const pr=renderer.getPixelRatio();if(pr>1.01){renderer.setPixelRatio(Math.max(1,pr-.25));resize();ADAPT.drops++;tierDrop('pr')}}ADAPT.t=ADAPT.n=0}}
+  {const uc=UIQ.fps()<TIER.fps();if(uc!==!!ADAPT.uc){ADAPT.uc=uc;adaptRest(1000)}}// fix: LF3's sheet frame caps are not a slow device; rest across the change and never sample capped frames
+  if(!ADAPT.uc&&TIER.n<2&&TOUCH&&!SET.saver&&raw<500&&now>ADAPT.from){ADAPT.t+=raw;ADAPT.n++;if(ADAPT.t>4000){if(ADAPT.n*1000/ADAPT.t<19){const pr=renderer.getPixelRatio();if(pr>1.01){renderer.setPixelRatio(Math.max(1,pr-.25));resize();ADAPT.drops++;tierDrop('pr')}}ADAPT.t=ADAPT.n=0}}
   lensTick(dt,CAM.cur&&CAM.cur.owner);// B27Sa: the close-up lens settles before placeCam reads STYLE.fovK
   updateMocha(sd,T);if(camS.mode==='walk')updateYou(sd,T);updateW(sd,T);placeCam(dt);updateDoors(dt);
   {const cin=byId.cinema;if(MOVIE&&Math.floor(T*8)!==Math.floor((T-dt)*8))drawFilm();if(cin.beam)cin.beam.material.opacity=MOVIE?.07+Math.random()*.02:0}
@@ -6961,7 +6966,7 @@ function frameUI(dt){
   const umb=S.wearing.some(id=>{const o=S.owned.find(x=>x.id===id);return o&&o.item==='umbrella'});
   const bp=project(G.x,mocha.position.y+1.42*growScale()+(umb?.84*growScale():0),G.z);bubPos(bubble,bp.x,bp.y);
   const onScreen=G.mode!=='trip'&&IN.see('mocha')&&bp.vis&&bp.x>20&&bp.x<innerWidth-20&&bp.y>40&&bp.y<innerHeight-40;bubble.style.visibility=onScreen?'visible':'hidden';
-  if(camS.mode==='walk'&&!onScreen&&G.mode!=='trip'&&(!IN.on||IN.see('mocha'))&&IN.k<.5){const cx=innerWidth/2,cy=innerHeight/2;let dx=bp.x-cx,dy=bp.y-cy;if(!bp.vis){dx=-dx;dy=-dy}const m=Math.max(Math.abs(dx)/(cx-34),Math.abs(dy)/(cy-90),1e-3),ox=dx/m,oy=dy/m;if(edge.style.display!=='flex'||(EDGE.t-=dt)<=0){EDGE.t=.5;EDGE.r=[...document.querySelectorAll('#dock>*,#zoom,.stick,#near,.hudS,.hudMore,body.panelOpen #panel,body.msgOpen #msgs')].map(e=>e.getBoundingClientRect()).filter(r=>r.width).map(r=>[r.left-23,r.top-23,r.right+23,r.bottom+23])}let k=1;while(k>.05&&EDGE.r.some(r=>{const x=cx+ox*k,y=cy+oy*k;return x>r[0]&&x<r[2]&&y>r[1]&&y<r[3]}))k-=.04;edge.style.display='flex';edge.style.left=(cx+ox*k)+'px';edge.style.top=(cy+oy*k)+'px'}else edge.style.display='none';
+  if(camS.mode==='walk'&&!onScreen&&G.mode!=='trip'&&(!IN.on||IN.see('mocha'))&&IN.k<.5){const cx=innerWidth/2,cy=innerHeight/2;let dx=bp.x-cx,dy=bp.y-cy;if(!bp.vis){dx=-dx;dy=-dy}const m=Math.max(Math.abs(dx)/(cx-34),Math.abs(dy)/(cy-90),1e-3),ox=dx/m,oy=dy/m;if(edge.style.display!=='flex'||(EDGE.t-=dt)<=0){EDGE.t=.5;EDGE.r=[...document.querySelectorAll('#dock>*,#zoom,.stick,#near,.hudS,.hudMore,body.panelOpen #panel,body.msgOpen #msgs')].map(e=>e.getBoundingClientRect()).filter(r=>r.width).map(r=>[r.left-23,r.top-23,r.right+23,r.bottom+23])}const yM=innerHeight*.55-25,sx=ox>=0?1:-1;let k=1,ex=0,ey=0;for(;k>.05;k-=.04){ex=cx+ox*k;ey=cy+oy*k;if(ey>yM){ey=yM;ex=cx+sx*(cx-34)*k}let hit=false;for(const r of EDGE.r)if(ex>r[0]&&ex<r[2]&&ey>r[1]&&ey<r[3]){hit=true;break}if(!hit)break}edge.style.display='flex';edge.style.left=ex+'px';edge.style.top=ey+'px'/* fix: the chip (and its speech line) stay above the stick/look areas (lower 45%) */}else edge.style.display='none';
   if(!IN.on&&UIQ.level<2&&performance.now()>=UIQ.hot){
   lblT-=dt;const decl=lblT<=0;if(decl){lblT=.2;LCAND.length=0;if(!LBOX.length){PLACES.forEach(q=>{if(q.w&&q.d&&q.h&&q.kind!=='needle'&&q.kind!=='wheel'&&q.kind!=='home')LBOX.push(q)});LBOX.push(HOCC[0],HOCC[1])}}
   for(const L of labels){const p=L.p,el=L.el;if(p!==POP.front&&el.style.opacity!=='1')continue;// LF5
@@ -7544,7 +7549,7 @@ function talkOpen(id,o={}){if(document.body.classList.contains('ylOn'))return nu
   {try{tkSettle()}catch(e){}let sh=null;try{sh=tkShot()}catch(e){}if(!sh)sh={dist:5.5,pitch:.28,yaw:tkYaw()};CAM.push('talk',{prio:2,target:tkMid,dist:sh.dist,pitch:sh.pitch,yaw:sh.yaw,range:[3.5,Math.max(9,sh.dist*1.3)],ease:4});tkSnap(sh)}try{youGesture('wave',1.6)}catch(e){}try{sfx('talk',{id})}catch(e){}
   if(id==='mocha')tkSay(mochaReply('open'),{src:'mocha'});else if(id==='board')tkSay(boardText('news'),{src:'board'});
   else{tkHold(id,true);const r=relOf(id),first=!r,q=tkQDue(id);relOf(id,true);if(q){TK.q=q;TK.bang['q'+id]=dkey(Date.now());tkSay(tkVoice(id,(first?tkFirst(id)+' ':'')+q.q,'ask'),{src:'ask'})}else{const g=npcReply(id,first?'first':'hi');tkSay(g.text,{src:g.src,raw:g.raw})}}
-  tkChipsRender();tkKb();save();return talkInfo()}
+  tkChipsRender();tkKb();setTimeout(()=>{try{save()}catch(e){}},250);return talkInfo()}// fix: the save waits until the card has painted
 function talkBye(){const id=TK.id;if(id==='mocha')say(G.sleep?'zzz…':pick(['bye!! 👋','see you later! 👻','bye bye!']),2.5);else if(id&&id!=='board'){const r=npcReply(id,'bye');npcSay(id,r.text,2.5)}return talkClose()}
 function talkClose(quiet){if(!TK.open)return null;const id=TK.id;if(id&&id!=='mocha'&&id!=='board')tkHold(id,false);TK.open=false;TK.id=null;TK.c=null;TK.q=null;TK.inp=false;TK.mwait=false;TKI.blur();clearTimeout(sendTimer);
   CARD.classList.remove('on','inp');document.body.classList.remove('talking');document.querySelectorAll('.tkHide').forEach(e=>e.classList.remove('tkHide'));CAM.pop('talk');CARD.style.bottom='';TK.near=null;if(!quiet)save();try{HUD.layout()}catch(e){}return talkInfo()}
@@ -7731,7 +7736,7 @@ function tk1Hz(){const now=Date.now();
   // sightings: who saw Mocha (n.saw for "How's Mocha?")
   if(mocha.visible&&G.mode!=='trip')for(const c of CAST){if(!c.obj||!tkVis(c))continue;c.obj.getWorldPosition(TKW);if(Math.hypot(TKW.x-G.x,TKW.z-G.z)<12){TK.saw[c.id]={t:now,d:mochaNow()};if(TN[c.id])TN[c.id].saw=now}}
   // "!" over the 2 nearest within 12 who have something for you (news you haven't heard, a question, a B36 request)
-  if(camS.mode==='walk'&&!TK.open&&now-TK.bangT>5e3){TK.bangT=now;const N=(S.town&&S.town.news)||[],L=[];for(const c of CAST){if(c.kind==='pet'||!tkVis(c))continue;c.obj.getWorldPosition(TKW);const d=Math.hypot(TKW.x-YOU.x,TKW.z-YOU.z);if(d>12||d<1.2)continue;const bk=nBit(c.id);
+  if(camS.mode==='walk'&&!TK.open&&now-TK.bangT>5e3&&!popBusy()){TK.bangT=now;const N=(S.town&&S.town.news)||[],L=[];for(const c of CAST){if(c.kind==='pet'||!tkVis(c))continue;c.obj.getWorldPosition(TKW);const d=Math.hypot(TKW.x-YOU.x,TKW.z-YOU.z);if(d>12||d<1.2)continue;const bk=nBit(c.id);
       let has=!!tkQDue(c.id)||N.some(n=>nHas(n[4],bk)&&!nHas(n[4],NB_U)&&n[1]!=='you'&&now-n[0]<5*864e5);try{if(!has&&typeof npcRequest==='function')has=!!npcRequest(c.id,true)}catch(e){}if(has)L.push([d,c])}
     L.sort((a,b)=>a[0]-b[0]).slice(0,2).forEach(([d,c])=>{try{emote(c.obj,'!',2.4)}catch(e){}});TK.bangN=L.length}
   // the news bus: hourly spread (co-located pals .6)
@@ -7756,7 +7761,7 @@ const POP={busy:false,q:null,ft:0,front:null,area:null,mp:undefined,fp:null,pk:n
   ntc:{cur:null,q:[],until:0,gap:0,rl:{},n:0,merged:0},bub:{who:null,el:null},bands:[],bT:-1e9,etx:null,stat:{maxB:0,maxN:0,hud:0}};
 const POP_AREA={'Downtown':'Main Street and the shops','Lantern Square':'the heart of town','Waterfront':'piers, ferries and gulls','Maple Row':'home sweet home','Uptown':'Fog Street and the Needle','Eastside':'the park and the station'};
 const POP_KIND={park:'a stroll under the maples',needle:'the best view in town',wheel:'one more go around',spot:'a quiet spot',hill:'a little climb',lighthouse:'the light by the water'};
-function popBusy(){const c=document.body.classList;return SHEETS.m.size>0||TK.open||c.contains('panelOpen')||c.contains('msgOpen')||c.contains('talking')||c.contains('ylOn')||c.contains('decoOn')||c.contains('lbOpen')||!!(SHOP&&SHOP.mode)||!!mapOpen}
+function popBusy(){const c=document.body.classList;return SHEETS.m.size>0||TK.open||(c.contains('panelOpen')&&(innerWidth<=760||innerHeight<=520))||c.contains('msgOpen')||c.contains('talking')||c.contains('ylOn')||c.contains('decoOn')||c.contains('lbOpen')||!!(SHOP&&SHOP.mode)||!!mapOpen}
 // ---- name cards (paper, serif title + one line) in the HUD 'banner' slot: ~2.5 s, then a calm fade ----
 function ncSub(p){const D={home:"Mocha's house · 13 Maple Row",neighbor:"Wendell's cottage · 11 Maple Row",cabin:'your log cabin · 12 Maple Row'};if(D[p.id])return D[p.id];
   if(p.hours)return isOpen(p)?'open till '+fmtH(p.hours[1]):'closed · opens '+fmtH(p.hours[0]);return POP_KIND[p.kind]||''}
@@ -7825,7 +7830,7 @@ function popEdge(){const e=POP.edge||(POP.edge=$('#edge'));let t=POP.etx;if(!t||
   const on=e.style.display==='flex'&&bubbleT>0&&bubble.classList.contains('show')&&!POP.busy;if(on){const s=bubble.textContent;if(t.textContent!==s)t.textContent=s;const r=(parseFloat(e.style.left)||0)>innerWidth/2;if(t._r!==r){t._r=r;t.classList.toggle('l',r);t.classList.toggle('r',!r)}}if(t._on!==on){t._on=on;t.classList.toggle('on',on)}}
 // ---- the context button (#near): one paper button above the right thumb, only when facing something you can use ----
 function popPrompt(){const nr=$('#near'),now=performance.now();if(now<(POP.prT||0)){nr.style.display=POP.pl?'block':'none';return}POP.prT=now+125;let tx=typeof talkPill==='function'?talkPill():'',k=tx?'talk':null;POP.pa=null;
-  const ip=inPill();if(ip){if(!IN.on&&tx)INX.pillK=null;else{tx=INX.pillK==='mocha'?'👻 Go see Mocha':ip;k='in';nr.classList.remove('tk')}}
+  const ip=inPill();let mpl=0;if(ip){if(INX.pillK==='out'){tx=ip;k='in';nr.classList.remove('tk')}else{mpl=1;INX.pillK=null}}// fix: 'Go see Mocha' comes last, after every facing-based prompt
   if(!tx&&YOU.seat){tx='🧍 Stand up';k='stand'}
   if(!tx&&KNOCK.el&&KNOCK.d&&HUD.S.knock&&HUD.S.knock.on){tx=KNOCK.el.textContent;k='knock';POP.pa=KNOCK.d}
   if(!tx&&!TG.on){let bs=null,bi=-1,bd=1.9;if(!POP.sT||now>POP.sT){POP.sT=now+250;POP.sc=null;
@@ -7835,8 +7840,11 @@ function popPrompt(){const nr=$('#near'),now=performance.now();if(now<(POP.prT||
     if(bp){tx='🚪 Enter '+bp[0].name.replace(/^the /i,'');k='enter';POP.pa=bp}}
   if(!tx&&SHOP.in&&(!IN.on||SHOP.in===IN.pid)){tx='🛍 Shop';k='shop'}// B25's "see everything here" chip folds in here
   if(!tx){const nt=noteNear(YOU.x,YOU.z);if(nt){tx='📝 Read the note';k='note';POP.pa=nt}}
-  POP.pk=k;POP.pl=tx;
+  if(!tx&&mpl){INX.pillK='mocha';tx='👻 Go see Mocha';k='in';nr.classList.remove('tk')}
+  POP.pk=k;POP.pl=tx;if(tx&&now>(POP.npT||0)){POP.npT=now+500;popNearPos(nr)}
   if(nr.textContent!==tx){nr.textContent=tx;nr.style.display=tx?'block':'none';if(HUD.n)try{HUD.layout()}catch(e){}}else nr.style.display=tx?'block':'none'}
+// fix: in portrait the context button sits above the dock column, clear of the stick and look areas (lower 45%); landscape uses CSS (above 45vh)
+function popNearPos(nr){const H=innerHeight,W=innerWidth;if(!(W<=760&&H>520)||camS.mode!=='walk'){if(nr.style.bottom)nr.style.bottom='';return}const d=$('#dock'),r=d&&d.getBoundingClientRect();if(!r||!r.height)return;const b=Math.round(Math.max(H-r.top+10,H*.45+10))+'px';if(nr.style.bottom!==b){nr.style.bottom=b;if(HUD.n)try{HUD.layout()}catch(e){}}}
 function popPromptTap(e){const k=POP.pk,a=POP.pa;if(!k||k==='talk'||k==='in')return;e.stopImmediatePropagation();
   if(k==='stand')youStand();else if(k==='knock'){if(a)doKnock(a.pid)}else if(k==='sit'){if(a)youSit(a[0],a[1])}else if(k==='note'){ntcPush('📝 “'+a+'”')}else if(k==='shop'){openAll(SHOP.in)}
   else if(k==='enter'&&a){const [q,d]=a;INX.arm={k:'in',pid:q.id,d,until:inNow()+15000};if(Math.hypot(YOU.x-d.wx,YOU.z-d.wz)<1.6&&(d.cab||!doorLocked(d))){INX.arm=null;inStart(q.id,'you',d,'in')}else try{tapGo(d.wx+d.nx*.5,d.wz+d.nz*.5,{why:'door'})}catch(err){}}
@@ -7870,11 +7878,11 @@ body.lf5q .lbl{opacity:0!important}
 #edge .edT{position:absolute;top:50%;transform:translateY(-50%);background:#FFF8EC;color:#3A2A20;border-radius:12px;padding:5px 10px;font-size:12.5px;font-weight:600;white-space:nowrap;max-width:min(52vw,220px);overflow:hidden;text-overflow:ellipsis;pointer-events:none;box-shadow:0 0 0 1px rgba(201,160,106,.6),0 2px 8px rgba(58,42,32,.15);display:none}
 #edge .edT.on{display:block}#edge .edT.l{right:48px}#edge .edT.r{left:48px}
 #knockBtn,#shAllBtn{display:none!important}
-body.walk #near{top:auto!important;left:auto!important;right:max(14px,env(safe-area-inset-right));bottom:calc(150px + env(safe-area-inset-bottom));transform:none!important;max-width:min(64vw,300px);background:#FFF8EC!important;color:#3A2A20!important;border-radius:22px;min-height:44px;line-height:20px;padding:12px 18px;font-size:15px;font-weight:700;box-shadow:0 0 0 1.5px #C9A06A,0 4px 12px rgba(58,42,32,.22)!important;pointer-events:auto;cursor:pointer;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;box-sizing:border-box;animation:ctxIn .18s ease-out}
+body.walk #near{top:auto!important;left:auto!important;right:calc(max(14px,env(safe-area-inset-right)) + 62px);bottom:calc(150px + env(safe-area-inset-bottom));transform:none!important;max-width:min(64vw,300px);background:#FFF8EC!important;color:#3A2A20!important;border-radius:22px;min-height:44px;line-height:20px;padding:12px 18px;font-size:15px;font-weight:700;box-shadow:0 0 0 1.5px #C9A06A,0 4px 12px rgba(58,42,32,.22)!important;pointer-events:auto;cursor:pointer;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;box-sizing:border-box;animation:ctxIn .18s ease-out}
 @keyframes ctxIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
-@media (max-width:760px) and (min-height:521px){body.walk #near{right:calc(max(12px,env(safe-area-inset-right)) + 56px);bottom:calc(184px + env(safe-area-inset-bottom))}}
-@media (orientation:landscape) and (max-height:520px){#toast{left:50%!important;top:calc(80px + env(safe-area-inset-top));max-width:min(52vw,440px);transform:translate(-50%,-12px)!important}#toast.show{transform:translate(-50%,0)!important}body.walk #near{bottom:calc(128px + env(safe-area-inset-bottom));right:calc(max(14px,env(safe-area-inset-right)) + 62px)}}
-@media (min-width:761px) and (min-height:521px){body.walk.panelOpen #near{right:calc(min(400px,42vw) + 24px)}}`;document.head.appendChild(st)}
+@media (max-width:760px) and (min-height:521px){body.walk #near{right:max(12px,env(safe-area-inset-right));bottom:calc(45vh + 10px);max-width:min(78vw,300px)}}
+@media (orientation:landscape) and (max-height:520px){#toast{left:50%!important;top:calc(80px + env(safe-area-inset-top));max-width:min(52vw,440px);transform:translate(-50%,-12px)!important}#toast.show{transform:translate(-50%,0)!important}body.walk #near{bottom:calc(45vh + 10px);right:calc(max(14px,env(safe-area-inset-right)) + 62px);max-width:min(48vw,330px)}}
+@media (min-width:761px) and (min-height:521px){body.walk.panelOpen #near{right:calc(min(400px,42vw) + 86px)}}@media (min-width:761px) and (min-height:521px) and (pointer:coarse){body.walk #near{bottom:calc(45vh + 10px)}}`;document.head.appendChild(st)}
 function popHooks(M){Object.assign(M,{POP,
   popups:()=>{const rr=e=>{const r=e.getBoundingClientRect();return{x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height)}};const N=POP.ntc,nr=$('#near');
     return{names:{on:!!POP.nc.on,text:POP.nc.on?POP.nc.t:'',sub:POP.nc.on?POP.nc.s:'',key:POP.nc.key,rect:POP.nc.on&&BAN.el?rr(BAN.el):null},
@@ -10159,7 +10167,7 @@ function dEnter(rid){const D=DECO;if(!CB||!S.you||!S.you.home)return null;if(MD&
 function dCam(){const D=DECO,R=D.R,p=byId.cabin,W=innerWidth,H=innerHeight,side=W>H||W>=800,t=Math.tan((camera.fov||52)*Math.PI/360),asp=camera.aspect||W/H,pit=R.id==='lot'?1.2:R.out?.95:1.02,tw=side?Math.min(252,W*.36):0,th=side?0:Math.min(H*.36,262),fw=(W-tw-16)/W,fh=(H-th-24)/H;
   const d1=R.w/2*1.12/(t*asp*fw),d2=(R.d*Math.sin(pit)+2.6*Math.cos(pit))/2*1.4/(t*fh),fit=clamp(Math.max(d1,d2),6,40),ox=side?tw*fit*t*asp/W:0,oz=side?0:th/H*fit*t/Math.sin(pit);
   const w=toWorld(p,(R.x0+R.x1)/2+ox,(R.z0+R.z1)/2+oz);D.cam=CAM.push('deco',{prio:3,tx:w.x,ty:R.y,tz:w.z,dist:fit,pitch:pit,yaw:p.ry,range:[fit*.5,fit*1.5],ease:3})}
-function dExit(){const D=DECO;if(!D.on)return dState();dSetDownOrCancel();if(D.G)dGhostOff();D.on=0;D.U.length=0;D.Rd.length=0;D.rv={};D.skip=null;CAM.pop('deco');CB.cutF=null;CB.cutX=0;document.body.classList.remove('decoOn','decoSide');dHud(0,'d');
+function dExit(){const D=DECO;if(!D.on){try{INX.dq=null;if(IN.pend&&IN.pend===INX.decoP)IN.pend.cb=null}catch(e){}return dState()}/* fix: an exit during LF1's fade into decorate cancels it */dSetDownOrCancel();if(D.G)dGhostOff();D.on=0;D.U.length=0;D.Rd.length=0;D.rv={};D.skip=null;CAM.pop('deco');CB.cutF=null;CB.cutX=0;document.body.classList.remove('decoOn','decoSide');dHud(0,'d');
   D.gm&&catFree(D.gm);D.gm=null;D.gp.visible=false;D.grd.visible=false;try{cabBuild()}catch(e){dRebuild()}save();HUD.layout();sfx('shut',{});return dState()}
 // while decorating or reading a Moving Day card, the walk HUD steps out of the way (restored exactly on exit)
 function dHud(on,k){const D=DECO,L=D.hl[k]||(D.hl[k]=[]);if(on){if(L.length)return;for(const id in HUD.S){const s=HUD.S[id];if(s.el&&s.el.style.visibility!=='hidden'&&s.el.id!=='decoBtn'){L.push(s.el);s.el.style.visibility='hidden'}}for(const z in HUD.more){L.push(HUD.more[z]);HUD.more[z].style.visibility='hidden'}}else{for(const el of L)el.style.visibility='';L.length=0}}
@@ -10213,7 +10221,7 @@ function decoFrame(dt){const D=DECO;if(!D||!CB)return;const now=performance.now(
   if(now>D.t1){D.t1=now+1000;try{dTick1()}catch(e){D.err=String(e&&e.message||e)}}}
 function dTick1(){const D=DECO,h=S.you.home,f=S.you.flags;const q=toWorldInv(YOU.x,YOU.z),near=camS.mode==='walk'&&Math.abs(q.x)<13.5&&q.z>-16.5&&q.z<10.5;const want=!D.on&&near&&!(MD&&MD.on);if(want!==D.pill){D.pill=want;HUD.show('decorate',want)}
   // Mocha reads the mailbox (information, never steering): only when he passes on his own and doesn't know the name yet
-  if(f&&f.moved&&!S.mem.userName&&mocha.visible!==false&&Math.hypot(mocha.position.x-43.4,mocha.position.z-63.3)<5.5){const nm=(S.you.name||'Jesse').slice(0,16);S.mem.userName=nm;D.read=nm;try{say(`(reads the mailbox) ${nm}… so THAT'S his name!`,4.5)}catch(e){}try{addEntry('Friends',`Read the new mailbox across the street: "${nm}". So THAT'S his name. Saved it in my phone.`,'')}catch(e){}save()}
+  if(f&&f.moved&&!S.mem.userName&&mochaPresent()&&Math.hypot(mocha.position.x-43.4,mocha.position.z-63.3)<5.5){const nm=(S.you.name||'Jesse').slice(0,16);S.mem.userName=nm;D.read=nm;try{say(`(reads the mailbox) ${nm}… so THAT'S his name!`,4.5)}catch(e){}try{addEntry('Friends',`Read the new mailbox across the street: "${nm}". So THAT'S his name. Saved it in my phone.`,'')}catch(e){}save()}
   if(f&&f.moved&&!f.lit&&CB.pv>.5&&LX.dark>.5&&Math.hypot(mocha.position.x-40,mocha.position.z-70)<26){f.lit=1;try{say('someone moved into the log cabin across the street ✨ the windows are all warm',4.5)}catch(e){}save()}
   // Moving Day: the first walk-mode entry after this update (suppressed under automation; __mocha.movingDay drives it in tests)
   if(f&&!f.moved&&camS.mode==='walk'&&!D.on&&!(MD&&MD.on)&&!(typeof navigator!=='undefined'&&navigator.webdriver&&!MD.auto)){MD.w=(MD.w||0)+1;if(MD.w>=3)mdOpen(1)}else if(camS.mode!=='walk')MD.w=0;
@@ -10733,7 +10741,7 @@ function inLocal(P,x,z,o){const c=Math.cos(P.ry),s=Math.sin(P.ry),dx=x-P.x,dz=z-
 const INL={x:0,z:0};
 function inExtOf(P){if(P.inX&&P.id!=='cabin')return P.inX;const L=[],B=INX.box,C=INX.c;P.obj.updateMatrixWorld(true);
   const cand=P.obj.children.slice();if(P.id==='cabin'&&CB&&CB.grp){const i=cand.indexOf(CB.grp);if(i>=0)cand.splice(i,1);for(const o of CB.grp.children)cand.push(o)}
-  for(const o of cand){if(o===P.inner||o===P.fw)continue;B.setFromObject(o);if(B.isEmpty())continue;B.getCenter(C);inLocal(P,C.x,C.z,INL);if(!inFootP(P,INL.x,INL.z,.15))L.push(o)}
+  for(const o of cand){if(o===P.inner||o===P.fw)continue;B.setFromObject(o);if(B.isEmpty())continue;B.getCenter(C);inLocal(P,C.x,C.z,INL);if(!inFootP(P,INL.x,INL.z,.15)||o.userData.inX)L.push(o)}
   if(P.fw)L.push(P.fw);for(const k of ['blade','fadeX','tower'])if(Array.isArray(P[k]))for(const o of P[k])if(o&&o.isObject3D&&L.indexOf(o)<0)L.push(o);
   if(P.id==='cabin'){for(const o of [CB.pea,CB.drip])if(o&&o.isObject3D&&L.indexOf(o)<0){o.getWorldPosition(C);inLocal(P,C.x,C.z,INL);if(!inFootP(P,INL.x,INL.z,.15))L.push(o)}INX.cabG=CB.grp;INX.cabN=CB.grp.children.length}else P.inX=L;return L}
 function inSetOp(P,op){P.op=op;const on=op>.5;if(P.shell)P.shell.forEach(m=>{m.opacity=op;m.transparent=op<.999||!!m.userData.alpha;m.depthWrite=op>.9;m.visible=op>.04});
@@ -10772,7 +10780,7 @@ function inEnter(pid,q){const P=byId[pid];if(!P||!P.obj)return;inEnt();inSweep()
   {const u=GLOWPTS.u;u.uRoomC.value.set(P.x,P.z,Math.cos(P.ry),Math.sin(P.ry));u.uRoomH.value.set(P.w/2,P.d/2,1)}
   if(bikeObj)bikeObj.visible=false;
   // the walker steps onto the doormat inside, facing in
-  if(q.who==='you'&&q.dir==='in'&&q.d&&!q.keep){const d=q.d;YOU.x=d.wx-d.nx*1.4;YOU.z=d.wz-d.nz*1.4;YOU.yaw=Math.atan2(-d.nx,-d.nz);YOU.moving=0;try{tapStop()}catch(e){}if(AG.you){AG.you.x=YOU.x;AG.you.z=YOU.z}}
+  if(q.who==='you'&&q.dir==='in'&&q.d&&!q.keep){const d=q.d;let k=1.4;while(k<3&&inPlaceAt(d.wx-d.nx*k,d.wz-d.nz*k)!==pid)k+=.2;if(k>1.4)k+=.4;YOU.x=d.wx-d.nx*k;YOU.z=d.wz-d.nz*k;YOU.yaw=Math.atan2(-d.nx,-d.nz);YOU.moving=0;try{tapStop()}catch(e){}if(AG.you){AG.you.x=YOU.x;AG.you.z=YOU.z}}
   inSnap(inCam(P,q.who));
   if(q.who==='mocha'&&q.d&&q.d.p&&!q.d.cab)try{doorBanner(q.d)}catch(e){}}
 function inLeave(q){const P=IN.P;if(!P){IN.on=0;IN.pid=null;return}
@@ -10843,8 +10851,8 @@ function inTap(o,d,jog){const P=IN.P;if(!P||d.y>-1e-4)return null;const t=(IN.fy
   INX.lastTap={x:+x.toFixed(2),z:+z.toFixed(2)};return tapGo(x,z,{jog,why:'ground'})}
 // decorate: a room rid from outside fades into the cabin first; the yard from inside fades out first (dEnter continues at swap)
 function inDeco(rid){if(IN.ph!=='idle'&&IN.ph!=='in'){INX.dq=rid;return true}// a fade is running: decorate starts when it ends
-  if(rid==='lot'){if(!IN.on)return false;inStart(null,'you',INX.door,'out',{cb:()=>dEnter('lot')});return true}
-  if(IN.on&&IN.pid==='cabin')return false;if(!inCabOK())return false;if(camS.mode!=='walk')setCamMode('walk');inStart('cabin','you',inDoorOf('cabin'),'in',{cb:()=>dEnter(rid)});return true}
+  if(rid==='lot'){if(!IN.on)return false;try{ctlRelease()}catch(e){}inStart(null,'you',INX.door,'out',{cb:()=>dEnter('lot')});INX.decoP=IN.pend;return true}
+  if(IN.on&&IN.pid==='cabin')return false;if(!inCabOK())return false;if(camS.mode!=='walk')setCamMode('walk');try{ctlRelease()}catch(e){}inStart('cabin','you',inDoorOf('cabin'),'in',{cb:()=>dEnter(rid)});INX.decoP=IN.pend;return true}
 // ---------- hooks ----------
 function inLeaks(){const out=[];for(const o of scene.children){if(!o.visible||o===WORLD||(IN.P&&o===IN.P.obj))continue;if(!inKeep(o))out.push(o.type+':'+(o.name||''))}
   if(!IN.on){if(!WORLD.visible)out.push('world-hidden');return out}
