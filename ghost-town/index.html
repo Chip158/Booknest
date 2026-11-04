@@ -7498,6 +7498,9 @@ function tkSettle(){visitor.position.set(YOU.x,navFloor(YOU.x,YOU.z),YOU.z);visi
 function tkSnap(sh){if(!TK.jump||!sh)return;const m=tkMid();camS.tx=m.x;camS.ty=m.y;camS.tz=m.z;camS.yaw=sh.yaw;camS.pitch=sh.pitch;camS.dist=sh.dist;TK.jump=false}
 // owner fix (verifier): the crown of each head is ray-tested too (half weight), small instanced props (B16 lamp fixtures) count as occluders and additive light beams do not,
 // a shot that shows the speaker's back costs more, and when the two stand far apart the aim slides toward the nearer head (TK.mb) so both stay on a narrow screen
+const TKLB={L:null,B:[]},TKIH=[],TKBP=new THREE.Vector3();
+function tkHit(L){const R=TKRC.ray,far=TKRC.far;if(TKLB.L!==L){TKLB.L=L;TKLB.B.length=0;for(const o of L){const g=o.geometry;let b=null;if(g&&!o.isInstancedMesh){if(!g.boundingBox)g.computeBoundingBox();b=g.boundingBox.clone().applyMatrix4(o.matrixWorld).expandByScalar(.05)}TKLB.B.push(b)}}// LF5: any-hit with early exit (was intersectObjects + sort over every triangle)
+  for(let i=0;i<L.length;i++){const o=L[i],b=TKLB.B[i];if(!o.layers.test(TKRC.layers))continue;if(b&&!b.containsPoint(R.origin)){if(!R.intersectBox(b,TKBP)||TKBP.distanceTo(R.origin)>far)continue}TKIH.length=0;o.raycast(TKRC,TKIH);if(TKIH.length)return true}return false}
 function tkShot(){TK.mb=.5;tkPos(TK.id,TKW);const dx=TKW.x-YOU.x,dz=TKW.z-YOU.z,sep=Math.hypot(dx,dz),a=Math.atan2(-dz,dx),
   tH=Math.tan((typeof LENS==='object'&&LENS.cl.talk?LENS.fb:camera.fov)*Math.PI/360)*camera.aspect,dist=clamp((sep/2+.5)/(tH*.9),5.5,11),m=tkMid(),p=tkRoom();TKCAM.fov=(typeof LENS==='object'&&LENS.cl.talk?LENS.fb:camera.fov);TKCAM.aspect=camera.aspect;TKCAM.near=camera.near;TKCAM.far=camera.far;TKCAM.updateProjectionMatrix();
   TKH[0].set(YOU.x,navFloor(YOU.x,YOU.z)+1.5,YOU.z);TKH[1].set(TKW.x,TK.id==='mocha'?TKW.y+.32*growScale():Math.max(navFloor(TKW.x,TKW.z),TKW.y)+1.4,TKW.z);TKHT[0].copy(TKH[0]).y+=.4;TKHT[1].copy(TKH[1]).y+=.38;
@@ -7507,7 +7510,7 @@ function tkShot(){TK.mb=.5;tkPos(TK.id,TKW);const dx=TKW.x-YOU.x,dz=TKW.z-YOU.z,
   let best=null;const tryC=(yw,pi,D,pen,k)=>{if(p){const d=Math.atan2(Math.sin(yw-p.ry),Math.cos(yw-p.ry));yw=p.ry+clamp(d,-1.1,1.1)}k=k||.5;let mm=m;if(k!==.5){mm=TKMB.set(TKW.x+(YOU.x-TKW.x)*k,0,TKW.z+(YOU.z-TKW.z)*k);mm.y=navFloor(mm.x,mm.z)+(TK.id==='mocha'?.75:.35)}
     const c=Math.cos(pi);TKCP.set(mm.x+Math.sin(yw)*c*D,Math.max(1.5,mm.y+Math.sin(pi)*D),mm.z+Math.cos(yw)*c*D);let hit=0;
     const ex=YOU.x-TKW.x,ez=YOU.z-TKW.z,el=Math.hypot(ex,ez)||1,cx=TKCP.x-TKW.x,cz=TKCP.z-TKW.z,wx=TKCP.x-YOU.x,wz=TKCP.z-YOU.z,nd=(ex*cx+ez*cz)/(el*(Math.hypot(cx,cz)||1)),yd=-(ex*wx+ez*wz)/(el*(Math.hypot(wx,wz)||1)),fc=TK.id==='board'?0:Math.max(0,-nd-.1)*4+Math.max(0,-yd-.45)*3;
-    const ry=(h,w)=>{TKW2.copy(h).sub(TKCP);const l=TKW2.length();TKRC.set(TKCP,TKW2.normalize());TKRC.far=Math.max(1.01,l-.4);if(TKRC.intersectObjects(L,false).length)hit+=w};ry(TKH[0],1);ry(TKH[1],1);ry(TKHT[0],.5);ry(TKHT[1],.5);const bad=tkBad(p),off=tkOff(mm);
+    const ry=(h,w)=>{TKW2.copy(h).sub(TKCP);const l=TKW2.length();TKRC.set(TKCP,TKW2.normalize());TKRC.far=Math.max(1.01,l-.4);if(tkHit(L))hit+=w};ry(TKH[0],1);ry(TKH[1],1);ry(TKHT[0],.5);ry(TKHT[1],.5);const bad=tkBad(p),off=tkOff(mm);
     const s=hit*10+bad*30+off*8+pen+fc+Math.abs(Math.atan2(Math.sin(yw-camS.yaw),Math.cos(yw-camS.yaw)))*.3;if(!best||s<best.s)best={s,yaw:yw,pitch:pi,dist:D,hit:hit+bad+off,off,mb:k}};
   for(const b of [a,a+Math.PI])for(const o of [0,.45,-.45])tryC(b+o,p?.42:.28,dist,Math.abs(o));
   if(best.off)for(const k of [.62,.72,.38,.28])for(const b of [a,a+Math.PI])for(const o of [0,.45,-.45])tryC(b+o,p?.42:.28,dist,Math.abs(o)+.25,k);
@@ -7822,7 +7825,7 @@ function popEdge(){const e=POP.edge||(POP.edge=$('#edge'));let t=POP.etx;if(!t||
   const on=e.style.display==='flex'&&bubbleT>0&&bubble.classList.contains('show')&&!POP.busy;if(on){const s=bubble.textContent;if(t.textContent!==s)t.textContent=s;const r=(parseFloat(e.style.left)||0)>innerWidth/2;if(t._r!==r){t._r=r;t.classList.toggle('l',r);t.classList.toggle('r',!r)}}if(t._on!==on){t._on=on;t.classList.toggle('on',on)}}
 // ---- the context button (#near): one paper button above the right thumb, only when facing something you can use ----
 function popPrompt(){const nr=$('#near'),now=performance.now();if(now<(POP.prT||0)){nr.style.display=POP.pl?'block':'none';return}POP.prT=now+125;let tx=typeof talkPill==='function'?talkPill():'',k=tx?'talk':null;POP.pa=null;
-  const ip=inPill();if(ip){if(!IN.on&&tx)INX.pillK=null;else{tx=ip;k='in';nr.classList.remove('tk')}}
+  const ip=inPill();if(ip){if(!IN.on&&tx)INX.pillK=null;else{tx=INX.pillK==='mocha'?'👻 Go see Mocha':ip;k='in';nr.classList.remove('tk')}}
   if(!tx&&YOU.seat){tx='🧍 Stand up';k='stand'}
   if(!tx&&KNOCK.el&&KNOCK.d&&HUD.S.knock&&HUD.S.knock.on){tx=KNOCK.el.textContent;k='knock';POP.pa=KNOCK.d}
   if(!tx&&!TG.on){let bs=null,bi=-1,bd=1.9;if(!POP.sT||now>POP.sT){POP.sT=now+250;POP.sc=null;
@@ -7869,13 +7872,14 @@ body.lf5q .lbl{opacity:0!important}
 #knockBtn,#shAllBtn{display:none!important}
 body.walk #near{top:auto!important;left:auto!important;right:max(14px,env(safe-area-inset-right));bottom:calc(150px + env(safe-area-inset-bottom));transform:none!important;max-width:min(64vw,300px);background:#FFF8EC!important;color:#3A2A20!important;border-radius:22px;min-height:44px;line-height:20px;padding:12px 18px;font-size:15px;font-weight:700;box-shadow:0 0 0 1.5px #C9A06A,0 4px 12px rgba(58,42,32,.22)!important;pointer-events:auto;cursor:pointer;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;box-sizing:border-box;animation:ctxIn .18s ease-out}
 @keyframes ctxIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
-@media (orientation:landscape) and (max-height:520px){body.walk #near{bottom:calc(128px + env(safe-area-inset-bottom));right:calc(max(14px,env(safe-area-inset-right)) + 62px)}}
+@media (max-width:760px) and (min-height:521px){body.walk #near{right:calc(max(12px,env(safe-area-inset-right)) + 56px);bottom:calc(184px + env(safe-area-inset-bottom))}}
+@media (orientation:landscape) and (max-height:520px){#toast{left:50%!important;top:calc(80px + env(safe-area-inset-top));max-width:min(52vw,440px);transform:translate(-50%,-12px)!important}#toast.show{transform:translate(-50%,0)!important}body.walk #near{bottom:calc(128px + env(safe-area-inset-bottom));right:calc(max(14px,env(safe-area-inset-right)) + 62px)}}
 @media (min-width:761px) and (min-height:521px){body.walk.panelOpen #near{right:calc(min(400px,42vw) + 24px)}}`;document.head.appendChild(st)}
 function popHooks(M){Object.assign(M,{POP,
   popups:()=>{const rr=e=>{const r=e.getBoundingClientRect();return{x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height)}};const N=POP.ntc,nr=$('#near');
     return{names:{on:!!POP.nc.on,text:POP.nc.on?POP.nc.t:'',sub:POP.nc.on?POP.nc.s:'',key:POP.nc.key,rect:POP.nc.on&&BAN.el?rr(BAN.el):null},
       bubbles:POPB.filter(s=>!s.el._off&&s.el.classList.contains('show')&&s.el.style.visibility!=='hidden'&&getComputedStyle(s.el).display!=='none').map(s=>({who:s.who,text:s.el.textContent,rect:rr(s.el)})),
-      notices:{showing:N.cur?N.cur.t:null,queue:N.q.map(x=>x.t),n:N.n,merged:N.merged,rect:N.cur?rr($('#toast')):null},prompt:{on:getComputedStyle(nr).display!=='none'&&!!nr.textContent,label:nr.textContent,kind:POP.pk,rect:nr.textContent?rr(nr):null},paused:POP.busy,
+      notices:{showing:N.cur?N.cur.t:null,queue:N.q.map(x=>x.t),n:N.n,merged:N.merged,rect:N.cur?rr($('#toast')):null},prompt:{on:getComputedStyle(nr).display!=='none'&&!!nr.textContent,label:nr.textContent,kind:POP.pk,rect:nr.textContent?rr(nr):null},paused:POP.busy||popBusy(),
       why:POPB.map(s=>s.who+':'+(s.el._off?s.why:'on')),labels:[...document.querySelectorAll('.lbl')].filter(e=>e.style.opacity==='1'&&getComputedStyle(e).opacity!=='0').map(e=>e.textContent),front:POP.front&&POP.front.id,stat:{...POP.stat}}},
   nameCard:pid=>{const p=byId[pid];if(!p)return null;POP.nc.seen[pid]=0;popName(p,null,true);return{on:!!POP.nc.on,text:POP.nc.t,sub:POP.nc.s}},
   notice:(t,o)=>{ntcPush(t,o);return{showing:POP.ntc.cur?POP.ntc.cur.t:null,queue:POP.ntc.q.map(x=>x.t)}},
