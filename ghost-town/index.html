@@ -1876,6 +1876,94 @@ function mkOutcome(act,t,live,lo,self,args){const e=(S.made||[]).find(m=>m.id===
 {const cu=catchUp;catchUp=function(){const s0=S&&S.lastSeen,r=cu.apply(this,arguments);try{if(S&&s0&&Array.isArray(S.made)){const h=(Date.now()-s0)/36e5;if(h>=6)makeTick(Math.min(24,h*.1),false)}}catch(e){MK.err=String(e&&e.message||e)}return r}}
 // db guard: S.made is trimmed first near the limit (packed parts dropped for template designs, retired objects beyond 12)
 {const g0=v2Guard;v2Guard=function(force){try{if(S&&Array.isArray(S.made)){const n=JSON.stringify(S).length;if(n>V2MAX*.9){S.made.forEach(e=>{if(e.k&&MKT[e.k]&&e.by!=='mind')delete e.pp});const D=S.made.filter(e=>e.status==='done'&&e.kind==='object');while(D.length>12){mkRetire(D.shift(),Date.now(),1)}}}}catch(e){}return g0.apply(this,arguments)}}
+// ---------- B32: MOCHA'S EMPTY-HOUSE NEST, data side (hoisted, data-only: safe in migrate()/catchUp()). FEAT.nest on: a fresh start moves into a nearly empty house ----------
+//  S.homeItems={home:'tok;tok;..'}: 'n:blanket'|'n:box'|'n:bulb' (the empty-house set), 'w:ach'|'w:flp' (Wendell's housewarming chair + lamp), 'b:<slot>' (an old save's built-in furniture),
+//   'd:<decorId>' (old S.decor), or a catalog tuple code.v.cx.cz.rot.room (cx/cz in .25 steps from the room corner, cx<0 = still in its box). S.v2fresh=1 fresh / 0 old save.
+//  S.nest={hw (housewarming t), ht (first hangout t), dk (last night), pd:{k,f:{slot:1}} (today's painful fallbacks), n:{slot:painful days}, ar (unpacked t)}
+FEAT.nest=true;
+const NEST_FRESH='n:blanket;n:box;n:bulb',NEST_BI=['bed','stove','fridge','table','couch','desk','computer','lamp','player','tv'];
+const NEST_SLOT={lbd:'bed',cnp:'bed',cot:'bed',dbd:'bed',stv:'stove',frg:'fridge',pc:'computer',sfa:'couch',lsv:'couch',tbl:'table',rtb:'table',cft:'table',ntb:'table',dsk:'desk',rpl:'player',tv:'tv',flp:'lamp',tlp:'lamp',dlp:'lamp',msl:'lamp',mnl:'lamp',cdb:'lamp',ach:'couch1',thr:'couch1','w:ach':'couch1','w:flp':'lamp'};
+// the NEEDS ladder: [slot, pain, candidate codes (his taste picks; the first is Otis's order-desk default), fallback words]
+const NEST_NEEDS=[['bed','floorNights',['lbd','cnp','dbd','cot']],['stove','coldMeals',['stv']],['lamp','darkEvenings',['tlp','cdb','flp','dlp']],['computer','libraryTrips',['pc']],['couch','floorCushions',['sfa','lsv']],['player','listeningBooth',['rpl']]];
+// rooms of his house (local coords, floor y .65): [name, x0, z0, x1, z1, focal]; Addendum S zoning: the study (desk, books) in the living room under the lancet, the bed in the bedroom
+const NEST_RM=[['living',-5.8,-6.8,3.8,.6,{x:-1,z:-6.6,fx:0,fz:1}],['bedroom',4.2,-6.8,10.3,.6,{x:7.2,z:-6.6,fx:0,fz:1}],['kitchen',-13.8,-6.8,-6.2,.6,{x:-10,z:-6.6,fx:0,fz:1}]];
+const NEST_DESK=['lbd','stv','sfa'];// Otis's order desk (always in stock); mirrors ORDER, which is declared later
+const NESTC={k:'',set:null,f:0,L:null,k2:''};
+function nestForce(){try{return!!NEST.force}catch(e){return false}}
+function nestOn(){return!!(FEAT.nest&&S&&(S.v2fresh||nestForce()))}
+function b32Fix(s){if(!s)return;if(!s.nest||typeof s.nest!=='object'||Array.isArray(s.nest))s.nest={};const N=s.nest;N.hw=+N.hw||0;N.ht=+N.ht||0;N.dk=+N.dk||0;N.ar=+N.ar||0;if(!N.pd||typeof N.pd!=='object')N.pd={k:0,f:{}};if(!N.n||typeof N.n!=='object')N.n={};
+  if(!s.homeItems||typeof s.homeItems!=='object'||Array.isArray(s.homeItems))s.homeItems={};if(typeof s.homeItems.home!=='string')s.homeItems.home='';const L=s.homeItems.home.split(';').filter(Boolean);if(L.length>48)s.homeItems.home=L.slice(-48).join(';')}
+function nestToks(){return((S&&S.homeItems&&typeof S.homeItems.home==='string')?S.homeItems.home:'').split(';').filter(Boolean)}
+function nestRoomIx(r){const i=NEST_RM.findIndex(q=>q[0]===r);return i<0?0:i}
+// parsed catalog items of the house: [{tok,ti,code,v,slot,cx,cz,rot,r,room,lx,lz,placed,it?}]
+function nestItems(){const s=(S&&S.homeItems&&S.homeItems.home)||'';if(NESTC.L&&NESTC.k2===s)return NESTC.L;const out=[];s.split(';').forEach((t,ti)=>{if(!t)return;const a=t.split('.');if(t.includes(':')){out.push({tok:t,ti,code:t,slot:NEST_SLOT[t]||(t.startsWith('b:')?t.slice(2):null),placed:true,pre:t.slice(0,1)});return}
+  const R=NEST_RM[(a[5]|0)]||NEST_RM[0],cx=+a[2]||0,cz=+a[3]||0;out.push({tok:t,ti,code:a[0],v:a[1]|0,slot:NEST_SLOT[a[0]]||null,cx,cz,rot:(a[4]|0)&3,r:a[5]|0,room:R[0],lx:R[1]+cx*.25,lz:R[2]+cz*.25,placed:cx>=0&&cz>=0})});NESTC.k2=s;NESTC.L=out;return out}
+function nestSlots(){const s=(S&&S.homeItems&&S.homeItems.home)||'',f=nestForce()?1:0;if(NESTC.set&&NESTC.k===s&&NESTC.f===f)return NESTC.set;const set=new Set();
+  for(const e of nestItems()){if(f&&e.pre!=='n')continue;// emptyHouse(true) (B14's force) = the bare empty-house set
+    if(e.slot)set.add(e.slot)}if(set.has('couch1'))set.add('couch');if(set.has('desk'))set.add('table');NESTC.k=s;NESTC.f=f;NESTC.set=set;return set}
+function nestCouch1(){const s=nestSlots();return nestOn()&&s.has('couch1')&&!nestItems().some(e=>e.slot==='couch')}
+function nestAddTok(t){b32Fix(S);const L=nestToks();if(t.includes(':')&&L.includes(t))return false;L.push(t);S.homeItems.home=L.slice(-48).join(';');return true}
+// hasItem / capSpot / hangSeat read homeItems while the nest is on (Wendell's cottage and other homes stay furnished)
+{const h0=hasItem;hasItem=function(slot,home='home'){const c=HOME_CAPS[slot];if(!c)return false;if(c.always)return true;if(slot==='radio'||!FEAT.nest)return h0.apply(this,arguments);if(home!=='home')return true;if(!S||!S.homeItems||typeof S.homeItems.home!=='string')return true;return nestSlots().has(slot)}}
+{const c0=capSpot;capSpot=function(slot,home='home'){if(home==='home'&&slot==='couch'&&nestCouch1())return{p:'home',s:'couchA',fb:'armchair',pair:['couchA','floorB']};return c0.apply(this,arguments)}}
+{const s0=hangSeat;hangSeat=function(sn,home){if(home==='home'&&sn==='couchB'&&nestCouch1())return'floorB';return s0.apply(this,arguments)}}
+// fresh start: nearly empty; old saves: the built-ins + S.decor map to homeItems, v2fresh 0
+{const f0=fresh;fresh=function(){const s=f0.apply(this,arguments);s.v2fresh=1;s.homeItems={home:NEST_FRESH};b32Fix(s);return s}}
+{const m0=migrate;migrate=function(){const r=m0.apply(this,arguments);try{if(S&&(!S.homeItems||typeof S.homeItems!=='object'||typeof S.homeItems.home!=='string')){S.homeItems={home:NEST_BI.map(k=>'b:'+k).concat((S.decor||[]).filter(d=>typeof d==='string').slice(0,30).map(d=>'d:'+d.replace(/[^\w-]/g,''))).join(';')};S.v2fresh=0}
+  if(S&&S.v2fresh==null)S.v2fresh=0;S.v2fresh=S.v2fresh?1:0;b32Fix(S)}catch(e){}return r}}
+// today's painful fallbacks (the NEEDS ladder reads them at night)
+function nestPain(slot,t){b32Fix(S);const N=S.nest,k=dkey(+t||Date.now());if(N.pd.k!==k)N.pd={k,f:{}};if(slot)N.pd.f[slot]=1;return N.pd.f}
+// remap a home act when the thing is missing. deep=1 (localChoose) may pick a real elsewhere (the café, the library computer, the listening booth); startAct keeps the place
+function nestRemap(a,at,deep){if(!a||a.p!=='home'||a.fx==='hang'||a.nr||!nestOn())return a;const s=a.s,h=hourAt(at||Date.now()),open=pid=>{try{return byId[pid]&&isOpen(byId[pid],h)&&known(byId[pid])}catch(e){return false}},o=x=>Object.assign({},a,{nr:1},x);
+  if(s==='bed'&&!hasItem('bed')){nestPain('bed',at);return o({s:'blanket',doing:a.fx==='sleep'?'sleeping on his blanket nest':String(a.doing||'').replace('bed','blanket'),lines:['Slept on my blanket by the window again. The floor is very honest. I could hear the rain all night.','Blanket nest on the floor. Cozy, technically. A real bed would be nice someday.']})}
+  if(s==='kitchen'&&!hasItem('stove')){nestPain('stove',at);if(deep&&open('cafe')&&Math.random()<.5)return o({p:'cafe',s:'table',doing:/tea/.test(a.doing)?'getting tea at the café (no stove yet)':'getting supper at the café (no stove yet)',tags:['coffee','cozy'],lines:['No stove yet, so supper was at Drizzle & Bean. The barista says I\'m basically a regular now.']});
+    return o({s:'boxA',doing:/tea/.test(a.doing)?'making cold-brew tea on the moving box':'eating cold snacks on the moving box',lines:['Cold snacks on the moving box for supper. Crackers, an apple, a tiny cheese. A stove is on the list.','No stove yet. Cold tea, cold toast, warm heart.']})}
+  if(s==='desk'){const comp=a.fx==='research'||a.fx==='calendar'||/computer/.test(a.doing||'');if(comp&&!hasItem('computer')){nestPain('computer',at);if(deep&&open('library'))return o({p:'library',s:'computer',doing:a.fx==='calendar'?'checking his calendar on the library computer':'using the library computer (none at home yet)',tags:(a.tags||[]).concat('learning'),lines:['Used the library computer. The librarian saved me the one by the window.']});
+      return o({s:'boxA',doing:a.fx==='calendar'?'checking the paper calendar taped to the wall':'scribbling notes on the moving box'})}
+    if(!hasItem('desk'))return o({s:'boxA',doing:String(a.doing||'').replace(/^writing$/,'writing on the moving box')})}
+  if(s==='couch'&&!nestSlots().has('couch')||s==='couch'&&nestCouch1()){const c=capSpot('couch');if(!nestItems().some(e=>e.slot==='couch'))nestPain('couch',at);
+    if(/records/.test(a.doing||'')&&!hasItem('player')){nestPain('player',at);if(deep&&open('records')&&Math.random()<.6)return o({p:'records',s:'booth',doing:'in the listening booth (no record player yet)',tags:['music'],lines:['No record player yet, so I spent an hour in the listening booth at Rain City Records. Basil let me pick.']})}
+    return o({s:(c&&c.s)||'floorA',doing:String(a.doing||'').replace('on the couch',nestCouch1()?'in the armchair':'on the floor cushions')})}
+  if(s==='couch'&&/records/.test(a.doing||'')&&!hasItem('player'))nestPain('player',at);return a}
+{const lc=localChoose;localChoose=function(at){const r=lc.apply(this,arguments);try{if(r&&r.act)r.act=nestRemap(r.act,at||Date.now(),1)}catch(e){}return r}}
+// the item he'd pick for a slot: his taste (appeal) among the candidates; Otis's order desk default first on ties
+function nestPick(codes){let b=codes[0],bs=-1e9;for(const c of codes){let s=0;try{s=appeal(c,0)}catch(e){}if(c===codes[0])s+=.05;if(s>bs){bs=s;b=c}}return b}
+// nightly: each painful day adds .3 to the matching want; then taste items; sometimes he rearranges
+function nestNight(t){if(!S||!nestOn()||!S.v2fresh)return null;b32Fix(S);const N=S.nest,d=dkey(t);if(N.dk===d)return null;N.dk=d;const f=(N.pd&&N.pd.k===d)?N.pd.f:{},has=nestSlots(),out=[];
+  for(const [slot,pain,codes] of NEST_NEEDS){const own=slot==='couch'?nestItems().some(e=>e.slot==='couch'):has.has(slot);if(own)continue;const hurt=f[slot]||slot==='bed'||(slot==='lamp');if(!hurt)continue;
+    N.n[slot]=(N.n[slot]|0)+1;const code=(S.wants||[]).map(w=>w.nd===slot&&w.id.split(':')[1]).find(Boolean)||nestPick(codes),id='it:'+code;let w=wantGet(id);
+    if(!w){w=wantAdd(id,.3,{bed:'my back misses a bed',stove:'cold snacks again',lamp:'dark evenings',computer:'so many library trips',couch:'the floor cushions are flat',player:'the listening booth is far'}[slot]||'for the house',t,NEST_DESK.includes(code)?{p:'evergreen'}:null);if(w){w.nd=slot;w.w=.3}}
+    else{w.nd=slot;w.w=Math.min(1,Math.round((w.w+.3)*100)/100);w.l=t}if(w)out.push([slot,pain,w.w])}
+  N.pd={k:0,f:{}};
+  // taste items follow once the basics are covered (or wanted)
+  if(has.has('bed')&&!(S.wants||[]).some(w=>w.nd&&w.nd!=='taste')&&Math.random()<.35)nestTaste(t);
+  if(nestItems().filter(e=>!e.pre&&e.placed).length>=3&&Math.random()<.07)try{nestRearrange(t)}catch(e){}
+  return out}
+function nestTaste(t){let best=null,bs=.6;try{const own=new Set(nestItems().map(e=>e.code));for(const it of CAT.items){if(own.has(it.code)||!/^(seat|tabl|stor|rug|lite|plnt|wall|misc)$/.test(it.cat)||it.price>260)continue;const a=appeal(it,0);if(a>bs){bs=a;best=it}}}catch(e){return null}
+  if(!best)return null;const w=wantAdd('it:'+best.code,.55,'for the house',t);if(w)w.nd='taste';return w}
+{const wd=wantDecay;wantDecay=function(days,t){const keep=(S.wants||[]).filter(w=>w.nd&&w.nd!=='taste').map(w=>[w,w.w]);const r=wd.apply(this,arguments);keep.forEach(([w,v])=>{w.w=v});return r}}// needs don't fade
+{const cs=consolidate;consolidate=function(ds,de){const r=cs.apply(this,arguments);try{nestNight(Math.min(+de||Date.now(),Date.now()))}catch(e){}return r}}
+// buying: a needed thing he can afford (want >= .9) comes home from Otis's order desk (Evergreen, always in stock) or its own shop, and arrives as a box
+function nestShop(pid,t,live){if(!S||!S.v2fresh||!S.wants)return null;for(const w of S.wants.slice().sort((a,b)=>b.w-a.w)){if(!w.nd||!w.c||w.w<(w.nd==='taste'?.7:.9))continue;const code=w.id.split(':')[1],desk=NEST_DESK.includes(code);
+    if(pid!==w.p&&!(desk&&pid==='evergreen'))continue;if((S.coins|0)<w.c){if(w.nd!=='taste'&&(!S.goal||S.goal.kind!=='save'))try{saveGoal(w,t)}catch(e){}continue}
+    const r=wantBuy(w,pid,t,live,S.goal&&S.goal.kind==='save'&&S.goal.key===w.id?'save':'want');if(!r||!r.ok)continue;nestAddTok([code,w.v|0,-1,-1,0,0].join('.'));
+    const it=catItem(code);if(w.nd==='bed'){const F=S.firsts||(S.firsts={});if(!F.bed){const x='Finally bought a real bed!! The '+(it?it.name:'bed')+'. No more floor nights. I\'m going to sleep for a hundred years. (Eight hours.)';addEntry('Home',x,(byId[pid]||{}).name||'',t+1,true);F.bed={t,x:x.slice(0,140)};try{coreAdd(S,'first',x,t+1,6)}catch(e){}}}
+    else if(w.nd&&w.nd!=='taste')addEntry('Home',`The ${it?it.name.toLowerCase():'thing'} came in a big kraft box with twine. The house is filling up, one thing at a time.`,'',t+1);
+    if(!live)try{arrangeHome(code,w.v|0,{t})}catch(e){}return r}return null}
+{const ws=wantShop;wantShop=function(pid,t,live){const n=nestShop(pid,t,live);return n||ws.apply(this,arguments)}}
+// candidates: go buy a needed thing he can afford; the first hangout on housewarming night (tea on the moving box)
+function nestCands(at){const out=[];if(!S||!S.v2fresh||!nestOn())return out;const h=hourAt(at);
+  try{const w=(S.wants||[]).filter(w=>w.nd&&w.nd!=='taste'&&w.w>=.9&&w.c&&(S.coins|0)>=w.c).sort((a,b)=>b.w-a.w)[0];if(w){const code=w.id.split(':')[1],pid=NEST_DESK.includes(code)?'evergreen':w.p,it=catItem(code),A=ACTS.find(a=>a.p===pid);
+    if(it&&byId[pid]&&isOpen(byId[pid],h))out.push({p:pid,s:A?A.s:null,doing:pid==='evergreen'&&NEST_DESK.includes(code)?`ordering a ${it.name.toLowerCase()} at Otis's desk`:`buying a ${it.name.toLowerCase()}`,tags:['home decor'],need:{fun:10},hw:2.5+w.w,nb:1,lines:[]})}}catch(e){}
+  try{const N=S.nest;if(N.hw&&!N.ht&&at-N.hw<6*36e5&&h<21.5){const H=HANGOUTS.find(x=>x.id==='tea'),r=H&&hangResolve(H,'M');if(r&&r.p==='home'){const a=hangAct(r,4);a.hw0=1;a.doing='tea on the moving box with Wendell';out.push(a)}}}catch(e){}return out}
+{const hc=holCands;holCands=function(at=Date.now()){const r=hc.apply(this,arguments);try{nestCands(at).forEach(a=>r.push(a))}catch(e){}return r}}
+{const lo=localOutcome;localOutcome=function(act,t=Date.now(),live=true){const r=lo.apply(this,arguments);try{if(act&&act.fx==='hang'&&act.host==='M'&&S.nest&&S.nest.hw&&!S.nest.ht){S.nest.ht=t;try{coreAdd(S,'friend','Our first hangout in my new house: tea on the moving box. Wendell in his old armchair, me on the folded blanket. Best table I ever had.',t,4)}catch(e){}}}catch(e){}return r}}
+// Wendell's housewarming (first evening of a fresh start): a hand-me-down armchair + a little lamp
+function housewarming(t,live){if(!S)return null;b32Fix(S);const N=S.nest;if(N.hw)return{done:N.hw};t=+t||Date.now();N.hw=t;nestAddTok('w:ach');nestAddTok('w:flp');
+  const x='Wendell knocked this evening with a hand-me-down armchair on his back and a little lamp under his arm. "Every home needs one chair for company," he said. My first gift, from my first friend. I turned the lamp on and the whole room went gold.';
+  addEntry('Neighbor',x,"Mocha's House",t,true);const F=S.firsts||(S.firsts={});if(!F.gift)F.gift={t,x:x.slice(0,140)};if(!F.friend)F.friend={t,x:'Wendell brought a chair for company.'};try{coreAdd(S,'first',x,t,6)}catch(e){}
+  S.metW=true;S.friendW=Math.max(1,+S.friendW||0);try{bondAdd('wendell',12,'housewarming',t)}catch(e){}try{spark('gift',1.5,t)}catch(e){}
+  if(live){try{toast('🪑 Wendell carried over an armchair and a lamp: "every home needs one chair for company"')}catch(e){}try{say('wendell!! a chair! for company!!',4.5)}catch(e){}try{sfx('gift')}catch(e){}}return{t,items:nestToks()}}
 const KEY='mocha-seattle-v1';
 function fresh(){const tr=()=>+(Math.random()).toFixed(2);return{v:1,wend:wendFresh(),town:talkFix(townFix()),born:Date.now(),lastSeen:Date.now(),xp:0,
   needs:{energy:75,snack:60,social:55,fun:60,curious:80},
@@ -10747,6 +10835,59 @@ Object.assign(window.__mocha,{VY,WV,FP,visitYouWeight,vyCands,vyState,ubVeto,
     return{lines:S.visYou.gb.map(x=>({who:x[0],line:x[1]})),signers:sg,lanterns:VYG.lan?VYG.lan.count:0,lanternGlow:VYG.lh.filter(i=>i>=0&&GLOWPTS.A[i]>0).length,open:!!(VYG.el&&VYG.el.classList.contains('on')),text:VYG.el?VYG.el.textContent:'',anchor:!!(CB&&CB.A.find(a=>a.act==='guest'))}},
   consign:id=>consign(id),buyPainting:id=>buyPainting(id),vyGift:()=>{S.visYou.gt=0;const r=Math.random;Math.random=()=>0;try{return vyGift(Date.now())}finally{Math.random=r}},
   vyAway:(from,to)=>{S.visYou.ab=0;return vyAway(from,to)},vyPaint:()=>Object.keys(VYG.pts).map(k=>({id:k,x:VYG.pts[k].x,z:VYG.pts[k].z,kids:VYG.pts[k].o.children.length})),vyCons:()=>Object.keys(VYG.cons),gbOpen});
+// ---------- B32: the nest, runtime: the empty-house look, his things (one catMerge), the arrival box, arrangeHome (autoArrange by room), spots from homeItems, the housewarming tick, hooks ----------
+const B32={key:'',f:null,box:null,sp0:null,t:0,err:null,unp:0};
+function nestRoomFor(it){if(!it)return 0;if(it.cat==='bed')return 1;if(it.cat==='kit')return 2;return 0}
+function nestRoomDef(ri,skipTi){const q=NEST_RM[ri]||NEST_RM[0],R={id:'mocha-'+q[0],name:q[0],x0:q[1],z0:q[2],x1:q[3],z1:q[4],w:q[3]-q[1],d:q[4]-q[2],y:.65,blk:[],surf:[],walls:['b','l','r'],wb:{},focal:q[5],win:[]};
+  if(ri===0)R.blk.push([-1.5,-3.5,1.5,-2.7],[-1.7,-1,-.3,.4],[-2.4,-1,-1.5,-.1],[-.6,-.7,.6,.3]);// floor cushions + bulb, Wendell's armchair + lamp, the couch spot lane
+  for(const e of nestItems())if(!e.pre&&e.placed&&e.r===ri&&e.ti!==skipTi){const it=catItem(e.code);if(it){const [hw,hd]=dFp(it,e.rot);R.blk.push([e.lx-hw,e.lz-hd,e.lx+hw,e.lz+hd])}}return R}
+// arrangeHome(code,v): autoArrange by category and taste into the right room, around what is already there; the unopened box becomes the thing
+function arrangeHome(code,v,o){o=o||{};const it=catItem(code);if(!it||!S)return null;b32Fix(S);const L=nestItems(),box=L.find(e=>!e.pre&&e.code===code&&!e.placed),ti=o.ti!=null?o.ti:box?box.ti:-1;
+  const order=[nestRoomFor(it)].concat([0,1,2].filter(i=>i!==nestRoomFor(it)));let res=null,ri=0;
+  for(ri of order){const R=nestRoomDef(ri,ti);let r=null;try{r=autoArrange(R,[{code,v:v|0}],'nest',(S.born|0)+L.length*7+(o.seed|0))}catch(e){B32.err=String(e&&e.message||e)}if(r&&r.placed&&r.placed[0]){res=r.placed[0];break}}
+  if(!res)return{ok:false,why:'no room'};const R=NEST_RM[ri],tok=[code,v|0,Math.round((res.lx-R[1])/.25),Math.round((res.lz-R[2])/.25),res.rot&3,ri].join('.'),T=nestToks();
+  if(ti>=0&&ti<T.length)T[ti]=tok;else T.push(tok);S.homeItems.home=T.slice(-48).join(';');S.nest.ar=+o.t||Date.now();try{nestSpots()}catch(e){}return{ok:true,code,room:R[0],lx:+res.lx.toFixed(2),lz:+res.lz.toFixed(2),rot:res.rot&3,tok}}
+// sometimes he rearranges a room ("moved the couch to face the window. better.")
+function nestRearrange(t){const L=nestItems().filter(e=>!e.pre&&e.placed&&e.r===0);if(L.length<2)return null;const R=nestRoomDef(0,-1);R.blk=R.blk.slice(0,4);const r=autoArrange(R,L.map(e=>({code:e.code,v:e.v})),'nest',((+t||Date.now())/864e5)|0);if(!r||r.placed.length<L.length)return null;
+  const T=nestToks();r.placed.forEach((p,i)=>{const e=L[i];T[e.ti]=[e.code,e.v,Math.round((p.lx-NEST_RM[0][1])/.25),Math.round((p.lz-NEST_RM[0][2])/.25),p.rot&3,0].join('.')});S.homeItems.home=T.join(';');
+  const big=L.slice().sort((a,b)=>{const A=catItem(a.code),B=catItem(b.code);return(B?B.w*B.d:0)-(A?A.w*A.d:0)})[0],it=catItem(big.code);addEntry('Home',`Moved the ${it?it.name.toLowerCase():'furniture'} to face the window. Better.`,"Mocha's House",+t||Date.now());try{nestSpots()}catch(e){}return r.placed.length}
+// desk, bed, kitchen and couch spots resolve from homeItems (front of the placed thing), else the original spots (capSpot gives the fallbacks)
+function nestSpots(){const p=byId.home;if(!p||!p.spots)return;const K=['bed','kitchen','desk','couch','couchA','couchB'];if(!B32.sp0){B32.sp0={};K.forEach(k=>B32.sp0[k]=p.spots[k]&&p.spots[k].slice())}
+  K.forEach(k=>{if(B32.sp0[k])p.spots[k]=B32.sp0[k].slice()});if(!nestOn()||!S.v2fresh)return;const L=nestItems().filter(e=>!e.pre&&e.placed);const F=[[0,1],[1,0],[0,-1],[-1,0]];
+  const at=(e,d)=>{const it=catItem(e.code),f=F[e.rot&3],hd=it?(e.rot&1?it.w:it.d)/2:.4;return[+(e.lx+f[0]*(hd+d)).toFixed(2),+(e.lz+f[1]*(hd+d)).toFixed(2),Math.atan2(-f[0],-f[1])]};
+  for(const e of L){const s=e.slot;if(s==='bed')p.spots.bed=[e.lx,e.lz,(e.rot&3)*Math.PI/2];else if(s==='stove')p.spots.kitchen=at(e,.5);else if(s==='desk'||(s==='computer'&&!L.some(x=>x.slot==='desk')))p.spots.desk=at(e,.45);
+    else if(s==='couch'){const f=F[e.rot&3],y=(e.rot&3)*Math.PI/2,ax=[f[1],-f[0]];p.spots.couch=[e.lx,e.lz,y];p.spots.couchA=[+(e.lx-ax[0]*.5).toFixed(2),+(e.lz-ax[1]*.5).toFixed(2),y];p.spots.couchB=[+(e.lx+ax[0]*.5).toFixed(2),+(e.lz+ax[1]*.5).toFixed(2),y]}}
+  try{for(const k of K){const s=p.spots[k],q=toWorld(p,s[0],s[1]);SPOTROOM.home[k]=roomAt('home',q.x,q.z)}}catch(e){}}
+// visuals: furnished interior hidden while the nest is on; his things in ONE catMerge group; an unopened kraft box (twine) by the door while something waits to be unpacked
+function nestVis(){const p=byId.home;if(!p||!p.inner)return;const on=nestWant();for(const c of p.inner.children)if(c.userData.b12&&c.visible===on)c.visible=!on;
+  const L=on&&!nestForce()?nestItems():[],has=on?nestSlots():new Set(),full=has.has('bed')&&L.some(e=>e.slot==='couch')&&L.some(e=>!e.pre&&e.slot==='lamp');if(NEST.g)NEST.g.visible=on&&!full;
+  const key=on?(S.homeItems.home||''):'';if(key!==B32.key){B32.key=key;if(B32.f){catFree(B32.f);B32.f=null}const list=[];const sp=p.spots;
+    for(const e of L){if(e.tok==='w:ach'){const c=(B32.sp0&&B32.sp0.couchA)||sp.couchA;list.push({code:'ach',v:0,x:c[0],y:.65,z:c[1]+.15,ry:0,s:1})}else if(e.tok==='w:flp'){const c=(B32.sp0&&B32.sp0.couchA)||sp.couchA;list.push({code:'flp',v:0,x:c[0]-.95,y:.65,z:c[1],ry:0,s:1})}
+      else if(!e.pre&&e.placed)list.push({code:e.code,v:e.v,x:e.lx,y:.65,z:e.lz,ry:e.rot*Math.PI/2,s:1})}
+    if(list.length){try{const g=catMerge(list,{});g.name='b32nest';p.inner.add(g);B32.f=g}catch(e){B32.err=String(e&&e.message||e)}}}
+  if(B32.f)B32.f.visible=on;const unp=on?L.filter(e=>!e.pre&&!e.placed).length:0;B32.unp=unp;
+  if(unp&&!B32.box){const g=new THREE.Group();g.name='b32box';const m=new ToonM({color:'#B98E62'});const a=new THREE.Mesh(new THREE.BoxGeometry(.9,.7,.7),m);a.position.y=.35;g.add(a);const tw=new THREE.Mesh(new THREE.BoxGeometry(.92,.72,.05),new ToonM({color:'#E8DCB8'}));tw.position.y=.35;g.add(tw);g.position.set(2.2,.65,3.4);g.rotation.y=.3;g.traverse(o=>{o.userData.bk=1});p.inner.add(g);B32.box=g}
+  if(B32.box)B32.box.visible=!!unp}
+{const na=nestApply;nestApply=function(){const r=na.apply(this,arguments);try{nestVis();nestTick()}catch(e){B32.err=String(e&&e.message||e)}return r}}
+// 1 Hz (from b14Frame): the housewarming on the first evening, unpacking boxes once he is home
+function nestTick(){if(!S||!S.v2fresh||!FEAT.nest)return;const now=Date.now(),N=S.nest||{},h=hourAt(now);if(now-B32.t<1000)return;B32.t=now;
+  if(!N.hw&&!S.trip){const sod=startOfDay(+S.born||now),first=now>=sod+17*36e5,both=(()=>{try{return mochaHome()&&W.inside&&!wAsleep()}catch(e){return false}})();
+    if(h>=17&&h<19||first&&h>=9&&h<21.5&&both)housewarming(now,true)}
+  if(B32.unp&&(()=>{try{return mochaHome()}catch(e){return false}})()){const e=nestItems().find(x=>!x.pre&&!x.placed);if(e){const r=arrangeHome(e.code,e.v);const it=catItem(e.code);if(r&&r.ok){try{say(`unpacked the ${it?it.name.toLowerCase():'box'}!`,3.5)}catch(_){}try{sfx('tok')}catch(_){}}}}}
+// round-1 home acts keep their place but use the fallback spot (sleep on the blanket, cold snacks on the box, the floor cushions)
+{const sa=startAct;startAct=function(act,why){try{if(act&&act.p==='home')act=nestRemap(act,Date.now(),0)}catch(e){}return sa.call(this,act,why)}}
+// B16: with the nest on, only the bare bulb (ceil) and a lamp he owns light his rooms
+{const lo=lspOn;lspOn=function(sp,h){const v=lo.apply(this,arguments);if(!v||sp.p.id!=='home'||!nestWant())return v;const k=sp.l.kind;if(k==='lamp')return nestItems().some(e=>!e.pre&&e.slot==='lamp'&&e.placed)?v:0;return v}}
+// freshHome(): a brand-new nest (the house only), as on a fresh start: blanket, box, bulb; the radio from the move-in package
+function freshHome(){b32Fix(S);S.homeItems={home:NEST_FRESH};S.v2fresh=1;S.nest={};b32Fix(S);S.wants=(S.wants||[]).filter(w=>!w.nd);if(S.music){S.music.rad=1}FEAT.nest=true;try{NEST.force=false}catch(e){}B32.key='x';nestApply();nestSpots();
+  return Object.assign(nestState(),{radio:hasItem('radio')})}
+function nestState(){const L=nestItems();return{raw:(S.homeItems&&S.homeItems.home)||'',n:L.length,items:L.map(e=>({tok:e.tok,code:e.code,slot:e.slot,placed:e.placed,room:e.room||null,lx:e.lx,lz:e.lz,rot:e.rot})),slots:[...nestSlots()],v2fresh:S.v2fresh,on:nestWant(),nestVis:!!(NEST.g&&NEST.g.visible),
+  furnVis:byId.home.inner.children.filter(c=>c.userData.b12).some(c=>c.visible),draws:B32.f?B32.f.children.length:0,box:!!(B32.box&&B32.box.visible),nest:S.nest,wants:(S.wants||[]).filter(w=>w.nd).map(w=>({id:w.id,w:w.w,nd:w.nd,c:w.c,p:w.p})),spots:{bed:byId.home.spots.bed,kitchen:byId.home.spots.kitchen,desk:byId.home.spots.desk,couch:byId.home.spots.couch},err:B32.err}}
+try{nestSpots()}catch(e){}
+Object.assign(window.__mocha,{freshHome,homeItems:()=>nestState(),housewarming:o=>{o=o||{};if(o.force&&S.nest)S.nest.hw=0;const r=housewarming(Date.now(),true);nestApply();return Object.assign({r,couch:window.__mocha.capSpot('couch'),lamp:window.__mocha.capSpot('lamp'),table:window.__mocha.capSpot('table')},nestState())},
+  nest:{night:t=>{if(S.nest)S.nest.dk=0;return nestNight(+t||Date.now())},shop:pid=>{const r=nestShop(pid||'evergreen',Date.now(),true);nestApply();return r},arrange:(code,v)=>{const r=arrangeHome(code,v|0);nestApply();return r},
+    unpack:()=>{const out=[];for(const e of nestItems().filter(x=>!x.pre&&!x.placed))out.push(arrangeHome(e.code,e.v));nestApply();return out},rearrange:()=>{const r=nestRearrange(Date.now());nestApply();return r},
+    remap:(a,deep)=>nestRemap(Object.assign({tags:[],need:{}},a),Date.now(),deep?1:0),pain:()=>nestPain(null),cands:()=>nestCands(Date.now()),state:nestState,NEST_NEEDS,arrangeHome,room:ri=>nestRoomDef(ri|0,-1)}});
 {const hx=c=>'#'+c.getHexString();
 Object.assign(window.__mocha,{PAL,FAMOF,PATCH,RIM,RIMS,TOONG,TOONC,ToonM,ToonC,rbox,rimify,ghostMat,roadMat,
   grade:()=>({toon:PAL.toon,toonC:PAL.toonC,hemi:{sky:hx(hemi.color),ground:hx(hemi.groundColor),i:+hemi.intensity.toFixed(3)},sky:{top:hx(skyMat.uniforms.top.value),bot:hx(skyMat.uniforms.bot.value)},night:+nightAmt.toFixed(3),gold:+RIMS.gold.toFixed(3),
