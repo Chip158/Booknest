@@ -1197,6 +1197,9 @@ function fresh(){const tr=()=>+(Math.random()).toFixed(2);return{v:1,wend:wendFr
 {const f1=fresh;fresh=function(){const s=f1();cabinFix(s.you);return s}}
 {const f2=fresh;fresh=function(){const s=f2();decoFix(s.you);return s}}
 {const f3=fresh;fresh=function(){const s=f3();s.music=musicFix(null,1);return s}}
+{const f4=fresh;fresh=function(){const s=f4();natFix(s.you);return s}}
+{const f5=fresh;fresh=function(){const s=f5();b40Fix(s.you);return s}}
+{const f39=fresh;fresh=function(){const s=f39();s.condo=condoFix(null);return s}}// B39
 let S=null;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 let isNew=!S||!S.needs;if(isNew)S=fresh();const seen0=isNew?0:(+S.lastSeen||0);
 function migrate(){S.you=youFix(S.you);S.wend=wendFix(S.wend);S.town=townFix(S.town);S.lite=Object.assign({v:0,lw:0,fw:0,ld:'',fd:''},S.lite&&typeof S.lite==='object'?S.lite:{});S.paintings=S.paintings||[];S.coins=S.coins||0;S.know=S.know||{};S.seen=S.seen||[];S.posts=S.posts||[];S.pets=S.pets||[];S.decor=S.decor||[];if(S.pantry==null)S.pantry=60;
@@ -1209,6 +1212,9 @@ function migrate(){S.you=youFix(S.you);S.wend=wendFix(S.wend);S.town=townFix(S.t
   if(typeof cabinFix==='function')cabinFix(S.you);
   if(typeof decoFix==='function')decoFix(S.you);
   if(typeof musicFix==='function')S.music=musicFix(S.music,isNew);
+  if(typeof natFix==='function')natFix(S.you);
+  if(typeof b40Fix==='function')b40Fix(S.you);
+  if(typeof condoFix==='function')S.condo=condoFix(S.condo);// B39
   (S.hobbies||[]).forEach(h=>{if(!h)return;if(!own(byId,h.p)){h.p='home';h.s='couch'}const sp=byId[h.p].spots;if(h.s&&sp&&!own(sp,h.s))h.s=h.p==='home'?'couch':null})}migrate();
 let dirty=true,hiddenAt=0;
 function save(){if(!hiddenAt)S.lastSeen=Date.now();try{S.now=nowSnap()}catch(_){}dirty=true;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){try{localStorage.removeItem(KEY+'-bak');localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}}}
@@ -6937,6 +6943,8 @@ function frame(now){const fps=Math.min(TIER.fps(),UIQ.fps());if(now-last<1000/fp
   b19Frame(sd,T);townFrame(sd,T);
   b23Frame(dt,T);
   b21Frame(dt);
+  b35Frame(dt,T);
+  b40Frame(dt,T);
   byId.petstore.display.forEach((d,i)=>{animatePet(d,T+i,false);if(d.userData.sp==='poodle'||d.userData.sp==='hedgehog')d.position.y=.6+Math.max(0,Math.sin(T*2+i*1.7))**8*.25});
   const wl=byId.wheel;wl.wheel.rotation.x+=dt*.08;wl.gond.forEach(g=>{const a=g.userData.a;g.position.set(.6,Math.sin(a)*13,Math.cos(a)*13);g.rotation.x=-wl.wheel.rotation.x});
   if(byId.records.spin)byId.records.spin.rotation.y+=dt*1.5;
@@ -8497,6 +8505,8 @@ const SFXR={
   frog:()=>[0,.13].map(at=>AO(1500,.08,.08,{w:'square',ff:1800,ft:'bandpass',q:5,f2:1900,at})),
   talk:()=>[AO(880,.07,.1,{w:'triangle'}),AO(1175,.09,.09,{at:.07,w:'triangle'})]};
 Object.assign(SFXR,{spout:()=>[ANZ(950,.45,.2,{q:1.3,a:.05,f2:760}),ANZ(1150,.3,.06,{q:2,at:.05})],splash:()=>[ANZ(600,.6,.32,{ft:'lowpass',a:.01}),ANZ(2200,.8,.15,{q:.8,at:.04,f2:1100}),...[.12,.22,.36,.5].map(at=>ANZ(3000+AR()*1800,.07,.07,{at,q:2}))],splashS:()=>[ANZ(1500,.32,.13,{q:1,f2:850}),ANZ(3100,.05,.05,{at:.12,q:2})]});   // LF2: the sea
+// merge b5a: B35 gathering and fishing one-shots
+Object.assign(SFXR,{pickup:()=>[AO(660,.08,.16,{w:'triangle',f2:990}),ANZ(3000,.05,.06,{q:2})],spot:()=>[AO(1568,.12,.1,{w:'triangle'}),AO(2093,.18,.09,{at:.09,w:'triangle'})],plip:()=>[AO(900,.07,.18,{f2:1600}),ANZ(2400,.05,.06,{at:.03,q:3})],strike:()=>[ANZ(1500,.12,.28,{q:1.5}),AO(240,.1,.2,{f2:520,w:'triangle'})],'catch':()=>[523,784,1046].map((f,i)=>AO(f,.2,.12,{at:i*.07,w:'triangle'}))});
 // how each sound travels: bus, emitter type (ref/max), and notable ones duck the music
 const AMBS=new Set(['gull','buoy','pier','flicker','robin','chickadee','thrush','crow','hummer','owl','chime','ooo','frog','foghorn']),
   SFT={tink:'tink',train:'train',crossing:'town',ferry:'ferry',foghorn:'ferry',clock:'clock',bikebell:'town',freewheel:'door',elevator:'door'},
@@ -9352,7 +9362,7 @@ function walletFix(y){if(!y||typeof y!=='object'||Array.isArray(y))y={};const I=
   y.store=stackFix(y.store,150);y.pk=stackFix(y.pk,30);
   y.wish=Array.isArray(y.wish)?y.wish.filter(c=>typeof c==='string'&&/^\w{1,6}$/.test(c)).slice(-20):[];
   const st={};if(y.st&&typeof y.st==='object'&&!Array.isArray(y.st))for(const k in y.st)if(/^\w{1,12}$/.test(k))st[k]=I(y.st[k],0,9999,0);y.st=st;
-  const d=y.day&&typeof y.day==='object'?y.day:{};y.day={k:I(d.k,0,99999999,0),div:I(d.div,0,1,0),g:I(d.g,0,99,0),sh:str(d.sh,240),fish:I(d.fish,0,99,0),wet:I(d.wet,0,1,0)};
+  const d=y.day&&typeof y.day==='object'?y.day:{};y.day={k:I(d.k,0,99999999,0),div:I(d.div,0,1,0),g:I(d.g,0,32767,0),sh:str(d.sh,240),fish:I(d.fish,0,99,0),wet:I(d.wet,0,1,0)};
   const s=y.streak&&typeof y.streak==='object'?y.streak:{};y.streak={n:I(s.n,0,9999,0),last:I(s.last,0,99999999,0)};
   y.giftDay=I(y.giftDay,0,99999999,0);y.vis=I(y.vis,0,99999,0);return y}
 function stackFix(s,max){return typeof s==='string'?s.split(';').filter(x=>/^\w{1,6}\.\d{1,3}\.\d{1,3}$/.test(x)).slice(0,max).join(';'):''}
@@ -9428,7 +9438,7 @@ function mochaShelf(pid,o,t){if(!pid||!DISPLAY[pid]||!(DISPLAY[pid]||[]).length|
 // selling: Pearl buys anything at 50%; Gus fish and crabs, Hank produce, Willa plants and mushrooms (B35 supplies most of these)
 const SELLF={thrift:()=>true,market:it=>/fish|crab/.test(it.tags.join(' ')),grocery:it=>/produce|veg|fruit/.test(it.tags.join(' ')),nursery:it=>it.cat==='plnt'||it.cat==='seed'||/mushroom/.test(it.tags.join(' '))};
 const sellPrice=c=>Math.max(1,Math.round(((CAT.by[c]||YOUX[c]||{}).price||2)*.5));
-function sellList(pid){const f=SELLF[pid];if(!f)return[];const out=[];for(const k of ['pk','store'])for(const e of stk(S.you[k])){const it=CAT.by[e.code];if(it&&f(it)||!it&&pid==='thrift')out.push({where:k,code:e.code,v:e.v,n:e.n,price:sellPrice(e.code),name:nameOf(e.code)})}return out}
+function sellList(pid){const f=SELLF[pid];if(!f)return[];const out=[];for(const k of ['pk','store'])for(const e of stk(S.you[k])){const it=CAT.by[e.code]||(YOUX[e.code]&&YOUX[e.code].tags?YOUX[e.code]:null);if(it&&f(it)||!it&&pid==='thrift')out.push({where:k,code:e.code,v:e.v,n:e.n,price:sellPrice(e.code),name:nameOf(e.code)})}return out}
 function sellItem(pid,where,code,v){if(!SELLF[pid]||!sellList(pid).some(x=>x.where===where&&x.code===code&&x.v===(v|0)))return{ok:false};takeItem(where,code,v);const p=sellPrice(code);addCoins(p,'sell',null);stampShop(pid);keeperReact(pid,'sell');save();return{ok:true,price:p,coins:S.you.coins}}
 // ---------- the day: rollover on load, on visible and once a minute; the cozy stamp card; the Neighbor Dividend ----------
 const MSPEC={1:'snm',2:'cnd',3:'ssp',4:'ssf',5:'mbh',6:'bfd',7:'pcn',8:'jff',9:'gpl',10:'jol',11:'hwr',12:'sng'},MONN=['','January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -9966,6 +9976,444 @@ Object.assign(window.__mocha,{CB,CABUP,CABIN_ROOMS,CABPAINT,buildCabin,cabBuild,
   cabStop:()=>{CB.legs.length=0;CB.legAt=null;tapStop();return true},
   cabGo:(x,z)=>{const r=tapGo(x,z,{why:'test'});return Object.assign({},r,{legs:CB.legs.length})},
   cabCut:on=>{CB.cutF=on==null?null:!!on;cabFrame(.016);return CB.cut},cabFrame:dt=>{cabFrame(dt||.05);return CB.pv}});
+// ====================================================================
+//  B35 GATHERING, FIELD NOTES, FISHING, THE CRAB POT AND CROW TRINKETS. Seeded daily finds (8-14) in authored zones, one
+//  InstancedMesh per shape class (walk mode only), a 6-point sparkle Points pool, proximity pick-up every .2 s; the Field Notes
+//  sticker book (FN: ONE TRUE fact per entry, for truth review); critter spotting (<=2 two-frame sprites, look, never catch);
+//  original "ripple ring" fishing (DOM overlay, 0 draws) under true Washington release rules; the crab pot (S.you.crab, lazy);
+//  crow trinkets from the porch peanut dish (S.you.home.pea, B26). Nothing here touches G.act / G.target / G.mode.
+// ====================================================================
+// natFix(y): hoisted + literal-only (fresh() and migrate() call it). y.fn 'code,code' first finds/sightings (<=80);
+// y.gear bits 1 rod, 2 crab pot, 4 binoculars; y.crab {t: drop time ms (0 = not in the water), b: bottle found}; y.crow {d: dayKey last checked}
+function natFix(y){if(!y||typeof y!=='object')return y;const I=(v,a,b,d)=>{v=Math.round(+v);return isFinite(v)?Math.max(a,Math.min(b,v)):d};
+  y.fn=typeof y.fn==='string'?y.fn.split(',').filter(c=>/^\w{2,6}$/.test(c)).slice(0,80).join(','):'';y.gear=I(y.gear,0,15,0);
+  const c=y.crab&&typeof y.crab==='object'?y.crab:{};y.crab={t:I(c.t,0,4e12,0),b:I(c.b,0,1,0)};const w=y.crow&&typeof y.crow==='object'?y.crow:{};y.crow={d:I(w.d,0,99999999,0)};return y}
+// FN: code -> [name, emoji, habitat, ONE TRUE fact, price, shape (0 shell 1 glass 2 stick 3 cone 4 fruit 5 leaf | -1 not gathered), seller tag, colour]
+const FN={
+ nfsd:['sand dollar','🪙','Shore','Living sand dollars are purple-brown and fuzzy; the white ones on the beach are skeletons.',4,0,'shell','#E9DCC4'],
+ nfms:['moon snail shell','🐚','Shore','A clam shell with a neat round hole was probably drilled by a moon snail.',4,0,'shell','#D8C2A0'],
+ nfoy:['Pacific oyster shell','🦪','Shore','The Pacific oyster came to Washington from Japan about a century ago and is now the most farmed oyster here.',3,0,'shell','#BFB5A3'],
+ nfdw:['driftwood','🪵','Shore','Big driftwood logs can roll in the waves, so beachcombers stay off logs at the waterline.',2,2,'wood','#B8A58A'],
+ nfkp:['bull kelp','🌿','Shore','A bull kelp stalk can grow tens of feet in a single summer, held up by a gas-filled float.',2,2,'plant','#8A7A3A'],
+ nfgw:['white sea glass','🔹','Shore','Most sea glass is white, green or brown: old bottles and jars tumbled smooth by the waves.',3,1,'glass','#E8EEEA'],
+ nfgg:['green sea glass','🔹','Shore','Green sea glass often started life as an old soda, beer or wine bottle.',3,1,'glass','#7FB59A'],
+ nfgb:['brown sea glass','🔹','Shore','Brown sea glass often came from old beer and medicine bottles.',3,1,'glass','#A8703A'],
+ nfgc:['cobalt sea glass','💎','Shore','Cobalt-blue sea glass often came from old medicine bottles, like milk of magnesia.',12,1,'glass','#3F6FB8'],
+ nfgr:['red sea glass','❤️','Shore','Red is one of the rarest sea-glass colors.',30,1,'glass','#C0392B'],
+ nfdf:['Douglas fir cone','🌲','Forest','A Douglas fir cone\'s three-pointed bracts look like the back legs and tail of a mouse hiding inside.',2,3,'plant','#7A4A2C'],
+ nfhm:['western hemlock sprig','🌲','Forest','Washington\'s state tree is the western hemlock.',2,2,'plant','#4A6450'],
+ nfml:['bigleaf maple leaf','🍁','Forest','Bigleaf maple leaves can be over a foot across, the biggest leaves of any maple.',2,5,'plant','#E07A3A'],
+ nffn:['sword fern frond','🌿','Forest','Each leaflet of a sword fern has a little bump at its base, like the hilt of a sword.',2,2,'plant','#52705A'],
+ nfac:['Garry oak acorn','🌰','Forest','The Garry oak, or Oregon white oak, is Washington\'s only native oak.',2,4,'plant','#8A5A2E'],
+ nfct:['chanterelle','🍄','Forest','Golden chanterelles grow with Douglas firs and hemlocks after fall rain. Never eat a wild mushroom unless an expert identifies it.',8,3,'mushroom','#E3A24A'],
+ nfap:['Washington apple','🍎','Garden','Washington grows more apples than any other state.',3,4,'fruit','#B8402E'],
+ nfch:['Rainier cherries','🍒','Garden','The Rainier cherry was developed at Washington State University in 1952.',4,4,'fruit','#E8B04A'],
+ nfbb:['wild blackberries','🫐','Garden','The Himalayan blackberry in Seattle\'s August thickets is not native; it was brought to North America in the 1880s.',3,4,'fruit','#3A2440'],
+ nfpk:['little pumpkin','🎃','Garden','A pumpkin is a fruit: a kind of squash.',5,4,'fruit','#D9742E'],
+ nfhl:['holly sprig','🌿','Garden','English holly is not native here; it escaped from Northwest holly farms into the woods.',3,5,'plant','#3E5847'],
+ nfcb:['cherry blossom petals','🌸','Garden','The cherry trees in the University of Washington Quad have bloomed there every spring since the 1960s.',2,5,'plant','#F2C4CC'],
+ // critters (spotted, never caught)
+ kslg:['banana slug','🐌','Forest','Banana slugs are native to Pacific Northwest forests and can grow to about 9 inches long.',0,-1,'','#E8C25A'],
+ kfrg:['Pacific chorus frog','🐸','Garden','The Pacific chorus frog is Washington\'s state amphibian.',0,-1,'','#6E9A4A'],
+ khum:['Anna\'s hummingbird','🐦','Sky','Anna\'s hummingbirds stay in Seattle all winter, surviving cold nights in a deep sleep called torpor.',0,-1,'','#8A3F5E'],
+ kjay:['Steller\'s jay','🐦','Forest','Steller\'s jays are named for Georg Steller, a naturalist on a 1741 voyage to Alaska.',0,-1,'','#2F3F6F'],
+ kher:['great blue heron','🪶','Shore','Great blue herons nest together in colonies; Seattle has one in Kiwanis Ravine near Discovery Park.',0,-1,'','#7B8C99'],
+ ksea:['harbor seal','🦭','Shore','Seal pups are often left on the beach while mom feeds; watchers stay 100 yards away.',0,-1,'','#8A8A8A'],
+ kott:['river otter','🦦','Shore','River otters often swim in salt water around Puget Sound, so many "sea otters" seen here are really river otters.',0,-1,'','#6A4A2E'],
+ kgld:['American goldfinch','🐤','Sky','The American goldfinch, or willow goldfinch, is Washington\'s state bird.',0,-1,'','#E8C25A'],
+ // fish (Pier)
+ coho:['coho salmon','🐟','Pier','Coho salmon are also called silvers; most return to spawn at three years old.',18,-1,'fish','#9AA8B0'],
+ chin:['Chinook salmon','🐟','Pier','Chinook, or king salmon, are the largest Pacific salmon and the main food of Puget Sound\'s southern resident orcas.',25,-1,'fish','#7B8C99'],
+ pink:['pink salmon','🐟','Pier','Pink salmon run in Puget Sound mostly in odd-numbered years; spawning males grow a big hump.',10,-1,'fish','#C9A0A0'],
+ ling:['lingcod','🐟','Pier','Lingcod are not true cod; they are greenlings, and some have blue-green flesh.',20,-1,'fish','#7A8A5A'],
+ quil:['quillback rockfish','🐠','Pier','Quillback rockfish can live for more than 90 years.',0,-1,'fish','#A8703A'],
+ prch:['pile perch','🐟','Pier','Pile perch give birth to live young instead of laying eggs.',5,-1,'fish','#A8AEB4'],
+ flnd:['starry flounder','🐟','Pier','A starry flounder can have its eyes on either the left or the right side.',8,-1,'fish','#8A7A5A'],
+ hrng:['Pacific herring','🐟','Pier','Pacific herring spawn on eelgrass and kelp in early spring, and salmon and seabirds depend on them.',2,-1,'fish','#B8C8D0'],
+ stee:['steelhead','🐟','Pier','The steelhead is Washington\'s state fish: a rainbow trout that goes to sea.',0,-1,'fish','#9AB0B8'],
+ // crab pot
+ dung:['Dungeness crab','🦀','Pier','In Washington only male Dungeness crab at least 6¼ inches across the shell may be kept.',15,-1,'crab','#C9752E'],
+ rrck:['red rock crab','🦀','Pier','Red rock crabs have black-tipped claws strong enough to crush clam shells.',8,-1,'crab','#A8492E'],
+ boot:['old boot','🥾','Pier','Litter on the seafloor can trap animals, so pulling junk out of the Sound helps.',3,-1,'junk','#5E3A26'],
+ bttl:['message in a bottle','🍾','Pier','Scientists have used drift bottles for over a century to learn how ocean currents move.',0,-1,'keep','#7FB59A'],
+ // crow trinkets (Sky)
+ tcap:['bottle cap (from a crow)','🪙','Sky','Seattle has a famous true story of crows leaving little gifts for a girl who fed them.',4,-1,'trinket','#C9A06A'],
+ tbtn:['shiny button (from a crow)','🔘','Sky','American crows can recognize individual human faces and remember them for years (University of Washington research).',5,-1,'trinket','#C9A06A'],
+ tgls:['sea glass bit (from a crow)','🔹','Sky','In the University of Washington crow study, young crows that never met the masked "dangerous" person learned to scold it too.',5,-1,'trinket','#7FB59A'],
+ tbel:['tiny bell (from a crow)','🔔','Sky','American crows often live in family groups, and older young help raise new chicks.',6,-1,'trinket','#E8C25A']};
+const FNH=['Shore','Forest','Pier','Sky','Garden'];
+// release notes (TRUE Washington rules; real rules change, so real anglers check WDFW)
+const FREL={rock:'In the Seattle area of Puget Sound, all rockfish must be released. Anglers use a descending device to return them to depth.',
+  stee:'Puget Sound steelhead are listed as threatened under the Endangered Species Act, and wild steelhead must be released.',
+  wild:'This one still has its adipose fin, so it\'s wild. Hatchery salmon usually have their adipose fin clipped, so anglers can tell them apart.',
+  ling:'Lingcod season in Puget Sound is May 1 to June 15, so outside it they go back.',
+  dungF:'Female Dungeness crabs always go back: in Washington only males may be kept.',dungS:'Too small: a male Dungeness must be at least 6¼ inches across the shell.',
+  rrS:'Red rock crabs of either sex may be kept at 5 inches or more; this one was smaller.'};
+const REEDT=['cast past the shadows, not on top of them. ribbit.','salmon like the change of light, so dawn and dusk.','tap when the ring kisses the lure. not before.','hold while the line glows blue; ease off when it goes orange.','real rules change, so real anglers check WDFW\'s current regulations.','rockfish go back down gently. a descending device helps them.'];
+// gatherable YOUX entries (pockets, selling): Pearl buys anything; Gus fish/crab; Hank fruit; Willa plants and mushrooms
+for(const c in FN){const f=FN[c];if(f[5]<0&&!/fish|crab|junk|keep|trinket/.test(f[6]))continue;YOUX[c]={name:f[0],e:f[1],price:Math.max(1,f[4]),cat:f[6]==='plant'?'plnt':'find',tags:[f[6]==='fruit'?'produce fruit':f[6]==='mushroom'?'mushroom':f[6]]}}
+// spawn zones [cx,cz,rx,rz] and which finds use them
+const NZ={shore:[[-57.6,0,1.6,55],[-57.6,-70,1.6,14],[-57.6,72,1.6,12]],forest:[[30,94,7,4],[96,44,9,2.5],[121,22,3,8],[-50,58,4,3]],
+  fruitM:[[-36,-25.6,10,.8]],fruitC:[[30,85,2.5,4],[50,85,2.5,4]],lake:[[96,44,9,2.5],[73,22,2.5,8]],patch:[[5,70,3,3]],sq:[[-30,41,7,1]]};
+const NAT={day:0,sp:[],ims:[],grp:null,spk:null,crit:[],scanT:0,critT:6,secT:0,chip:null,card:null,fi:null,ov:null,lt:0,full:0,st:{}};
+function natPool(day){const mo=Math.floor(day/100)%100,fall=mo>=9&&mo<=11,d0=new Date(Math.floor(day/1e4),mo-1,day%100,8).getTime();let wet=false;try{wet=WX.wet(d0)||WX.wet(d0-12*36e5)}catch(e){}
+  const P=[['nfsd',8,'shore'],['nfms',8,'shore'],['nfoy',8,'shore'],['nfdw',7,'shore'],['nfkp',6,'shore'],['nfgw',7,'shore'],['nfgg',6,'shore'],['nfgb',6,'shore'],['nfgc',.6,'shore'],['nfgr',.15,'shore'],
+    ['nfdf',8,'forest'],['nfhm',6,'forest'],['nffn',6,'forest']];
+  if(fall)P.push(['nfml',8,'forest'],['nfac',5,'forest'],['nfap',6,'fruitM'],['nfap',5,'fruitC']);if(mo===8)P.push(['nfap',3,'fruitC'],['nfbb',8,'fruitC'],['nfbb',6,'forest']);if(mo>=6&&mo<=7)P.push(['nfch',7,'fruitM'],['nfch',5,'fruitC']);
+  if(fall&&wet)P.push(['nfct',6,'lake'],['nfct',3,'forest']);if(mo===10)P.push(['nfpk',7,'patch']);if(mo===12)P.push(['nfhl',7,'forest']);if(mo>=3&&mo<=4)P.push(['nfcb',8,'sq']);return P}
+function natOK(x,z){try{if(!youFree(x,z))return false}catch(e){if(!walkable(x,z))return false}if(PLACES.some(p=>p.w&&inBuilding(p,x,z)))return false;try{if(styleFootprints().some(f=>Math.hypot(f.x-x,f.z-z)<f.r*.6))return false}catch(e){}return true}
+// spawns(day): PURE per date (seeded by the day key) -> [{i,code,x,z,cls}]; memoized per day
+function natSpawns(day){day=+day||curDay();if(NAT.mem&&NAT.mem.k===day)return NAT.mem.L;const R=seeded(catHash('b35:'+day)),P=natPool(day),tw=P.reduce((a,p)=>a+p[1],0),n=8+Math.floor(R()*7),L=[];
+  for(let t=0;t<120&&L.length<n;t++){let r=R()*tw,p=P[0];for(const q of P){r-=q[1];if(r<=0){p=q;break}}const Z=NZ[p[2]],z=Z[Math.floor(R()*Z.length)],x=z[0]+(R()*2-1)*z[2],zz=z[1]+(R()*2-1)*z[3];
+    if(!natOK(x,zz)||L.some(s=>Math.hypot(s.x-x,s.z-zz)<2.5))continue;L.push({i:L.length,code:p[0],x:+x.toFixed(2),z:+zz.toFixed(2),cls:FN[p[0]][5]})}
+  NAT.mem={k:day,L};return L}
+function natGot(i){return mHas(S.you.day.g,i)}
+// geometry per shape class, with the Addendum S `ao` attribute baked into vertex colour (undersides darker)
+function natGeo(c){const g=c===0?new THREE.SphereGeometry(.16,8,4):c===1?new THREE.IcosahedronGeometry(.09,0):c===2?new THREE.CylinderGeometry(.05,.07,.7,5):c===3?new THREE.ConeGeometry(.1,.24,6):c===4?new THREE.SphereGeometry(.12,7,5):new THREE.CircleGeometry(.16,6);
+  if(c===0)g.scale(1,.3,1);if(c===2)g.rotateZ(Math.PI/2);if(c===5)g.rotateX(-Math.PI/2);if(c===3)g.translate(0,.12,0);if(c===4||c===1)g.translate(0,c===4?.1:.06,0);
+  const P=g.attributes.position,ao=new Float32Array(P.count),col=new Float32Array(P.count*3);for(let i=0;i<P.count;i++){const a=clamp(.62+P.getY(i)*3,.62,1.06);ao[i]=a;col[i*3]=col[i*3+1]=col[i*3+2]=a}
+  g.setAttribute('ao',new THREE.BufferAttribute(ao,1));g.setAttribute('color',new THREE.BufferAttribute(col,3));return g}
+function natBuild(){const day=curDay();if(NAT.day===day)return;NAT.day=day;NAT.ims.forEach(im=>{im.parent&&im.parent.remove(im);im.geometry.dispose()});NAT.ims=[];
+  if(!NAT.grp){NAT.grp=new THREE.Group();NAT.grp.name='b35nat';scene.add(NAT.grp);NAT.mat=new ToonM({color:'#ffffff',vertexColors:true})}
+  const L=natSpawns(day),d=new THREE.Object3D(),cc=new THREE.Color();for(let c=0;c<6;c++){const S2=L.filter(s=>s.cls===c);if(!S2.length)continue;const im=new THREE.InstancedMesh(natGeo(c),NAT.mat,S2.length);im.name='b35find'+c;im.castShadow=false;im.receiveShadow=false;
+    S2.forEach((s,k)=>{d.position.set(s.x,navFloor(s.x,s.z)+.02,s.z);d.rotation.set(0,catHash(s.code+s.i)%628/100,0);d.scale.setScalar(natGot(s.i)?0:1);d.updateMatrix();im.setMatrixAt(k,d.matrix);im.setColorAt(k,cc.set(FN[s.code][7]))});
+    im.userData.L=S2;im.geometry.computeBoundingSphere();const xs=S2.map(s=>s.x),zs=S2.map(s=>s.z),mx=(Math.min(...xs)+Math.max(...xs))/2,mz=(Math.min(...zs)+Math.max(...zs))/2;im.geometry.boundingSphere.center.set(mx,0,mz);im.geometry.boundingSphere.radius=Math.max(...S2.map(s=>Math.hypot(s.x-mx,s.z-mz)))+1;
+    NAT.grp.add(im);NAT.ims.push(im)}}
+function natHide(i){const s=natSpawns()[i];if(!s)return;const im=NAT.ims.find(m=>m.userData.L.includes(s));if(!im)return;const k=im.userData.L.indexOf(s),d=new THREE.Object3D();d.position.set(s.x,-50,s.z);d.scale.setScalar(0);d.updateMatrix();im.setMatrixAt(k,d.matrix);im.instanceMatrix.needsUpdate=true}
+// field notes: log a first find / sighting; Rosalind's Nature Record pays 3-10 coins; 10 entries earn the naturalist's binoculars
+function fnHas(c){return(','+S.you.fn+',').includes(','+c+',')}
+function fnLog(c){if(!FN[c]||fnHas(c))return{first:false,pay:0};S.you.fn=(S.you.fn?S.you.fn+',':'')+c;const pay=clamp(3+Math.round(FN[c][4]/4),3,10);addCoins(pay,'nature');let bin=false;
+  if(!(S.you.gear&4)&&S.you.fn.split(',').length>=10){S.you.gear|=4;bin=true;setTimeout(()=>toast('🔭 Rosalind: "ten entries! these naturalist\'s binoculars are yours." rare sparkles show from farther now'),2600)}return{first:true,pay,bin}}
+const FNST={};
+function fnSticker(c){if(FNST[c])return FNST[c];const f=FN[c]||['?','?','Shore','',0,0,'','#ccc'],cv=document.createElement('canvas');cv.width=cv.height=96;const x=cv.getContext('2d'),R=seeded(catHash(c));x.translate(48,48);x.rotate((R()-.5)*.3);
+  x.beginPath();for(let i=0;i<=24;i++){const a=i/24*Math.PI*2,r=40+(R()-.5)*3;x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.closePath();x.fillStyle='#fffaf0';x.fill();x.lineWidth=2.5;x.strokeStyle='#3A2420';x.stroke();
+  x.beginPath();x.arc(0,0,31,0,Math.PI*2);x.fillStyle=f[7];x.globalAlpha=.35;x.fill();x.globalAlpha=1;x.font='40px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(f[1],0,3);
+  try{return FNST[c]=cv.toDataURL()}catch(e){return''}}
+// gather(i): pick up today's find i -> pockets + a sticker + its fact
+function natGather(i,o){o=o||{};const L=natSpawns(),s=L[i];if(!s)return{ok:false,why:'none'};if(natGot(i))return{ok:false,why:'got'};const it=YOUX[s.code];if(!canPut(it)){if(!NAT.full){NAT.full=1;toast('your pockets are full. it\'ll keep sparkling here')}return{ok:false,why:'full'}}
+  const where=putItem(s.code,0);S.you.day.g=mSet(S.you.day.g,i);natHide(i);const lg=fnLog(s.code),f=FN[s.code];try{sfx('pickup',{you:1,x:s.x,z:s.z})}catch(e){}try{youGesture('hop',.7);youExpr('happy',2)}catch(e){}
+  toast(`${f[1]} ${f[0]}${lg.first?` · new sticker! 📚 +${lg.pay}`:''} · ${f[3]}`);save();return{ok:true,code:s.code,name:f[0],where,first:lg.first,pay:lg.pay,sticker:fnSticker(s.code),fact:f[3]}}
+// critters: <=2 two-frame billboard sprites in walk mode, within 30; tap to log (look, never catch)
+function critPool(){const mo=new Date().getMonth()+1;let wet=false;try{wet=WX.wet()}catch(e){}const P=['khum','kjay','kher'];if(wet)P.push('kslg','kslg','kfrg');if(mo>=3&&mo<=6)P.push('kfrg');if(mo>=4&&mo<=9)P.push('kgld','kgld');if(YOU.x<-45)P.push('ksea','kott','kher');return P}
+function critMake(c){const cv=document.createElement('canvas');cv.width=128;cv.height=64;const x=cv.getContext('2d');x.font='44px serif';x.textAlign='center';x.textBaseline='middle';
+  for(let f=0;f<2;f++){x.save();x.translate(32+f*64,34+(f?-3:0));if(f)x.scale(1.06,.94);x.fillStyle='rgba(58,36,32,.25)';x.beginPath();x.ellipse(0,22,18,5,0,0,Math.PI*2);x.fill();x.fillStyle=FN[c][7];x.fillText(FN[c][1],0,0);x.restore()}
+  const t=new THREE.CanvasTexture(cv);t.repeat.set(.5,1);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));sp.scale.set(1.3,.65,1);sp.name='b35crit';return sp}
+function critSpawn(c){if(NAT.crit.length>=2)return null;c=c||pick(critPool());const water=c==='ksea'||c==='kott';let x=0,z=0,ok=false;
+  for(let t=0;t<16&&!ok;t++){const a=Math.random()*Math.PI*2,r=8+Math.random()*12;x=YOU.x+Math.sin(a)*r;z=YOU.z+Math.cos(a)*r;ok=water?!walkable(x,z):natOK(x,z)}if(!ok)return null;
+  const sp=critMake(c),y=water?.25:navFloor(x,z)+.35+(c==='khum'||c==='kgld'?1.2:0);sp.position.set(x,y,z);scene.add(sp);const k={c,sp,t:0,life:7};NAT.crit.push(k);return k}
+function critKill(k){scene.remove(k.sp);k.sp.material.map.dispose();k.sp.material.dispose();NAT.crit.splice(NAT.crit.indexOf(k),1)}
+function natSpot(c){if(!FN[c]||FN[c][5]!==-1||!/^k/.test(c))return{ok:false};const lg=fnLog(c),f=FN[c];try{sfx('spot',{you:1})}catch(e){}toast(`👀 ${f[0]}${lg.first?` · sighting logged! 📚 +${lg.pay}`:''} · ${f[3]}`);save();return{ok:true,c,name:f[0],first:lg.first,pay:lg.pay,fact:f[3]}}
+function critTap(x,y){for(const k of NAT.crit){const q=project(k.sp.position.x,k.sp.position.y,k.sp.position.z);if(q.vis&&Math.hypot(q.x-x,q.y-y)<44){natSpot(k.c);critKill(k);return true}}return false}
+// sparkles: one Points object, 6 points on the nearest uncollected finds (25, or 40 with binoculars)
+function natSpark(){if(NAT.spk)return NAT.spk;const cv=document.createElement('canvas');cv.width=cv.height=32;const x=cv.getContext('2d'),g=x.createRadialGradient(16,16,0,16,16,16);g.addColorStop(0,'rgba(255,250,230,1)');g.addColorStop(.3,'rgba(255,230,170,.6)');g.addColorStop(1,'rgba(255,220,150,0)');x.fillStyle=g;x.fillRect(0,0,32,32);
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(18),3));geo.setDrawRange(0,0);const p=new THREE.Points(geo,new THREE.PointsMaterial({size:.55,map:new THREE.CanvasTexture(cv),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
+  p.frustumCulled=false;p.name='b35spark';scene.add(p);return NAT.spk=p}
+// ---------- fishing: the ripple ring ----------
+function fishPick(t){const d=new Date(t),mo=d.getMonth()+1,h=d.getHours(),odd=d.getFullYear()%2===1,dusk=h<8||h>=17;let wet=false;try{wet=WX.wet(t)}catch(e){}
+  const W={prch:6,flnd:5,hrng:mo>=2&&mo<=5?7:4,quil:3,ling:3,coho:mo>=7&&mo<=11?(wet?7:5):.5,chin:mo>=6&&mo<=9||mo<=2?4:1,pink:odd&&mo>=7&&mo<=9?7:0,stee:mo===12||mo<=4?.5:.15};
+  if(dusk){W.coho*=1.6;W.chin*=1.6}let tw=0;for(const k in W)tw+=W[k];let r=Math.random()*tw;for(const k in W){r-=W[k];if(r<=0)return k}return'prch'}
+const FSIZE={coho:[20,30],chin:[24,36],pink:[18,24],ling:[22,36],quil:[10,18],prch:[8,14],flnd:[12,20],hrng:[7,10],stee:[24,32]};
+// rule(sp,clip,t): null = keep/sell/release; else the release note key
+function fishRule(sp,clip,t){if(sp==='quil')return'rock';if(sp==='stee')return'stee';if((sp==='coho'||sp==='chin')&&!clip)return'wild';if(sp==='ling'){const d=new Date(t),md=(d.getMonth()+1)*100+d.getDate();if(md<501||md>615)return'ling'}return null}
+function fishOv(){if(NAT.ov)return NAT.ov;const o=document.createElement('div');o.id='b35fish';o.innerHTML='<div class="b35sh"></div><div class="b35sh"></div><div class="b35sh"></div><div class="b35lure"></div><div class="b35ring"></div><div class="b35reel"><i></i><b></b></div><p class="b35hint"></p><button class="b35x" aria-label="stop fishing">✕</button>';
+  document.body.appendChild(o);o.querySelector('.b35x').onclick=e=>{e.stopPropagation();fishEnd()};const dn=e=>{if(e.target.closest('.b35x'))return;e.preventDefault();fishDown(performance.now())},up=()=>{if(NAT.fi)NAT.fi.hold=0};
+  o.addEventListener('pointerdown',dn);o.addEventListener('pointerup',up);o.addEventListener('pointercancel',up);o.addEventListener('pointerleave',up);return NAT.ov=o}
+function fishEdge(){if(!walkable(YOU.x,YOU.z))return null;for(let i=0;i<8;i++){const a=YOU.yaw+(i?(i%2?1:-1)*Math.ceil(i/2)*Math.PI/4:0),dx=Math.sin(a),dz=Math.cos(a);if(!walkable(YOU.x+dx*1.5,YOU.z+dz*1.5))return{dx,dz}}return null}
+function fishCast(o){o=o||{};const y=S.you;if(!(y.gear&1)&&!o.force)return{ok:false,why:'rod'};if(y.day.fish>=10){toast('🎣 the fish have gone quiet. try again tomorrow');return{ok:false,quiet:true}}
+  const e=fishEdge()||(o.force?{dx:-1,dz:0}:null);if(!e)return{ok:false,why:'edge'};const ov=fishOv(),now=performance.now(),lx=YOU.x+e.dx*7,lz=YOU.z+e.dz*7;
+  NAT.fi={ph:'cast',t0:now,lx,lz,sp:null,meet:0,bite:now+600+(o.wait!=null?o.wait:2000+Math.random()*4000),hold:0,p:0,ten:0,idle:0,seg:0,run:0,auto:o.reel==='auto'};ov.classList.add('on');document.body.classList.add('b35fishing');
+  try{sfx('plip',{you:1,x:lx,z:lz})}catch(_){}fishHint('waiting for a shadow to turn your way…');return{ok:true,ph:'cast'}}
+function fishHint(t){const h=NAT.ov&&NAT.ov.querySelector('.b35hint');if(h&&h.textContent!==t)h.textContent=t}
+function fishRing(o){const F=NAT.fi,now=performance.now();F.sp=o&&o.sp&&FSIZE[o.sp]?o.sp:fishPick(Date.now());const Z=FSIZE[F.sp];F.size=Math.round(Z[0]+Math.random()*(Z[1]-Z[0]));F.cls=F.size<14?0:F.size<26?1:2;F.ph='ring';F.rs=now;F.meet=now+1200;fishHint('tap as the ring meets the lure');return F}
+function fishDown(now){const F=NAT.fi;if(!F)return;if(F.ph==='ring'){const d=now-F.meet;if(Math.abs(d)<=100){F.ph='reel';F.rs=now;F.dur=2000+F.cls*1000;F.seg=now+600;F.run=0;F.hold=1;fishHint('hold while the line glows blue · ease off on orange');try{sfx('strike',{you:1})}catch(_){}}
+    else{fishHint(d<0?'too soon! it darted off. another will come.':'it slipped away. no worries');F.ph='wait';F.bite=now+1500+Math.random()*3000}return}if(F.ph==='reel'){F.hold=1;return}if(F.ph==='wait'||F.ph==='cast')fishHint('patience… watch the shadows')}
+function fishLand(){const F=NAT.fi,y=S.you,now=Date.now(),clip=(F.sp==='coho'||F.sp==='chin')?Math.random()<.6:true,rule=fishRule(F.sp,clip,now);y.day.fish=Math.min(99,(y.day.fish|0)+1);const lg=fnLog(F.sp),f=FN[F.sp],me=(y.name||'Jesse');
+  try{if(typeof newsPush==='function')newsPush('you',`${me.toLowerCase()} caught a ${f[0]} off the pier today`,'pier',now)}catch(_){}try{sfx('catch',{you:1})}catch(_){}
+  const c={sp:F.sp,name:f[0],size:F.size,fact:f[3],sticker:fnSticker(F.sp),released:!!rule,note:rule?FREL[rule]:'',clip,price:clamp(Math.round(f[4]*(.8+F.size/FSIZE[F.sp][1]*.4)),2,25),first:lg.first,pay:lg.pay};F.ph='card';F.card=c;fishCard(c);save();return c}
+function fishLose(why){const F=NAT.fi;if(!F)return;F.ph='wait';F.bite=performance.now()+2000+Math.random()*3000;fishHint(why||'it swam away. no harm done')}
+function fishEnd(){NAT.fi=null;if(NAT.ov)NAT.ov.classList.remove('on');document.body.classList.remove('b35fishing');natCardClose()}
+function natCardClose(){if(NAT.card){NAT.card.remove();NAT.card=null}}
+function heartUp(){const h=document.createElement('div');h.className='b35heart';h.textContent='🤍';document.body.appendChild(h);setTimeout(()=>h.remove(),1800)}
+// a vintage-notebook card: catch card (fish), crab haul, crow note
+function natCard(html,btns){natCardClose();const c=document.createElement('div');c.className='b35card';c.innerHTML=html+`<div class="b35btns">${btns.map((b,i)=>`<button data-i="${i}">${b[0]}</button>`).join('')}</div>`;
+  c.querySelectorAll('.b35btns button').forEach(b=>b.onclick=e=>{e.stopPropagation();const f=btns[+b.dataset.i][1];natCardClose();if(f)f()});c.addEventListener('pointerdown',e=>e.stopPropagation());document.body.appendChild(c);NAT.card=c;return c}
+function fishCard(c){const F=NAT.fi,again=()=>{if(NAT.fi){if(S.you.day.fish>=10){toast('🎣 the fish have gone quiet. try again tomorrow');fishEnd()}else{F.ph='wait';F.bite=performance.now()+2500+Math.random()*3000;fishHint('waiting for a shadow…')}}};
+  const head=`<img src="${c.sticker}" alt=""><h4>${esc(c.name)}</h4><p class="b35sz">${c.size} inches${(c.sp==='coho'||c.sp==='chin')?(c.clip?' · fin-clipped (hatchery)':' · adipose fin intact (wild)'):''}${c.first?` · new sticker! 📚 +${c.pay}`:''}</p><p>${esc(c.fact)}</p>`;
+  if(c.released){heartUp();natCard(head+`<p class="b35note">🤍 released · ${esc(c.note)}</p>`,[['🎣 cast again',again],['done',fishEnd]]);return}
+  natCard(head+'<p class="b35note">yours to keep, sell or release.</p>',[['🧺 keep',()=>{const w=putItem(c.sp,0);toast(w?`🐟 ${c.name} → your ${w}`:'your pockets are full, so it swam home');save();again()}],[`🪙 sell to Gus +${c.price}`,()=>{addCoins(c.price,'fish');save();again()}],['🤍 release',()=>{heartUp();again()}]])}
+// hooks: fishBite(o) forces a bite now (o.sp species, o.instant lands at once, o.reel 'auto' plays the reel for you)
+function fishBite(o){o=o||{};if(S.you.day.fish>=10){toast('🎣 the fish have gone quiet. try again tomorrow');return{quiet:true}}if(!NAT.fi||NAT.fi.ph==='card'){natCardClose();const r=fishCast(Object.assign({force:1,wait:0},o));if(!r.ok)return r}
+  const F=fishRing(o);F.auto=o.reel==='auto'||!!o.instant;if(o.instant){F.ph='reel';return fishLand()}return{ph:F.ph,sp:F.sp,size:F.size,meet:F.meet,now:performance.now()}}
+function fishFrame(dt){const F=NAT.fi,ov=NAT.ov;if(!F||!ov)return;const now=performance.now();dt=Math.min(.25,Math.max(0,(now-(F.lt||now))/1000));F.lt=now;const q=project(F.lx,0,F.lz),lu=ov.querySelector('.b35lure'),rg=ov.querySelector('.b35ring'),rl=ov.querySelector('.b35reel');
+  const ck=Math.min(1,(now-F.t0)/600),sx=innerWidth/2,sy=innerHeight*.8,lx=q.vis?q.x:sx,ly=q.vis?q.y:innerHeight*.45,ax=sx+(lx-sx)*ck,ay=sy+(ly-sy)*ck-Math.sin(ck*Math.PI)*120;lu.style.transform=`translate(${ax|0}px,${ay|0}px)`;
+  ov.querySelectorAll('.b35sh').forEach((s,i)=>{const a=now/2400+i*2.1,r=60+i*24,tw=F.ph==='ring'&&i===0?1-Math.min(1,(now-F.rs)/1200):1;s.style.transform=`translate(${(lx+Math.cos(a)*r*tw)|0}px,${(ly+Math.sin(a*1.3)*r*.35*tw)|0}px) rotate(${(a*57)|0}deg)`});
+  if(F.ph==='cast'&&ck>=1)F.ph='wait';if(F.ph==='wait'&&now>=F.bite)fishRing();
+  if(F.ph==='ring'){const k=1-(now-F.rs)/1200,s=Math.max(.15,1+k*2.6);rg.style.display='block';rg.style.borderWidth=(2+F.cls*2)+'px';rg.style.transform=`translate(${lx|0}px,${ly|0}px) translate(-50%,-50%) scale(${s.toFixed(3)})`;
+    if(F.auto&&Math.abs(now-F.meet)<30)fishDown(now);else if(now>F.meet+100)fishLose('it slipped away. no worries')}else rg.style.display='none';
+  if(F.ph==='reel'){rl.style.display='block';const blue=!F.run;if(now>=F.seg){F.run=F.run?0:1;F.seg=now+(F.run?400+Math.random()*400:500+Math.random()*500)}if(F.auto)F.hold=F.run?0:1;
+    if(F.hold&&blue){F.p+=dt*1000/F.dur*1.5;F.idle=0;F.ten=Math.max(0,F.ten-dt)}else if(F.hold){F.ten+=dt*1.2}else{F.idle+=dt;F.ten=Math.max(0,F.ten-dt*2)}
+    rl.className='b35reel '+(F.run?'run':'pull');rl.querySelector('i').style.width=(Math.min(1,F.p)*100|0)+'%';rl.querySelector('b').style.width=(Math.min(1,F.ten)*100|0)+'%';
+    if(F.p>=1){rl.style.display='none';fishLand()}else if(F.idle>1.4)fishLose('you let go too long. it swam away, no harm done');else if(F.ten>=1)fishLose('it ran and slipped the hook. no harm done')}else rl.style.display='none'}
+// ---------- the crab pot (S.you.crab, resolved lazily) ----------
+function crabStatus(){const y=S.you,t=y.crab.t,h=t?(Date.now()-t)/36e5:0;return{has:!!(y.gear&2),down:!!t,ready:!!t&&h>=8,hrs:+h.toFixed(1),left:t?Math.max(0,+(8-h).toFixed(1)):0}}
+function crabDrop(){const y=S.you;if(!(y.gear&2))return{ok:false,why:'pot'};if(y.crab.t)return{ok:false,why:'down'};y.crab.t=Date.now();save();try{sfx('splash',{you:1})}catch(e){}toast('🦀 the pot sinks off the pier end. check back in 8 hours');return{ok:true}}
+function crabPull(o){o=o||{};const y=S.you,st=crabStatus();if(!st.ready)return{ok:false,why:st.down?'soaking':'nopot',left:st.left};const R=seeded(catHash('crab:'+y.crab.t)),n=1+Math.floor(R()*3),out=[];
+  for(let i=0;i<n;i++){let sp=R()<.65?'dung':'rrck',male=R()<.55,size=+(sp==='dung'?5+R()*2.2:4+R()*2).toFixed(1);if(i===0&&o.first==='dungF'){sp='dung';male=false;size=6.6}
+    const rule=sp==='dung'?(!male?'dungF':size<6.25?'dungS':null):size<5?'rrS':null;out.push({sp,sex:male?'male':'female',size,keep:!rule,note:rule?FREL[rule]:'',price:sp==='dung'?clamp(Math.round(size*2),6,15):clamp(Math.round(size*1.5),6,15)})}
+  let sur=null;const r2=R();if(!y.crab.b&&r2<.06){sur='bttl';y.crab.b=1}else if(r2<.14)sur='boot';else if(r2<.2)sur='nfsd';
+  y.crab.t=0;out.forEach(c=>{fnLog(c.sp);if(c.keep)putItem(c.sp,0)});if(sur){putItem(sur,0);fnLog(sur)}try{sfx('splash',{you:1})}catch(e){}save();
+  const li=out.map(c=>`<li>${FN[c.sp][1]} ${c.sex} ${esc(FN[c.sp][0])}, ${c.size}″ · ${c.keep?'kept':'🤍 released: '+esc(c.note)}</li>`).join('');
+  const sx=sur==='bttl'?'<p class="b35note">🍾 a message in a bottle, sealed with lighthouse wax: <i>"if found, please say hi to our Mocha"</i></p>':sur==='boot'?'<p class="b35note">🥾 an old boot. Pearl will call it "vintage".</p>':sur?'<p class="b35note">🪙 a sand dollar rode up with them!</p>':'';
+  if(out.some(c=>!c.keep))heartUp();if(!o.quiet)natCard(`<h4>🦀 the crab pot</h4><ul>${li}</ul>${sx}<p>${esc(FN.dung[3])}</p>`,[['done',null]]);return{ok:true,crabs:out,surprise:sur}}
+function crabReady(o){o=o||{};const y=S.you;y.gear|=2;const t=Date.now()-8.1*36e5;y.crab.t=y.crab.t?Math.min(y.crab.t,t):t;const st=crabStatus();if(o.peek)return st;return crabPull(o)}
+// buoy: one cone, only while the pot is down; it bobs when ready
+function crabBuoy(){if(NAT.buoy)return NAT.buoy;const m=new THREE.Mesh(new THREE.ConeGeometry(.22,.5,8),new ToonM({color:'#D9542E'}));m.name='b35buoy';m.position.set(-100.6,.1,14);m.visible=false;m.castShadow=false;scene.add(m);return NAT.buoy=m}
+// ---------- crow trinkets: peanuts out overnight -> at most one seeded trinket the next morning, in your mailbox ----------
+function crowGift(o){o=o||{};const y=S.you,h=y.home||{},k=curDay();if(y.crow.d===k)return{ok:false,why:'today',got:null};const pea=+h.pea||0;if(!pea||dkey(pea)>=k&&!o.force)return{ok:false,why:'nopeanuts',got:null};
+  if(new Date().getHours()<6&&!o.force)return{ok:false,why:'early',got:null};y.crow.d=k;h.pea=0;const R=seeded(catHash('crow:'+k));if(R()>=.75&&!o.sure){save();return{ok:true,got:null}}
+  const code=['tcap','tbtn','tgls','tbel'][Math.floor(R()*4)],who=R()<.5?'Jot':'a neighborhood crow';putItem(code,0);const lg=fnLog(code);h.mb=Math.min(9,(h.mb|0)+1);try{sfx('mail',{you:1})}catch(e){}
+  toast(`📬 ${who} left something in your mailbox: a ${FN[code][0].replace(/ \(.*/,'')}! ${FN[code][3]}`);save();return{ok:true,got:code,who,first:lg.first}}
+// ---------- the contextual chip (fishing edge, pier end) ----------
+function natChipEl(){if(NAT.chip)return NAT.chip;const c=document.createElement('div');c.id='b35chip';c.className='b35chip';HUD.slot('b35chip',{el:c,zone:'tc',order:4,prio:7,modes:['walk'],on:false});c.addEventListener('pointerdown',e=>e.stopPropagation());
+  c.onclick=e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a,y=S.you;if(a==='rod'||a==='pot'){const pr=a==='rod'?8:12;if(y.coins<pr){toast(`not quite enough coins (${pr} 🪙)`);return}addCoins(-pr,a);y.gear|=a==='rod'?1:2;toast(a==='rod'?'🎣 Gus: "a good rod! FISH ON!" (8 🪙)':'🦀 Gus: "drop it off the pier end!" (12 🪙)');save()}
+    else if(a==='fish')fishCast();else if(a==='drop')crabDrop();else if(a==='pull')crabPull();NAT.chipK='';natChipScan()};return NAT.chip=c}
+function natChipScan(){const c=natChipEl(),y=S.you,wk=camS.mode==='walk'&&!NAT.fi&&!(typeof IN==='object'&&IN.on);let h='';
+  if(wk&&YOU.x<-50&&fishEdge())h+=y.gear&1?'<button data-a="fish">🎣 fish here</button>':'<button data-a="rod">🎣 Gus\'s rod · 8 🪙</button>';
+  if(wk&&YOU.x<-92&&YOU.z>8&&YOU.z<20){const st=crabStatus();h+=!st.has?'<button data-a="pot">🦀 crab pot · 12 🪙</button>':!st.down?'<button data-a="drop">🦀 drop the crab pot</button>':st.ready?'<button data-a="pull">🦀 pull the crab pot</button>':`<button data-a="" disabled>🦀 soaking · ${st.left} h</button>`}
+  if(h!==NAT.chipK){NAT.chipK=h;c.innerHTML=h;HUD.show('b35chip',!!h)}}
+// ---------- the Field Notes sticker book (vintage notebook) ----------
+function fieldNotes(){const got=new Set(S.you.fn?S.you.fn.split(','):[]);return FNH.map(hb=>({hab:hb,e:Object.keys(FN).filter(c=>FN[c][2]===hb&&c!=='bttl').map(c=>({c,name:FN[c][0],got:got.has(c),fact:got.has(c)?FN[c][3]:''}))}))}
+function fnOpen(){natCardClose();const B=fieldNotes(),n=B.reduce((a,h)=>a+h.e.filter(e=>e.got).length,0),tot=B.reduce((a,h)=>a+h.e.length,0);
+  const c=natCard(`<div class="b35rib"></div><h4>📒 Field Notes · ${n}/${tot}</h4><p class="b35sz">Rosalind's Nature Record at the library pays for every first find or sighting.${S.you.gear&4?' 🔭 binoculars: yes':''}</p>`+B.map(h=>`<h5>${h.hab}</h5><div class="b35grid">${h.e.map(e=>e.got?`<div class="b35st"><img src="${fnSticker(e.c)}" alt=""><b>${esc(e.name)}</b><span>${esc(e.fact)}</span></div>`:'<div class="b35st b35no"><i>?</i></div>').join('')}</div>`).join(''),[['close',null]]);c.classList.add('b35book');return{n,tot}}
+// ---------- per-frame (from frame()): .2 s proximity, 4 Hz chip, 1 Hz crow/day, critters, sparkles, fishing ----------
+function b35Frame(dt,t){if(!S||!S.you)return;try{const wk=camS.mode==='walk'&&!(typeof IN==='object'&&IN.on);NAT.scanT-=dt;NAT.secT-=dt;
+  if(NAT.secT<=0){NAT.secT=1;natBuild();crowGift();const st=crabStatus(),b=crabBuoy();b.visible=st.down&&!(typeof IN==='object'&&IN.on);natChipScan()}
+  if(NAT.grp&&NAT.grp.visible!==wk)NAT.grp.visible=wk;const sp=natSpark();
+  if(NAT.scanT<=0){NAT.scanT=.2;if(wk){const L=natSpawns(),pa=sp.geometry.attributes.position,rng=S.you.gear&4?40:25;let k=0;
+    const near=L.filter(s=>!natGot(s.i)).map(s=>[s,Math.hypot(s.x-YOU.x,s.z-YOU.z)]).sort((a,b)=>a[1]-b[1]);for(const[s,d]of near){if(d<1.2&&!NAT.fi){natGather(s.i);continue}if(d<rng&&k<6){pa.setXYZ(k,s.x,navFloor(s.x,s.z)+.35,s.z);k++}}
+    if(!near.some(n=>n[1]<1.2))NAT.full=0;pa.needsUpdate=true;sp.geometry.setDrawRange(0,k)}else sp.geometry.setDrawRange(0,0)}
+  sp.visible=wk&&!SET.saver;sp.material.opacity=.6+Math.sin(t*4)*.35;
+  if(NAT.buoy&&NAT.buoy.visible){const r=crabStatus().ready;NAT.buoy.position.y=.1+(r?Math.sin(t*3)*.12:0);NAT.buoy.rotation.z=r?Math.sin(t*2)*.15:0}
+  NAT.critT-=dt;if(wk&&NAT.critT<=0){NAT.critT=18+Math.random()*14;if(Math.random()<.45)critSpawn()}
+  for(let i=NAT.crit.length-1;i>=0;i--){const k=NAT.crit[i];k.t+=dt;k.sp.material.map.offset.x=Math.floor(k.t*2.5)%2*.5;const d=Math.hypot(k.sp.position.x-YOU.x,k.sp.position.z-YOU.z);if(k.t>k.life||!wk||d>30)critKill(k)}
+  fishFrame(dt)}catch(e){if(!NAT.err){NAT.err=1;console.error('B35',e)}}}
+// taps: critters first (look, never catch); tapping never steers Mocha
+{const tp=tap;tap=function(x,y,jog){try{if(camS.mode==='walk'&&critTap(x,y))return}catch(e){}return tp(x,y,jog)}}
+// Reed's tips arrive through the talk card's "recommend" intent
+{const nr=npcReply;npcReply=function(id,intent,ctx){if(id==='reed'&&intent==='rec'&&Math.random()<.7){const raw=pick(REEDT);return{text:raw,raw,src:'reed-tip',intent}}return nr(id,intent,ctx)}}
+// the You tab: Field Notes, gear and the crab pot
+function youTabB35(){const el=$('#tab-you');if(!el||el.querySelector('#b35you'))return;const d=document.createElement('div');d.id='b35you';const st=crabStatus(),y=S.you;
+  d.innerHTML=`<h4>📒 field notes</h4><button class="chip" id="b35fnB" style="min-height:44px">open the sticker book (${y.fn?y.fn.split(',').length:0})</button><p class="muted">${y.gear&1?'🎣 rod':'no rod yet (Gus, 8 🪙)'} · ${!st.has?'no crab pot yet (12 🪙)':st.down?(st.ready?'🦀 your crab pot is ready!':`🦀 crab pot soaking · ${st.left} h`):'🦀 crab pot at home'} · today: ${y.day.fish|0}/10 fish</p>`;el.appendChild(d);d.querySelector('#b35fnB').onclick=()=>fnOpen()}
+{const r0=TABS.R.you;TABS.R.you=()=>{if(r0)r0();try{youTabB35()}catch(e){}}}
+{const st=document.createElement('style');st.textContent=`
+#b35fish{position:fixed;inset:0;z-index:40;display:none;touch-action:none;background:linear-gradient(transparent 60%,rgba(20,30,40,.18))}#b35fish.on{display:block}
+#b35fish>div{position:absolute;left:0;top:0;pointer-events:none}.b35lure{width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#D9542E;box-shadow:0 0 0 3px #fffaf0}
+.b35sh{width:46px;height:16px;margin:-8px 0 0 -23px;border-radius:50%;background:rgba(30,40,50,.35);filter:blur(2px)}
+.b35ring{display:none;width:44px;height:44px;border:3px solid #fffaf0;border-radius:50%;box-shadow:0 0 6px rgba(255,250,240,.8)}
+.b35reel{display:none;left:50%!important;top:auto!important;bottom:calc(120px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(70vw,320px);height:18px;border-radius:9px;background:#E9DCC4;border:2px solid #3A2420;overflow:hidden}
+.b35reel i,.b35reel b{position:absolute;left:0;top:0;bottom:0;display:block}.b35reel i{background:#6FA8DC;transition:background .2s}.b35reel.run i{background:#E8913A}.b35reel b{top:auto;height:4px;background:#8C2C24}
+.b35reel.pull{box-shadow:0 0 14px #6FA8DC}.b35reel.run{box-shadow:0 0 14px #E8913A}
+.b35hint{position:absolute;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));transform:translateX(-50%);margin:0;padding:6px 12px;border-radius:12px;background:rgba(233,220,196,.92);color:#3A2420;font:700 14px ui-rounded,system-ui,sans-serif;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.b35x{position:absolute;right:calc(12px + env(safe-area-inset-right));top:calc(12px + env(safe-area-inset-top));min-width:44px;min-height:44px;border:0;border-radius:22px;background:#E9DCC4;color:#3A2420;font:800 18px system-ui}
+.b35chip{display:flex;gap:6px}.b35chip button{min-height:44px;border:0;border-radius:22px;padding:0 14px;background:#E9DCC4;color:#3A2420;font:800 14px ui-rounded,Nunito,system-ui,sans-serif;box-shadow:0 3px 10px rgba(0,0,0,.2);white-space:nowrap}
+.b35card{position:fixed;z-index:46;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(92vw,380px);max-height:62vh;overflow:auto;padding:14px 16px 12px;background:#E9DCC4;color:#3A2420;border-radius:6px 14px 14px 6px;border-left:8px solid #8C2C24;box-shadow:0 8px 28px rgba(0,0,0,.35);font:500 14px/1.4 Georgia,serif}
+.b35card img{float:right;width:64px;height:64px;margin:0 0 4px 8px}.b35card h4{margin:2px 0 4px;font:800 18px Georgia,serif;color:#3A2420}.b35card h5{margin:10px 0 4px;font:800 13px Georgia,serif;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px dashed #3A2420}
+.b35card p{margin:4px 0}.b35sz{font-size:12px;opacity:.8}.b35note{padding:6px 8px;background:rgba(140,44,36,.08);border-radius:6px}.b35card ul{margin:4px 0;padding-left:18px}
+.b35btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;clear:both}.b35btns button{flex:1 1 auto;min-height:44px;border:2px solid #3A2420;border-radius:10px;background:#fffaf0;color:#3A2420;font:700 14px ui-rounded,system-ui,sans-serif}
+.b35book{max-height:86vh}.b35rib{position:absolute;right:22px;top:0;width:12px;height:40px;background:#8C2C24;clip-path:polygon(0 0,100% 0,100% 100%,50% 80%,0 100%)}
+.b35grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px}.b35st{display:flex;flex-direction:column;align-items:center;text-align:center;font-size:11px;padding:4px;border:1px solid rgba(58,36,32,.2);border-radius:6px}
+.b35st img{float:none;width:48px;height:48px;margin:0}.b35st b{font-size:12px}.b35no{justify-content:center;min-height:60px;opacity:.45;border-style:dashed}.b35no i{font:800 22px Georgia,serif}
+.b35heart{position:fixed;left:50%;top:45%;z-index:47;font-size:34px;pointer-events:none;animation:b35up 1.8s ease-out forwards}@keyframes b35up{from{transform:translate(-50%,0);opacity:1}to{transform:translate(-50%,-140px);opacity:0}}
+@media (orientation:landscape) and (max-height:500px){.b35card{left:auto;right:calc(12px + env(safe-area-inset-right));transform:none;bottom:12px;max-height:84vh;width:min(46vw,380px)}}
+@media (min-width:761px){.b35card{left:auto;right:16px;transform:none;width:380px;max-height:80vh}}`;document.head.appendChild(st)}
+// hooks (re-applied whenever __mocha is rebuilt)
+{const H=m=>{if(!m)return;Object.assign(m,{spawns:d=>natSpawns(d).map(s=>({i:s.i,code:s.code,name:FN[s.code][0],x:s.x,z:s.z,cls:s.cls,got:natGot(s.i),walkable:natOK(s.x,s.z)})),gather:i=>natGather(i),spot:c=>natSpot(c||(NAT.crit[0]&&NAT.crit[0].c)||'khum'),
+  fishBite:o=>fishBite(o),fishTap:()=>{fishDown(performance.now());return NAT.fi?{ph:NAT.fi.ph}:null},fishCast:o=>fishCast(o),fishState:()=>NAT.fi?{ph:NAT.fi.ph,sp:NAT.fi.sp,p:+NAT.fi.p.toFixed(2),card:NAT.fi.card||null}:null,fishEnd:()=>fishEnd(),
+  crabReady:o=>crabReady(o),crabStatus:()=>crabStatus(),crowGift:o=>crowGift(o),fieldNotes:()=>fieldNotes(),fnOpen:()=>fnOpen(),fnFacts:()=>Object.keys(FN).map(c=>[c,FN[c][0],FN[c][3]]),fnClash:()=>Object.keys(FN).filter(c=>CAT.by[c]),
+  b35:()=>({day:NAT.day,ims:NAT.ims.map(im=>[im.name,im.count]),spark:NAT.spk?NAT.spk.geometry.drawRange.count:0,crit:NAT.crit.map(k=>k.c),chip:NAT.chipK,fish:S.you.day.fish,g:S.you.day.g,fn:S.you.fn,gear:S.you.gear,crab:S.you.crab,crow:S.you.crow})})};STYLE.hooks.push(H);H(window.__mocha)}
+// ====================================================================
+//  B40 TOWNSFOLK HOMES, GHOST FRIENDS AND THE OCTOBER LAYER. HOMEPT (door points, also TSP third places) + tRhy/tPlan/palVisits/tWhere wrappers
+//  (rest and pal visits happen at homes; hide at the door), WLT.force for the pink/blue house rooms, B40SIL silhouettes (4 planes, 2 Hz),
+//  the houseboat and the shed (1 mesh), Fennel/Tuffet/Hush (21:00-4:00: loops, hide-and-seek, ring dance on clear nights) + the 'ghosts' act,
+//  teal mushrooms + cemetery lantern pools, October: square patch, Oct 24 ring of 12 (DB sites + face IM + GLOWPTS jack range), corn maze (DB),
+//  weekend hayride, Oct 31 parade / keepers' candy / cabin trick-or-treaters (guestbook) / Willa's broom flight, witch hats IM, muertos marigolds.
+// ====================================================================
+const HOMEPT={pink:{x:18,z:65.4,name:'the pink house',ids:['juniper','sol'],win:'pink',pos:[18,72,Math.PI]},blue:{x:80,z:50.6,name:'the blue house',ids:['rosalind','tabitha'],win:'blue',pos:[80,44,0]},
+ willa:{x:122.6,z:62,name:"Willa's crooked cottage",ids:['willa','honey'],win:'willa'},boat:{x:-78,z:-36,name:"Gus's houseboat",ids:['gus'],win:'boat'},shed:{x:-36,z:-23.6,name:'the pumpkin-patch shed',ids:['hollis'],win:'shed'},
+ train:{x:131.8,z:-3,name:'the 17:40 to Ballard Junction',ids:['marigold','dale','birch'],train:1}};
+const B40K={juniper:'pink',sol:'pink',rosalind:'blue',gus:'boat',willa:'willa'},B40C={tabitha:'blue',hollis:'shed',marigold:'train',dale:'train',birch:'train'};
+const B40VIS={'juniper-sol':'pink','mabel-juniper':'pink','rosalind-tabitha':'blue','willa-honey':'willa','gus-bea':'boat'};
+for(const k in HOMEPT){const h=HOMEPT[k];TSP[k]=[h.x,h.z,0,h.name]}TSP.sqpatch=[-35.6,36.4,0,'the square pumpkin patch'];TSP.parade=[-44,5.6,0,'the costume parade'];
+try{const d=DOORS.find(x=>x.pid==='willa'&&!x.back);if(d){HOMEPT.willa.x=d.wx+d.nx*1.3;HOMEPT.willa.z=d.wz+d.nz*1.3;TSP.willa[0]=HOMEPT.willa.x;TSP.willa[1]=HOMEPT.willa.z}}catch(e){}
+Object.assign(VDESC,{candy:'handing out candy at the door',parade:'walking in the costume parade',stall:VDESC.stall});THV.candy='carry';THV.parade=null;
+function octDay(t=Date.now()){const d=new Date(t);return d.getMonth()===9?d.getDate():0}
+function octRing(t=Date.now()){const d=new Date(t),dd=octDay(t);return dd>24||(dd===24&&d.getHours()>=19)}
+const B40PAR=['hollis','clem','vesper','tabitha','odalie','marigold','jot','dale','birch','barnaby','honey','reed','morel','ambrose'];
+// rest at home (keepers and the new cast), pal visits at the host's home; Oct 31: candy at the door 17-20 + the 15:00 parade; October Saturdays: Hollis in the square patch
+{const r0=tRhy;tRhy=function(id,dow){let s=r0(id,dow);const c=CASTB[id];if(!s||!c)return s;const k=B40K[id],q=B40C[id];if(k&&c.k)s=s.split(c.k.shop+'.back rest').join(k+'.home rest');if(q)s=s.split(`${c.home||'home'}.home rest`).join(q+'.home rest');return s}}
+{const p0=tPlan;tPlan=function(id,date=Date.now()){const v=p0(id,date);if(v.b40)return v;v.b40=1;const od=octDay(date),c=CASTB[id];if(!od||!c)return v;const dow=new Date(date).getDay();
+  if(od===31&&c.k)v.push([17,20,'in',c.k.shop,'door','candy']);const pi=B40PAR.indexOf(id);if(od===31&&pi>=0)v.push([15,16.5,'out','parade',String(pi),'parade']);
+  if(id==='hollis'&&dow===6)v.push([9,17,'out','sqpatch',null,'stall']);return v}}
+{const v0=palVisits;palVisits=function(dk){return v0(dk).map(p=>{const h=B40VIS[p.a+'-'+p.b]||B40VIS[p.b+'-'+p.a];if(h)p.w=h;return p})}}
+{const w0=tWhere;tWhere=function(T,b){const o=w0(T,b);if(b&&HOMEPT[b[3]]&&/^(rest|rainrest|visit)$/.test(b[5])){const h=HOMEPT[b[3]];o.x=h.x;o.z=h.z;o.hide=true;o.inP=null}return o}}
+{const s0=npcStatus;npcStatus=function(id){const n=TN[id],b=n&&n.b;if(b&&HOMEPT[b[3]]&&/^(rest|rainrest)$/.test(b[5])&&!n.walk){const H=HOMEPT[b[3]],h=townHour();return H.train?'on the train home to Ballard Junction':(h>=22||h<6?'asleep at ':'at home at ')+H.name}return s0(id)}}
+{const k0=townTick;townTick=function(force){k0(force);for(const T of TOWN.set){const b=T.n.b;if(T.a&&b&&HOMEPT[b[3]]&&T.n.hide&&!T.n.walk)T.a.tp=b[3]}}}
+try{TPC.clear()}catch(e){}
+const B40={homes:{},silN:0,ghost:{mode:'loops',hs:null},oct:{},tt:null,hats:null,broom:null,hay:null,maze:null,ring:{on:false,cas:0,f0:0,n:0},acc:0,acc2:0,mush:null,pools:[],kids:null,lit:{}};
+function b40Fix(y){if(!y||typeof y!=='object')return y;y.gb=Array.isArray(y.gb)?y.gb.filter(g=>g&&g.t).slice(-30):[];const t=y.tt&&typeof y.tt==='object'?y.tt:{};y.tt={d:+t.d||0,n:Math.max(0,Math.min(9,+t.n||0)),at:+t.at||0};
+  if(y.home&&typeof y.home==='object')y.home.jk=y.home.jk?1:0;return y}
+// who is home at a HOMEPT key right now: [{id,awake,visit}]
+function homeWho(k){const out=[],h=townHour();for(const T of TOWN.set){const n=T.n,b=n.b;if(!b||b[3]!==k||!n.hide||n.walk)continue;out.push({id:T.c.id,visit:b[5]==='visit',awake:b[5]==='visit'||!(h>=22.5||h<6)})}return out}
+function b40Homes(){const R={};for(const k in HOMEPT){const H=HOMEPT[k];R[k]={name:H.name,door:[H.x,H.z],residents:H.ids,inside:homeWho(k).map(o=>o.id),lit:B40.lit[k]||0}}
+  R.above={mabel:'library',monty:'cinema',bea:'petstore',pearl:'thrift',pippin:'bakery',otis:'evergreen (workshop loft)'};R.other={morel:'mushroom house (24,96)',odalie:'Town Hall upstairs',jot:'the clock tower',fogwell:'the Fogwell units'};return R}
+// the pink and blue houses' windows: re-encoded from shared 'sched' slots to 'pink:main'/'pink:up' etc., driven by WLT.force (occupancy)
+function b40Wins(){for(const k of ['pink','blue']){const H=HOMEPT[k],P=H.pos;let n=0;scene.traverse(o=>{if(!o.isMesh||!Array.isArray(o.material))return;o.getWorldPosition(TWV);if(Math.hypot(TWV.x-P[0],TWV.z-P[1])>1.5||TWV.y>4)return;
+    o.material=o.material.map((m,i)=>m&&m.userData&&m.userData.wl?(n++,wltRe(m,L=>L[4]||L[6]===-3?wltSlot(k+(L[5]>0||L[6]<0?':up':':main')):0,true)):m)});H.nw=n}}
+function b40Light(){const h=townHour();for(const k in HOMEPT){const H=HOMEPT[k];if(H.train)continue;const w=homeWho(k),aw=w.filter(o=>o.awake),vis=w.some(o=>o.visit),lv=aw.length?1:w.length?.12:0;B40.lit[k]=lv;
+    if(k==='pink'||k==='blue'){WLT.force[k+':main']=lv;WLT.force[k+':up']=vis?1:aw.length?.5:0}else if(k==='willa'){for(const s of WLT.S)if(s&&s.pid==='willa')WLT.force[s.key]=lv?(s.room==='main'?lv:lv*.6):null}}}
+// ---------- the houseboat (hull + cabin box) and the pumpkin-patch shed: one vertex-coloured mesh ----------
+function b40Props(){const P=[],hb=[-78,-40.6],sh=[-36,-26.4];
+  P.push({g:'b',c:'#2f5f6f',p:[hb[0],.1,hb[1]],s:[9,1.1,3.6]},{g:'b',c:'#f4ead8',p:[hb[0],.72,hb[1]],s:[9.2,.14,3.8]},{g:'b',c:'#c94f4f',p:[hb[0]+.6,1.9,hb[1]],s:[5,2.2,2.8]},{g:'b',c:'#3c4a5a',p:[hb[0]+.6,3.1,hb[1]],s:[5.6,.22,3.2]},
+   {g:'b',c:'#ffd98a',p:[hb[0]-.8,2.1,hb[1]+1.41],s:[.8,.7,.04]},{g:'b',c:'#ffd98a',p:[hb[0]+2,2.1,hb[1]+1.41],s:[.8,.7,.04]},{g:'b',c:'#5a3a2a',p:[hb[0]+.6,1.6,hb[1]+1.42],s:[.8,1.6,.04]},{g:'c',c:'#8a6a4a',p:[hb[0]+.6,.9,hb[1]+2.6],s:[.06,1.8,.06]},
+   {g:'b',c:'#8a6a4a',p:[hb[0]+.6,.75,hb[1]+2.3],s:[1,.08,1.6]},{g:'c',c:'#e8a03a',p:[hb[0]-3.6,3.6,hb[1]],s:[.05,1.6,.05]},{g:'b',c:'#e8a03a',p:[hb[0]-3.3,4.1,hb[1]],s:[.6,.4,.02]});
+  P.push({g:'b',c:'#8a5a3a',p:[sh[0],1.2,sh[1]],s:[3.4,2.4,2.8]},{g:'k',c:'#5a3a2a',p:[sh[0],2.95,sh[1]],s:[2.6,1.2,2.2],r:[0,Math.PI/4,0]},{g:'b',c:'#3a2a20',p:[sh[0],.95,sh[1]+1.41],s:[1,1.9,.04]},
+   {g:'s8',c:'#e9883a',p:[sh[0]-1.2,.3,sh[1]+1.9],s:.3},{g:'s8',c:'#e9a03a',p:[sh[0]+1.3,.25,sh[1]+1.8],s:.25},{g:'b',c:'#d9c79a',p:[sh[0]+1.4,.3,sh[1]+.6],s:[.9,.5,.6]});
+  const m=new THREE.Mesh(mergeParts(P,null),CHIBI_MAT);m.name='b40homes';m.castShadow=false;m.receiveShadow=true;worldAdd(m);try{COLP.push([sh[0],sh[1],1.8])}catch(e){}return m}
+// ---------- silhouettes: 4 planes from one 256x64 atlas (ears, antlers, owl tufts, round), 2 Hz, the 4 nearest lit side windows of the pink/blue houses ----------
+const B40SIL={m:null,P:[],sp:{juniper:0,sol:2,rosalind:0,tabitha:0,willa:3,honey:0}};
+function b40SilBuild(){const t=canvasTex(256,64,g=>{g.clearRect(0,0,256,64);g.fillStyle='#fff';const head=(cx)=>{g.beginPath();g.ellipse(cx,40,15,14,0,0,7);g.fill();g.beginPath();g.ellipse(cx,66,26,14,0,0,7);g.fill()};
+    head(32);g.beginPath();g.moveTo(19,34);g.lineTo(22,12);g.lineTo(31,28);g.moveTo(45,34);g.lineTo(42,12);g.lineTo(33,28);g.fill();
+    head(96);g.lineWidth=3;g.strokeStyle='#fff';for(const s of [-1,1]){g.beginPath();g.moveTo(96+s*8,28);g.lineTo(96+s*14,8);g.moveTo(96+s*12,18);g.lineTo(96+s*22,14);g.stroke()}
+    head(160);g.beginPath();g.moveTo(147,32);g.lineTo(145,16);g.lineTo(156,28);g.moveTo(173,32);g.lineTo(175,16);g.lineTo(164,28);g.fill();head(224);g.beginPath();g.arc(213,28,6,0,7);g.arc(235,28,6,0,7);g.fill()});
+  const mat=new THREE.MeshBasicMaterial({map:t,color:'#2a1c22',transparent:true,opacity:.72,depthWrite:false});B40SIL.m=mat;
+  for(let i=0;i<4;i++){const g=new THREE.PlaneGeometry(1,1),uv=g.attributes.uv;for(let j=0;j<uv.count;j++)uv.setX(j,(uv.getX(j)+i)/4);const m=new THREE.Mesh(g,mat);m.visible=false;m.renderOrder=3;m.name='b40sil';worldAdd(m);B40SIL.P.push(m)}}
+function b40SilTick(){const P=B40SIL.P;if(!P.length)return;const W=[];const off=SET.saver||IN.on||nightAmt<.35;
+  if(!off)for(const k of ['pink','blue']){const H=HOMEPT[k],aw=homeWho(k).filter(o=>o.awake);if(!aw.length)continue;const [cx,cz,ry]=H.pos;
+    aw.forEach((o,j)=>{const side=j%2?1:-1,dz=(j<2?-3:3);const lx=side*5.56,wx=cx+lx*Math.cos(ry)+dz*Math.sin(ry),wz=cz-lx*Math.sin(ry)+dz*Math.cos(ry);W.push({x:wx,z:wz,ry:ry+side*Math.PI/2,sp:B40SIL.sp[o.id]||0,d:Math.hypot(wx-camera.position.x,wz-camera.position.z),id:o.id})})}
+  W.sort((a,b)=>a.d-b.d);B40.silN=0;P.forEach((m,i)=>{const w=W[i];if(!w||w.d>90){m.visible=false;return}const g=m.geometry.attributes.uv;for(let j=0;j<g.count;j++)g.setX(j,((j%2)+w.sp)/4);g.needsUpdate=true;
+    m.position.set(w.x,2.55,w.z);m.rotation.set(0,w.ry,0);m.scale.set(1.3,1.3,1);m.userData.ph=i*1.7;m.visible=true;B40.silN++})}
+// ---------- the ghost friends ----------
+const B40G=['fennel','tuffet','hush'],B40GL=['how to make a cold spot','how to rattle politely','how to float through a hedge without snagging','how to glow just a little for someone who is lost','how to say boo kindly','how to hum with the wind in the iron fence'];
+function moonFrac(t=Date.now()){if(typeof moonPhase==='function'){try{const v=moonPhase(t);if(typeof v==='number')return v}catch(e){}}const p=((t-Date.UTC(2000,0,6,18,14))/864e5/29.530588)%1;return(p+1)%1}// 0 new, .5 full (synodic month)
+function moonFull(t){return 1-Math.min(1,Math.abs(moonFrac(t)-.5)*4)}
+function ghostHours(t=Date.now()){return octDay(t)===31?[17,4]:[21,4]}
+function ghostOn(t=Date.now()){const h=hourAt(t),H=ghostHours(t);return h>=H[0]||h<H[1]}
+function b40GhostInit(){B40G.forEach((id,i)=>{const c=CASTB[id];if(!c||!c.obj)return;c.hours=ghostHours();if(c.obj.parent!==scene)scene.attach(c.obj);const u=c.obj.userData,M=u.M&&u.M.BODY;
+    if(M&&!M.userData.b40){const m=M.material.clone();m.transparent=true;m.opacity=.78;if(m.emissive){m.emissive.set('#CFE4FF');m.emissiveIntensity=.55}m.depthWrite=false;M.material=m;M.userData.b40=1}
+    c.b40={x0:c.spot[0],z0:c.spot[1],gi:glowPt(c.spot[0],1,c.spot[1],'#CFE4FF',2.4,0,1,'b40ghost')}})}
+const B40HS=[[6.4,95.4],[13.6,104.2],[8.2,104.6],[14.2,96]];
+function ghostMode(t=Date.now()){const s=Math.floor(t/1e3)%120,wk=wxKind(t);if(octDay(t)===31&&hourAt(t)<20.5&&hourAt(t)>=17)return'trick';if(s>=80&&wk==='clear')return'ring';return s<45?'loops':s<80?'hide':'loops'}
+function b40GhostFrame(T0){const now=Date.now(),on=ghostOn(now),mode=ghostMode(now);B40.ghost.mode=mode;const G=GLOWPTS;let up=false;
+  B40G.forEach((id,i)=>{const c=CASTB[id];if(!c||!c.obj||!c.b40)return;const o=c.obj,b=c.b40;c.hours=ghostHours(now);let x,z,y=.3;
+    if(mode==='ring'){const a=T0*.6+i*2.094;x=10+Math.sin(a)*2.4;z=100+Math.cos(a)*2.4;y=.35+Math.abs(Math.sin(T0*2+i))*.2;o.rotation.y=a+Math.PI/2}
+    else if(mode==='hide'){const seek=i===1;if(seek){const a=T0*.35;x=10+Math.sin(a)*4.5;z=100+Math.cos(a*1.3)*3.5;o.rotation.y=a}else{const q=B40HS[(i+Math.floor(now/4e4))%4];x=q[0]+(i?.3:-.3);z=q[1]-.7;y=-.25+Math.max(0,Math.sin(T0*.8+i*3))*.35}}
+    else if(mode==='trick'){const u=((T0*.02+i*.04)%1),a=u*Math.PI*2;x=28+Math.sin(a)*14;z=60+Math.cos(a)*3;o.rotation.y=Math.cos(a)>0?Math.PI/2:-Math.PI/2}
+    else{const a=T0*(.5+i*.13)+i*2;x=b.x0+Math.sin(a)*1.3;z=b.z0+Math.cos(a)*1.1;o.rotation.y=a+Math.PI/2}
+    o.position.set(x,(typeof navFloor==='function'?navFloor(x,z):0)+y,z);if(c.lod)c.lod.y0=o.position.y;
+    if(b.gi>=0){G.P[b.gi*3]=x;G.P[b.gi*3+1]=o.position.y+.7;G.P[b.gi*3+2]=z;up=true;glowSet(b.gi,on&&o.visible?.5:0)}});if(up)G.at.p.needsUpdate=true}
+function b40Ghosts(){const now=Date.now();return{on:ghostOn(now),hours:ghostHours(now),mode:B40.ghost.mode,wx:wxKind(now),moon:+moonFull(now).toFixed(2),list:B40G.map(id=>{const c=CASTB[id],o=c&&c.obj;if(!o)return{id,built:false};o.getWorldPosition(TWV);
+  return{id,visible:!!o.visible&&CHARLOD.vis(o),x:+TWV.x.toFixed(1),y:+TWV.y.toFixed(2),z:+TWV.z.toFixed(1),inCemetery:Math.hypot(TWV.x-10,TWV.z-100)<12.5,lvl:c.lod?c.lod.lvl:null,bond:bondOf(id),glow:c.b40?GLOWPTS.A[c.b40.gi]:0,opacity:o.userData.M.BODY.material.opacity}})}}
+// HIS act: visiting my ghost friends (night, while they are out); weighted by sociability and the full moon (no user term)
+const GHOST_ACT={p:'cemetery',doing:'visiting my ghost friends',tags:['people','nature'],need:{social:30,fun:15},fx:'ghosts',night:1,lines:['Floated over to the old cemetery to see Fennel, Tuffet and Hush.'],
+  get hw(){const t=Date.now();if(!ghostOn(t))return -30;const tr=S&&S.traits||{};return(+tr.sociability||.5)*1.6+moonFull(t)*1.4+.4}};
+ACTS.push(GHOST_ACT);
+function ghostOutcome(act,t,live){const tr=S.traits||{};for(const n in act.need||{})S.needs[n]=clamp(S.needs[n]+act.need[n],0,100);S.xp+=10;S.visits.cemetery=(S.visits.cemetery||0)+1;S.recent.unshift('cemetery');S.recent.length=Math.min(S.recent.length,6);
+  const r=seeded(catHash('ghost:'+Math.floor(t/36e5)));const who=B40G.filter((x,i)=>i===0||r()<.7);who.forEach(id=>S.know[id]=(S.know[id]||0)+1);const ls=B40GL[Math.floor(r()*B40GL.length)],nm=who.map(id=>CASTB[id].name);
+  const mf=moonFull(t),mode=ghostMode(t),sc=mode==='ring'?'We did a ring dance under the stars, around and around until I was dizzy.':mode==='hide'?(r()<.5?'We played hide-and-seek behind the headstones. Tuffet found me in four seconds. He always does.':'Hide-and-seek again. I hid inside a lantern glow and nobody found me for ages.'):'We floated in little loops between the headstones and told each other our days.';
+  addEntry('Ghost friends',`Visited ${nm.length>2?nm.slice(0,-1).join(', ')+' and '+nm[nm.length-1]:nm.join(' and ')} at the old cemetery. ${sc} ${CASTB[who[who.length-1]].name} taught me ${ls}.${mf>.85?' The moon was nearly full, so we glowed extra.':''}`,'Old Pioneer Cemetery',t);
+  try{addLearned('ghostly lessons',[`From my ghost friends: ${ls}.`],t)}catch(e){}if(live&&typeof sfx==='function')try{sfx('ooo',{x:10,z:100})}catch(e){}return who}
+{const o0=localOutcome;localOutcome=function(act,t=Date.now(),live=true){if(act&&act.fx==='ghosts')return ghostOutcome(act,t,live);if(act&&act.fx==='maze')return mazeOutcome(act,t,live);return o0(act,t,live)}}
+// ---------- teal mushrooms (one IM, .2 Hz pulse, night only) and the cemetery lantern pools ----------
+function b40Mush(){const g=new THREE.SphereGeometry(1,8,5,0,6.2832,0,Math.PI/2),m=new THREE.MeshBasicMaterial({color:'#7FF0D8',transparent:true,opacity:.85}),N=16,im=new THREE.InstancedMesh(g,m,N),d=new THREE.Object3D(),r=seeded(4040);
+  for(let i=0;i<N;i++){const a=r()*6.28,rr=4+r()*7,x=27+Math.cos(a)*rr,z=95+Math.sin(a)*rr*.7;d.position.set(x,.05,z);const s=.12+r()*.12;d.scale.set(s,s*.7,s);d.updateMatrix();im.setMatrixAt(i,d.matrix)}
+  im.name='b40mush';im.frustumCulled=false;worldAdd(im);B40.mush=im;const c=byId.cemetery;for(const [lx,lz] of [[-.8,-9],[3.8,-9],[-.8,-4.5],[3.8,-4.5],[1.5,6.5]])B40.pools.push(poolAdd(c.x+lx,c.z+lz,1.7,'#ffc46b',0))}
+// ---------- October: DB sites (square patch, the Oct 24 ring, the corn maze, muertos marigolds), dressCal rebuilds on the ring flip ----------
+function mazeCells(){if(B40.mz)return B40.mz;const N=7,r=seeded(1031),V=new Set(),E=new Set(),st=[[0,0]];V.add('0,0');while(st.length){const [x,z]=st[st.length-1],nb=[[1,0],[-1,0],[0,1],[0,-1]].map(([a,b])=>[x+a,z+b]).filter(([a,b])=>a>=0&&b>=0&&a<N&&b<N&&!V.has(a+','+b));
+    if(!nb.length){st.pop();continue}const q=nb[Math.floor(r()*nb.length)];V.add(q.join(','));E.add([x,z,q[0],q[1]].join(','));E.add([q[0],q[1],x,z].join(','));st.push(q)}return B40.mz={N,E,c:1.7,x0:112,z0:35}}
+function mazeLay(){if(new Date(DRS.t||Date.now()).getMonth()!==9)return;const M=mazeCells(),{N,E,c,x0,z0}=M,open=(a,b,cc,d)=>E.has([a,b,cc,d].join(',')),stalk=(x,z)=>{const R=DR,h=1.6+R()*.35;dF(x,z,R()*3);dP(dCone(5),dJit('#D9C79A',R,.06),0,h/2,0,.17,h,.17,0,(R()-.5)*.12,(R()-.5)*.12);dP(dBox(),dJit('#C8B482',R,.05),.12,h*.55,0,.42,.03,.1,0,0,.5);dP(dBox(),dJit('#B8A070',R,.05),-.1,h*.75,0,.36,.03,.09,0,0,-.6)};
+  let n=0;const wall=(ax,az,bx,bz)=>{for(let k=0;k<3;k++){const u=(k+.5)/3;stalk(ax+(bx-ax)*u,az+(bz-az)*u);n++}};
+  for(let i=0;i<N;i++)for(let j=0;j<N;j++){const X=x0+i*c,Z=z0+j*c;if(i<N-1&&!open(i,j,i+1,j))wall(X+c,Z,X+c,Z+c);if(j<N-1&&!open(i,j,i,j+1))wall(X,Z+c,X+c,Z+c)}
+  for(let i=0;i<N;i++){if(i!==0)wall(x0+i*c,z0,x0+(i+1)*c,z0);if(i!==N-1)wall(x0+i*c,z0+N*c,x0+(i+1)*c,z0+N*c);wall(x0,z0+i*c,x0,z0+(i+1)*c);wall(x0+N*c,z0+i*c,x0+N*c,z0+(i+1)*c)}
+  kHay(x0-1.2,z0-1,0);kHay(x0+N*c+1.2,z0+N*c+1,0);kCorn(x0+1.9,z0-1.1,0);dN('corn',n)}
+function patchLay(){if(new Date(DRS.t||Date.now()).getMonth()!==9)return;const R=DR;for(let i=0;i<4;i++)for(let j=0;j<3;j++){const x=-38.4+i*1.25+(R()-.5)*.4,z=35.6+j*1.15+(R()-.5)*.4;dF(x,z,R()*3);dP(domeG(),AUTB.mumLeaf,0,0,0,.42,.12,.42);kPumpkin(0,0,0,.24+R()*.12,dJit(AUTB.pk[(i+j)%4],R,.05),R()*3,0)}
+  kHay(-39.4,38.6,.3);kHay(-34.6,34.8,-.2);kStack(-33.8,38.8,-.6,.8,{gourds:1});kCorn(-39.6,35,0)}
+function ringLay(){if(!B40.ring.want||!DROW[DRS.row]||!DROW[DRS.row].pk)return;const F=DRS.face;B40.ring.f0=F.n;const face=!!DROW[DRS.row].face;for(let i=0;i<12;i++){const a=i/12*Math.PI*2,x=-30+Math.sin(a)*5.2,z=33+Math.cos(a)*5.2;dF(x,z,a);kPumpkin(0,0,0,.36,dJit(AUTB.pk[i%4],DR,.05),0,face)}B40.ring.n=F.n-B40.ring.f0;dN('ring',12)}
+function marigoldLay(){if(DRS.row!=='muertos')return;for(let i=0;i<7;i++){kMums(-46+i*1.6,-9.2,i%2?'#FFB02E':'#E8A050');if(i%2)kMums(-45.2+i*1.6,-8.4,'#E8A050')}}
+DSITES.unshift({id:'oct:ring',x:-30,z:33,r:6,lay:ringLay});DSITES.push({id:'oct:patch',x:-36.6,z:37,r:3,lay:patchLay},{id:'oct:maze',x:118,z:41,r:7,lay:mazeLay},{id:'muertos:market',x:-41,z:-9,r:6,lay:marigoldLay});
+{const c0=dressCal;dressCal=function(t){const tt=t==null?Date.now():t,w=octRing(tt),m=new Date(tt).getMonth();if(w!==B40.ring.want||m!==B40.ring.m){const d0=new Date(tt),fresh=w&&!B40.ring.want&&(B40.ring.m!=null||(d0.getHours()===19&&d0.getMinutes()<10));B40.ring.want=w;B40.ring.m=m;B40.ring.sc=null;B40.ring.cas=0;DRS.t=tt;if(DRS.row!=null)DRS.row='?';const r=c0(t);
+    if(fresh&&octDay(tt)===24){B40.ring.cas=performance.now();b40Cascade(0)}return r}DRS.t=tt;return c0(t)}}
+// the lighting cascade: faces scale in and halos switch on one by one, .35 s apart, from the moment the ring appears
+function b40Cascade(k){const R=B40.ring,F=DRS.face;if(!R.cas||!R.n)return;const d=new THREE.Object3D(),m=new THREE.Matrix4();for(let i=0;i<R.n;i++){const on=i<k;F.im.getMatrixAt(R.f0+i,m);m.decompose(d.position,d.quaternion,d.scale);R.sc=R.sc||[];if(R.sc[i]==null)R.sc[i]=d.scale.x;const s=R.sc[i];d.scale.setScalar(on?s:.0001);d.updateMatrix();F.im.setMatrixAt(R.f0+i,d.matrix);const j=R.f0+i;if(j<DRS.jack.length)glowSet(DRS.jack[j],on?.9:0)}
+  F.im.instanceMatrix.needsUpdate=true;R.k=k;if(k>=R.n)R.cas=0}
+// corn maze candidate for Mocha (October only; his choice)
+const MAZE_ACT={p:'park',doing:'wandering the corn maze',tags:['nature','games'],need:{fun:30},fx:'maze',lines:['Got lost in the corn maze on purpose.'],get hw(){const t=Date.now();return octDay(t)&&!isDark(hourAt(t))?.8:-30}};ACTS.push(MAZE_ACT);
+function mazeOutcome(act,t,live){for(const n in act.need||{})S.needs[n]=clamp(S.needs[n]+act.need[n],0,100);S.xp+=10;S.visits.park=(S.visits.park||0)+1;S.recent.unshift('park.maze');S.recent.length=Math.min(S.recent.length,6);
+  addEntry('October',pick(['Did the corn maze in Cedar Lake Park. Took two wrong turns and one very right one. The corn whispers when the wind goes through it.','Floated the corn maze without cheating (I could have floated over it). Found the way out by following the hay bale smell.','The corn maze has exactly one way through. I found three dead ends first and said hi to each of them.']),'Cedar Lake Park',t)}
+// ---------- the weekend hayride (Sat/Sun 13-17 in October): one wagon mesh on the park loop ----------
+function b40HayBuild(){const P=[{g:'b',c:'#b8322b',p:[0,.95,0],s:[2.6,.18,1.4]},{g:'b',c:'#8a5a3a',p:[0,1.25,.68],s:[2.6,.45,.06]},{g:'b',c:'#8a5a3a',p:[0,1.25,-.68],s:[2.6,.45,.06]},{g:'b',c:'#D9C79A',p:[-.5,1.3,0],s:[1.1,.5,.6]},{g:'b',c:'#D9C79A',p:[.6,1.3,0],s:[1.1,.5,.6]},
+  {g:'b',c:'#4a7a3a',p:[2.4,1,0],s:[1.3,1,1.1]},{g:'b',c:'#2a2a33',p:[2.3,1.8,0],s:[.7,.6,.9]},{g:'c',c:'#3a3a3a',p:[2.9,1.9,.3],s:[.06,.7,.06]}];
+  for(const [x,z,r] of [[-.9,.75,.42],[.9,.75,.42],[-.9,-.75,.42],[.9,-.75,.42],[2.1,.6,.55],[2.1,-.6,.55]])P.push({g:'c',c:'#2a2420',p:[x,r,z],s:[r,.16,r],r:[Math.PI/2,0,0]});
+  const m=new THREE.Mesh(mergeParts(P,null),CHIBI_MAT);m.name='b40hay';m.visible=false;worldAdd(m);return m}
+function hayOn(t=Date.now()){const d=new Date(t),h=hourAt(t);return!!octDay(t)&&(d.getDay()===0||d.getDay()===6)&&h>=13&&h<17}
+function b40HayFrame(){const m=B40.hay;if(!m)return;const on=hayOn()&&!IN.on;m.visible=on;if(!on)return;const a=(Date.now()/1e3*.025)%(Math.PI*2),x=96+Math.sin(a)*20,z=22+Math.cos(a)*16;m.position.set(x,navFloor(x,z),z);m.rotation.y=a+Math.PI}
+// ---------- Oct 31: Willa's broom flight at 20:00 (60 s across the sky), the parade, trick-or-treaters at your cabin ----------
+function b40BroomBuild(){const P=[{g:'c',c:'#5a3a2a',p:[0,0,0],s:[.08,3,.08],r:[0,0,Math.PI/2]},{g:'k',c:'#c8a050',p:[-1.7,0,0],s:[.45,.8,.45],r:[0,0,Math.PI/2]},{g:'k',c:'#1f1a26',p:[.2,.9,0],s:[.5,.5,.5]},{g:'k',c:'#1f1a26',p:[.2,1.9,0],s:[.5,.9,.5]},
+  {g:'b',c:'#1f1a26',p:[.2,2.05,0],s:[1.4,.06,1.4]},{g:'s8',c:'#1f1d24',p:[-.9,.35,0],s:.25},{g:'k',c:'#1f1d24',p:[-.95,.62,.1],s:[.08,.18,.08]},{g:'k',c:'#1f1d24',p:[-.85,.62,-.1],s:[.08,.18,.08]}];
+  const m=new THREE.Mesh(mergeParts(P,null),CHIBI_MAT);m.name='b40broom';m.visible=false;m.scale.setScalar(1.6);worldAdd(m);return m}
+function broomOn(t=Date.now()){const d=new Date(t);return octDay(t)===31&&d.getHours()===20&&d.getMinutes()<1}
+function b40BroomFrame(){const m=B40.broom;if(!m)return;const d=new Date(),on=broomOn()||B40.broomF>performance.now();m.visible=on;if(!on)return;const u=B40.broomF>performance.now()?1-(B40.broomF-performance.now())/6e4:(d.getSeconds()+d.getMilliseconds()/1e3)/60;
+  const cx=camS.tx||0,cz=camS.tz||0,x=cx-90+u*180,y=48+Math.sin(u*Math.PI)*14+Math.sin(u*40)*.6,z=cz-80;m.position.set(x,y,z);m.rotation.set(0,0,Math.sin(u*40)*.05)}
+function costumeOn(){try{const s=JSON.stringify(youLook())+JSON.stringify(S.you.outfits||'')+JSON.stringify(S.you.wear||'');return/pkh|witch|costume|cape|ghost sheet/.test(s)}catch(e){return false}}
+function b40Parade(dt){const now=Date.now();if(octDay(now)!==31)return 0;const h=townHour();if(h<15||h>=16.5)return 0;const L=[[-46,5.6],[62,5.6],[62,-5.6],[-46,-5.6]],seg=[108,11.2,108,11.2],tot=238.4,u=(h-15)/1.5;let n=0;
+  for(const T of TOWN.set){const b=T.n.b;if(!b||b[5]!=='parade')continue;const i=+b[4]||0;let s=((u*tot*.9-i*2.4)%tot+tot)%tot,k=0;while(s>seg[k]){s-=seg[k];k=(k+1)%4}const A=L[k],B=L[(k+1)%4],f=s/seg[k],x=A[0]+(B[0]-A[0])*f,z=A[1]+(B[1]-A[1])*f;
+    const n0=T.n,g=T.c.obj;n0.walk=false;n0.hide=false;n0.inP=null;n0.x=x;n0.z=z;n0.ry=Math.atan2(B[0]-A[0],B[1]-A[1]);g.position.set(x,navFloor(x,z)+Math.abs(Math.sin(now/180+i))*.06,z);g.rotation.y=n0.ry;g.visible=true;if(T.c.lod)T.c.lod.y0=g.position.y;n++}
+  if(n&&camS.mode==='walk'&&!B40.oct.joined&&costumeOn()&&Math.abs(YOU.z)<9&&YOU.x>-48&&YOU.x<64){B40.oct.joined=Date.now();if(typeof toast==='function')toast('🎃 you joined the costume parade!')}return n}
+function cabJack(){const h=S.you&&S.you.home;if(!h)return false;if(h.jk)return true;try{return/jol/.test(String(h.yard||'')+JSON.stringify(h.rooms||{}))}catch(e){return false}}
+function trickOn(t=Date.now()){const h=hourAt(t);return octDay(t)===31&&h>=17&&h<20}
+const B40KIDS=[['a little witch','#2a2438','#7a4ab0'],['a pumpkin','#e9883a','#4a7a3a'],['a bat','#3a3040','#8a7a9a'],['a sheet ghost','#f4f1ea','#d8dce8'],['a tiny dinosaur','#6aa84f','#f2c14e'],['a robot','#9aa8b8','#e9886b']];
+function b40KidsBuild(){const L=[];for(let i=0;i<3;i++){const P=[{g:'k',c:'#888',p:[0,.45,0],s:[.32,.9,.32]},{g:'s8',c:'#f2d0b0',p:[0,1.02,0],s:.22},{g:'k',c:'#333',p:[0,1.38,0],s:[.2,.42,.2]},{g:'c',c:'#e9883a',p:[.3,.42,.08],s:[.1,.14,.1]}];
+    const m=new THREE.Mesh(mergeParts(P,null),CHIBI_MAT);m.visible=false;m.name='b40kid';worldAdd(m);L.push(m)}return L}
+function trickVisit(force){const t=Date.now(),y=S.you;if(!y)return null;if(!force&&(!trickOn(t)||!cabJack()))return null;const dk=dkey(t);if(y.tt.d!==dk){y.tt.d=dk;y.tt.n=0}if(!force&&(y.tt.n>=6||t-y.tt.at<5*6e4))return null;
+  const r=seeded(catHash('tot:'+dk+':'+y.tt.n)),g=[0,1,2].map(()=>B40KIDS[Math.floor(r()*B40KIDS.length)]),names=g.map(k=>k[0]);y.tt.n++;y.tt.at=t;
+  const msg=pick(['thank you for the candy!! 🎃','best house on Maple Row','we will come back next year ♥','your porch pumpkin is the spookiest (good spooky)']),who=`${names[0]}, ${names[1]} and ${names[2]}`,e={t,n:who,m:msg,k:'trick'};
+  let signed=false;try{if(typeof gbSign==='function'){gbSign(e);signed=true}}catch(er){}if(!signed){y.gb.push(e);if(y.gb.length>30)y.gb.splice(0,y.gb.length-30)}
+  let thanks=null;try{if(typeof putItem==='function'&&YOUX.b40d&&r()<.6&&putItem('b40d'))thanks='b40d'}catch(er){}
+  try{DOOREV.emit('knock',{pid:'cabin',x:40,z:64.5,who:'kids'});typeof sfx==='function'&&sfx('knock',{pid:'cabin'})}catch(er){}
+  if(B40.kids&&(visitor.visible||Math.hypot(camS.tx-40,camS.tz-66)<40)){B40.kids.forEach((m,i)=>{const k=g[i],geo=m.geometry,c=geo.attributes.color;if(c){for(let j=0;j<c.count;j++){const yv=geo.attributes.position.getY(j);_gc.set(yv>1.25?k[1]:yv>.8?'#f2d0b0':k[1]);if(yv<.8)_gc.set(k[2]);c.setXYZ(j,_gc.r,_gc.g,_gc.b)}c.needsUpdate=true}
+    m.position.set(38.8+i*1.1,navFloor(39+i,63.2),63.2-(i%2)*.5);m.rotation.y=Math.PI;m.visible=true});B40.kidsT=performance.now()+25e3}
+  if(typeof toast==='function')toast(`🎃 trick-or-treat! ${who} came to your porch. you handed out candy${thanks?' and got a thank-you drawing':''} · they signed your guestbook`);return{who,msg,thanks,n:y.tt.n,gb:y.gb.length}}
+// ---------- witch hats multiply (October): one IM on the nearest visible cast heads, 2 Hz ----------
+function b40HatBuild(){const geo=mergeParts([{g:'k',c:'#2a2438',p:[0,.27,0],s:[.26,.5,.26]},{g:'c',c:'#2a2438',p:[0,.02,0],s:[.42,.03,.42]},{g:'c',c:'#e9883a',p:[0,.07,0],s:[.27,.06,.27]}],null);
+  const im=new THREE.InstancedMesh(geo,CHIBI_MAT,12);im.count=0;im.frustumCulled=false;im.name='b40hats';worldAdd(im);return im}
+function b40HatTick(){const im=B40.hats;if(!im)return;const t=Date.now(),od=octDay(t);if(!od||SET.saver){im.count=0;return}const d=new THREE.Object3D(),L=[];
+  for(const c of CAST){if(!c.obj||!c.obj.visible||!c.lod||c.lod.lvl<0||c.kind==='ghost'||c.kind==='pet'||c.id==='willa')continue;if(c.lod.d>55)continue;if(!(od>=24||catHash('hat'+c.id)%3===0))continue;L.push(c)}
+  L.sort((a,b)=>a.lod.d-b.lod.d);let n=0;for(const c of L){if(n>=12)break;c.obj.getWorldPosition(TWV);d.position.set(TWV.x,TWV.y+chTop(c.obj)-.4,TWV.z);d.rotation.set(0,0,-.12);d.scale.setScalar(Math.max(.7,c.obj.scale.y||1));d.updateMatrix();im.setMatrixAt(n++,d.matrix)}
+  im.count=n;im.instanceMatrix.needsUpdate=true}
+function b40October(day){const now=Date.now(),od=octDay(now);if(day!=null&&day!==od)return{day,live:false,note:'fake the date (smoke DAY=10-'+String(day).padStart(2,'0')+') to see it live',plan:b40OctPlan(day)};
+  const F=DRS.face,R=B40.ring;return Object.assign(b40OctPlan(od),{live:true,day:od,h:+townHour().toFixed(2),row:DRS.row,ring:{want:!!R.want,n:R.n,lit:R.n?Array.from({length:R.n},(_,i)=>R.f0+i<DRS.jack.length&&GLOWPTS.A[DRS.jack[R.f0+i]]>0).filter(Boolean).length:0,cascading:!!R.cas,k:R.k||0},faces:F.im.count,
+    patch:!!(DRS.sites['oct:patch']&&Object.keys(DRS.sites['oct:patch'].n).length),maze:DRS.sites['oct:maze']?DRS.sites['oct:maze'].n.corn||0:0,hayride:{on:hayOn(now),visible:!!(B40.hay&&B40.hay.visible)},broom:{on:broomOn(now),visible:!!(B40.broom&&B40.broom.visible)},
+    candy:TOWN.set.filter(T=>T.n.b&&T.n.b[5]==='candy').map(T=>({id:T.c.id,pid:T.n.b[3],x:+T.n.x.toFixed(1),z:+T.n.z.toFixed(1),visible:T.c.obj.visible,status:npcStatus(T.c.id)})),
+    parade:TOWN.set.filter(T=>T.n.b&&T.n.b[5]==='parade').map(T=>T.c.id),joined:!!B40.oct.joined,costume:costumeOn(),hats:B40.hats?B40.hats.count:0,ghosts:B40.ghost.mode,
+    trick:{on:trickOn(now),jack:cabJack(),today:S.you.tt,gb:S.you.gb.slice(-3)}})}
+function b40OctPlan(d){return{patch:d>=1,maze:d>=1,hollisSat:true,hayride:'Sat/Sun 13-17',ring:d>24?'lit all evening':d===24?'lit at 19:00':'from Oct 24',parade:d===31?'15:00-16:30 Main Street loop':null,candy:d===31?'17:00-20:00':null,trick:d===31?'17:00-20:00 (jack-o\'-lantern on your porch)':null,broom:d===31?'20:00':null}}
+// ---------- boot + frame ----------
+try{YOUX.b40d={name:'thank-you drawing from the trick-or-treaters',e:'🖍️',price:1,cat:'find',tags:['keepsake']}}catch(e){}
+function b40Boot(){if(B40.boot)return;B40.boot=1;try{b40Wins()}catch(e){console.warn('B40 wins',e)}try{B40.props=b40Props()}catch(e){console.warn('B40 props',e)}try{b40SilBuild()}catch(e){console.warn('B40 sil',e)}
+  try{b40Mush()}catch(e){console.warn('B40 mush',e)}try{B40.hay=b40HayBuild();B40.broom=b40BroomBuild();B40.kids=b40KidsBuild();B40.hats=b40HatBuild()}catch(e){console.warn('B40 oct',e)}try{b40GhostInit()}catch(e){console.warn('B40 ghosts',e)}
+  try{if(S&&S.you)b40Fix(S.you)}catch(e){}}
+function b40Frame(dt,T0){if(!B40.boot)b40Boot();if(!TOWN.init)return;try{b40GhostFrame(T0)}catch(e){}b40Parade(dt);b40HayFrame();b40BroomFrame();
+  if(B40.ring.cas){const k=Math.min(B40.ring.n,Math.floor((performance.now()-B40.ring.cas)/350)+1);if(k!==B40.ring.k)b40Cascade(k)}
+  if(B40.mush){const on=nightAmt>.35&&!IN.on;B40.mush.visible=on;if(on)B40.mush.material.opacity=.55+.35*(.5+.5*Math.sin(T0*Math.PI*2*.2))}
+  B40SIL.P.forEach(m=>{if(m.visible)m.rotation.z=Math.sin(T0*.9+m.userData.ph)*.06});if(B40.kids&&B40.kidsT&&performance.now()>B40.kidsT){B40.kids.forEach(m=>m.visible=false);B40.kidsT=0}
+  if((B40.acc-=dt)<=0){B40.acc=.5;try{b40SilTick();b40HatTick()}catch(e){console.warn('B40 2Hz',e)}}
+  if((B40.acc2-=dt)<=0){B40.acc2=1;try{b40Light();const nk=nightAmt>.4?.8:0;B40.pools.forEach(i=>poolSet(i,nk));if(trickOn()&&cabJack()&&Math.random()<.04)trickVisit();
+    for(const T of TOWN.set){const b=T.n.b;if(T.a&&b&&HOMEPT[b[3]]&&T.n.hide&&!T.n.walk){T.a.tp=b[3];if(!T.n.b40in){T.n.b40in=1;try{DOOREV.emit('pass',{pid:b[3],id:T.c.id,dir:'in',x:T.n.x,z:T.n.z})}catch(e){}}}else T.n.b40in=0}}catch(e){console.warn('B40 1Hz',e)}}}
+{const H=m=>{if(!m)return;Object.assign(m,{homes:o=>{o=o||{};if(o.walk){const T=TOWN.set.find(x=>x.c.id===o.walk);if(!T)return null;const h=o.h!=null?+o.h:19.25,b=blockAt(tPlan(o.walk),h),prev=T.n.b;TOWN.ov=h;T.n.key=b?b.join('|'):'';T.n.b=b;const ov=TOWN.ov;TOWN.ov=null;tEnter(T,prev,b,false);TOWN.ov=ov;
+      return{id:o.walk,block:b,walk:T.n.walk,to:[T.n.w.x,T.n.w.z],hide:T.n.w.hide}}if(o.npc){const T=TOWN.set.find(x=>x.c.id===o.npc);return T?{id:o.npc,x:+T.n.x.toFixed(2),z:+T.n.z.toFixed(2),walk:T.n.walk,hide:T.n.hide,visible:T.c.obj.visible,block:T.n.b,status:npcStatus(o.npc),tp:T.a&&T.a.tp}:null}
+      return{homes:b40Homes(),visits:palVisits(dkey(Date.now())),wlt:{pink:[WLT.force['pink:main'],WLT.force['pink:up']],blue:[WLT.force['blue:main'],WLT.force['blue:up']],nw:[HOMEPT.pink.nw||0,HOMEPT.blue.nw||0]},sil:{planes:B40SIL.P.length,visible:B40SIL.P.filter(p=>p.visible).length,saver:!!SET.saver}}},
+    ghosts:o=>{o=o||{};if(o.visit){const a=Object.assign({},GHOST_ACT);const who=ghostOutcome(a,Date.now(),true);return{who,diary:S.diary[0],bonds:B40G.map(id=>[id,bondOf(id)])}}return b40Ghosts()},
+    october:(day,o)=>{o=o||{};if(o.jack!=null&&S.you.home)S.you.home.jk=o.jack?1:0;if(o.trick)return trickVisit(true);if(o.broom){B40.broomF=performance.now()+6e4;return{broom:true}}if(o.dress){B40.ring.want=null;dressCal()}return b40October(day)},
+    b40:()=>({ring:B40.ring,sil:B40.silN,hats:B40.hats&&B40.hats.count,mush:!!(B40.mush&&B40.mush.visible),pools:B40.pools.length,parade:b40Parade(0)})})};STYLE.hooks.push(H);H(window.__mocha)}
 // ====================================================================
 //  B27 DECORATE MODE, autoArrange AND MOVING DAY. Decorate any room of your cabin (and the yard): HUD slot 'decorate',
 //  CAM 'deco' (prio 3, 3/4 top-down, cutaway on), a .5 grid (Uint8Array layer bits: 1 furniture, 2 rug, 4 wall, 8 built-in),
@@ -10696,6 +11144,299 @@ Object.assign(window.__mocha,{PAL,FAMOF,PATCH,RIM,RIMS,TOONG,TOONC,ToonM,ToonC,r
     return{col:hx(RIM.col.value),amt:+RIM.amt.value.toFixed(3),gold:+RIMS.gold.toFixed(3),night:+nightAmt.toFixed(3),inside:+RIMS.in.toFixed(3),mats:ms.size,mocha:!!ghostMat.userData.rim,mochaRamp:ghostMat.gradientMap===TOONC,
       pets:petObjs.map(o=>{let n=0,r=0;o.obj.traverse(q=>{if(q.isMesh){n++;if(q.material.userData.rim)r++}});return{sp:o.data.species,meshes:n,rim:r}})}},
   programs:()=>({n:renderer.info.programs.length,boot:PROGS.boot,afterCompile:PROGS.n,compileMs:PROGS.ms,err:PROGS.err,keys:[...new Set(renderer.info.programs.map(p=>p.cacheKey.slice(p.cacheKey.lastIndexOf(',')+1)))]})})}
+// ====================================================================
+//  B39 THE FOGWELL CONDO: the lobby (Ambrose's walnut desk, brass mailboxes, the package shelf, figs), floors 2-5 (a front hallway with a
+//  Cocoa Tartan runner, sconce pairs, doormats, name plates and 3 swing unit doors; the laundry on 2), the rooftop terrace (garden beds,
+//  string lights, a grill, benches in SEATS, a painted view of the Sound and the Needle) and an old-timey brass elevator with an arrow dial.
+//  ONE floor exists at a time: FGW.cur is built on demand into byId.fogwell.inner (BAKEMI + atlas + LIT batches, one catMerge for the 3 units,
+//  2 side walls for the LF1 wall cut, 1 instanced door mesh, 1 dial) and disposed on a floor change or on leaving. Units come from a seed and a
+//  style through autoArrange + the B24 catalog: nothing is stored per resident. Residents' presence is plan-derived (B22 planFor/blockAt) and
+//  drives the B16 window table through WLT.res. The camera is CAM 'floor' (prio 2, above LF1's 'room'), tuned at BASE FOV (left to STYLE.fovK).
+// ====================================================================
+const FWN=['L','2','3','4','5','R'],FWY=[0,.44,4.53,8.93,13.33,17.73,22.92];// floor n (1..6) -> floor height (place-local)
+// unit, resident, style, seed, sleep [bed,wake], walls [upper,wainscot,floor], catalog list (code.variant), bespoke heroes
+const FWU=[['2A','basil','records',201,[23,8.5],['#A9765E','#6E412E','#8E4A36'],['lbd.0','lsv.1','rgs.1','cub.1','flp.0','pmn.0','tlp.0','cft.1'],['vinyl','crates','gramo']],
+ ['2B','chip','games',202,[24.5,9],['#C9B79A','#5A6A7A','#A87B5E'],['bbg.0','arc.0','drs.3','cub.0','rgb.1','tv.2','dbd.0','cnj.0'],['cabinets']],
+ ['2C','dot','gadgets',203,[22.5,7],['#B9C9B0','#6C7A5A','#CDB8A6'],['cot.1','dsk.1','pc.0','rad.1','aqm.0','frn.0','mns.0','cct.1','suc.0','stl.0'],['gadgets']],
+ ['3A','vesper','gothic',301,[7,16],['#3B3446','#2A1C24','#4B2A1F'],['thr.1','cdb.2','rgm.1','pnf.2','wrd.0','cnd.2','vft.2'],['coffin','curtain']],
+ ['3B','luma','lanterns',302,[1,9.5],['#D8C8A8','#6E412E','#8E4A36'],['dbd.1','sfa.3','rgf.1','shl.0','jff.0','ppl.2','mnl.0','sgl.0','tlp.0'],['candles']],
+ ['3C','clem','music',303,[23.5,8],['#C99A80','#4B2A1F','#A87B5E'],['lbd.2','pno.1','mbx.0','ach.0','rgd.0','flp.2'],['instruments']],
+ ['4A','hank','workshop',401,[21.5,5.5],['#C8B48E','#5A372C','#A87B5E'],['lbd.1','ch1.0','mbh.0','bfd.2','frn.0','tlp.2','rgs.2'],['bench']],
+ ['4B','barnaby','nautical',402,[22,7],['#33405A','#E9D3BE','#8A5A32'],['dbd.2','sib.0','ntb.0','map.2','tsc.0','trk.0','shl.0','rck.2'],['wheel']],
+ ['4C','wren','knitting',403,[22.5,7],['#E9D3BE','#9C7462','#CDB8A6'],['dbd.0','rck.0','qlt.0','frn.0','tlp.0','rgb.0','swf.0'],['loom','yarn']],
+ ['5A','kip','bikes',501,[22,6.5],['#B8C4CC','#3A4A5A','#A87B5E'],['lbd.2','sfa.0','cub.2','cct.0','rgs.0','pho.1'],['bikes']],
+ ['5B','reed','fishing',502,[21,5],['#9AB09A','#35512F','#8E6A4A'],['cot.2','aqm.1','frm.0','map.0','ch1.0','rgd.2','swf.0'],['rods']],
+ ['5C',null,'rent',503,[0,0],['#D8CFC4','#A89C90','#B8A898'],[],['rent']]];
+const FWUB=Object.fromEntries(FWU.map(u=>[u[0],u]));
+const FWDOOR=[-5.6,1.2,5.9],FWUX=[[-9.7,-3.35],[-3.15,3.15],[3.35,9.7]],FWZ0=-6.7,FWZ1=3.25,FWCAR={x:-8.7,z:5.1},FWOUT={x:-6.7,z:5.1},FWSTAIR={x:9,z:5.1};
+// requests (B36), rooftop events, the per-floor walk graph with ELEVATOR and STAIR edges (data for B36/B40/B22 agents)
+const FWREQ=[{id:'dot',unit:'2C',k:'plants',text:"water my plants while I'm away"},{id:'basil',unit:'2A',k:'parcel',text:'pick up my package from Ambrose'},{id:'wren',unit:'4C',k:'parcel',text:'fetch my yarn parcel from the front desk'}];
+const FWEV=[{id:'bbq',label:'Friday rooftop barbecue',at:d=>d.getDay()===5&&d.getMonth()>=5&&d.getMonth()<=7,h:[18,21.5]},{id:'fireworks',label:"New Year's fireworks watch",at:d=>(d.getMonth()===11&&d.getDate()===31)||(d.getMonth()===0&&d.getDate()===1),h:[23.25,24.75]},
+ {id:'movie',label:'movie night on a sheet screen',at:d=>{const k=Math.floor(d/864e5);return d.getDay()===6&&seeded(k*7+39)()<.34},h:[20,22.5]}];
+const FGW={on:0,cur:0,yf:1,F:null,ride:null,ev:[],log:[],walls:[],doors:null,dial:null,pools:[],lsp:[],seats:[],geo0:0,n:0,t1:0,want:null,ui:null,amb:{d:''},lastB:null,
+  ms:0,nav:null};
+function fwFloorN(n){if(typeof n==='string'){const i=FWN.indexOf(n.toUpperCase());if(i>=0)return i+1;n=+n}n=Math.round(+n);return n>=1&&n<=6?n:0}
+// ---------- presence: plan-derived (B22). Home = a rest block; asleep inside [bed,wake); lit = home and awake; cooking 18:00-19:30 ----------
+function fwRes(u,h){const U=FWUB[u];if(!U||!U[1])return{unit:u,id:null,home:false,awake:false,lit:false,cook:false};const id=U[1];if(h==null){const d=new Date();h=d.getHours()+d.getMinutes()/60}
+  let b=null;try{if(typeof planFor==='function'&&typeof blockAt==='function')b=blockAt(planFor(id),h)}catch(e){}const v=b?b[5]:'rest',home=!b||v==='rest'||v==='rainrest';
+  const [bd,wk]=U[4],asl=bd<wk?(h>=bd&&h<wk):(h>=bd||h<wk),lit=home&&!asl;return{unit:u,id,home,awake:!asl,lit,cook:lit&&h>=18&&h<19.5,doing:b?v:'rest',at:b?b[3]:null}}
+// the B16 window table: the 'a' pane is the unit, the 'b' pane brightens for cooking; column D is the hallway (or the laundry on 2)
+function fwWin(){const d=new Date(),h=d.getHours()+d.getMinutes()/60,hh=h<12?h+24:h;if(WLT.res['5B']&&WLT.res['5B'].all&&!WLT.res['5B'].b39)delete WLT.res['5B'];
+  for(const U of FWU){const u=U[0],R=WLT.res[u]||(WLT.res[u]={name:U[1]||'for rent',b39:1}),s=fwRes(u,h);if(U[1]==='vesper')R.col='#C0485A';else if(R.col&&R.b39)delete R.col;
+    if(s.lit){R.home=0;R.bed=s.cook?hh+.3:99}else{R.home=99;R.bed=99}}
+  for(let f=2;f<=5;f++){const R=WLT.res[f+'D']||(WLT.res[f+'D']={name:'hallway',b39:1});R.home=17;R.bed=24.5}}
+// ---------- materials, shared geometry and the atlas (built once, shared by every floor) ----------
+const FWG={};const FWC={};
+function fwInit0(){if(FWG.box)return;FWG.box=new THREE.BoxGeometry(1,1,1);FWG.pl=new THREE.PlaneGeometry(1,1);FWG.cyl=new THREE.CylinderGeometry(1,1,1,10);FWG.sph=new THREE.SphereGeometry(1,8,6);
+  const S=1024,c=document.createElement('canvas');c.width=c.height=S;const g=c.getContext('2d'),cell=(k,x,y,w,h,f)=>{FWC[k]=[x/S,1-(y+h)/S,(x+w)/S,1-y/S];g.save();g.translate(x,y);g.beginPath();g.rect(0,0,w,h);g.clip();f(g,w,h);g.restore()};
+  // brass mailboxes with the residents' names
+  cell('mail',0,0,384,192,(g,w,h)=>{g.fillStyle='#5A3220';g.fillRect(0,0,w,h);const L=FWU.map(u=>u[0]+' '+(u[1]?(CASTB[u[1]]?CASTB[u[1]].name:u[1]).split(' ').pop():'—'));for(let i=0;i<12;i++){const x=8+(i%4)*94,y=8+Math.floor(i/4)*61;g.fillStyle='#B5804A';g.fillRect(x,y,88,55);g.fillStyle='#8A5A2E';g.fillRect(x+4,y+4,80,47);g.fillStyle='#D9A866';g.fillRect(x+6,y+6,76,14);g.fillStyle='#2A1C18';g.font='800 11px sans-serif';g.textAlign='center';g.fillText(L[i],x+44,y+17);g.fillStyle='#E8C27A';g.beginPath();g.arc(x+70,y+38,4,0,6.283);g.fill();g.fillStyle='#3A2418';g.fillRect(x+12,y+28,40,3)}});
+  // name plates (brass on walnut)
+  FWU.forEach((u,i)=>cell('pl'+u[0],384+(i%4)*160,(Math.floor(i/4))*40,160,40,(g,w,h)=>{g.fillStyle='#4B2A1F';g.fillRect(0,0,w,h);g.fillStyle='#C9984E';g.fillRect(4,4,w-8,h-8);g.fillStyle='#2A1C18';g.font='800 17px Georgia,serif';g.textAlign='center';g.textBaseline='middle';g.fillText(u[0]+' · '+(u[1]?(CASTB[u[1]]?CASTB[u[1]].name:u[1]):'for rent'),w/2,h/2+1)}));
+  // the Cocoa Tartan runner
+  cell('tartan',384,120,512,72,(g,w,h)=>{g.fillStyle='#4A2A1E';g.fillRect(0,0,w,h);for(let x=0;x<w;x+=36){g.fillStyle='rgba(142,74,54,.55)';g.fillRect(x,0,12,h);g.fillStyle='rgba(232,196,150,.35)';g.fillRect(x+20,0,2,h)}for(let y=0;y<h;y+=24){g.fillStyle='rgba(142,74,54,.5)';g.fillRect(0,y+6,w,8);g.fillStyle='rgba(181,128,74,.45)';g.fillRect(0,y+17,w,2)}g.strokeStyle='#B5804A';g.lineWidth=4;g.strokeRect(2,2,w-4,h-4)});
+  // the lobby herringbone and the roof deck
+  cell('herr',0,200,384,264,(g,w,h)=>{g.fillStyle='#8E4A36';g.fillRect(0,0,w,h);const L=36,T=9;for(let y=-L;y<h+L;y+=T)for(let x=-L;x<w+L;x+=2*T){const o=Math.floor(y/T)%2;g.save();g.translate(x+o*T,y);g.rotate(Math.PI/4*(o?1:-1));g.fillStyle=((x*7+y*13)%5<2)?'#A85E44':'#8E4A36';g.fillRect(0,0,L,T-1);g.fillStyle='#5E2620';g.fillRect(0,T-1,L,1);g.restore()}});
+  cell('deck',384,200,384,264,(g,w,h)=>{for(let y=0;y<h;y+=12){g.fillStyle=(y/12)%2?'#9A6A44':'#8A5A38';g.fillRect(0,y,w,11);g.fillStyle='#4A2E1E';g.fillRect(0,y+11,w,1);for(let x=((y*37)%90);x<w;x+=110)g.fillRect(x,y,1,11)}});
+  // the arched lattice window (the room's one cool note), plum blackout curtains, the vinyl wall, a sea chart, the FOR RENT card, the STAIRS plaque
+  cell('win',768,200,96,160,(g,w,h)=>{g.fillStyle='#2A1C18';g.fillRect(0,0,w,h);const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#AFC0D8');gr.addColorStop(1,'#E8D8C4');g.fillStyle=gr;g.beginPath();g.moveTo(8,h-6);g.lineTo(8,44);g.arc(w/2,44,w/2-8,Math.PI,0);g.lineTo(w-8,h-6);g.fill();g.strokeStyle='#2A1C18';g.lineWidth=4;for(const x of [w/3,2*w/3]){g.beginPath();g.moveTo(x,10);g.lineTo(x,h-6);g.stroke()}for(let y=60;y<h;y+=32){g.beginPath();g.moveTo(8,y);g.lineTo(w-8,y);g.stroke()}g.fillStyle='rgba(74,100,80,.55)';g.beginPath();g.moveTo(8,h-6);for(let x=8;x<w;x+=10)g.lineTo(x+5,h-30-((x*13)%22));g.lineTo(w-8,h-6);g.fill()});
+  cell('curt',864,200,96,160,(g,w,h)=>{g.fillStyle='#3A1630';g.fillRect(0,0,w,h);for(let x=0;x<w;x+=12){g.fillStyle='rgba(120,40,80,.45)';g.fillRect(x,0,5,h)}g.fillStyle='#C0485A';g.fillRect(w/2-2,10,4,h-20);g.fillStyle='#B5804A';g.fillRect(0,0,w,8)});
+  cell('vinyl',0,470,256,192,(g,w,h)=>{g.fillStyle='#6E412E';g.fillRect(0,0,w,h);const C=['#C2412C','#E8A050','#35512F','#333A55','#E9D3BE','#4E3450'];for(let i=0;i<12;i++){const x=10+(i%4)*61,y=10+Math.floor(i/4)*60;g.fillStyle=C[i%6];g.fillRect(x,y,54,54);g.fillStyle='#151214';g.beginPath();g.arc(x+27,y+27,20,0,6.283);g.fill();g.fillStyle=C[(i+3)%6];g.beginPath();g.arc(x+27,y+27,6,0,6.283);g.fill()}});
+  cell('chart',256,470,192,128,(g,w,h)=>{g.fillStyle='#E2D2A8';g.fillRect(0,0,w,h);g.strokeStyle='#5A7A9A';g.lineWidth=2;for(let i=0;i<6;i++){g.beginPath();g.moveTo(0,20+i*18);g.bezierCurveTo(60,10+i*20,120,40+i*14,w,22+i*18);g.stroke()}g.fillStyle='#8A6A3A';g.fillRect(0,0,w,5);g.fillRect(0,h-5,w,5);g.strokeStyle='#8A2A24';g.beginPath();g.arc(140,60,14,0,6.283);g.stroke()});
+  cell('rent',448,470,192,96,(g,w,h)=>{g.fillStyle='#FFF6E6';g.fillRect(0,0,w,h);g.strokeStyle='#8C2C24';g.lineWidth=6;g.strokeRect(5,5,w-10,h-10);g.fillStyle='#8C2C24';g.font='900 34px Georgia,serif';g.textAlign='center';g.fillText('FOR RENT',w/2,48);g.font='700 16px sans-serif';g.fillStyle='#2A1C18';g.fillText('ask Ambrose · 150/mo',w/2,76)});
+  cell('stairs',640,470,160,48,(g,w,h)=>{g.fillStyle='#4B2A1F';g.fillRect(0,0,w,h);g.fillStyle='#C9984E';g.font='900 26px Georgia,serif';g.textAlign='center';g.textBaseline='middle';g.fillText('STAIRS',w/2,h/2+2)});
+  cell('dir',640,520,160,96,(g,w,h)=>{g.fillStyle='#2A1C18';g.fillRect(0,0,w,h);g.fillStyle='#E8C27A';g.font='800 13px Georgia,serif';g.textAlign='left';['R  roof terrace','5  5A 5B 5C','4  4A 4B 4C','3  3A 3B 3C','2  2A 2B 2C laundry','L  lobby · mail'].forEach((s,i)=>g.fillText(s,10,16+i*14))});
+  // the rooftop view: Puget Sound, the Olympics, ferries and the Needle (painted)
+  cell('view',0,680,1024,344,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#E9A87A');gr.addColorStop(.45,'#F3D2B0');gr.addColorStop(.62,'#9CB4C8');gr.addColorStop(1,'#56708A');g.fillStyle=gr;g.fillRect(0,0,w,h);
+    g.fillStyle='#8A90A8';g.beginPath();g.moveTo(0,190);for(let x=0;x<=w;x+=32)g.lineTo(x,150+Math.abs(((x*7)%90)-45)+(x%96===0?-18:0));g.lineTo(w,214);g.lineTo(0,214);g.fill();g.fillStyle='#F4F0EA';for(let x=40;x<w;x+=170){g.beginPath();g.moveTo(x,160);g.lineTo(x+16,142);g.lineTo(x+32,160);g.fill()}
+    g.fillStyle='#4E6A86';g.fillRect(0,212,w,h-212);g.fillStyle='rgba(255,255,255,.25)';for(let i=0;i<40;i++)g.fillRect((i*97)%w,224+(i*37)%100,26,2);g.fillStyle='#F4F4F0';g.fillRect(300,250,46,10);g.fillStyle='#2F6F4A';g.fillRect(300,258,46,5);g.fillStyle='#F4F4F0';g.fillRect(318,242,12,8);
+    g.fillStyle='#3E3A48';g.fillRect(0,286,w,h-286);for(let x=0;x<w;x+=44){const t=20+((x*13)%50);g.fillRect(x,286-t,38,t)}g.fillStyle='#FFD9A0';for(let i=0;i<60;i++)g.fillRect((i*53)%w,252+(i*29)%60,3,4);
+    const nx=760;g.fillStyle='#E8E4EC';g.fillRect(nx-3,96,6,190);g.beginPath();g.moveTo(nx-18,286);g.lineTo(nx-3,170);g.lineTo(nx+3,170);g.lineTo(nx+18,286);g.fill();g.beginPath();g.ellipse(nx,100,34,8,0,0,6.283);g.fill();g.fillStyle='#C94F4F';g.fillRect(nx-30,94,60,5);g.fillStyle='#E8E4EC';g.fillRect(nx-2,58,4,36)});
+  const tex=new THREE.CanvasTexture(c);tex.anisotropy=TIER.aniso||4;FGW.tex=tex;FGW.atm=rsTi(new ToonM({color:'#ffffff',map:tex,vertexColors:true}));FGW.atm.name='FWATL';FGW.lit=new THREE.MeshBasicMaterial({vertexColors:true});FGW.lit.name='FWLIT';
+  // the arrow dial: its own little canvas (the needle moves during a ride)
+  const dc=document.createElement('canvas');dc.width=dc.height=128;FGW.dc=dc;FGW.dtex=new THREE.CanvasTexture(dc);FGW.dang=null;fwDial(1)}
+function fwUV(k){return FWC[k]||[0,0,1,1]}
+function fwDial(a){if(!FGW.dc)return;a=Math.max(1,Math.min(6,a));const k=Math.round(a*40);if(FGW.dang===k)return;FGW.dang=k;const g=FGW.dc.getContext('2d');g.clearRect(0,0,128,128);g.fillStyle='#B5804A';g.beginPath();g.arc(64,64,62,Math.PI,0);g.fill();
+  g.fillStyle='#F2E6CF';g.beginPath();g.arc(64,64,52,Math.PI,0);g.fill();g.fillStyle='#2A1C18';g.font='800 13px Georgia,serif';g.textAlign='center';g.textBaseline='middle';
+  for(let i=0;i<6;i++){const t=Math.PI*(1-(i+.5)/6);g.fillText(FWN[i],64+Math.cos(t)*40,64-Math.sin(t)*40)}const t=Math.PI*(1-(a-.5)/6);g.strokeStyle='#8C2C24';g.lineWidth=4;g.beginPath();g.moveTo(64,64);g.lineTo(64+Math.cos(t)*34,64-Math.sin(t)*34);g.stroke();g.fillStyle='#2A1C18';g.beginPath();g.arc(64,64,6,0,6.283);g.fill();
+  if(FGW.dtex)FGW.dtex.needsUpdate=true;FGW.dialA=+a.toFixed(2)}
+// ---------- the per-floor batch builder (floor-local coords, y from the floor surface) ----------
+function fwB(){const B=Batcher(Infinity),m=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(0,0,0,'YXZ'),v=new THREE.Vector3(),s=new THREE.Vector3(),kinds=[];
+  const put=(k,geo,col,x,y,z,sx,sy,sz,ry,uv,rx)=>{e.set(rx||0,ry||0,0,'YXZ');q.setFromEuler(e);m.compose(v.set(x,y,z),q,s.set(sx,sy,sz));B.addM(k,geo,col,m,0,0,uv||null)};
+  const o={B,kinds,box:(w,h,d,c,x,y,z,ry)=>put('vc',FWG.box,c,x,y,z,w,h,d,ry),lit:(w,h,d,c,x,y,z,ry)=>put('lit',FWG.box,c,x,y,z,w,h,d,ry),
+    pl:(k,w,h,x,y,z,ry,rx,c)=>put('atl',FWG.pl,c||'#ffffff',x,y,z,w,h,1,ry,fwUV(k),rx),flat:(k,w,d,x,y,z,ry)=>put('atl',FWG.pl,'#ffffff',x,y,z,w,d,1,ry,fwUV(k),-Math.PI/2),
+    cyl:(r,h,c,x,y,z,k)=>put(k||'vc',FWG.cyl,c,x,y,z,r,h,r),sph:(r,c,x,y,z,k,sy)=>put(k||'vc',FWG.sph,c,x,y,z,r,sy||r,r),
+    hero(name,parts,pal,x,y,z,ry){const g=partsToGroup(parts,pal);g.position.set(x,y,z);g.rotation.y=ry||0;g.updateMatrixWorld(true);g.traverse(c=>{if(!c.isMesh)return;const mt=c.material,lit=mt===RSLITM;if(mt.transparent&&!lit)return;B.addM(lit?'lit':'vc',c.geometry,lit?c.userData.lc:(mt.color||'#ffffff'),c.matrixWorld,0,0,null)});kinds.push(name)},
+    build(par){const out=B.build({vc:BAKEMI,atl:FGW.atm,lit:FGW.lit},{vc:false,atl:false,lit:false},par);for(const x of out){x.userData.fw=1;x.castShadow=false}return out}};return o}
+function fwParts(f){const P=rsP();f(P);return P.a}
+// bespoke heroes (part lists at their own origin, floor y 0, front +z)
+const FWH={
+ coffin:P=>{P.B(1.04,.42,2.12,0,.21,0,0);P.B(.9,.08,1.96,0,.44,0,1);P.B(.62,.14,.34,0,.53,-.74,2);P.B(1.04,1.05,.1,0,.52,-1.06,0);P.B(.94,.05,2.02,.68,.62,.12,0,0,0,.42);for(const z of [-.6,.6])for(const s of [-1,1])P.S(.05,.05,.05,s*.54,.24,z,3);P.B(.7,.05,1.2,0,.5,.25,4)},
+ gramo:P=>{HERO.gramophone(P,{})},
+ crates:P=>{for(let i=0;i<3;i++){P.B(.62,.46,.48,(i-1)*.66,.23,0,0);for(let k=0;k<7;k++)P.B(.04,.36,.38,(i-1)*.66-.24+k*.08,.3,0,1+(k+i)%3)}},
+ cabinets:P=>{for(let i=0;i<3;i++){P.B(.8,1.8,.5,(i-1)*.84,.9,0,0);P.B(.02,1.6,.02,(i-1)*.84,.95,.26,1);for(const s of [-1,1])P.S(.03,.03,.03,(i-1)*.84+s*.06,1,.27,2)}},
+ gadgets:P=>{P.B(1.4,1.5,.4,0,.75,0,0);for(let r=0;r<3;r++){P.B(1.36,.03,.38,0,.3+r*.45,0,1);for(let k=0;k<4;k++){P.B(.2,.14,.12,-.5+k*.33,.39+r*.45,.04,2+((r+k)%3));if((r+k)%2)P.B(.12,.07,.01,-.5+k*.33,.39+r*.45,.105,5)}}},
+ curtain:P=>{},
+ candles:P=>{const R=seeded(17);for(let i=0;i<14;i++){const x=(R()-.5)*1.6,z=(R()-.5)*.5,h=.12+R()*.3;P.C(.035,.04,h,x,h/2,z,0,8);P.S(.03,.05,.03,x,h+.04,z,1)}P.B(1.8,.06,.7,0,0,0,2)},
+ instruments:P=>{P.S(.26,.32,.08,0,1.2,0,0);P.S(.2,.24,.08,0,1.56,0,0);P.B(.06,.8,.04,0,2.0,0,1);P.C(.06,.06,.02,0,1.3,.05,2,12,Math.PI/2);P.C(.3,.3,.42,.9,.21,.4,3,14);P.C(.31,.31,.03,.9,.43,.4,4,14);P.C(.015,.015,1.4,-.8,.7,.5,1,6);P.S(.05,.07,.05,-.8,1.45,.5,1)},
+ bench:P=>{P.B(1.8,.08,.72,0,.9,0,0);for(const x of [-.8,.8])for(const z of [-.3,.3])P.B(.08,.9,.08,x,.45,z,0);P.B(1.8,.06,.6,0,.25,0,0);P.B(1.8,1.1,.04,0,1.55,-.36,1);
+   for(let k=0;k<4;k++){const x=-.6+k*.4;P.B(.22,.2,.22,x,1.04,.1,2+(k%2));P.B(.26,.04,.16,x,1.16,.1-.0,4,0,.5)}for(let k=0;k<5;k++)P.B(.04,.3,.02,-.7+k*.35,1.5,-.33,5)},
+ wheel:P=>{P.T(.42,.04,0,1.7,0,0,0,0,0);P.S(.08,.08,.06,0,1.7,0,1);for(let k=0;k<8;k++){const a=k*Math.PI/4;P.B(.03,.62,.03,Math.sin(a)*.0,1.7,0,0,0,0,a);P.S(.04,.04,.04,Math.sin(a)*.5,1.7+Math.cos(a)*.5,0,0)}},
+ loom:P=>{for(const x of [-.55,.55])P.B(.08,1.5,.08,x,.75,0,0);P.B(1.2,.08,.1,0,1.5,0,0);P.B(1.2,.08,.1,0,.4,0,0);P.B(1.0,.85,.02,0,.95,0,1);for(let k=0;k<9;k++)P.B(.012,1.05,.012,-.48+k*.12,.95,.02,2);for(const x of [-.55,.55])P.B(.1,.06,.6,x,.03,0,0)},
+ yarn:P=>{P.C(.3,.24,.32,0,.16,0,0,12);for(let k=0;k<5;k++)P.S(.11,.11,.11,(k%3-1)*.15,.36+Math.floor(k/3)*.1,(k%2-.5)*.14,1+k%4);P.C(.006,.006,.5,.12,.5,0,5,4,.4)},
+ bikes:P=>{for(const [x,y] of [[-.5,1.0],[.4,1.9]]){for(const s of [-1,1])P.T(.32,.03,x+s*.48,y,0,0,0,0,0);P.B(.9,.04,.04,x,y+.18,0,1);P.B(.04,.5,.04,x-.1,y+.1,0,1,0,0,.4);P.B(.04,.5,.04,x+.3,y+.1,0,1,0,0,-.3);P.B(.2,.04,.08,x-.2,y+.36,0,2);P.B(.04,.04,.4,x+.44,y+.36,0,2)}},
+ rods:P=>{for(let k=0;k<3;k++){P.C(.012,.02,2.2,-.3+k*.25,1.1,0,0,6,-.18+k*.08);P.S(.05,.05,.05,-.3+k*.25-.02,.6,.08,1)}P.B(.5,.3,.3,.6,.15,.1,2);P.C(.18,.16,.36,-.7,.18,.15,3,10)},
+ rent:P=>{for(let k=0;k<3;k++)P.B(.6-k*.08,.42,.5-k*.06,.4,.21+k*.42,0,0,k*.3);P.B(.9,.5,.6,-.5,.25,.1,0);P.B(1.4,.02,1.0,-.2,.01,.5,1)},
+ desk:P=>{HERO.desk(P,{w:2.2,d:1})},
+ grill:P=>{for(let k=0;k<3;k++){const a=k*2.094;P.C(.02,.02,.8,Math.cos(a)*.22,.4,Math.sin(a)*.22,0,6,Math.sin(a)*.25,-Math.cos(a)*.25)}P.S(.36,.26,.36,0,.86,0,1);P.S(.37,.2,.37,0,.98,0,1);P.C(.02,.02,.2,0,1.2,0,0,6);P.B(.6,.03,.03,.36,.86,0,0)},
+ bed:P=>{P.B(1.1,.5,.7,0,.25,0,0);P.S(.25,.3,.22,0,.72,0,1)},
+ tree:P=>{P.C(.28,.2,.5,0,.25,0,0,12);P.C(.03,.04,1.1,0,.9,0,1,6);for(let k=0;k<6;k++)P.S(.32,.26,.32,Math.cos(k)*.25,1.35+(k%3)*.2,Math.sin(k)*.25,2+(k%2))}};
+const FWHP={coffin:['#2A1C24','#6A1F3A','#E8D8E0','#B5804A','#4E3450'],gramo:HERO_PAL.gramophone,crates:['#A87B5E','#151214','#C2412C','#E8A050'],cabinets:['#5A6A7A','#2A2626','#B5804A'],gadgets:['#E8DCC4','#B8A89C','#6C8EBF','#C94F4F','#9FD6C2','*#9FE8FF'],
+ curtain:['#3A1630'],candles:['#F4EAD8','*#FFC86A','#6E412E'],instruments:['#B8784A','#2A1C18','#151214','#8C2C24','#E8D8C8'],bench:['#8E4A36','#C9A27A','#E8DCC4','#9A6A3A','#6E412E','#2A2626'],wheel:['#8A5A32','#B5804A'],
+ loom:['#9A6A3A','#C48C80','#F3E9E4'],yarn:['#B8955A','#C94F4F','#7A8A5A','#E8DCC4','#6C8EBF','#E8DCC4'],bikes:['#2A2A33','#C94F4F','#2A2A33'],rods:['#6E412E','#B8954A','#3E5A44','#5A7AB0'],rent:['#C9A27A','#E8DCC4'],desk:HERO_PAL.desk,
+ grill:['#2A2626','#1E1A1C'],bed:['#8E5E58','#F3E9E4'],tree:['#B0613A','#5A372C','#2E4A26','#3F6A34']};
+// ---------- one floor: shell, unit doors (instanced), side walls (the LF1 wall cut), dial, pools, the units through autoArrange ----------
+function fwBuild(n){fwInit0();const P=byId.fogwell,F=new THREE.Group();F.name='fwFloor'+FWN[n-1];F.position.y=FWY[n];F.userData.n=n;const b=fwB(),units=[],items=[];const W2=9.7,ZB=FWZ0;
+  const wainH=1.4,wallH=n===6?0:4.0;
+  // floor and back wall
+  if(n===1)b.flat('herr',19.4,13.4,0,.01,0);else if(n===6)b.flat('deck',19.4,13.4,0,.01,0);
+  else{b.box(19.4,.06,3.25,'#7A4E3E',0,-.02,5.08);FWU.forEach((u,i)=>{if(u[0][0]!==String(n))return;const [x0,x1]=FWUX[i%3];b.box(x1-x0,.06,FWZ1-ZB,u[5][2],(x0+x1)/2,-.02,(ZB+FWZ1)/2)})}
+  if(wallH){b.box(19.4,wallH,.3,n===1?'#4B2A1F':'#A9765E',0,wallH/2,ZB-.15);b.box(19.4,.12,.12,'#2A1C18',0,wallH-.06,ZB+.02)}
+  else{b.box(19.4,.9,.3,'#5A4A44',0,.45,ZB-.15);b.box(19.6,.08,.4,'#2B2A33',0,.94,ZB-.15);b.pl('view',40,13,0,4.2,-14,0)}
+  // the elevator (old-timey brass and walnut): shaft walls, the car, the arrow dial above the door; the stair door on the right wall
+  const ex=-7.6,ez0=4.45,ez1=5.75;b.box(.16,3,ez0-3.45,'#4B2A1F',ex,1.5,(3.45+ez0)/2);b.box(.16,3,6.7-ez1,'#4B2A1F',ex,1.5,(ez1+6.7)/2);b.box(.18,.7,1.3,'#4B2A1F',ex,2.65,5.1);
+  b.box(.2,.12,1.5,'#B5804A',ex+.02,2.3,5.1);for(const z of [ez0-.06,ez1+.06])b.box(.2,2.3,.1,'#B5804A',ex+.02,1.15,z);if(n===6)b.box(2.1,.08,3.1,'#2A1C18',-8.65,3,5.08);b.box(2.0,.04,2.9,'#6E412E',-8.65,.02,5.08);b.box(2.0,.06,.06,'#B5804A',-8.65,1.0,3.5);
+  b.box(.04,2.6,2.9,'#5E2620',-9.68,1.3,5.08);b.lit(.08,.08,.08,'#FFD9A0',-8.65,2.9,5.08);
+  if(n===6){b.box(2.1,3.05,.12,'#5A4A44',-8.65,1.52,3.45)}
+  {const sx=n===6?8.2:9.62;if(n===6){b.box(1.5,3,.12,'#5A4A44',8.95,1.5,3.45);b.box(1.5,.08,3.2,'#2A1C18',8.95,3,5.08);b.box(.04,3,3.2,'#5A4A44',9.7,1.5,5.08)}
+    b.box(.14,2.4,.12,'#2A1C18',sx,1.2,4.45);b.box(.14,2.4,.12,'#2A1C18',sx,1.2,5.75);b.box(.14,.14,1.42,'#2A1C18',sx,2.43,5.1);b.pl('stairs',.9,.27,sx-.08,2.72,5.1,-Math.PI/2)}
+  // shared doors: [x,z,ry,w,h,color] -> one InstancedMesh (unit doors swing; the elevator leaves slide; the stair leaf swings)
+  const D=[];
+  if(n>=2&&n<=5){// hallway: tartan runner, half-walls with door frames, sconce pairs, doormats, name plates; unit dividers
+    b.flat('tartan',16.4,1.5,1,.03,5.1);const zp=3.35,hh=1.25;let x=-W2;const cuts=FWDOOR.map(d=>[d-.62,d+.62]).sort((a,c)=>a[0]-c[0]);
+    for(const [a,c] of cuts.concat([[W2,W2]])){if(c>x&&a>x){b.box(a-x,hh,.2,'#6E412E',(x+a)/2,hh/2,zp);b.box(a-x,.08,.28,'#2A1C18',(x+a)/2,hh+.04,zp)}x=c}
+    FWDOOR.forEach((dx,i)=>{const U=FWU[(n-2)*3+i];for(const s of [-1,1]){b.box(.12,2.3,.24,'#4B2A1F',dx+s*.62,1.15,zp);b.box(.06,.2,.04,'#B5804A',dx+s*.85,1.95,zp+.13);b.lit(.09,.13,.09,'#FFD9A0',dx+s*.85,2.12,zp+.2)}b.box(1.36,.14,.24,'#4B2A1F',dx,2.33,zp);
+      b.box(1.0,.03,.6,['#8E5E58','#35512F','#333A55','#8C2C24'][(n+i)%4],dx,.02,zp+.5);b.pl('pl'+U[0],.62,.16,dx+.95,1.55,zp+.11,0);D.push([dx-.5,zp,0,1.0,2.15,U[1]==='vesper'?'#2A1C24':'#6E412E','unit',U[0]])});
+    for(const xd of [-3.25,3.25])b.box(.2,wallH,FWZ1-ZB,'#5A372C',xd,wallH/2,(ZB+FWZ1)/2);
+    if(n===2){for(let k=0;k<2;k++){const lx=-2.6+k*.85;b.box(.78,.9,.7,'#F3E9E4',lx,.45,4.0);b.cyl(.24,.04,'#9AB8C8',lx,.55,4.36);b.box(.6,.06,.5,'#C9CDD8',lx,.93,4.0)}b.box(.7,.5,.5,'#C9A27A',-.9,.25,4.0)}
+  }
+  if(n===1){// the lobby parlour: walnut panels, brass mailboxes, Ambrose's walnut desk, the package shelf, the directory, globe trio, figs, a tufted bench
+    for(let x=-9.2;x<9.4;x+=1.2){b.box(.9,1.0,.04,'#6E412E',x+.6,.75,ZB+.03);b.box(.9,1.5,.04,'#6E412E',x+.6,2.8,ZB+.03)}b.box(19.4,.1,.1,'#3A2018',0,1.45,ZB+.06);
+    b.pl('mail',3.6,1.8,-5.2,1.75,ZB+.07,0);b.box(3.8,2.0,.06,'#4B2A1F',-5.2,1.75,ZB+.03);b.pl('dir',1.3,.8,-1.6,1.9,ZB+.07,0);b.box(1.42,.92,.05,'#B5804A',-1.6,1.9,ZB+.05);
+    b.hero('desk',fwParts(FWH.desk),FWHP.desk,4.2,0,-1.0,0);b.lit(.3,.04,.3,'#FFE0A0',4.9,1.08,-1.0);
+    b.box(.5,2.4,3.2,'#4B2A1F',9.4,1.2,-3);for(let r=0;r<3;r++){b.box(.5,.05,3.1,'#2A1C18',9.4,.45+r*.75,-3)}
+    {let np=1;try{np=Math.min(6,1+(S.mbox||[]).length+((S.mail||[]).filter(m=>m&&m.gift).length))}catch(e){}FGW.parcels=np;for(let k=0;k<np;k++)b.box(.38,.26+(k%2)*.08,.44,['#C9A27A','#B8955A','#D8C08A'][k%3],9.3,.6+Math.floor(k/3)*.75,-4.2+(k%3)*.9)}
+    for(const [x,z] of [[-9.1,-6.1],[2.2,-6.1]])b.hero('tree',fwParts(FWH.tree),FWHP.tree,x,0,z,0);
+    for(const x of [-3.4,-6.4])b.lit(.12,.18,.12,'#FFD9A0',x,2.6,ZB+.2);
+    items.push({code:'ach',v:0,x:-6.4,y:0,z:-.6,ry:Math.PI/2,s:1},{code:'ach',v:0,x:-3.6,y:0,z:-.6,ry:-Math.PI/2,s:1},{code:'cft',v:1,x:-5,y:0,z:-.6,ry:0,s:1},{code:'rgd',v:0,x:-5,y:.01,z:-.6,ry:0,s:1},{code:'lvl',v:0,x:3.4,y:1.02,z:-1.0,ry:0,s:1},{code:'mns',v:0,x:-2.6,y:0,z:5.6,ry:0,s:1},{code:'fig',v:1,x:2.6,y:0,z:5.6,ry:0,s:1},{code:'gfc',v:0,x:7.6,y:0,z:-6.3,ry:0,s:1});
+  }
+  if(n===6){// the rooftop terrace: parapets, garden beds, string lights, the grill, benches (SEATS), a picnic table
+    for(const s of [-1,1]){b.box(.3,.9,13.4,'#5A4A44',s*9.85,.45,0);b.box(.4,.08,13.6,'#2B2A33',s*9.85,.94,0)}
+    for(const x of [-6,-1,4]){b.box(3.2,.5,1.1,'#6E412E',x,.25,-5.7);b.box(3.0,.06,.9,'#4A2E1E',x,.52,-5.7);for(let k=0;k<6;k++)b.sph(.22,k%2?'#3F6A34':'#2E4A26',x-1.2+k*.48,.66,-5.7+(k%2?.15:-.15));for(let k=0;k<3;k++)b.sph(.07,'#C2412C',x-.8+k*.8,.8,-5.6)}
+    const posts=[[-8,-4.2],[8,-4.2],[8,2.8],[-8,2.8]];for(const [x,z] of posts)b.box(.1,2.9,.1,'#2B2A33',x,1.45,z);
+    for(let i=0;i<4;i++){const [x0,z0]=posts[i],[x1,z1]=posts[(i+1)%4];for(let k=1;k<12;k++){const t=k/12,sg=Math.sin(t*Math.PI)*.45;b.lit(.07,.09,.07,'#FFE0A0',x0+(x1-x0)*t,2.75-sg,z0+(z1-z0)*t)}}
+    b.hero('grill',fwParts(FWH.grill),FWHP.grill,6.6,0,-1.6,0);items.push({code:'pcn',v:0,x:-3,y:0,z:.4,ry:0,s:1},{code:'bnc',v:2,x:-3,y:0,z:-1.3,ry:0,s:1},{code:'bnc',v:2,x:-3,y:0,z:2.1,ry:Math.PI,s:1},{code:'bnc',v:0,x:3.2,y:0,z:1.6,ry:Math.PI,s:1},{code:'frn',v:0,x:-8.8,y:0,z:-3.2,ry:0,s:1},{code:'frn',v:0,x:8.8,y:0,z:-3.2,ry:0,s:1});
+    FGW.seatsP=[[-3,-1.3,0],[-3,2.1,Math.PI],[3.2,1.6,Math.PI]]}
+  if(n>=2&&n<=5){// the three units: walls, windows, heroes, then autoArrange from the B24 catalog with a per-resident seed
+    for(let i=0;i<3;i++){const U=FWU[(n-2)*3+i],[x0,x1]=FWUX[i],cx=(x0+x1)/2,wx=cx-.6,st=U[2];
+      b.box(x1-x0,wainH,.06,U[5][1],cx,wainH/2,ZB+.03);b.box(x1-x0,.08,.1,'#2A1C18',cx,wainH,ZB+.06);b.box(x1-x0,wallH-wainH,.04,U[5][0],cx,(wallH+wainH)/2,ZB+.02);
+      b.pl('win',1.3,2.2,wx,2.45,ZB+.07,0);if(st==='gothic'){b.pl('curt',.8,2.4,wx-.55,2.4,ZB+.1,0);b.pl('curt',.8,2.4,wx+.55,2.4,ZB+.1,0);b.lit(.08,2.0,.02,'#C0485A',wx,2.4,ZB+.09);b.lit(1.2,.04,.02,'#8A1F2E',wx,1.32,ZB+.1)}
+      if(st==='rent')b.pl('rent',1.0,.5,wx,2.0,ZB+.1,0);if(st==='records')b.pl('vinyl',1.5,1.1,cx+1.6,2.3,ZB+.07,0);if(st==='nautical')b.pl('chart',1.1,.75,cx+1.5,2.4,ZB+.07,0);
+      // heroes against the back wall, kept out of autoArrange with blk rects
+      const blk=[[FWDOOR[i]-.75,FWZ1-1.4,FWDOOR[i]+.75,FWZ1]],hx=cx+(i===1?-1.6:1.6),hz=ZB+.7;
+      for(const h of U[7]){if(h==='curtain'||h==='vinyl')continue;const hp=fwParts(FWH[h]),pal=FWHP[h];let X=hx,Z=hz,R=0;
+        if(h==='coffin'){X=x0+1.0;Z=ZB+1.4;b.hero('coffin',hp,pal,X,0,Z,0);blk.push([X-.7,Z-1.2,X+.7,Z+1.2]);continue}
+        if(h==='gramo'){X=cx+1.6;Z=ZB+.6}if(h==='crates'){X=cx+1.6;Z=ZB+1.6;R=0}if(h==='wheel'||h==='bikes'){b.hero(h,hp,pal,cx+1.4,0,ZB+.12,0);continue}if(h==='yarn'){X=hx-1.2;Z=hz+.6}
+        if(h==='candles'){X=cx+1.2;Z=ZB+.5;b.box(1.9,.62,.6,'#6E412E',X,.31,Z);b.hero(h,hp,pal,X,.65,Z,0);blk.push([X-1,Z-.4,X+1,Z+.4]);continue}
+        if(h==='rent'){X=cx-.4;Z=-1.5}b.hero(h,hp,pal,X,0,Z,R);blk.push([X-1,Z-.6,X+1,Z+.6])}
+      const R={id:U[0],x0:x0+.1,z0:ZB+.1,x1:x1-.1,z1:FWZ1-.1,w:x1-x0-.2,d:FWZ1-ZB-.2,y:0,blk,surf:[],walls:['b','l','r'],wb:{b:[[wx-.75,wx+.75]]},focal:{x:cx,z:ZB+.5,fx:0,fz:1},win:[[wx,ZB+.3]],out:0};
+      const L=U[6].map(s=>{const a=s.split('.');return{code:a[0],v:+a[1]||0}});let pl=[];try{if(CAT&&L.length)pl=autoArrange(R,L,st==='gothic'?'nest':'cozy',U[3]).placed}catch(e){FGW.err='aa '+U[0]+': '+e.message}
+      const E=pl.map(p=>({code:p.code,v:p.v,it:CAT.by[p.code],lx:p.lx,lz:p.lz,rot:p.rot,on:p.on,par:p.par,lvl:p.lvl,y:0}));try{dHeights(E,R)}catch(e){}
+      for(const e of E)items.push({code:e.code,v:e.v,x:e.lx,y:e.y,z:e.lz,ry:e.rot*Math.PI/2,s:1,u:U[0]});
+      units.push({unit:U[0],id:U[1],style:st,seed:U[3],items:E.map(e=>e.code),heroes:U[7].slice(),left:L.length-E.length})}}
+  const out=b.build(F);
+  // the catalog pieces of the whole floor in ONE catMerge (3 draws)
+  let cm=null;if(items.length&&typeof catMerge==='function'&&CAT){try{cm=catMerge(items,{});cm.name='fwItems';F.add(cm)}catch(e){FGW.err='cat '+e.message}}
+  // doors: unit leaves (swing), elevator leaves (slide), the stair leaf (swing); one InstancedMesh
+  D.push([ex+.06,ez0+.02,-Math.PI/2,.62,2.15,'#C9984E','elev',0],[ex+.06,ez1-.02-.62,-Math.PI/2,.62,2.15,'#C9984E','elev',1]);
+  {const sx=n===6?8.2:9.62;D.push([sx-.05,5.75,Math.PI/2,1.3,2.25,'#4B2A1F','stair',0])}
+  if(!FGW.dim){const g=new THREE.BoxGeometry(1,1,1);g.translate(.5,.5,0);FGW.dim=new THREE.InstancedMesh(g,lam('#ffffff'),8);FGW.dim.name='fwDoors';FGW.dim.castShadow=false;FGW.dim.userData.fw=1;FGW.dim.frustumCulled=false;for(let i=0;i<8;i++)FGW.dim.setColorAt(i,_gc.set('#ffffff'))}
+  FGW.D=D.map(d=>({x:d[0],z:d[1],ry:d[2],w:d[3],h:d[4],c:d[5],k:d[6],id:d[7],a:0,t:0}));FGW.dim.count=FGW.D.length;FGW.D.forEach((d,i)=>FGW.dim.setColorAt(i,_gc.set(d.c)));FGW.dim.instanceColor.needsUpdate=true;fwDoorSync();F.add(FGW.dim);
+  // the dial over the elevator door (faces the hallway, +x)
+  if(!FGW.dial){FGW.dial=new THREE.Mesh(new THREE.CircleGeometry(.36,20,0,Math.PI),new THREE.MeshBasicMaterial({map:FGW.dtex,transparent:true}));FGW.dial.name='fwDial';FGW.dial.userData.fw=1;FGW.dial.rotation.y=Math.PI/2}
+  FGW.dial.position.set(ex+.09,2.68,5.1);F.add(FGW.dial);
+  // the side walls are the place's P.walls (LF1 hides the one the camera is beyond)
+  if(!FGW.walls.length&&wallH){for(const s of [-1,1]){const g=fwB();g.box(.3,4,13.4,'#A9765E',0,2,0);g.box(.06,wainH,13.4,'#6E412E',-s*.17,wainH/2,0);g.box(.1,.08,13.4,'#2A1C18',-s*.2,wainH,0);g.box(.06,.12,13.4,'#2A1C18',-s*.2,3.94,0);const G=new THREE.Group();g.build(G);const m=G.children[0];m.geometry.translate(0,0,0);m.name='fwWall'+(s<0?'L':'R');m.userData.fw=1;FGW.walls.push([m,'x',s])}}
+  for(const [m,,s] of FGW.walls){m.position.set(s*9.85,0,0);m.visible=!!wallH;F.add(m)}P.walls=wallH?FGW.walls:null;
+  F.userData.units=units;F.userData.n=n;F.userData.kinds=b.kinds.slice();F.userData.cm=cm;F.userData.out=out;return F}
+function fwDoorSync(){const M=FGW.dim;if(!M||!FGW.D)return;for(let i=0;i<FGW.D.length;i++){const d=FGW.D[i];_pd.position.set(d.x,0,d.z);_pd.scale.set(d.w,d.h,.06);
+    if(d.k==='elev'){const dir=d.id?1:-1;_pd.position.z+=dir*.58*d.a;_pd.rotation.set(0,d.ry,0)}else _pd.rotation.set(0,d.ry+d.a*1.35,0);_pd.updateMatrix();M.setMatrixAt(i,_pd.matrix)}M.instanceMatrix.needsUpdate=true}
+function fwFree(F){if(!F)return 0;let n=0;for(const o of F.userData.out||[]){o.geometry.dispose();F.remove(o);n++}if(F.userData.cm){catFree(F.userData.cm);n++}if(FGW.dim&&FGW.dim.parent===F)F.remove(FGW.dim);if(FGW.dial&&FGW.dial.parent===F)F.remove(FGW.dial);for(const [m] of FGW.walls)if(m.parent===F)F.remove(m);if(F.parent)F.parent.remove(F);return n}
+// ---------- show a floor (one at a time; the floors above are simply not built: visible=false in fwState) ----------
+function fwShow(n){n=fwFloorN(n);if(!n)return false;const P=byId.fogwell;if(!P||!P.inner||!FGW.on)return false;const t0=performance.now();if(FGW.F&&FGW.cur===n)return true;
+  if(FGW.F){fwSeatsOff();fwFree(FGW.F);FGW.F=null}const F=fwBuild(n);P.inner.add(F);F.updateMatrixWorld(true);FGW.F=F;FGW.cur=n;FGW.n++;P.inner.visible=true;
+  fwPools(n);for(const sp of FGW.lsp){sp.y=FWY[n]+3.2}if(n===6)fwSeatsOn();
+  if(IN.on&&IN.pid==='fogwell'){IN.fy=FWY[n];fwCam(true)}FGW.ms=+(performance.now()-t0).toFixed(1);FGW.log.push(['floor',FWN[n-1]]);if(FGW.log.length>30)FGW.log.shift();fwUI();return true}
+// pools: 12 slots owned here (pid 'fogwell'), moved to the shown floor's height (poolAdd's y): <= 4 per unit
+function fwPools(n){const Q=POOLS,P=byId.fogwell;if(!FGW.pools.length)for(let i=0;i<12;i++){const k=poolAdd(P.x,P.z,1.6,'#FFB070',0,FWY[1]+.02,'fogwell');if(k>=0)FGW.pools.push(k)}
+  const L=n===1?[[-5,-.6,2.6],[4.2,-1,2.2],[0,4.5,2.4],[-5.2,-5,1.8]]:n===6?[[-3,.4,3],[6.6,-1.6,1.6],[-6,-5,1.8],[4,-5,1.8]]:[[-5.6,4.6,1.4],[1.2,4.6,1.4],[5.9,4.6,1.4],[-6.4,-2,2.2],[0,-2,2.2],[6.4,-2,2.2]];
+  const m=new THREE.Matrix4();FGW.pools.forEach((i,j)=>{const q=L[j];if(q){const w=toWorld(P,q[0],q[1]);_pd.position.set(w.x,FWY[n]+.03,w.z);_pd.scale.set(q[2],1,q[2]);_pd.rotation.set(0,0,0);_pd.updateMatrix();Q.im.setMatrixAt(i,_pd.matrix);Q.k[i]=NaN;poolSet(i,.85)}else{Q.k[i]=NaN;poolSet(i,0)}});Q.im.instanceMatrix.needsUpdate=true}
+function fwSeatsOn(){fwSeatsOff();const P=byId.fogwell;if(typeof seatAdd!=='function')return;for(const [x,z,yaw] of FGW.seatsP||[]){const w=toWorld(P,x,z);FGW.seats.push(seatAdd(P,w.x,w.z,yaw+P.ry,'the Sound and the Needle',{tag:'fogroof',y0:FWY[6],h:.44}))}}
+function fwSeatsOff(){for(const s of FGW.seats){if(s.occ&&s.occ.some(Boolean))continue;const i=SEATS.indexOf(s);if(i>=0)SEATS.splice(i,1)}FGW.seats.length=0}
+function fwDrop(){if(FGW.F){fwSeatsOff();fwFree(FGW.F);FGW.F=null}FGW.cur=0;const P=byId.fogwell;if(P){P.walls=null;if(P.inner)P.inner.visible=false}for(const i of FGW.pools){POOLS.k[i]=NaN;poolSet(i,0)}}
+// ---------- the camera: CAM 'floor' (prio 2, above LF1's 'room'); distances tuned at BASE FOV like inDist, left to STYLE.fovK ----------
+const FWTV={x:0,y:0,z:0};
+function fwTarget(){const P=byId.fogwell,n=FGW.cur||1;if(IN.who==='you'&&FGW.yf===n){const t=inTarget();FWTV.x=t.x;FWTV.z=t.z}else{const w=toWorld(P,0,n===6?-1:-.5);FWTV.x=w.x;FWTV.z=w.z}FWTV.y=FWY[n];return FWTV}
+function fwDist(){const W=innerWidth,H=Math.max(1,innerHeight),asp=W/H;if(W<H)return clamp(7.5/2/(Math.tan(32*Math.PI/180)*asp),9,12);const p=.62,t=Math.tan(25*Math.PI/180),fv=(14*Math.sin(p)+4.6*Math.cos(p))*.55/t;return clamp(Math.max(21.5/2/(t*asp),fv),9,16)}
+function fwCam(snap){const P=byId.fogwell,dist=fwDist(),pit=innerWidth<innerHeight?.78:.62;const e=CAM.push('floor',{prio:2,target:fwTarget,ty:0,dist,pitch:pit,yaw:P.ry+(IN.yo||.3),range:[dist*.72,dist*1.3],ease:3});if(snap)try{inSnap(e)}catch(x){}return e}
+// ---------- entering / leaving (wrapped around LF1's inEnter / inLeave, which run at the black swap) ----------
+function fwOn(){FGW.on=1;for(const sp of FGW.lsp)sp.b=.9;FGW.yf=1;FGW.want=null;FGW.ride=null;fwShow(1);try{HUD.show('floors',true)}catch(e){}fwAmbrose(true)}
+function fwOff(){FGW.on=0;for(const sp of FGW.lsp)sp.b=0;FGW.ride=null;CAM.pop('floor',true);fwDrop();try{HUD.show('floors',false)}catch(e){}FGW.ui&&FGW.ui.classList.remove('open')}
+{const e0=inEnter;inEnter=function(pid,q){const r=e0.apply(this,arguments);if(pid==='fogwell'&&IN.pid==='fogwell')try{fwOn()}catch(e){console.error('B39 fwOn',e)}return r}}
+{const l0=inLeave;inLeave=function(q){if(IN.pid==='fogwell'||FGW.on)try{fwOff()}catch(e){console.error('B39 fwOff',e)}return l0.apply(this,arguments)}}
+// who is drawn on the shown floor: Ambrose (and anyone without a floor) is in the lobby; the walker on his own floor
+{const s0=IN.see;IN.see=function(id){const r=s0.call(this,id);if(!r||!this.on||this.pid!=='fogwell')return r;const n=FGW.cur||1;if(id==='you')return FGW.yf===n;const f=FGW.who&&FGW.who[id];return(f||1)===n}}
+// the floor under a point inside the Fogwell is the walker's floor (the shown floor when watching)
+{const nf0=navFloor;navFloor=function(x,z){const P=byId.fogwell;if(P&&FGW.on&&inBuilding(P,x,z))return FWY[(camS.mode==='walk'?FGW.yf:FGW.cur)||1];return nf0(x,z)}}
+// ---------- the elevator: doors close (.6 s), a 3 s ride with the needle, a ding, doors open; the stairs switch floors at the door ----------
+function fwRide(n,o){n=fwFloorN(n);o=o||{};if(!n||FGW.ride)return false;if(!FGW.on){if(!o.force)return false}const from=FGW.yf||FGW.cur||1;if(n===from&&!o.force)return false;
+  FGW.ride={from,to:n,ph:'board',t:0,walk:!!o.walk};FGW.ev.push(['call',FWN[from-1],FWN[n-1],+T.toFixed(2)]);if(!o.walk){fwPlaceYou(FWCAR);FGW.ride.ph='close'}return true}
+function fwPlaceYou(q,face){const P=byId.fogwell,w=toWorld(P,q.x,q.z);YOU.x=w.x;YOU.z=w.z;if(face!=null)YOU.yaw=face;YOU.moving=0;try{tapStop()}catch(e){}if(AG.you){AG.you.x=YOU.x;AG.you.z=YOU.z}try{INX.lx=YOU.x;INX.lz=YOU.z}catch(e){}}
+function fwLocal(x,z){const P=byId.fogwell;return inLocal(P,x,z,{x:0,z:0})}
+function fwRideTick(dt){const R=FGW.ride;if(!R)return;R.t+=dt;const doors=a=>{for(const d of FGW.D||[])if(d.k==='elev')d.a=a;fwDoorSync()};
+  if(R.ph==='board'){const l=fwLocal(YOU.x,YOU.z);if(Math.hypot(l.x-FWCAR.x,l.z-FWCAR.z)<1.1||R.t>12){fwPlaceYou(FWCAR,Math.PI/2);R.ph='close';R.t=0}return}
+  if(camS.mode==='walk')fwPlaceYou(FWCAR);
+  if(R.ph==='close'){doors(Math.max(0,1-R.t/.6));if(R.t>=.6){R.ph='move';R.t=0;FGW.ev.push(['doors','closed',+T.toFixed(2)])}}
+  else if(R.ph==='move'){const k=Math.min(1,R.t/3),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;fwDial(R.from+(R.to-R.from)*e);if(R.t>=3){FGW.yf=R.to;fwShow(R.to);fwDial(R.to);doors(0);R.ph='open';R.t=0;fwDing()}}
+  else if(R.ph==='open'){doors(Math.min(1,R.t/.6));if(R.t>=.6){if(camS.mode==='walk')fwPlaceYou(FWOUT,Math.PI/2);FGW.ev.push(['arrive',FWN[R.to-1],+T.toFixed(2)]);FGW.ride=null}}}
+function fwDing(){FGW.ev.push(['ding',FWN[(FGW.cur||1)-1],+T.toFixed(2)]);if(FGW.ev.length>40)FGW.ev.splice(0,FGW.ev.length-40);const P=byId.fogwell,w=toWorld(P,FWCAR.x,FWCAR.z);try{if(typeof sfx==='function')sfx('elevator',{x:w.x,z:w.z,pid:'fogwell'})}catch(e){}}
+function fwStairs(n){n=fwFloorN(n);if(!n||!FGW.on)return false;FGW.yf=n;fwShow(n);fwPlaceYou({x:n===6?7.5:FWSTAIR.x-.6,z:FWSTAIR.z},-Math.PI/2);FGW.ev.push(['stairs',FWN[n-1],+T.toFixed(2)]);return true}
+// ---------- the per-frame tick (from b12Frame): presence -> windows (1 Hz), the ride, doors, triggers inside, the walker kept on his floor ----------
+function fwTick(dt){if(!(dt>0))dt=.016;const now=performance.now();if(now>FGW.t1){FGW.t1=now+1000;try{fwWin()}catch(e){FGW.err='win '+e.message}try{fwWho()}catch(e){FGW.err='who '+e.message}}
+  if(!FGW.on)return;if(!IN.on||IN.pid!=='fogwell'){fwOff();return}
+  if(CAM.cur&&CAM.cur.owner==='room'&&!CAM.S.some(e=>e.owner==='floor'))fwCam(false);
+  fwRideTick(dt);if(!FGW.D)return;const l=fwLocal(YOU.x,YOU.z),walk=camS.mode==='walk'&&IN.who==='you';
+  // keep the walker on the floor's rect (upper floors have no front door)
+  if(walk&&!FGW.ride&&FGW.yf!==1){const cx=clamp(l.x,-9.4,9.4),cz=clamp(l.z,-6.4,6.4);if(cx!==l.x||cz!==l.z){const P=byId.fogwell,w=toWorld(P,cx,cz);YOU.x=w.x;YOU.z=w.z}}
+  // unit doors swing open when the walker is near (residents' doors stay shut: they are characters with their own doors, B9 etiquette)
+  let ch=false;for(const d of FGW.D){if(d.k==='elev')continue;const cx=d.k==='stair'?d.x:d.x+.5,want=walk&&FGW.yf===FGW.cur&&Math.hypot(l.x-cx,l.z-d.z)<1.3?1:0,a=d.a+(want-d.a)*Math.min(1,dt*5);if(Math.abs(a-d.a)>.002){d.a=a;ch=true}}if(ch)fwDoorSync();
+  if(walk&&!FGW.ride&&FGW.yf===FGW.cur){// walking into the car rides to the picked floor (or one up); the stair door climbs (or goes to the picked floor)
+    const nx=FGW.want&&FGW.want!==FGW.yf?FGW.want:(FGW.yf%6)+1;
+    if(Math.hypot(l.x-FWCAR.x,l.z-FWCAR.z)<.8&&YOU.moving){FGW.want=null;fwRide(nx,{walk:true});FGW.ride.ph='close';FGW.ride.t=0;fwPlaceYou(FWCAR,Math.PI/2)}
+    else{const sx=FGW.cur===6?7.6:FWSTAIR.x;if(Math.hypot(l.x-sx-.35,l.z-FWSTAIR.z)<.55&&YOU.moving){FGW.want=null;fwStairs(nx)}}}
+  fwAmbrose(false)}
+{const b0=b12Frame;b12Frame=function(dt){b0(dt);try{fwTick(dt)}catch(e){FGW.err='tick '+e.message}}}
+// Ambrose greets the walker once a day in the lobby (talk card: he is a CAST character; a bond when B28's bondAdd exists)
+function fwAmbrose(first){if(!FGW.on||FGW.cur!==1||camS.mode!=='walk')return;const a=CASTB&&CASTB.ambrose;if(!a||!a.obj)return;const d=Math.hypot(YOU.x-a.obj.position.x,YOU.z-a.obj.position.z),k=dkey(Date.now());
+  if(d<3.2&&FGW.amb.d!==k){FGW.amb.d=k;try{const gl=(new Date().getHours()<12?'Good morning':new Date().getHours()<17?'Good afternoon':'Good evening')+', and welcome to the Fogwell.';if(typeof npcSay==='function'&&CASTB.ambrose&&CASTB.ambrose.obj)npcSay('ambrose',gl,3.5);else if(typeof babble==='function')babble('ambrose',gl)}catch(e){}try{if(typeof bondAdd==='function')bondAdd('ambrose',1,'greeted at the desk')}catch(e){}FGW.ev.push(['ambrose','hello',+T.toFixed(2)])}}
+// ---------- the floor picker (HUD slot 'floors': right column, L 2 3 4 5 R at 44 px; one 'floor' button in landscape) ----------
+function fwPick(n){n=fwFloorN(n);if(!n)return;if(FGW.on&&camS.mode==='walk'&&IN.who==='you'){if(n===FGW.yf){fwShow(n);return}FGW.want=n;if(!fwRide(n,{walk:true}))return;try{const P=byId.fogwell,w=toWorld(P,FWCAR.x,FWCAR.z);tapGo(w.x,w.z,{why:'elevator'})}catch(e){}return}fwShow(n)}
+function fwUI(){const el=FGW.ui;if(!el)return;const n=FGW.cur||1;el.querySelectorAll('button[data-f]').forEach(b=>{b.classList.toggle('on',+b.dataset.f===n);b.classList.toggle('me',+b.dataset.f===FGW.yf&&FGW.yf!==n)});const t=el.querySelector('.fwT');if(t)t.textContent='🛗 '+FWN[n-1]}
+{const st=document.createElement('style');st.textContent=`.fwFl{display:flex;align-items:center;padding:4px;border-radius:16px;background:rgba(42,28,24,.82);box-shadow:0 3px 12px rgba(0,0,0,.3)}
+.fwFl .fwG{display:grid;grid-template-columns:44px 44px;gap:4px}
+.fwFl button{width:44px;height:44px;min-width:44px;border-radius:50%;border:2px solid #B5804A;background:#F2E6CF;color:#2A1C18;font:900 16px Georgia,serif;cursor:pointer;padding:0}.fwFl button.on{background:#B5804A;color:#fffaf2}.fwFl button.me{box-shadow:inset 0 0 0 3px #8C2C24}
+.fwFl .fwT{display:none;width:auto;min-width:64px;border-radius:22px;padding:0 12px;font-size:14px}
+@media (orientation:landscape){.fwFl{padding:0;background:none;box-shadow:none;position:fixed}.fwFl .fwT{display:block}.fwFl .fwG{display:none;position:absolute;right:calc(100% + 8px);top:0;grid-template-columns:repeat(6,44px);padding:4px;border-radius:26px;background:rgba(42,28,24,.86);box-shadow:0 3px 12px rgba(0,0,0,.3)}.fwFl.open .fwG{display:grid}}`;document.head.appendChild(st)}
+{const el=document.createElement('div');el.className='fwFl';el.setAttribute('role','group');el.setAttribute('aria-label','Fogwell floors');el.innerHTML=`<button class="fwT" aria-label="floor">🛗 L</button><div class="fwG">`+[6,5,4,3,2,1].map(n=>`<button data-f="${n}" aria-label="floor ${FWN[n-1]}">${FWN[n-1]}</button>`).join('')+'</div>';
+  el.addEventListener('pointerdown',e=>e.stopPropagation());el.addEventListener('click',e=>{e.stopPropagation();const b=e.target.closest('button');if(!b)return;if(b.classList.contains('fwT')){el.classList.toggle('open');return}fwPick(+b.dataset.f);el.classList.remove('open')});
+  FGW.ui=el;HUD.slot('floors',{el,zone:'rc',order:1,prio:7,on:false})}
+// ---------- the state (S.condo: only the rent; everything else is derived) and renting 5C (STRETCH core: the lease; decorating it is B27's) ----------
+function condoFix(c){c=c&&typeof c==='object'&&!Array.isArray(c)?c:{};const r={};if(c.rent&&typeof c.rent==='object')for(const k of Object.keys(c.rent).slice(0,3))if(FWUB[k]&&!FWUB[k][1]&&c.rent[k]==='you')r[k]='you';return{rent:r,due:+c.due||0}}
+function fwRent(unit){unit=String(unit||'5C').toUpperCase();const U=FWUB[unit];if(!U)return{ok:false,why:'no such unit'};if(U[1])return{ok:false,why:unit+' is '+(CASTB[U[1]]?CASTB[U[1]].name:U[1])+"'s home"};if(!S.condo)S.condo=condoFix(null);
+  if(S.condo.rent[unit]==='you')return{ok:true,unit,already:true,due:S.condo.due};const c=S.you&&+S.you.coins||0;if(c<150)return{ok:false,why:'150 coins a month; you have '+c};
+  S.you.coins=c-150;S.condo.rent[unit]='you';S.condo.due=Date.now()+30*864e5;try{save()}catch(e){}try{toast('🔑 '+unit+' at the Fogwell is yours · 150 a month')}catch(e){}return{ok:true,unit,due:S.condo.due,coins:S.you.coins}}
+// ---------- NAV data: per-floor subgraphs joined by ELEVATOR and STAIR edges (for agents; place-local coords) ----------
+function fwNav(){if(FGW.nav)return FGW.nav;const N={},E=[],add=(id,x,z,f)=>N[id]={id,x,z,f};for(let f=1;f<=6;f++){const k=FWN[f-1];add(k+':elev',FWOUT.x,FWOUT.z,f);add(k+':stair',f===6?7.5:FWSTAIR.x-.6,FWSTAIR.z,f);add(k+':hall',0,5.1,f);E.push([k+':elev',k+':hall','walk',1],[k+':stair',k+':hall','walk',1]);
+    if(f===1){add('L:door',0,6.2,1);add('L:desk',4.2,.4,1);E.push(['L:door','L:hall','walk',1],['L:desk','L:hall','walk',1])}
+    if(f>=2&&f<=5)FWDOOR.forEach((x,i)=>{const u=f+'ABC'[i];add(u,x,1.4,f);E.push([u,k+':hall','walk',1])});if(f===6){add('R:seats',-3,.4,6);E.push(['R:seats','R:hall','walk',1])}
+    if(f>1){E.push([FWN[f-2]+':elev',k+':elev','ELEVATOR',3],[FWN[f-2]+':stair',k+':stair','STAIR',4])}}return FGW.nav={N,E}}
+function fwRoute(a,b){const G=fwNav(),D={},Pv={},Q=[a];D[a]=0;while(Q.length){Q.sort((x,y)=>D[x]-D[y]);const u=Q.shift();if(u===b)break;for(const e of G.E){const v=e[0]===u?e[1]:e[1]===u?e[0]:null;if(!v)continue;const nd=D[u]+e[3];if(D[v]==null||nd<D[v]){D[v]=nd;Pv[v]=[u,e[2]];Q.push(v)}}}
+  if(D[b]==null)return null;const out=[];let v=b;while(v!==a){out.unshift({to:v,via:Pv[v][1]});v=Pv[v][0]}return{from:a,cost:D[b],steps:out}}
+function fwEvents(t){const d=new Date(t||Date.now());return FWEV.filter(e=>{try{return e.at(d)}catch(x){return false}}).map(e=>({id:e.id,label:e.label,h:e.h}))}
+// ---------- boot: the Fogwell becomes an LF1 enterable place (before inWorldBuild caches the enterables) ----------
+function fwBoot(){const P=byId.fogwell;if(!P||!P.obj)return;fwInit0();P.interior=true;P.inner=new THREE.Group();P.inner.name='fwInner';P.inner.visible=false;P.obj.add(P.inner);
+  const fw=new THREE.Group();fw.name='fwShell';for(const o of P.obj.children.slice()){const g=o.geometry&&o.geometry.parameters;if(o.isMesh&&g&&Math.abs(g.width-P.w)<.01&&Math.abs(g.height-P.h)<.01)fw.add(o)}P.obj.add(fw);P.fw=fw;
+  for(const d of DOORS)if(d.pid==='fogwell'&&d.s&&d.s.soon)d.s=Object.assign({},d.s,{soon:0});
+  try{const a=CASTB.ambrose;if(a){const w=toWorld(P,4.2,-2.25);a.spot=[w.x,w.z,P.ry]}}catch(e){}
+  FGW.who={ambrose:1};// floor per character id (B40 fills residents: FGW.who[id]=floor while they are home)
+  for(const k of [0,1]){const l={pid:'fogwell',lx:k?5:-5,ly:3.2,lz:0,color:'#ffcf9a',kind:'cauldron'},q=toWorld(P,l.lx,l.lz),sp={l,p:P,x:q.x,y:FWY[1]+3.2,z:q.z,c:new THREE.Color(l.color),b:0,on:0};LSP.push(sp);FGW.lsp.push(sp)}
+  try{fwWin()}catch(e){}PREWARM.add('b39.atlas',()=>{const m=new THREE.Mesh(FWG.pl,FGW.atm);return m})}
+try{fwBoot()}catch(e){console.error('B39 fwBoot',e)}
+// merge b5a: residents at home stand on their own unit's floor (B40 integration); out or away counts as lobby
+function fwWho(h){const W=FGW.who||(FGW.who={ambrose:1});for(const U of FWU){if(!U[1])continue;const r=fwRes(U[0],h);if(r.home)W[U[1]]=+U[0][0];else delete W[U[1]]}return W}
+// ---------- hooks ----------
+function fwState(){const P=byId.fogwell,F=FGW.F,vis={};FWN.forEach((k,i)=>vis[k]=FGW.cur===i+1&&!!F&&F.visible);let draws=0,geos=0;if(F)F.traverseVisible(o=>{if(o.isMesh||o.isPoints)draws++});
+  return{on:!!FGW.on,cur:FGW.cur?FWN[FGW.cur-1]:null,you:FWN[(FGW.yf||1)-1],vis,draws,ms:FGW.ms,builds:FGW.n,ride:FGW.ride?{...FGW.ride}:null,dial:FGW.dialA,ev:FGW.ev.slice(-12),log:FGW.log.slice(-8),
+    kinds:F?F.userData.kinds:[],units:F?F.userData.units:[],walls:FGW.walls.map(w=>w[0].visible),cam:CAM.top()?CAM.top().owner:null,ui:FGW.ui?{on:FGW.ui.style.display!=='none',slot:HUD.S.floors&&HUD.S.floors.on}:null,parcels:FGW.parcels||0,err:FGW.err||null,
+    ambrose:(()=>{const a=CASTB.ambrose;return a&&a.obj?{x:+a.obj.position.x.toFixed(2),z:+a.obj.position.z.toFixed(2),y:+a.obj.position.y.toFixed(2),seen:IN.see('ambrose'),place:inPlaceAt(a.obj.position.x,a.obj.position.z)}:null})()}}
+{const H=m=>{m.fogwell={floor(n){n=fwFloorN(n);if(!n)return fwState();if(!FGW.on&&m.inside){if(IN.ph!=='idle')for(let i=0;i<30&&IN.ph!=='idle';i++)inTick(.05);m.inside.enter('fogwell',{fade:false})}if(FGW.on&&camS.mode==='walk'){FGW.yf=n;fwShow(n);fwPlaceYou(n===1?{x:0,z:4.5}:FWOUT,Math.PI/2)}else fwShow(n);return fwState()},
+    ride(n){if(!FGW.on)return{ok:false,why:'not inside the Fogwell'};const ok=fwRide(n,{force:true});return Object.assign({ok},fwState())},
+    tick(n=20,dt=.1){for(let i=0;i<n;i++){fwTick(dt)}return fwState()},
+    units(h){return FWU.map(u=>Object.assign({style:u[2],seed:u[3],resident:u[1]?(CASTB[u[1]]?CASTB[u[1]].name:u[1]):null,rent:!!(S.condo&&S.condo.rent[u[0]]),built:!!(FGW.F&&FGW.F.userData.units.some(q=>q.unit===u[0]))},fwRes(u[0],h),{win:WLT.res[u[0]]?{col:WLT.res[u[0]].col||null,home:WLT.res[u[0]].home,bed:WLT.res[u[0]].bed}:null}))},
+    state:fwState,route:(a,b)=>fwRoute(a,b),nav:()=>{const G=fwNav();return{nodes:Object.keys(G.N).length,edges:G.E.length,elevator:G.E.filter(e=>e[2]==='ELEVATOR').length,stair:G.E.filter(e=>e[2]==='STAIR').length}},
+    events:t=>fwEvents(t),requests:()=>FWREQ.slice(),pick:n=>{fwPick(n);return fwState()},
+    geos:()=>renderer.info.memory.geometries,win:u=>{const s=WLT.S&&WLT.by?WLT.S[WLT.by['fogwell:'+u+'a']]:null;return s?{tl:s.tl,tc:s.tc?Array.from(s.tc).map(v=>+(+v).toFixed(2)):null,cur:s.cur!=null?+(+s.cur).toFixed(2):null}:null}};
+  m.rent=u=>fwRent(u)};STYLE.hooks.push(H);H(window.__mocha)}
 // ====================================================================
 //  LF1 IMMERSIVE INTERIORS (Track T): inside a building only that room exists.
 //  WORLD root (every top-level object except the keep-list), the IN state machine (out .35 s -> swap -> hold -> in .35 s),
