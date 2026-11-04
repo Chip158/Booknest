@@ -7882,7 +7882,7 @@ body.walk #near{top:auto!important;left:auto!important;right:calc(max(14px,env(s
 @keyframes ctxIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
 @media (max-width:760px) and (min-height:521px){body.walk #near{right:max(12px,env(safe-area-inset-right));bottom:calc(45vh + 10px);max-width:min(78vw,300px)}}
 @media (orientation:landscape) and (max-height:520px){#toast{left:50%!important;top:calc(80px + env(safe-area-inset-top));max-width:min(52vw,440px);transform:translate(-50%,-12px)!important}#toast.show{transform:translate(-50%,0)!important}body.walk #near{bottom:calc(45vh + 10px);right:calc(max(14px,env(safe-area-inset-right)) + 62px);max-width:min(48vw,330px)}}
-@media (min-width:761px) and (min-height:521px){body.walk.panelOpen #near{right:calc(min(400px,42vw) + 86px)}}@media (min-width:761px) and (min-height:521px) and (pointer:coarse){body.walk #near{bottom:calc(45vh + 10px)}}`;document.head.appendChild(st)}
+@media (min-width:761px) and (min-height:521px){body.walk.panelOpen #near{right:calc(min(400px,42vw) + 86px)}}`;document.head.appendChild(st)}
 function popHooks(M){Object.assign(M,{POP,
   popups:()=>{const rr=e=>{const r=e.getBoundingClientRect();return{x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height)}};const N=POP.ntc,nr=$('#near');
     return{names:{on:!!POP.nc.on,text:POP.nc.on?POP.nc.t:'',sub:POP.nc.on?POP.nc.s:'',key:POP.nc.key,rect:POP.nc.on&&BAN.el?rr(BAN.el):null},
