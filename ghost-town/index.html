@@ -2218,7 +2218,10 @@ function tierSig(c){const s=[c.renderer,c.dpr,c.minSide,c.webgl2?2:1,'lf4v1'].jo
 function tierSave(){try{localStorage.setItem('mocha-gfx',JSON.stringify(TIER.save))}catch(e){}}
 // boot decision: 'mocha-gfx' {v,sig,tier,guess,probe,drops} is reused while the sig (renderer, DPR, screen, code version) matches; otherwise re-decided from the guess. Phones stop at HIGH.
 function tierBoot(){const T=TIER,c=T.caps=tierCaps(),g=T.guess=tierGuess(c),sig=T.sig=tierSig(c);let s=null;try{s=JSON.parse(localStorage.getItem('mocha-gfx')||'null')}catch(e){}
- if(!s||typeof s!=='object'||s.v!==1||s.sig!==sig){s={v:1,sig,tier:g,guess:g,probe:null,drops:0,at:Date.now()};T.fresh=true}s.guess=g;T.save=s;tierSave();
+ // fix1 (foldables): the record keeps the last two other sigs' decisions in alt, so folding and unfolding the Duo swaps decisions instead of wiping them and probing again
+ if(!s||typeof s!=='object'||s.v!==1||s.sig!==sig){const alt=s&&typeof s==='object'&&s.v===1&&s.alt&&typeof s.alt==='object'?s.alt:{};if(s&&typeof s==='object'&&s.v===1&&s.sig){const o=Object.assign({},s);delete o.alt;alt[s.sig]=o}
+  const k=alt[sig];delete alt[sig];const A={};for(const q of Object.keys(alt).sort((x,y)=>((alt[y]&&alt[y].at)||0)-((alt[x]&&alt[x].at)||0)).slice(0,2))A[q]=alt[q];
+  if(k&&typeof k==='object'&&k.v===1&&k.sig===sig){s=Object.assign(k,{alt:A,at:Date.now()})}else{s={v:1,sig,tier:g,guess:g,probe:null,drops:0,at:Date.now(),alt:A};T.fresh=true}}s.guess=g;T.save=s;tierSave();
  let a=Math.max(1,Math.min(3,s.tier|0));if(c.phone)a=Math.min(a,2);const m={low:0,phone:1,high:2,ultra:3}[SET.gfx];T.auto=m==null;T.autoN=a;T.n=T.auto?a:m;T.boot=T.n;T.drops=s.drops|0;T.probe=s.probe||null;
  const t=tierTab(T.n);T.name=t.name;T.aniso=t.aniso;T.built={dens:t.dens,aniso:t.aniso};T.f=tierF(T.n);T.farOut=1200*T.f.far}
 // pixel budget: PHONE = today's formula; HIGH min(DPR,2) under 3.7 MP drawn; ULTRA clamp(DPR,1.5,2) under 8.3 MP drawn; minus ADAPT's steps
@@ -2376,7 +2379,7 @@ function pqFree(){for(const t of PQ.bl)t.dispose();PQ.bl=[];if(PQ.ao){PQ.ao.disp
 function pqPost(){if(PQ.post3!==null)return PQ.post3;let fs=post.fragmentShader;
  const R=[['uniform float fxa;varying vec2 vUv;','uniform float fxa;uniform sampler2D tBl;uniform float bk;uniform sampler2D tAO;uniform vec2 aoPx;uniform float aok;uniform vec3 aoC;uniform sampler2D tDp;uniform vec4 dcp;uniform vec3 tsq;uniform vec3 gLift;uniform vec3 gGain;uniform float vg0;varying vec2 vUv;\nfloat pqZ(vec2 uv){float d=texture2D(tDp,uv).x;return dcp.x*dcp.y/(dcp.y-d*(dcp.y-dcp.x));}'],
   ['float w=max(smoothstep(1.-tsb.x,1.,vUv.y),tsb.y>0.?1.-smoothstep(0.,tsb.y,vUv.y):0.);float r=w*w*tsb.z*ts;','float w=max(smoothstep(1.-tsq.x,1.,vUv.y),tsq.y>0.?1.-smoothstep(0.,tsq.y,vUv.y):0.);float r=w*w*tsq.z*ts;if(dcp.w>.5&&r>.25){float zz=pqZ(vUv);r*=zz>dcp.y*.98?1.:smoothstep(.05,.35,abs(zz-dcp.z)/dcp.z);}'],
-  ['vec3 col=c.rgb;','if(aok>0.){float a=(texture2D(tAO,vUv+aoPx*vec2(-.75,-.75)).r+texture2D(tAO,vUv+aoPx*vec2(.75,-.75)).r+texture2D(tAO,vUv+aoPx*vec2(-.75,.75)).r+texture2D(tAO,vUv+aoPx*vec2(.75,.75)).r)*.25;c.rgb*=mix(vec3(1.),aoC,(1.-a)*aok);}\n  if(bk>0.)c.rgb+=texture2D(tBl,vUv).rgb*bk;vec3 col=c.rgb;'],
+  ['vec3 col=c.rgb;','if(aok>0.){float a=(texture2D(tAO,vUv+aoPx*vec2(-.75,-.75)).r+texture2D(tAO,vUv+aoPx*vec2(.75,-.75)).r+texture2D(tAO,vUv+aoPx*vec2(-.75,.75)).r+texture2D(tAO,vUv+aoPx*vec2(.75,.75)).r)*.25;a=mix(a,1.,smoothstep(.75,.9,dot(c.rgb,vec3(.299,.587,.114))));c.rgb*=mix(vec3(1.),aoC,(1.-a)*aok);}\n  if(bk>0.)c.rgb+=texture2D(tBl,vUv).rgb*bk;vec3 col=c.rgb;'],
   ['col*=mix(vec3(1.025,1.,.965),vec3(1.,.97,.96),night);','col*=mix(vec3(1.025,1.,.965),vec3(1.,.97,.96),night);col=col*gGain+gLift*(1.-col);'],
   ['float v=smoothstep(.65,1.,length(vUv-.5)*1.4142);','float v=smoothstep(vg0,1.02,length(vUv-.5)*1.4142);']];
  for(const [a,b] of R){if(fs.split(a).length!==2){PQ.post3=false;PQ.fail.push('post:'+a.slice(0,24));TIER.fail.push('pq:post');return false}fs=fs.replace(a,()=>b)}
@@ -2402,17 +2405,17 @@ function pqHalo(){if(PQ.halo)return PQ.halo;const G=GLOWPTS,g=new THREE.Instance
 function pqHaloSync(){const H=PQ.halo,G=GLOWPTS;if(!H)return;H.g.instanceCount=G.n;for(const k in H.at){const ver=G.at[k].version;if(H.v[k]!==ver){H.v[k]=ver;H.at[k].needsUpdate=true}}
  const S=TIER.rt||rt;H.u.uBase.value=S.height/(2*Math.tan(camera.fov*Math.PI/360));H.u.uCl.value=renderer.getPixelRatio()/Math.max(.5,tierPR(1))}
 // a depth texture on the scene target for SAO and the depth-weighted tilt-shift (ULTRA): the same kind of target LF4 picked (MSAA or plain), plus DepthTexture(UnsignedInt) (r128 blits MSAA depth with NEAREST)
-function pqDepthRT(f){const want=!!f.msaa&&!!THREE.WebGLMultisampleRenderTarget&&renderer.capabilities.isWebGL2;if(TIER.rt&&TIER.rt.depthTexture&&!!TIER.rt.isWebGLMultisampleRenderTarget===want)return;
+function pqDepthRT(f){const want=!!f.msaa&&!!THREE.WebGLMultisampleRenderTarget&&renderer.capabilities.isWebGL2,pr=f.pr||1,dty=!want&&innerWidth*innerHeight*pr*pr>4e6?THREE.UnsignedShortType:THREE.UnsignedIntType;if(TIER.rt&&TIER.rt.depthTexture&&!!TIER.rt.isWebGLMultisampleRenderTarget===want&&TIER.rt.depthTexture.type===dty)return;// fix1: a 16-bit depth texture above 4 MP drawn (memory budget)
  if(TIER.rt)TIER.rt.dispose();const o={depthBuffer:true,stencilBuffer:false},t=want?Object.assign(new THREE.WebGLMultisampleRenderTarget(2,2,o),{samples:4}):new THREE.WebGLRenderTarget(2,2,o);
- t.depthTexture=new THREE.DepthTexture(2,2,THREE.UnsignedIntType);t.depthTexture.minFilter=t.depthTexture.magFilter=THREE.NearestFilter;TIER.rt=t;post.uniforms.tDiffuse.value=t.texture}
+ t.depthTexture=new THREE.DepthTexture(2,2,dty);t.depthTexture.minFilter=t.depthTexture.magFilter=THREE.NearestFilter;TIER.rt=t;post.uniforms.tDiffuse.value=t.texture}
 // after LF4's applyTier: targets, the composite on the post quad, the halo quads
 function pqApply(f){const n=TIER.n,q=postScene.children[0];PQ.n=n;let on=n>=2&&!!pqPost();
  if(on&&(f.ao==='sao'||f.tsMode==='depth'))pqDepthRT(f);else if(TIER.rt&&TIER.rt.depthTexture){TIER.rt.dispose();TIER.rt=null;tierRT(f)}
  if(TIER.rt||n>=2)resize();PQ.on=on?1:0;
  if(on){pqMats();pqFree();PQ.chk=3;PQ.lv=f.bloom==='mip'?f.lv:0;PQ.s0=n===3?2:4;PQ.aoOn=f.ao==='sao';q.material=PQ.post3;pqHalo();PQ.halo.h.visible=true;GLOWPTS.pts.visible=false;pqHaloSync()}
  else{pqFree();PQ.k.bk=PQ.k.aok=0;if(PQ.post3&&q.material===PQ.post3)q.material=post;if(PQ.halo)PQ.halo.h.visible=false;GLOWPTS.pts.visible=true}}
-function pqSize(W,H){if(PQ.w===W&&PQ.h===H&&PQ.bl.length===PQ.lv&&(!PQ.aoOn===!PQ.ao))return;pqFree();PQ.w=W;PQ.h=H;
- for(let i=0;i<PQ.lv;i++){const d=PQ.s0*Math.pow(2,i);PQ.bl.push(pqRT(Math.round(W/d),Math.round(H/d)))}if(PQ.aoOn)PQ.ao=pqRT(Math.round(W/2),Math.round(H/2))}
+function pqSize(W,H){if(PQ.w===W&&PQ.h===H&&PQ.bl.length===PQ.lv&&(!PQ.aoOn===!PQ.ao))return;pqFree();PQ.w=W;PQ.h=H;const big=W*H>4e6;if(PQ.n===3)PQ.s0=big?4:2;// fix1: above 4 MP drawn, bloom and AO start at 1/4 resolution (memory budget)
+ for(let i=0;i<PQ.lv;i++){const d=PQ.s0*Math.pow(2,i);PQ.bl.push(pqRT(Math.round(W/d),Math.round(H/d)))}if(PQ.aoOn){const a=big?4:2;PQ.ao=pqRT(Math.round(W/a),Math.round(H/a))}}
 function pqDraw(m,t){PQ.q.material=m;renderer.setRenderTarget(t);PQ.r0.call(renderer,PQ.sc,PQ.cam);PQ.passes++}
 // the passes, from the renderer.render wrapper just before postScene is drawn (frame(), polMeasure, tests)
 function pqPasses(){const S=TIER.rt||rt,W=S.width,H=S.height,P3=PQ.post3,U=P3.uniforms;if(W<8||renderer.getContext().isContextLost())return;pqSize(W,H);const Rr=renderer,ac=Rr.autoClear,dT=S.depthTexture||null;Rr.autoClear=false;
@@ -2431,10 +2434,11 @@ function pqFrame(now,dt){const T=TIER;pqProbeTick(now);if(!PQ.on)return;const P3
  U.gGain.value.set(1+.008*(1-g),1,.982+.018*g);U.gLift.value.set(.0045,.0033,.0025).multiplyScalar(1+g);U.vg0.value=In?.6:.55;pqHaloSync()}
 // ---- tierProbe: frame-time probe (CORE 4). Once per sig, again after 14 days or 2 ADAPT drops; 8 s after boot, idle (no sheet, outdoors, visible), never on software GL or a user-picked tier.
 // Phase A (2.5 s, frame cap lifted): median rAF interval, p95 CPU. Promote one step at >= 1.8x the next tier's cap (ULTRA: >= 108 fps, or a 60 Hz lock with GPU <= 6 ms) and CPU p95 <= 8 ms;
-// a guessed HIGH/ULTRA that cannot hold its own cap steps down (the Duo/tablet case). Phase B (2.5 s at the promoted tier): keep only if it holds its cap (p95 interval <= 1.4x the period). Phones stop at HIGH.
-function pqCap(n){const s=TIER.n,a=TIER.auto;TIER.n=n;TIER.auto=true;const c=TIER.fps();TIER.n=s;TIER.auto=a;return Math.min(c,120)}
+// a guessed HIGH/ULTRA that cannot hold its own cap steps down (the Duo/tablet case). Phase B (2.5 s at the promoted tier): keep only if it holds its cap (p95 interval <= 1.4x the period).
+// Phones are never probed or auto-promoted (section 0 iPhone budgets; HIGH stays reachable from Settings); tablets and computers only. The hold bar is at most 60 fps (spec 5.1), so a 60 Hz desktop keeps ULTRA.
+function pqCap(n){const s=TIER.n,a=TIER.auto;TIER.n=n;TIER.auto=true;const c=TIER.fps();TIER.n=s;TIER.auto=a;return Math.min(c,60)}// the probe's hold bar is at most 60 fps (spec 5.1 'up to 120, 60 if the probe says so'; LF4 ADAPT uses min(cap,60)); ULTRA's real frame cap (TIER.fps) stays up to 120
 function pqStat(a){const s=(a||[]).filter(x=>x>0&&x<1000).sort((x,y)=>x-y);if(!s.length)return{med:0,p95:0,n:0};return{med:s[s.length>>1],p95:s[Math.min(s.length-1,Math.floor(s.length*.95))],n:s.length}}
-function pqDecideA(n,a,cpu,gpu){const T=TIER,A=pqStat(a),C=pqStat(cpu),fps=A.med?1000/A.med:0,top=T.caps.phone?2:3,out={fps:+fps.toFixed(1),cpuP95:+C.p95.toFixed(2),gpuMs:gpu==null?null:+(+gpu).toFixed(2),from:n,to:n,step:'stay'};
+function pqDecideA(n,a,cpu,gpu){const T=TIER,A=pqStat(a),C=pqStat(cpu),fps=A.med?1000/A.med:0,top=T.caps.phone?1:3,out={fps:+fps.toFixed(1),cpuP95:+C.p95.toFixed(2),gpuMs:gpu==null?null:+(+gpu).toFixed(2),from:n,to:n,step:'stay'};
  const capN=pqCap(n);if(n>=2&&A.p95>1.4*1000/capN&&fps<capN*.9){out.to=n-1;out.step='down';return out}
  if(n<top){const c1=pqCap(n+1),fast=n+1===3?(fps>=108||(fps>=57&&gpu!=null&&gpu<=6)):fps>=1.8*c1;if(fast&&C.p95<=8){out.to=n+1;out.step='trial'}}return out}
 function pqDecideB(n,b){const B=pqStat(b),per=1000/pqCap(n);return{ok:B.n>0&&B.p95<=1.4*per&&B.med<=1.1*per,med:+B.med.toFixed(2),p95:+B.p95.toFixed(2)}}
@@ -2446,18 +2450,23 @@ function tierProbe(o){o=o||{};const T=TIER;
   d.tier=fin;if(o.save!==false)pqProbeSave(fin,d);return Promise.resolve(d)}
  if(PQ.pb)return PQ.pb.p;let res;const p=new Promise(r=>res=r);PQ.pb={ph:'A',t0:performance.now(),ms:o.ms||2500,iv:[],cpu:[],last:0,res,p,lift:1,n0:T.n,force:!!o.force};PQ.probeRuns++;return p}
 function pqProbeTick(now){const T=TIER,B=PQ.pb;
- if(!B){if(PQ.pbDone||!T.applied||!T.auto||T.caps.soft||SET.saver||now-PQ.boot<8000)return;if(document.visibilityState!=='visible'||SHEETS.level()>0||(IN&&IN.on)){return}PQ.pbDone=1;if(PQ.again||pqProbeDue()){PQ.again=0;tierProbe()}return}
+ if(!B){if(PQ.pbDone||!T.applied||!T.auto||T.caps.soft||T.caps.phone||SET.saver||now-PQ.boot<8000)return;if(document.visibilityState!=='visible'||SHEETS.level()>0||(IN&&IN.on)){return}PQ.pbDone=1;if(PQ.again||pqProbeDue()){PQ.again=0;tierProbe()}return}
  if(B.last){B.iv.push(now-B.last);queueMicrotask(()=>B.cpu.push(performance.now()-now))}B.last=now;if(now-B.t0<B.ms)return;
- if(SHEETS.level()>0&&!B.force){PQ.pb=null;PQ.pbDone=0;PQ.boot=now;B.res({step:'skipped'});return}
+ if((SHEETS.level()>0||(IN&&IN.on))&&!B.force){PQ.pb=null;PQ.pbDone=0;PQ.boot=now;if(B.ph==='B'&&B.d&&T.n!==B.d.from){T.autoN=B.d.from;tierSet('auto',{keep:1})}B.res({step:'skipped'});return}
  if(B.ph==='A'){B.lift=0;const d=pqDecideA(T.n,B.iv,B.cpu,T.hud&&T.hud.gpu);B.d=d;if(d.step!=='trial'){PQ.pb=null;pqProbeSave(d.to,d);B.res(Object.assign(d,{tier:d.to}));return}
   B.ph='B';B.iv=[];B.cpu=[];B.last=0;B.t0=now;const keep=T.autoN;T.autoN=d.to;tierSet('auto',{keep:1});T.autoN=keep;return}
  const b=pqDecideB(T.n,B.iv),d=B.d;d.trial=b;PQ.pb=null;const fin=b.ok?d.to:d.from;d.step=b.ok?'promote':'revert';d.tier=fin;pqProbeSave(fin,d);if(!b.ok&&T.n!==fin){T.autoN=fin;tierSet('auto',{keep:1})}
- if(b.ok&&fin<(T.caps.phone?2:3)&&PQ.probeRuns<2){PQ.pbDone=0;PQ.again=1;PQ.boot=now-5000}B.res(d)}
+ if(b.ok&&fin<(T.caps.phone?1:3)&&PQ.probeRuns<2){PQ.pbDone=0;PQ.again=1;PQ.boot=now-5000}B.res(d)}
 {const f0=TIER.fps;TIER.fps=function(){return PQ.pb&&PQ.pb.lift?1000:f0.call(this)}}
 // wrappers (no LF4 line edited): tierF adds the POL3 features, applyTier then sets targets and materials, tierFrame runs pqFrame, tierInfo reports {bloom,sao,msaa,ts}
 tierF=(f0=>function(n,w,h){const f=f0(n,w,h);try{pqF(n,f)}catch(e){}return f})(tierF);
 applyTier=(f0=>function(sw){const f=f0(sw);try{pqApply(f)}catch(e){PQ.fail.push('apply:'+e.message);TIER.fail.push('pq:'+e.message)}return f})(applyTier);
 tierFrame=(f0=>function(now,dt){f0(now,dt);try{pqFrame(now,dt)}catch(e){if(PQ.fail.length<20)PQ.fail.push('frame:'+e.message)}})(tierFrame);
+// fix1: the memory readouts count POL3's targets too: a 32-bit depth texture on the scene target (+2 B/px over LF4's 16-bit count), the bloom chain and the AO target (RGBA8)
+tierMem=(f0=>function(){const r=f0(),R=TIER.rt||rt;let b=r.mb*1048576;if(R&&R.depthTexture&&R.depthTexture.type!==THREE.UnsignedShortType)b+=r.px*2;for(const t of PQ.bl)b+=t.width*t.height*4;if(PQ.ao)b+=PQ.ao.width*PQ.ao.height*4;r.mb=b/1048576;return r})(tierMem);
+tierMemAt=(f0=>function(w,h,n=3){const r=f0(w,h,n),o=TIER.off,d=TIER.prDrop;TIER.off={};TIER.prDrop=0;const f=tierF(n,w,h);TIER.off=o;TIER.prDrop=d;const pw=Math.round(w*f.pr),ph=Math.round(h*f.pr),px=pw*ph,big=px>4e6,s0=n===3&&!big?2:4,a=big?4:2;let b=0;
+  if((f.ao==='sao'||f.tsMode==='depth')&&(f.msaa||!big))b+=px*2;if(f.bloom==='mip')for(let i=0;i<(f.lv|0);i++){const k=s0*Math.pow(2,i);b+=Math.max(1,Math.round(pw/k))*Math.max(1,Math.round(ph/k))*4}if(f.ao==='sao')b+=Math.round(pw/a)*Math.round(ph/a)*4;
+  r.mb=+(r.mb+b/1048576).toFixed(1);return r})(tierMemAt);
 tierInfo=(f0=>function(){const r=f0(),f=TIER.f;return Object.assign(r,{bloom:{on:!!(PQ.on&&f.bloom==='mip'),mode:f.bloom,levels:PQ.on?PQ.lv:0,k:+PQ.k.bk.toFixed(3)},sao:{on:!!(PQ.on&&PQ.aoOn),k:PQ.k.aok,radius:.6},msaa:f.msaa?f.msaa:false,fxaa:!!f.fxaa,
  ts:{taps:f.ts,mode:f.tsMode,depth:!!(PQ.on&&f.tsMode==='depth'),band:PQ.on?PQ.k.ts.map(x=>+x.toFixed(3)):null},halo:PQ.on?'quads':'points',pq:{on:PQ.on,passes:PQ.passes,progs:Object.keys(PQ.mat).length+(PQ.post3?1:0)+(PQ.halo?1:0),fail:PQ.fail.slice(),dead:Object.keys(PQ.dead),probeRuns:PQ.probeRuns,probing:PQ.pb?PQ.pb.ph:null}})})(tierInfo);
 PQ.r0=renderer.render;renderer.render=function(s,c){if(PQ.on&&s===postScene&&PQ.post3)pqPasses();return PQ.r0.call(this,s,c)};
@@ -4289,9 +4298,9 @@ B8TREES.push([-51.2,44.6,2,.9],[-45.3,45.2,2,.85],[-50,49.6,2,.95]);
 // plinths, quoins, planters, shutters and wreaths (PB 'vc', merged before PB.build; no cornice slab: a full-footprint slab tilts across near walk views under BEND), kerb leaves baked into the sett canvas. Hook __mocha.pol1(). New lines only; reads PAL/AUT/AUTB/DB kit.
 const POL={trees:[// [x,z,kind 2 maple / 0 fir,scale,carpet]
   [-31,22,2,.9,1],[-36,20.8,0,.75,0],[-47.5,22,2,.95,1],[-39.6,25.4,2,.72,0],[-29.5,41,2,.78,0],[-20.4,25.4,2,.62,0],[-20.4,40.6,2,.76,0],[-44,50.5,2,1,1],[-14,22,2,.9,1],[-13.5,41.8,2,.8,1],// Lantern Square: north strip, NW, west of Threads, NE, SE
-  [24,29,2,1.45,0],[36,26,2,1.55,0],[47.5,27.5,2,1.45,0],[30,24.5,0,1.25,0],[42,24,0,1.3,0],[20,47.8,2,.95,1],[57,46.5,2,1.05,1],[25,66,2,1,1],// Mocha's lane: back layer over the roof, yard sides, the cabin-side kerb
+  [24,29,2,1.45,0],[36,26,2,1.55,0],[47.5,27.5,2,1.45,0],[30,24.5,0,1.25,0],[42,24,0,1.3,0],[20,47.8,2,.95,1],[57,46.5,2,1.05,1],[20.5,66.5,2,1,1],// Mocha's lane: back layer over the roof, yard sides, the cabin-side kerb (fix1: was (25,66), which sat in the fire-pit shot over Wendell and filled the street-homes corner)
   [120.5,-9,2,1,1],[125,-11,0,.85,0],[117.5,-12.5,2,1.1,1],[129.5,16.5,2,1.1,1],[134,18,0,.9,0],[137,-12,2,1,1],[123.5,-16.5,0,1,0],[131,-6.2,2,.8,1],[131,6.4,2,.78,1]],// the station forecourt (+ the apron pair by the door)
- lines:[],roofs:0,walls:0,roofC:{brick:'#8B3F2B',butter:'#9A4530',sage:'#6B5A3C',plum:'#5A3A36',slate:'#4E5468',log:'#5E4430'},
+ lines:[],roofs:0,walls:0,roofC:{brick:'#8B3F2B',butter:'#9A4530',sage:'#6B5A3C',plum:'#5A3A36',slate:'#5E5260',log:'#5E4430'},
  flat:['cafe','records','market','grocery','petstore','cinema','studio','phones','bikes','arcade','bakery','threads','nursery','evergreen'],gab:['thrift','bookstore','station','lantern'],
  chim:{cafe:1,bakery:1,evergreen:1,records:1,threads:1,nursery:1,studio:1},
  views:['follow','walk-square-cozy','walk-square-wide','street-homes','street-homes-walk','station','terrace-cafe'],last:null};
@@ -4320,11 +4329,15 @@ DSITES.push({id:'pol:carpet',x:-31,z:22,r:0,lay(){for(const t of POL.trees)if(t[
  {id:'pol:swag',x:-30,z:33,r:0,lay(){if(DBOOT)for(const [a,b] of POLSW)polStrand([a,b],Math.min(.95,Math.hypot(b[0]-a[0],b[2]-a[2])*.06));polWires()}});
 // kerb drifts (S7, s3): fallen leaves baked into the sett canvas along both kerbs (the tile spans the 7 m carriageway), a few across it, and a faint warm wash: 0 draws, 0 programs
 function polSett(){const t=autSettTex,c=t&&t.image;if(!c||!c.getContext)return 0;const g=c.getContext('2d'),w=c.width,h=c.height,r=seeded(4111);let n=0;
+  if(!POL.settC){const k=document.createElement('canvas');k.width=w;k.height=h;k.getContext('2d').drawImage(c,0,0);POL.settC=k}else{g.globalAlpha=1;g.drawImage(POL.settC,0,0)}// fix1: a clean copy, so the leaves can come off out of season
   g.globalAlpha=.07;g.fillStyle='#C98A55';g.fillRect(0,0,w,h);g.globalAlpha=1;
   const leaf=(x,y,s,col,a)=>{for(const oy of [-h,0,h]){g.save();g.translate(x,y+oy);g.rotate(a);g.fillStyle=col;g.beginPath();g.ellipse(0,0,7*s,4.2*s,0,0,6.29);g.fill();g.strokeStyle='rgba(60,30,12,.35)';g.lineWidth=1;g.beginPath();g.moveTo(-6*s,0);g.lineTo(6*s,0);g.stroke();g.restore()}n++};
   for(const side of [0,1])for(let i=0;i<120;i++){const d=Math.pow(r(),1.8)*w*.16,x=side?w-4-d:4+d,y=r()*h;leaf(x,y,.8+r()*.6,AUT.litter[i%6],r()*6.28)}
   for(let i=0;i<16;i++)leaf(w*.2+r()*w*.6,r()*h,.75+r()*.4,AUT.litter[i%6],r()*6.28);t.needsUpdate=true;return n}
-POL.sett=polSett();
+POL.sett=polSett();POL.settPile=true;
+// fix1: the kerb leaves follow the dressing row's pile flag (on Sep 22 - Nov, off in summer and December); repainted only when that flips (a session crossing the date included)
+function polSettRow(row){const W=DROW[row]||DROW.off,want=!!W.pile;if(want===POL.settPile||!POL.settC)return;POL.settPile=want;if(want)polSett();else{const g=autSettTex.image.getContext('2d');g.globalAlpha=1;g.drawImage(POL.settC,0,0);autSettTex.needsUpdate=true}}
+{const f=dressBuild;dressBuild=function(row,boot){const r=f.apply(this,arguments);if(!boot)try{polSettRow(row)}catch(e){}return r}}
 // ---- facades (run once on its own line before PB.build, after the places are built). Hip roof: replaces the flat-roof box geometry of fw (same mesh and material, so 0 draws and the shell fade still applies); the front parapet hides.
 function polHip(W,D,R,y0,yE){const P=[],q=(a,b,c,d)=>{P.push(...a,...b,...c,...a,...c,...d)},t=(a,b,c)=>P.push(...a,...b,...c),Y=yE+R;let r0,r1;
   if(W>=D){const e=(W-D)/2;r0=[-e,Y,0];r1=[e,Y,0];q([-W/2,yE,D/2],[W/2,yE,D/2],r1,r0);q([W/2,yE,-D/2],[-W/2,yE,-D/2],r0,r1);t([-W/2,yE,-D/2],[-W/2,yE,D/2],r0);t([W/2,yE,D/2],[W/2,yE,-D/2],r1)}
@@ -4375,7 +4388,7 @@ function polView(id){if(id==='follow'){if(IN.on&&window.__mocha.inside)try{windo
 async function pol1(o={}){const ids=o.views||POL.views,out=[],mode0=camS.mode,wait=o.wait||1200;for(const id of ids){polView(id);const f0=T;await new Promise(r=>{const t0=performance.now(),k=()=>{if(T-f0>.12&&performance.now()-t0>wait||performance.now()-t0>wait*6)r();else requestAnimationFrame(k)};requestAnimationFrame(k)});
     out.push(Object.assign({id},polMeasure()))}if(o.restore!==false&&camS.mode!==mode0)try{setCamMode(mode0)}catch(e){}
   POL.last={views:out};return POL.last}
-STYLE.hooks.push(m=>Object.assign(m,{pol1:o=>pol1(o),pol1Info:()=>({trees:POL.trees.length,maples:POL.trees.filter(t=>t[2]===2).length,inTrees:trees.filter(t=>POL.trees.some(q=>q[0]===t.x&&q[1]===t.z)).length,roofs:POL.roofs,walls:POL.walls,swags:POL.lines.length,sett:POL.sett,fountainClear:+Math.min(...POL.lines.map(l=>{const a=l.pins[0],b=l.pins[1],dx=b[0]-a[0],dz=b[2]-a[2],t=clamp(((-30-a[0])*dx+(33-a[2])*dz)/(dx*dx+dz*dz),0,1);return Math.hypot(-30-a[0]-dx*t,33-a[2]-dz*t)})).toFixed(2),cafeRoof:(()=>{const r=byId.cafe.fw.children.find(o=>o.isMesh&&o.geometry&&!o.geometry.parameters&&o.geometry.attributes.position.count>60);return r?{verts:r.geometry.attributes.position.count,top:+r.geometry.boundingBox.max.y.toFixed(2),col:'#'+r.material.color.getHexString()}:null})(),last:POL.last})}));
+STYLE.hooks.push(m=>Object.assign(m,{pol1:o=>pol1(o),pol1Info:()=>({trees:POL.trees.length,maples:POL.trees.filter(t=>t[2]===2).length,inTrees:trees.filter(t=>POL.trees.some(q=>q[0]===t.x&&q[1]===t.z)).length,roofs:POL.roofs,walls:POL.walls,swags:POL.lines.length,sett:POL.sett,settOn:POL.settPile,fountainClear:+Math.min(...POL.lines.map(l=>{const a=l.pins[0],b=l.pins[1],dx=b[0]-a[0],dz=b[2]-a[2],t=clamp(((-30-a[0])*dx+(33-a[2])*dz)/(dx*dx+dz*dz),0,1);return Math.hypot(-30-a[0]-dx*t,33-a[2]-dz*t)})).toFixed(2),cafeRoof:(()=>{const r=byId.cafe.fw.children.find(o=>o.isMesh&&o.geometry&&!o.geometry.parameters&&o.geometry.attributes.position.count>60);return r?{verts:r.geometry.attributes.position.count,top:+r.geometry.boundingBox.max.y.toFixed(2),col:'#'+r.material.color.getHexString()}:null})(),last:POL.last})}));
 // B10: furniture capture for interior grids. Runs while a place is being built (bake() calls it before merging) and once more
 // after the keepers' counters are added. Records local AABBs [x0,z0,x1,z1] of meshes in the agent band with a footprint >= .25.
 function capMeshes(root,p,pg){if(!root||!pg||!p||!p.w)return;let a=root;while(a&&a!==pg)a=a.parent;if(!a)return;
@@ -4971,17 +4984,20 @@ function seaWatchOK(){const c=CAM.top();return camS.mode==='follow'&&!IN.on&&IN.
 function seaMaskW(x,z){if(x>-70||Math.abs(z)>120)return false;for(const p of PIERS){if(Math.hypot(Math.max(p[0]-x,0,x-p[1]),Math.max(p[2]-z,0,z-p[3]))<9)return false}
   for(let s=0;s<=5;s++){const f=seaFerryAt(T+s);if(Math.hypot(f[0]-x,f[1]-z)<12)return false}for(const q of sails)if(Math.hypot(q.position.x-x,q.position.z-z)<10)return false;return true}
 function seaWater(x,z){let best=null;for(const d of [22,30,40,50,62]){for(let i=0;i<9;i++){const b=-Math.PI/2+(i/8-.5)*1.7,qx=x+Math.sin(b)*d,qz=z+Math.cos(b)*d;if(seaMaskW(qx,qz)){best={x:qx,z:qz,d,b};break}}if(best)break}return best}// nearest ring first
-function seaWatchTgt(){const e=SEAW.e0;if(!e)return SEAW.tg;SEAW.tg.x=G.x+(e.x-G.x)*.42;SEAW.tg.z=G.z+(e.z-G.z)*.42;SEAW.tg.y=Math.max(0,navFloor(G.x,G.z));return SEAW.tg}
+function seaWatchTgt(){return SEAW.tg}// fix1: frozen at trigger time (set in seaWatch), so the shot does not drift with Mocha
 function seaWatchEnd(why){if(SEAW.on){CAM.pop('sea');SEAW.on=0}SEAW.e0=null;SEAW.pend=null;SEAW.why=why||'';}
 function seaWatch(dt){const W=SEAW,S0=SEA.st;
-  if(W.on){const e=W.e0;if(W.pend&&S0.clk>=W.pend.at&&!SEA.ev){const q=W.pend;W.pend=null;if(seaGate()&&seaMaskW(q.x,q.z))seaStart(q.kind,q)}const gone=!SEA.ev&&!W.pend;if(!seaWatchOK()||!e||Math.hypot(G.x-W.x0,G.z-W.z0)>45)seaWatchEnd('abort');else if(gone){if((W.t+=dt)>1.6)seaWatchEnd('done')}else W.t=0;return}
+  if(W.on){const e=W.e0;if(W.pend&&S0.clk>=W.pend.at&&!SEA.ev){const q=W.pend;W.pend=null;if(seaGate()&&seaMaskW(q.x,q.z))seaStart(q.kind,q)}const gone=!SEA.ev&&!W.pend;if(!seaWatchOK()||!e||Math.hypot(G.x-W.x0,G.z-W.z0)>(W.pend?6:45))seaWatchEnd('abort');else if(gone){if((W.t+=dt)>1.6)seaWatchEnd('done')}else W.t=0;return}
   if((W.near-=dt)>0)return;W.near=1;// 1 Hz
-  if(!seaWatchOK()||SEA.ev||SEA.pend||W.pend||seaNight(hourAt(Date.now()))){W.nt=0;return}
+  const mv=W.px==null?0:Math.hypot(G.x-W.px,G.z-W.pz);W.px=G.x;W.pz=G.z;// fix1: only while Mocha lingers (moved < .8 m per second for 3 s)
+  if(!seaWatchOK()||SEA.ev||SEA.pend||W.pend||mv>.8||seaNight(hourAt(Date.now()))){W.nt=0;return}
   const w=seaWater(G.x,G.z);if(!w){W.nt=0;return}W.nt=(W.nt||0)+1;if(W.nt<3||S0.clk-W.last<150||S0.clk-S0.last<40)return;
   let a=null;for(let i=0;i<24&&!a;i++){const b=w.b+rand(-.35,.35),d=Math.max(22,w.d+rand(-3,7)),x=G.x+Math.sin(b)*d,z=G.z+Math.cos(b)*d;if(seaMaskW(x,z))a={x,z}}if(!a)return;
   const kind=Math.random()<.62?'breach':'spout',bear=Math.atan2(a.x-G.x,a.z-G.z),hd=bear+(Math.random()<.5?1:-1)*Math.PI/2+rand(-.3,.3),sep=Math.hypot(a.x-G.x,a.z-G.z),fk=Math.max(1,STYLE.fovK||1);
   W.last=S0.clk;S0.last=S0.clk;S0.due=Math.max(S0.due,S0.clk+rand(240,420));W.e0=a;W.x0=G.x;W.z0=G.z;W.t=0;W.n++;W.on=1;W.why='watch';
-  const D=(sep*.42+9)/fk;CAM.push('sea',{prio:1,target:seaWatchTgt,dist:D,pitch:.34,yaw:Math.atan2(G.x-a.x,G.z-a.z)+.22,range:[D*.7,D*1.4],ease:1.4});
+  // fix1: look past him - the camera stands 12 m behind Mocha and 5.5 m up, its pitch halfway between his feet and the water at the spot, all frozen at trigger time
+  {const yM=Math.max(0,navFloor(G.x,G.z)),ux=(a.x-G.x)/sep,uz=(a.z-G.z)/sep,m=12,h=5.5,aM=Math.atan2(h,m),aE=Math.atan2(h+yM,m+sep),pt=(aM+aE)/2,tt=h/Math.tan(pt),D=h/Math.sin(pt)/(STYLE.fovK||1);
+   W.tg.x=G.x+ux*(tt-m);W.tg.z=G.z+uz*(tt-m);W.tg.y=yM;CAM.push('sea',{prio:1,target:seaWatchTgt,dist:D,pitch:pt,yaw:Math.atan2(G.x-a.x,G.z-a.z)+.12,range:[D*.7,D*1.4],ease:1.4})}
   W.pend={x:a.x,z:a.z,heading:hd,kind,at:S0.clk+3.2,trig:'watch'};W.log.push({kind,x:+a.x.toFixed(1),z:+a.z.toFixed(1),sep:+sep.toFixed(1),at:+S0.clk.toFixed(1)});if(W.log.length>8)W.log.shift()}
 const SEA_LINES={b:['an ORCA!! did you see that?! 🐋','whoa!! a whale just jumped!! 🐋','orca!! right there!! 🌊'],s:['ooh, a spout! whales! 🐋','is that… an orca? hi orca!! 👋🐋','psst, whales out there 🌊']};
 function seaReact(ev){const W=SEAW;if(!ev||G.mode==='trip'||G.sleep||T-W.lastR<45)return;const d=Math.hypot(G.x-ev.x,G.z-ev.z);if(d>78||(IN.on&&IN.pid&&IN.see&&!IN.see('mocha')))return;if(inPlaceAt&&WORLD&&inPlaceAt(G.x,G.z))return;
@@ -7406,6 +7422,7 @@ const STICK=(()=>{const joy=$('#joy'),knob=$('#knob');const o={id:null,cx:0,cy:0
     JOY.x=rx*g;JOY.y=ry*g;knob.style.transform=`translate(calc(-50% + ${rx*c}px),calc(-50% + ${ry*c}px))`;const run=g*l>.85;if(run!==o.run){o.run=run;knob.textContent=run?'🏃':'🚶'}};
   o.end=()=>{o.id=null;JOY.x=JOY.y=0;o.run=false;knob.style.transform='translate(-50%,-50%)';knob.textContent='🚶';joy.classList.remove('live','float');joy.style.left='';joy.style.top='';joy.style.bottom=''};
   return o})();
+{const m0=STICK.move;STICK.move=e=>{m0(e);if(typeof IN==='object'&&IN&&IN.lock)JOY.x=JOY.y=0}}// fix1: during a door fade the stick is held but does not push
 // ---------- CONTROLS v3 (owner, Nov 3: "I really hate the controller... I want to be able to use it how you normally would"): the standard mobile third-person scheme ----------
 // walk mode, touch: a floating joystick for the LEFT thumb (anywhere in the left half below the top HUD band; a faint base rests bottom-left as a hint) and drag-to-look for the RIGHT thumb
 // (yaw ~1:1, pitch half of that, clamped), both at once; two non-stick fingers pinch-zoom; a quick tap (< 10 px, < 300 ms) still taps (tap-to-go, talk, interact) and a long-press still jogs.
@@ -8229,6 +8246,7 @@ function whyCard(kind){const el=$('#b29card'),r=B29M.last||computeMood(),m=S.hea
 {const h0=hud;hud=function(){h0.apply(this,arguments);try{const mt=$('#meters'),f=mt&&mt.firstElementChild,m=S.heart&&S.heart.m;if(f&&m)f.textContent=(MOOD_I[m]||'')+' '+m;const st=$('#status');if(st&&G.why&&G.why.length&&!/^💭/.test(st.textContent))st.textContent='💭 '+st.textContent}catch(e){}}}
 $('#meters').addEventListener('click',e=>{e.stopPropagation();whyCard('feel')});$('#status').addEventListener('click',e=>{e.stopPropagation();whyCard('why')});
 {const r0=renderDiary;renderDiary=function(){r0.apply(this,arguments);try{const h=$('#tab-diary'),p=h.querySelector('p.muted');if(p&&/did \d+ things/.test(p.textContent))p.remove();if(!h.querySelector('.b29dbtn')){const b=document.createElement('button');b.className='b29dbtn';b.textContent='📰 The Drizzle Dispatch';b.onclick=()=>dispatch(Math.max(+S.presence.l||0,Date.now()-864e5));h.prepend(b)}}catch(e){}}}
+if(TABS.R.diary)TABS.R.diary=renderDiary;// fix1: the tab registered the pre-B29 renderDiary; point it at the wrapper so the Dispatch button is always there
 const SPY={s:null,g:null,n:{goPoint:0,startAct:0}};
 Object.assign(window.__mocha,{spark:(k,s)=>spark(k,s),computeMood,moodCalc,makePlan,dayPlan,planBias,scoreAct,consolidate,onThisDay,dispatch,whyCard,presCands,presTick,wouldBike,MOODS,QUIRKS,SPARK,b29Frame:dt=>b29Frame(dt||.05,T),
   mood:()=>{const r=B29M.last||moodCalc();return{m:G.mood,heart:S.heart.m,why:r.why,V:r.V,A:r.A,face:{arc:sleepEyes[0].visible&&sleepEyes[0].rotation.z===0&&!G.sleep,eyeY:B29V.eyeY,hl2:b29Hl[0].visible,sweat:b29Sw.visible,blush:+b29BlM.opacity.toFixed(3)},glow:'#'+mLight.color.getHexString(),sp:S.heart.sp.slice()}},
@@ -8277,14 +8295,14 @@ function giftMocha(code,v,o){const t=Date.now(),it=catItem(code),yn=youName(),wi
 function giveMocha(code,v,o){return giveTo('mocha',code,v,o)}
 // ---------- displays: one catMerge group (<=3 draws) per place, parented to p.inner so it culls with the room; surfaces found by a one-time ray cast ----------
 function b30Surf(p,lx,lz,y0,y1){const g=p.inner;if(!g)return null;g.updateMatrixWorld(true);const o=B30G.v.set(lx,3.2,lz);g.localToWorld(o);B30G.rc.set(o,B30G.down);B30G.rc.far=4;B30G.rc.camera=camera;const H=B30G.rc.intersectObject(g.parent||g,true);
-  for(const h of H){let q=h.object,mine=false;while(q&&q!==g.parent){if(q.name==='b30disp')mine=true;q=q.parent}if(mine)continue;const l=g.worldToLocal(B30G.w.copy(h.point));if(l.y>=y0&&l.y<=y1)return l.y}return null}
-function b30Spot(id){const D=GIFTD[id],p=D&&byId[D.pid];if(!p||!p.inner)return null;const memo=B30G.pts[id];if(memo)return memo;let r=null;
+  for(const h of H){let q=h.object,mine=false;while(q&&q!==g.parent){if(q.name==='b30disp'||(q!==g&&!q.visible))mine=true;q=q.parent}if(mine)continue;/* fix1: hidden parts (the nest's built-in desk) are not surfaces */const l=g.worldToLocal(B30G.w.copy(h.point));if(l.y>=y0&&l.y<=y1)return l.y}return null}
+function b30Spot(id){const D=GIFTD[id],p=D&&byId[D.pid];if(!p||!p.inner)return null;{const nw=typeof nestWant==='function'&&nestWant();if(B30G.nw!==nw){B30G.nw=nw;for(const k in B30G.pts)delete B30G.pts[k]}}const memo=B30G.pts[id];if(memo)return memo;let r=null;
   if(D.at==='win'){const s=(DISPLAY[D.pid]||[]).find(q=>q.surf==='window')||(DISPLAY[D.pid]||[]).find(q=>q.surf==='table');if(s){const tx=Math.cos(s.yaw||0),tz=-Math.sin(s.yaw||0),o=(s.maxW||.5)/2+.22;r={x:s.lx+tx*o,y:s.ly+.003,z:s.lz+tz*o,dx:tx*.26,dz:tz*.26,ry:s.yaw||0}}}
   else if(D.at==='k'&&typeof LAYOUTS!=='undefined'&&LAYOUTS[D.pid]&&LAYOUTS[D.pid].counter){const c=LAYOUTS[D.pid].counter,w=c.w||2;for(const f of [.32,.22,.4,.12,-.3,-.2]){const x=c.x+w*f,y=b30Surf(p,x,c.z,.6,1.65);if(y!=null){r={x,y:y+.003,z:c.z+.05,dx:-.22,dz:0,ry:0};break}}}
   else if(D.at==='k'){const k=KB[id];if(k){let P=k.pos,A=k.ask||[P[0],P[1]+2];if(k.obj){k.obj.getWorldPosition(B30G.v);p.inner.worldToLocal(B30G.v);P=[B30G.v.x,B30G.v.z];A=[P[0]*.5,P[1]*.5]}const dx=A[0]-P[0],dz=A[1]-P[1],L=Math.hypot(dx,dz)||1,nx=-dz/L,nz=dx/L;
       outer:for(const f of [.45,.35,.55,.65])for(const sd of [.55,-.55,.85,-.85,.3,0]){const x=P[0]+dx*f+nx*sd,z=P[1]+dz*f+nz*sd,y=b30Surf(p,x,z,.55,1.35);if(y!=null){r={x,y:y+.003,z,dx:nx*.24,dz:nz*.24,ry:Math.atan2(dx,dz)};break outer}}}}
   else{const S0=p.spots&&p.spots.desk||[-3,-4.4];outer2:for(const [dx,dz] of [[-.4,-.2],[-.3,-.35],[.35,-.2],[-.4,0]]){const x=S0[0]+dx,z=S0[1]+dz,y=b30Surf(p,x,z,1.1,1.55);if(y!=null){r={x,y:y+.003,z,dx:-.2,dz:0,ry:0};break outer2}}
-    if(!r){const y=b30Surf(p,S0[0]+1,S0[1]-.6,.6,1.7);r={x:S0[0]+1,y:y!=null?y:.78,z:S0[1]-.6,dx:.24,dz:0,ry:0,fb:1}}}
+    if(!r){const y=b30Surf(p,S0[0]+1,S0[1]-.6,-.05,1.7);r={x:S0[0]+1,y:y!=null?y:.78,z:S0[1]-.6,dx:.24,dz:0,ry:0,fb:1}}}
   return B30G.pts[id]=r}
 function b30Disp(id){const D=GIFTD[id],p=D&&byId[D.pid];if(!p||!p.inner||typeof catMerge!=='function')return null;const old=B30G.grp[id];if(old){catFree(old);B30G.grp[id]=null}
   const src=id==='mocha'?(S.mine||[]).filter(m=>m.w==='shelf').slice(-4).map(m=>[m.c,m.v|0]):(S.gifts.disp[id]||[]);if(!src.length)return null;const sp=b30Spot(id);if(!sp)return null;
@@ -11335,7 +11353,7 @@ function cabBuild(){const C=CB,h=S.you.home;C.lv=h.lv;C.A.length=0;C.nfix=0;cons
 function cabFrame(gdt){const C=CB;if(!C||!S.you||!S.you.home)return;const now=performance.now(),h=S.you.home,dt=Math.min(2,C.pn?(now-C.pn)/1e3:gdt||0);C.pn=now;// real seconds: the fades keep their timing on slow devices
   // presence: 1.5 s fade
   const pres=C.presF!=null?C.presF:isPresent();C.pv=clamp(C.pv+(pres?1:-1)*dt/1.5,0,1);
-  const wk=camS.mode==='walk',inside=wk&&IN.on&&IN.pid==='cabin';C.room=inside?cabRoomAt(YOU.x,YOU.z):null;
+  const wk=camS.mode==='walk',inside=IN.on&&IN.pid==='cabin',sj=IN.who==='mocha'?G:YOU;C.room=inside?cabRoomAt(sj.x,sj.z):null;// fix1: the cutaway follows LF1's room state (watching Mocha inside keeps the roof off)
   const cut=C.cutF!=null?C.cutF:inside;if(cut!==C.cut){C.cut=cut;cabCutApply()}
   // door: opens for the walker
   {const d=C.door,dw=Math.hypot(YOU.x-40,YOU.z-69),want=wk&&dw<2.4?1.35:0,a=d.userData.ang;if(Math.abs(want-a)>.005){d.userData.ang=a+(want-a)*Math.min(1,dt*5);d.rotation.y=d.userData.ang;if(want&&a<.05)sfx('creak',{x:40,z:69});if(!want&&a>.2&&d.userData.ang<=.2)sfx('close',{x:40,z:69})}
@@ -12583,17 +12601,28 @@ Object.assign(window.__mocha,{freshHome,homeItems:()=>nestState(),housewarming:o
 //     never sits between the camera and the pit; it frames the pit plus whoever is there (Mocha, Wendell). Watching Mocha (follow) when he is at
 //     the pit, or walking within 7 of it; pops when that ends. Camera only: it never writes G.act / G.target / G.mode.
 const FPCAM={on:0,t:0,n:0,why:'',m:0,w:0,c:{x:0,y:0,z:0},yaw:Math.PI+.35};
-function fpCamTgt(){const P=CB&&CB.pit,c=FPCAM.c;if(!P)return null;let x=P.x*2,z=P.z*2,n=2;if(FPCAM.m){x+=G.x;z+=G.z;n++}if(FPCAM.w){x+=W.x;z+=W.z;n++}c.x=x/n;c.y=.15;c.z=z/n;return c}
+function fpCamTgt(){const P=CB&&CB.pit,c=FPCAM.c;if(!P)return null;if(FPCAM.why==='porch'){c.x=G.x;c.y=.15;c.z=G.z;return c}let x=P.x*2,z=P.z*2,n=2;if(FPCAM.m){x+=G.x;z+=G.z;n++}if(FPCAM.w){x+=W.x;z+=W.z;n++}x/=n;z/=n;
+  // walk mode (fix1): the walker stays the subject; lean from him toward the pit group by at most ~45% of the visible half-width, so he never leaves the frame
+  //   (sideways by at most ~45% of the visible half-width, toward or away from the camera by at most ~35% of the distance)
+  if(camS.mode==='walk'){const dx=x-YOU.x,dz=z-YOU.z,cy=Math.cos(camS.yaw),sy=Math.sin(camS.yaw),E=STYLE.effDist(),L=Math.max(1.2,.45*E*Math.tan(camera.fov*Math.PI/360)*camera.aspect),Ld=Math.max(L,.35*E);
+    const a=Math.max(-L,Math.min(L,dx*cy-dz*sy)),b=Math.max(-Ld,Math.min(Ld,-dx*sy-dz*cy));x=YOU.x+a*cy-b*sy;z=YOU.z-a*sy-b*cy}
+  c.x=x;c.y=.15;c.z=z;return c}
 function fpCamWant(){if(typeof CB==='undefined'||!CB||!CB.pit||IN.on||(IN.ph!=='idle'&&IN.ph!=='in')||(typeof DECO!=='undefined'&&DECO.on)||G.mode==='trip'||G.ride)return'';const P=CB.pit,r=FPCAM.on?1.5:1;
-  if(!(FP.on||VY.on&&VY.ph==='pit'||WV.on&&WV.why==='pit'&&WV.ph==='bench'))return'';
+  // fix1: Mocha's porch visit (knock, rocker, wait) in follow mode reuses this Maple Row framing, so the cabin roof never sits between the camera and him
+  if(!(FP.on||VY.on&&VY.ph==='pit'||WV.on&&WV.why==='pit'&&WV.ph==='bench'))return camS.mode==='follow'&&VY.on&&/^(door|knock|torock|wait)$/.test(VY.ph)&&Math.hypot(G.x-37.5,G.z-67.6)<7*r?'porch':'';
   if(camS.mode==='follow')return Math.hypot(G.x-P.x,G.z-P.z)<6*r?'follow':'';if(camS.mode==='walk')return Math.hypot(YOU.x-P.x,YOU.z-P.z)<7*r?'walk':'';return''}
 function fpCamTick(dt){const now=performance.now();if(now<FPCAM.t)return;FPCAM.t=now+250;const w=fpCamWant();
-  if(w){const P=CB.pit;if(FPCAM.on)FPCAM.why=w;FPCAM.m=Math.hypot(G.x-P.x,G.z-P.z)<5&&IN.see('mocha')?1:0;FPCAM.w=W.visible&&Math.hypot(W.x-P.x,W.z-P.z)<5?1:0}
-  if(w&&!FPCAM.on){FPCAM.on=1;FPCAM.n++;FPCAM.why=w;const por=innerWidth<innerHeight,d=por?12:9;try{ctlRelease()}catch(e){}CAM.push('firepit',{prio:1,target:fpCamTgt,dist:d,pitch:.52,yaw:FPCAM.yaw,range:[d*.6,d*1.5],ease:2})}
+  // fix1: a walk/follow switch while the layer is on (setCamMode rewrites camS.yaw) eases the layer's yaw and pitch in again; walk mode follows the walker briskly
+  if(w){const P=CB.pit;if(FPCAM.on){const e=CAM.S.find(q=>q.owner==='firepit');if(e){if(w!==FPCAM.why)e.k=0;e.ease=w==='walk'?6:2}FPCAM.why=w}FPCAM.m=Math.hypot(G.x-P.x,G.z-P.z)<5&&IN.see('mocha')?1:0;FPCAM.w=W.visible&&Math.hypot(W.x-P.x,W.z-P.z)<5?1:0}
+  if(w&&!FPCAM.on){FPCAM.on=1;FPCAM.n++;FPCAM.why=w;const por=innerWidth<innerHeight,d=por?12:9;CAM.push('firepit',{prio:1,target:fpCamTgt,dist:d,pitch:.52,yaw:FPCAM.yaw,range:[d*.6,d*1.5],ease:w==='walk'?6:2})}// fix1: a camera layer is not a sheet, so a held stick or key is kept
   else if(!w&&FPCAM.on){FPCAM.on=0;CAM.pop('firepit')}}
 {const f=fpTick;fpTick=function(dt){const r=f.apply(this,arguments);try{fpCamTick(dt||0)}catch(e){}return r}}
 // (2) batch-4 cards (the Drizzle Dispatch, the how-he-feels card, the guestbook) are sheets: LF5 goes quiet while one is open, the stick lets go
-{const reg=(id,on)=>{const el=document.getElementById(id);if(!el)return;let was=null;const f=()=>{const v=!!on(el);if(v===was)return;was=v;try{SHEETS.set('b4:'+id,v?'half':null)}catch(e){}if(v)try{ctlRelease()}catch(e){}};
+// fix1: on wide screens and landscape the cards are side cards; while one is open the right-side HUD (dock, walk-around pill, text bar, slot chips) steps aside, and the guestbook is a side card too
+{const st=document.createElement('style');st.textContent=`@media (min-width:761px),(orientation:landscape) and (max-height:520px){body.b4card #dock,body.b4card #modeBtn,body.b4card #chatwrap,body.b4card .hudS{visibility:hidden!important;pointer-events:none!important}}
+  @media (min-width:761px){#gbk{left:auto;right:max(12px,env(safe-area-inset-right));transform:none;width:min(430px,48vw)}}`;document.head.appendChild(st)}
+const B4OPEN=new Set();
+{const reg=(id,on)=>{const el=document.getElementById(id);if(!el)return;let was=null;const f=()=>{const v=!!on(el);if(v===was)return;was=v;try{SHEETS.set('b4:'+id,v?'half':null)}catch(e){}if(v)B4OPEN.add(id);else B4OPEN.delete(id);document.body.classList.toggle('b4card',B4OPEN.size>0);if(v)try{ctlRelease()}catch(e){}};
   try{new MutationObserver(f).observe(el,{attributes:true,attributeFilter:['class']})}catch(e){}f()};
   reg('b29dsp',e=>!e.classList.contains('hidden'));reg('b29card',e=>!e.classList.contains('hidden'));reg('gbk',e=>e.classList.contains('on'))}
 // (2b) the notice lane steps below any top HUD piece it would touch (name card, the speaker button, the now-playing chip, the sky pill):
@@ -12619,7 +12648,7 @@ Object.assign(window.__mocha,{int4:()=>({fpcam:{on:FPCAM.on,why:FPCAM.why,n:FPCA
   fpCam:o=>{o=o||{};if(o.yaw!=null)FPCAM.yaw=+o.yaw;FPCAM.t=0;fpCamTick(0);return{on:FPCAM.on,why:FPCAM.why,want:fpCamWant()}},
   // test helpers: on screen + unblocked (one raycast per character, camera -> head), HUD rects, visible chains of the B31 parts
   int4See:()=>{const vis=o=>{let q=o;while(q){if(!q.visible)return false;q=q.parent}return true},rc=new THREE.Raycaster(),v=new THREE.Vector3(),cp=camera.position,out={};camera.updateMatrixWorld();
-    for(const [k,o,dy] of [['mocha',mocha,.55],['wendell',wObj,1.05]]){o.getWorldPosition(v);v.y+=dy;const d=v.distanceTo(cp),n=v.clone().project(camera),dir=v.clone().sub(cp).normalize();rc.set(cp,dir);rc.camera=camera;rc.far=d-.45;let occ=null;
+    for(const [k,o,dy] of [['mocha',mocha,.55],['wendell',wObj,1.05]].concat(camS.mode==='walk'?[['you',visitor,1.1]]:[])){o.getWorldPosition(v);v.y+=dy;const d=v.distanceTo(cp),n=v.clone().project(camera),dir=v.clone().sub(cp).normalize();rc.set(cp,dir);rc.camera=camera;rc.far=d-.45;let occ=null;
       let hits=[];try{hits=rc.intersectObjects(scene.children,true)}catch(e){occ='err:'+e.message}for(const h of hits){const ob=h.object;let q=ob,own=false;while(q){if(q===o){own=true;break}q=q.parent}if(own||!vis(ob)||ob.isPoints||ob.isSprite||ob.isLine)continue;const m=Array.isArray(ob.material)?ob.material[0]:ob.material;if(!m||m.transparent&&m.opacity<.6||m.depthWrite===false||m.visible===false||ob===leafMesh)continue;occ=(ob.name||ob.type)+'@'+h.point.x.toFixed(1)+','+h.point.y.toFixed(1)+','+h.point.z.toFixed(1);break}
       out[k]={vis:vis(o),ndc:[+n.x.toFixed(2),+n.y.toFixed(2)],on:Math.abs(n.x)<.92&&Math.abs(n.y)<.92&&n.z<1,occ,d:+d.toFixed(1)}}return out},
   int4Hud:()=>{const R=[];try{for(const b of HUD.bands())R.push(b)}catch(e){}for(const id of ['edge','near','toast','gbk','b29card','b29dsp']){const e=document.getElementById(id);if(!e)continue;const r=e.getBoundingClientRect(),cs=getComputedStyle(e);if(r.width>0&&r.height>0&&cs.display!=='none'&&cs.visibility!=='hidden'&&+cs.opacity>.05)R.push({id:'#'+id,x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height)})}return R},
@@ -12700,7 +12729,7 @@ function inSwap(){const q=IN.pend;IN.pend=null;if(!q){IN.ph='in';return}const t0
   try{if(IN.on)inLeave(q);if(q.pid)inEnter(q.pid,q)}catch(e){console.error('LF1 swap',e)}
   IN.swapMs=+(performance.now()-t0).toFixed(2);INX.tsw=T;if(typeof CATJ==='object')CATJ.after=performance.now()+500;// merge glue (LF3): no catalog build slices during the fade back in
   INX.tv.push(IN.swapMs);if(INX.tv.length>40)INX.tv.shift();
-  inVisSync();INX.post=1;try{ctlRelease()}catch(e){}IN.lock=1;IN.ph='hold';INX.hf=0;INX.ht=0;IN.k=1;INX.lx=null;
+  inVisSync();INX.post=1;try{const sid=STICK.id;STICK.id=null;ctlRelease();if(sid!==null){STICK.id=sid;JOY.x=JOY.y=0}}catch(e){}IN.lock=1;IN.ph='hold';/* fix1: a held stick stays held through the fade (it only stops pushing) */INX.hf=0;INX.ht=0;IN.k=1;INX.lx=null;
   if(q.cb)try{q.cb()}catch(e){console.error('LF1 cb',e)}}
 function inVisSync(){mocha.visible=G.mode!=='trip'&&!(G.lh&&G.lh.ph!=='top')&&IN.see('mocha');shadowBlob.visible=shadowBlob.visible&&mocha.visible;wisps.visible=IN.see('mocha');wObj.visible=W.visible&&IN.see('wendell');for(const p of petObjs)p.obj.visible=G.mode!=='trip'&&IN.see('mocha')}
 function inEnter(pid,q){const P=byId[pid];if(!P||!P.obj)return;inEnt();inSweep();IN.P=P;IN.pid=pid;IN.on=1;IN.who=q.who;INX.door=inDoorOf(pid);
@@ -12739,8 +12768,8 @@ function inTick(dt){if(!WORLD)return;const now=performance.now(),rd=INX.lt?Math.
   else if(IN.ph==='swap')inSwap();
   else if(IN.ph==='hold'){if(INX.post){INX.post=0;try{CHARLOD.tick()}catch(e){}if(IN.on)for(const L of labels){L.on=false;L.el.style.opacity='0'}}INX.hf++;INX.ht+=dt;if(INX.hf>=2&&INX.ht>=.08)IN.ph='in'}
   else if(IN.ph==='in'){IN.k=Math.max(0,IN.k-dt/.35);if(IN.k<=0){IN.k=0;IN.ph='idle';INX.tid=T}}
-  if(IN.lock&&IN.k<.5)IN.lock=0;
-  if(IN.lock&&(STICK.id!==null||JOY.x||JOY.y))try{ctlRelease()}catch(e){}
+  if(IN.lock&&IN.k<.5){IN.lock=0;if(STICK.id!==null)try{STICK.move({clientX:STICK.lx,clientY:STICK.ly})}catch(e){}}// fix1: the held stick walks again as the fade clears
+  if(IN.lock&&(JOY.x||JOY.y)){JOY.x=JOY.y=0}
   {const o=IN.k<=0?0:Math.round((IN.ph==='out'?IN.k*IN.k*(3-2*IN.k):1-(1-IN.k)*(1-IN.k))*1000)/1000;if(o!==INX.fo){INX.fo=o;INX.fade.style.opacity=o;INX.fade.style.display=o>0?'block':'none'}}
   if(IN.ph==='idle'&&INX.dq){const r=INX.dq;INX.dq=null;try{dEnter(r)}catch(e){}}
   if(IN.ph==='idle')inTrig(dt);
@@ -12752,6 +12781,7 @@ function inTrig(dt){const who=inSubject();if(who===null){INX.lx=null;return}
   const sw=who!==INX.sub;INX.sub=who;
   if(who==='none'){INX.lx=null;if(IN.on)inStart(null,'you',null,'out',{keep:1});return}
   const s=who==='you'?YOU:G,x=s.x,z=s.z,pl=inPlaceAt(x,z),jump=INX.lx==null||Math.hypot(x-INX.lx,z-INX.lz)>3,vx=INX.lx==null?0:(x-INX.lx)/Math.max(dt,1e-3),vz=INX.lz==null?0:(z-INX.lz)/Math.max(dt,1e-3);INX.lx=x;INX.lz=z;
+  if(IN.on&&pl&&pl===IN.pid&&IN.who!==who){IN.who=who;RC.who=who}// fix1: a camera-mode switch inside the same room hands the room camera to the new subject
   if(who==='mocha'){if(pl!==INX.mpl){INX.mpl=pl;INX.mt=0}else INX.mt+=dt;
     if(pl!==IN.pid&&(sw||((jump||INX.mt>=.5)&&T-INX.lastM>=2.5)||(!pl&&IN.on&&IN.ph==='idle')/*POL2: out to the street at once*/)){if(jump||INX.lastM<-1e8)return inStart(pl,'mocha',null,pl?'in':'out',{fade:false});return inStart(pl,'mocha',pl?inDoorOf(pl):null,pl?'in':'out')}return}
   // the walker: teleports and mode switches swap at once (fade-in only)
@@ -12838,7 +12868,7 @@ function polOccTick(){const c=CAM.top(),own=c&&(c.owner==='talk'||c.owner==='loo
   const want=new Set();if(own&&typeof LAMPS==='object'&&LAMPS.pts){const cp=camera.position,S=[[YOU.x,YOU.z,1.4]];if(own==='talk'&&typeof TKW==='object'&&TKW)S.push([TKW.x,TKW.z,1.2]);
     for(const [sx,sz,sy] of S){const dx=sx-cp.x,dz=sz-cp.z,L2=dx*dx+dz*dz||1;LAMPS.pts.forEach(([lx,lz],i)=>{const t=((lx-cp.x)*dx+(lz-cp.z)*dz)/L2;if(t<.02||t>1.02)return;const px=cp.x+dx*t,pz=cp.z+dz*t;if(Math.hypot(lx-px,lz-pz)>.75)return;const y=cp.y+(sy-cp.y)*t;if(y<6.2)want.add(i)})}}
   const P=LAMPS.posts,Hd=LAMPS.heads;let ch=0;
-  for(const [i,m] of POLO.hid)if(!want.has(i)){P.setMatrixAt(i,m);Hd.setMatrixAt(i,m);try{glowSet(LAMPS.halo[i],LAMPS.on[i]?.68:0)}catch(e){}POLO.hid.delete(i);ch=1}
+  for(const [i,m] of POLO.hid)if(!want.has(i)){P.setMatrixAt(i,m);Hd.setMatrixAt(i,m);try{glowSet(LAMPS.halo[i],.68*Math.max(0,LWV.k[i]))}catch(e){}POLO.hid.delete(i);ch=1}
   for(const i of want)if(!POLO.hid.has(i)){P.getMatrixAt(i,POLO.m);POLO.hid.set(i,POLO.m.clone());P.setMatrixAt(i,POLO.z);Hd.setMatrixAt(i,POLO.z);try{glowSet(LAMPS.halo[i],0)}catch(e){}POLO.n++;ch=1}
   if(ch){P.instanceMatrix.needsUpdate=true;Hd.instanceMatrix.needsUpdate=true}}
 {const f=popTick;popTick=function(dt){f(dt);try{polOccTick()}catch(e){}}}
