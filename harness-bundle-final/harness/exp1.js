@@ -1,0 +1,15 @@
+const {chromium}=require('playwright');const fs=require('fs');
+const three=fs.readFileSync('/tmp/three/node_modules/three/build/three.min.js','utf8');
+const timeAt=(h,month=10,day=1)=>`(()=>{const R=Date;const now=new R();const tgt=new R(now);tgt.setMonth(${month},${day});tgt.setHours(${Math.floor(h)},${Math.round((h%1)*60)},0,0);const off=tgt-now;class D extends R{constructor(...a){if(a.length)super(...a);else super(R.now()+off)}static now(){return R.now()+off}}D.UTC=R.UTC;D.parse=R.parse;window.Date=D;})()`;
+(async()=>{const b=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+  const ctx=await b.newContext({viewport:{width:1100,height:820}});const p=await ctx.newPage();
+  await p.route('**/three.min.js',r=>r.fulfill({body:three,contentType:'application/javascript'}));
+  await p.addInitScript(timeAt(21));
+  await p.goto('file:///home/user/Booknest/ghost-town/index.html');await p.waitForTimeout(3500);
+  await p.evaluate(()=>{document.getElementById('closePanel').click();__mocha.cam({dist:60,pitch:.42,yaw:.35})});await p.waitForTimeout(5000);
+  await p.screenshot({path:'/tmp/harness/s1/exp-a.png'});
+  const r=await p.evaluate(()=>{const M=window.__mocha;let n=0;M.scene.traverse(o=>{if(o.material&&!Array.isArray(o.material)&&o.material.userData.noBend&&o.isMesh){o.visible=false;n++}});return n});
+  await p.waitForTimeout(2500);await p.screenshot({path:'/tmp/harness/s1/exp-b.png'});
+  const r2=await p.evaluate(()=>{const M=window.__mocha;let n=0;M.scene.traverse(o=>{if(o.isMesh&&o.material&&o.material.fog===false&&o.material.transparent){o.visible=false;n++}});return n});
+  await p.waitForTimeout(2500);await p.screenshot({path:'/tmp/harness/s1/exp-c.png'});
+  console.log(r,r2);await b.close()})();

@@ -1,0 +1,10 @@
+const {chromium}=require('playwright');const fs=require('fs');
+const three=fs.readFileSync('/tmp/three/node_modules/three/build/three.min.js','utf8');
+(async()=>{const b=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+  const ctx=await b.newContext({viewport:{width:393,height:852},isMobile:true,hasTouch:true,deviceScaleFactor:2});const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));
+  await p.route('**/three.min.js',r=>r.fulfill({body:three,contentType:'application/javascript'}));
+  await p.goto('file:///home/user/Booknest/ghost-town/index.html');await p.waitForTimeout(3000);
+  console.log('t3',JSON.stringify(await p.evaluate(()=>({g:window.__mocha.gfx(),touch:document.documentElement.classList.contains('touch')}))));
+  await p.waitForTimeout(14000);
+  console.log('t17',JSON.stringify(await p.evaluate(()=>window.__mocha.gfx())),errs);
+  await p.screenshot({path:'/tmp/harness/s1/adapt-portrait.png'});await b.close()})();

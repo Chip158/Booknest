@@ -1,0 +1,13 @@
+const {chromium}=require('playwright');const fs=require('fs');
+const three=fs.readFileSync('/tmp/three/node_modules/three/build/three.min.js','utf8');
+const timeAt=(h,month=10,day=1)=>`(()=>{const R=Date;const now=new R();const tgt=new R(now);tgt.setMonth(${month},${day});tgt.setHours(${Math.floor(h)},${Math.round((h%1)*60)},0,0);const off=tgt-now;class D extends R{constructor(...a){if(a.length)super(...a);else super(R.now()+off)}static now(){return R.now()+off}}D.UTC=R.UTC;D.parse=R.parse;window.Date=D;})()`;
+(async()=>{const b=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+  const ctx=await b.newContext({viewport:{width:800,height:600}});const p=await ctx.newPage();
+  p.on('pageerror',e=>console.log('PAGEERROR '+e.message));p.on('console',m=>console.log('console',m.type(),m.text().slice(0,200)));
+  await p.route('**/three.min.js',r=>r.fulfill({body:three,contentType:'application/javascript'}));
+  await p.addInitScript(timeAt(14));
+  await p.goto('file:///tmp/harness/backup-step1.html');await p.waitForTimeout(3500);
+  const st=()=>p.evaluate(()=>{const M=window.__mocha;return {G:[M.G.x,M.G.z]}});
+  await p.evaluate(()=>{const M=window.__mocha;M.forceAct(M.ACTS[27]);});await p.waitForTimeout(3000);console.log(JSON.stringify(await st()));
+  await p.evaluate(()=>{const M=window.__mocha;M.G.x=40;M.G.z=70;M.G.mode='idle';M.G.timer=30;});await p.waitForTimeout(3000);console.log(JSON.stringify(await st()));
+  await p.screenshot({path:'/tmp/harness/s1/dbg1-backup.png'});await b.close()})();
