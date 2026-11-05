@@ -1,0 +1,374 @@
+{
+ "results": [
+  {
+   "id": "B35",
+   "track": "A",
+   "smoke": true,
+   "known": [
+    "INTEGRATION: sfx() is called with new event names 'pickup','spot','plip','strike','catch','splash' (plus existing 'mail'); B20's palette must map them or they stay silent.",
+    "INTEGRATION: the bottle message says 'mentioning it to him makes a memory'. This is not wired: heard() / B28 memory does not exist in this copy. A guarded hook is needed, e.g. typeof heard==='function'&&heard(...) when Mocha is told about item 'bttl'.",
+    "INTEGRATION: Gus sells the rod (8) and crab pot (12) through the B35 pier chip, not on his shop shelves or in the B25 item card; a shop-sheet entry could replace this later.",
+    "INTEGRATION: shared edits that need a 3-way merge check: fresh wrapper line f4, the migrate natFix line, walletFix day.g clamp 99 -> 32767, sellList YOUX-with-tags branch, frame() line `  b35Frame(dt,T);` after b21Frame, wrappers on tap, npcReply and TABS.R.you, and the new HUD slot 'b35chip' (zone tc, order 4).",
+    "INTEGRATION: finds, sparkles, critters and the buoy are added to the scene after LF1's WORLD build, so they are hidden by hand while IN.on rather than through WORLD.",
+    "Size: +43 KB, against the 20 KB aim. Most of it is the FN truth table (47 facts) and CSS.",
+    "STRETCH not done: pier and beach dressing (rope coils, crab pots, barrels) as DB dressing sites. Also none of these: Rosalind paying in person at the library, duplicates routed by keeper beyond the sellList change, critter sprites drawn by hand instead of emoji glyphs, a set reward other than the binoculars.",
+    "Facts for truth review: check the oyster 'about a century ago', bull kelp 'tens of feet in a summer', banana slug 'about 9 inches', the UW Quad cherries 'since the 1960s' and the lingcod season May 1 to Jun 15 (Puget Sound) against current sources. Real rules change, and Reed says so in his tips.",
+    "Critter pool by location is approximate: seals and otters only appear when the walker is at x<-45; spawns that need water use a point that is not walkable.",
+    "Catch and crab cards and the sticker book are DOM cards (z-index 46). The full-screen fishing overlay (z 40) blocks the HUD while fishing on purpose; the X closes it.",
+    "Spawn zones are authored rectangles; fruit and chanterelle zones near the market and cabin were not checked visually."
+   ],
+   "hooks": [
+    "__mocha.spawns(day?) -> [{i,code,name,x,z,cls,got,walkable}]",
+    "__mocha.gather(i) -> {ok,code,name,where,first,pay,sticker,fact}",
+    "__mocha.spot(critterCode) -> {ok,c,name,first,pay,fact}",
+    "__mocha.fishBite({sp,instant,reel:'auto'}) -> {ph:'ring',sp,size,meet (performance.now ms)} | catch card object if instant | {quiet:true}",
+    "__mocha.fishTap()",
+    "__mocha.fishCast({force})",
+    "__mocha.fishState()",
+    "__mocha.fishEnd()",
+    "__mocha.crabReady({first:'dungF',peek}) -> {ok,crabs:[{sp,sex,size,keep,note,price}],surprise}",
+    "__mocha.crabStatus()",
+    "__mocha.crowGift({sure,force}) -> {ok,got,who,why}",
+    "__mocha.fieldNotes()",
+    "__mocha.fnOpen()",
+    "__mocha.fnFacts() (truth review: [code,name,fact])",
+    "__mocha.fnClash()",
+    "__mocha.b35() debug state"
+   ],
+   "draws": "Desktop default follow view, backup-B35.html -> trackA/index.html: avg 47 -> 51, max 69 -> 78, tris 10458 -> 12348. The difference is live-scene variance: B35 draws nothing in follow view, because finds, sparkles and critters render only in walk mode. Walk mode adds up to 6 InstancedMesh draws (one per shape class present that day, usually 4), 1 sparkle Points draw, at most 2 critter sprites, and 1 buoy while the crab pot is down. The fishing UI is DOM only, 0 draws. The entry is appended to /tmp/harness/draws.json.",
+   "summary": "I built B35 CORE in /tmp/harness/trackA/index.html (+43.4 KB, file now 1896078 bytes). All new code sits in one block placed just before the \"//  B27 DECORATE MODE\" banner, after the B26 cabin section. The block starts with the banner \"//  B35 GATHERING, FIELD NOTES, FISHING, THE CRAB POT AND CROW TRINKETS\".\n\nChanges to existing code (6 single-line edits):\n(1) A new line after the f3 fresh wrapper: {const f4=fresh;fresh=function(){const s=f4();natFix(s.you);return s}}.\n(2) In migrate(), a new line after the musicFix line: if(typeof natFix==='function')natFix(S.you);\n(3) walletFix: y.day.g clamp raised from 0..99 to 0..32767, because it is the gathered-finds bitmask and holds up to 14 bits.\n(4) sellList: a YOUX item that has tags is now treated like a catalog item. Gus (market /fish|crab/), Hank (grocery, produce/fruit) and Willa (nursery, cat 'plnt' or mushroom) can buy finds. Pearl (thrift) still buys anything.\n(5) frame(): a new line `  b35Frame(dt,T);` right after `  b21Frame(dt);`.\n(6) Everything else is inside the new block.\n\nSTATE, set by the hoisted natFix(y) and literal-only:\n- S.you.fn: 'code,code' list of first finds and sightings, at most 80.\n- S.you.gear bits: 1 rod, 2 crab pot, 4 naturalist's binoculars.\n- S.you.crab={t: drop time in ms (0 = not in the water), b: 1 once the message bottle has been found}.\n- S.you.crow={d: dayKey of the last trinket check}.\n- These existing fields are reused: S.you.day.g (gathered bitmask), S.you.day.fish (catches today), S.you.home.pea (B26 peanut dish), S.you.home.mb (mailbox count).\n\nDATA:\n- FN table: code -> [name, emoji, habitat, ONE TRUE fact, price, shape class 0-5 or -1, seller tag, colour]. It has 47 entries:\n  - 22 finds, coded 'nf**', for example nfsd sand dollar, nfgr red sea glass, nfct chanterelle with the never-eat warning in its fact\n  - 8 critters (k***)\n  - 9 fish: coho, chin, pink, ling, quil, prch, flnd, hrng, stee\n  - crab pot entries: dung, rrck, boot, bttl\n  - 4 crow trinkets (t***)\n- All codes are"
+  },
+  {
+   "id": "B40",
+   "track": "A",
+   "smoke": true,
+   "known": [
+    "INTEGRATION: The guestbook belongs to B31 and does not exist in this copy. trickVisit calls gbSign(entry) if it exists (guarded), otherwise it writes S.you.gb. B31 should take over or read S.you.gb.",
+    "INTEGRATION: moonFrac() calls a B41 moonPhase(t) if one exists (guarded) and expects it to return 0..1 with .5 = full. Otherwise it uses its own synodic calculation.",
+    "INTEGRATION: sfx event names used here are 'ooo' (ghost visit) and 'knock' (trick-or-treaters). B20's palette must map 'ooo' or it stays silent. Arrivals home emit DOOREV 'pass' with pid pink, blue, boat, shed or willa, which are not real DOORS. Listeners should ignore unknown pids.",
+    "INTEGRATION: Ghost bonds use S.know[id], which feeds bondOf's round-1 shim. When B28's S.bonds/bondAdd lands, ghostOutcome should call bondAdd(id,...).",
+    "INTEGRATION: The B39 Fogwell residents (other track) keep their own homes. B40 does not touch fogwell plans. If B39 moves Dale or Birch into Fogwell units, remove them from B40C (they currently go home by train to Ballard Junction, per the spec).",
+    "INTEGRATION: The jack-o'-lantern on the porch is detected from S.you.home.jk or 'jol' in S.you.home.yard or rooms. There is no UI chip to set it out; the user must place a jol item in the yard through decorate mode. A B27 or B31 porch chip could set home.jk.",
+    "Agent tp: my townTick wrapper sets T.a.tp to the home key, but __mocha.homes({npc}) still read 'cafe' after Juniper arrived. Something downstream (probably B9's agent sync) overwrites it. Home occupancy for the lights uses homeWho() instead, so the window lighting is correct, but occOf('pink') is not populated.",
+    "Juniper's walk home takes about 60-100 s on SwiftShader. On real devices it is about 25 s at speed 3.",
+    "The 17:40 train departure is approximated: Marigold, Dale and Birch walk to the station platform after work and vanish there. There is no train-timed leaving.",
+    "Corn maze: random round-1 trees stand inside the maze footprint (x 112..124, z 35..47) because tree layout is fixed at boot. The stalks have no walker collision, so the walker passes through walls. Mocha's maze act targets the park centre, not the maze.",
+    "Hayride has no seated riders. Parade costumes are the shared witch-hat IM only; there are no per-character costume outfits (the B27Tb S14 cast table was not added). The walker joins the parade with a toast only and is not moved.",
+    "The face IM is near its cap: 46 of 48 faces with the ring present. Adding more jack faces needs a larger DRS.face N.",
+    "Silhouettes only cover the pink and blue houses' side windows, not above-shop flats or Willa's cottage. They are planes in front of the fa\u00e7ade, not behind the glass.",
+    "STRETCH not done: Gus's houseboat interior. Also not done: S9 porch vignettes as new DB sites for above-shop flats, and per-resident vintage-kit interiors (innerMerge, BAKEMI) for the pink and blue houses, which have no interiors.",
+    "Halloween row timing is unchanged: jack faces show from Oct 17 (holTheme). Before Oct 17 the patch and maze pumpkins have no faces. The ring appears only from Oct 24 19:00."
+   ],
+   "hooks": [
+    "__mocha.homes(o)",
+    "__mocha.ghosts(o)",
+    "__mocha.october(day,o)",
+    "__mocha.b40()"
+   ],
+   "draws": "perf1 desktop default view: before avg 48 / max 64, after avg 46-47 / max 69, within noise. New objects: +1 b40homes mesh, +1 hats IM (October only), +1 mushroom IM (night only), up to +4 silhouette planes (night only), +1 hay wagon (weekend afternoons), +1 broom (60 s), +3 kids (during a visit). The ring, patch, maze and marigolds sit inside the existing DB chunks, face IM and GLOWPTS (0 extra draws). Oct 31 parade, Main Street walk view: 353 draws with the parade vs 354 without (backup 352). Default follow view during the parade: 231-268, under 300. Triangles: about 560 extra DB pieces for the maze in October. Programs: +0 expected (reuses CHIBI_MAT and MeshBasic), not measured separately.",
+   "summary": "B40 CORE is built in /tmp/harness/trackA/index.html. The file went from 1896078 to 1929233 bytes (+33 KB). The backup is /tmp/harness/backup-B40.html.\n\nWHERE IT LIVES\n- Almost all new code is one block that starts with the banner \"//  B40 TOWNSFOLK HOMES, GHOST FRIENDS AND THE OCTOBER LAYER\". It sits after the B35 block and just before the \"//  B27 DECORATE MODE\" banner.\n- The rest is 3 single-line insertions:\n  (1) a new line after the f4 fresh wrapper: {const f5=fresh;fresh=function(){const s=f5();b40Fix(s.you);return s}}\n  (2) in migrate(), a new line after the natFix line: if(typeof b40Fix==='function')b40Fix(S.you);\n  (3) in frame(), a new line `  b40Frame(dt,T);` after `  b35Frame(dt,T);`\n- No existing code was reformatted.\n\nSTATE (hoisted b40Fix(y), literal only)\n- S.you.gb: guestbook, capped at 30. Entries look like {t,n,m,k:'trick'}.\n- S.you.tt: trick-or-treat counter for the day, {d:dayKey, n (at most 6 a day), at}.\n- S.you.home.jk: 1 if a jack-o'-lantern is on the porch. cabJack() also counts 'jol' found in home.yard or home.rooms.\n- Ghost bonds go into the existing S.know[id], so bondOf(id) = 6 x S.know[id].\n\nHOMES\n- HOMEPT holds the home door points. The same keys are added to TSP as third places, so tWhere and tPlace handle them:\n  - pink (18,65.4): Juniper and Sol\n  - blue (80,50.6): Rosalind and Tabitha\n  - willa (from the cottage's DOORS entry): Willa and Honey\n  - boat (-78,-36): Gus\n  - shed (-36,-23.6): Hollis\n  - train (131.8,-3): Marigold, Dale and Birch\n- Also added: TSP.sqpatch and TSP.parade.\n- Wrappers, each a reassignment of a hoisted function:\n  - tRhy: keepers in B40K and cast in B40C now rest at '<home>.home'.\n  - tPlan: on Oct 31, keepers get [17,20,'in',shop,'door','candy'] and B40PAR cast members get [15,16.5,'out','parade',idx,'parade']. Hollis gets 'sqpatch stall' on Saturdays.\n  - palVisits: B40VIS sends pair visits to the host's home.\n  - tWhere: a rest, rainrest or visit block at a HOMEPT key puts the character at the door with "
+  },
+  {
+   "id": "B39",
+   "track": "B",
+   "smoke": true,
+   "known": [
+    "SPEC CONFLICT: the acceptance line 'at 19:30 Basil is home' cannot hold under B22. Basil keeps Rain City Records (hours 11-20), so his plan says 'work' at 19:30 and rest from 20:15. Presence follows the B22 plan (the single source of truth), so the test checks Basil is home at 20:30 and reports his 19:30 block ('work'). Making 19:30 pass needs a B22 or B40 change (an earlier closing or a day off); I did not change shop hours.",
+    "INTEGRATION: residents are not physically drawn inside their units yet. B40 (townsfolk homes) should walk them in and set FGW.who[id]=floor while they are home; IN.see is already floor-aware. Without it, everyone without an entry counts as lobby (1). The unit table B40 needs is FWU/FWUB, and presence is fwRes(unit,h).",
+    "INTEGRATION: Ambrose's bond is guarded: typeof bondAdd==='function'&&bondAdd('ambrose',1,...) runs on the once-a-day lobby greeting, and babble('ambrose',...) is guarded the same way. B28's S.bonds is not in this file.",
+    "INTEGRATION: requests are data only (FWREQ: water Dot's plants, pick up Basil's or Wren's parcel from Ambrose). B36 has to wire them into its favors.",
+    "INTEGRATION: rooftop events (FWEV and fwEvents(t): Friday Jun-Aug BBQ, New Year's fireworks watch, seeded movie night) are data only. They are not yet localChoose candidates for Mocha; that is for B22/B29 owners. Mocha visiting residents is also not wired.",
+    "INTEGRATION: the NAV ELEVATOR/STAIR graph is a separate small graph (fwNav/fwRoute), not merged into the global NAV, and no agent uses it yet. Only the walker uses the elevator and stairs.",
+    "INTEGRATION: sfx('elevator',{x,z,pid:'fogwell'}) plays the existing SFXR.elevator ding through SFXEV. There is no separate door-slide sound.",
+    "INTEGRATION: the 3-way merge touches four existing functions, reassigned once each in my block: inEnter, inLeave, IN.see, navFloor and b12Frame (fwTick runs after b0). If another track also reassigns them, keep both wrappers, chained.",
+    "INTEGRATION: the fresh() wrapper line (f39) and the migrate() line for S.condo are new lines placed right after the musicFix lines, which are shared hot spots.",
+    "Floor builds are synchronous: the LF1 swap with the lobby build took 16.9 ms (LF1's target is under 12 ms), and a floor switch takes 24-30 ms on desktop SwiftShader. Elevator doors are closed during the switch; stairs switch instantly with no fade.",
+    "Walker collision ignores Fogwell furniture (the grid is walls only), so the walker can walk through unit furniture and half-walls. Upper floors clamp the walker to the floor rect, so the front edge is not an exit.",
+    "STRETCH not done: decorating rented 5C with B27 and moving items to storage on lapse. rent('5C') is implemented (charges 150 from S.you.coins, sets S.condo.rent and due); with the default 120 coins it refuses correctly.",
+    "Size: +48.7 KB against the 20 KB aim; most of it is the atlas painting, unit and hero data, and the floor builders.",
+    "Visual: the rooms are on the dark side at 15:00 drizzle. Lighting comes only from the LIT batch, pools and two LSP spots; no new THREE lights. B42 may want warmer wainscot or plaster values. A faint translucent vertical light column appears in the landscape floor-3 shot; it appears to come from the shared FX or sunbeam layer, not from B39.",
+    "Pools: 12 POOLS slots are taken permanently on first entry (out of the cap of 160) and are zero outside. The 2 LSP entries use kind 'cauldron' (constant .8) with b=0 outside, so rigAssign never picks them outdoors."
+   ],
+   "hooks": [
+    "__mocha.fogwell.floor(n)",
+    "__mocha.fogwell.ride(n)",
+    "__mocha.fogwell.units(h?)",
+    "__mocha.rent(unit)",
+    "__mocha.fogwell.state()",
+    "__mocha.fogwell.tick(n,dt)",
+    "__mocha.fogwell.route(a,b)",
+    "__mocha.fogwell.nav()",
+    "__mocha.fogwell.events(t)",
+    "__mocha.fogwell.requests()",
+    "__mocha.fogwell.pick(n)",
+    "__mocha.fogwell.geos()",
+    "__mocha.fogwell.win(unit)"
+   ],
+   "draws": "Outdoors: +0 structurally. byId.fogwell.inner is empty unless you are inside; perf1 follow view went from avg 65 / max 457 / 172k tris (backup) to avg 89 / max 513 / 184k (after), which is live-scene noise. Inside the Fogwell, the selected floor is 10 Fogwell draws (6 on the roof); whole frame: lobby 22, floor 3 30 (49k tris), floor 4 23, roof 20, against 419 for the outdoor view. Programs 50 -> 50. Appended to /tmp/harness/draws.json.",
+   "summary": "B39 The Fogwell condo, done in /tmp/harness/trackB/index.html (backup at /tmp/harness/backup-B39.html). The diff only adds lines: nothing existing was removed or reflowed. It adds +48.7 KB, which is over the 20 KB aim.\n\nWHERE THE CODE IS\n- One block that starts with \"//  B39 THE FOGWELL CONDO\". It sits directly above the LF1 block header \"//  LF1 IMMERSIVE INTERIORS (Track T)\", so it runs before inWorldBuild().\n- One fresh() wrapper line after the f3/musicFix wrapper: {const f39=fresh;...s.condo=condoFix(null)...}.\n- One migrate() line after the musicFix line: if(typeof condoFix==='function')S.condo=condoFix(S.condo).\n- The runtime object is named FGW, not FW, because FW already exists (the fireflies, line ~4985).\n\nDATA (all in the block)\n- FWN=['L','2','3','4','5','R']. FWY[n] is the floor height in place-local coords for n=1..6: .44, 4.53, 8.93, 13.33, 17.73, 22.92.\n- FWU rows are [unit, residentId, style, seed, [bed,wake], [upper,wainscot,floor colours], catalog codes 'code.variant', bespoke heroes]:\n  - 2A basil, 2B chip, 2C dot\n  - 3A vesper (coffin + curtain), 3B luma, 3C clem\n  - 4A hank, 4B barnaby, 4C wren\n  - 5A kip, 5B reed, 5C null (for rent)\n- FWUB indexes FWU by unit.\n- FWREQ holds request data for B36. FWEV holds rooftop events (Friday summer BBQ, New Year's fireworks, a seeded Saturday movie night).\n- Geometry and positions: FWDOOR / FWUX (unit door and unit rects), FWCAR (elevator car), FWOUT (elevator exit), FWSTAIR (stair door).\n- Bespoke heroes are FWH part lists (rsP style) with palettes in FWHP: coffin, gramo, crates, cabinets, gadgets, candles, instruments, bench, wheel, loom, yarn, bikes, rods, rent, desk, grill, tree.\n\nHOW A FLOOR IS BUILT\n- fwBoot() runs at block execution and makes byId.fogwell an LF1 enterable:\n  - sets P.interior=true\n  - creates P.inner (the 'fwInner' group)\n  - moves the exterior brick box into P.fw, so LF1 hides it inside\n  - clears the door's soon flag on a copied d.s\n  - moves Ambrose's CAST spot to behind his desk "
+  }
+ ],
+ "merge": {
+  "merged": true,
+  "smoke_passed": true,
+  "conflicts": "merge3.py left 2 textual conflicts. Both were in shared hot spots, and both were resolved by keeping both sides. (1) The fresh() wrapper chain: track A's f4 natFix and f5 b40Fix lines come first, then track B's f39 condoFix line. (2) migrate(): the natFix and b40Fix lines come first, then the condoFix line, all after musicFix. A semantic sweep found no other clashes: no top-level const/let/function name is declared by both tracks, no new __mocha hook keys collide (all are added via Object.assign under distinct names), and the reassigned functions do not overlap (A: tap, npcReply, TABS.R.you, tRhy, tPlan, palVisits, tWhere, npcStatus, townTick, dressCal, localOutcome; B: inEnter, inLeave, IN.see, navFloor, b12Frame). HUD slots do not collide: b35chip is tc order 4, and floors is the reserved rc order 1 slot. Element ids and CSS are only new b35* ones. The frame() per-frame additions (b35Frame, b40Frame) are only in track A; B39 runs through its b12Frame wrapper. The main inline script passes node --check.",
+  "integration": [
+   "B39 to B40: added fwWho(), which runs once a second inside fwTick. It sets FGW.who[resident]=unit floor when fwRes(unit).home is true and deletes the entry when the resident is out. Fogwell residents now count as on their own floor (IN.see) instead of all counting as lobby. B40 leaves fogwell plans alone, as both handoffs intended. Dale and Birch stay train commuters (spec section on Ballard Junction) and are not FWU residents, so B40C is unchanged.",
+   "B20 sfx palette: added SFXR entries pickup, spot, plip, strike and 'catch' for B35, so those events are no longer silent. splash, knock, ooo, mail and elevator were already mapped.",
+   "B39 Ambrose lobby greeting: changed the babble-only call (audio, no bubble) to npcSay('ambrose', time-of-day greeting) when his cast object exists, with babble as the fallback. The bondAdd call stays guarded because B28 is not in this file.",
+   "Left guarded on purpose, because the owning steps (B28 heard/bondAdd/S.bonds, B31 gbSign guestbook, B41 moonPhase, B36 favors for FWREQ, B22/B29 rooftop event choices) are not in this copy: B35 bottle memory hook, B40 gbSign/bondAdd/moonPhase, B39 FWREQ/FWEV/fwNav.",
+   "Not changed: Gus sells the rod and crab pot only through the B35 pier chip. The jack-o'-lantern is set out by placing a jol item in decorate mode. B40 DOOREV 'pass' pids that are not real doors were left as they are."
+  ],
+  "tests": "smoke.js 15, 1 and 21: OK on desktop, portrait and landscape with no errors. test-B35: all 20 pass. test-B40: all pass. test-B39: all pass. test-B13 and test-step1b: all pass. Every other batch-2 and round-1 test also fails on the base file. Failing assertions per test (merged / base, same file run against base-b5a.html via /tmp/harness/bt/): B7 1/1, B8 3/3, B9 4/4, B10 2/2, B11 1/1, B12 2/2, B14 1/1, B15 4/4, B16 3/4, B17 2/2, step3 2/2, step4 2/2, step5 7/7, step6 10/10. These counts are lines matching FAIL; some include a summary line. step2 is 22-23 merged vs 20 base. In step2 the extra pinch, '\u2212 zooms out in watch mode' and #zIn/#near overlap failures change from run to run. The base also failed '\u2212 zooms out in watch mode' in one portrait run. A portrait rerun on the merged file passed 'pinch out on right side'. step2 failures that show up on every run, in both files, include paint grid, feed aspect and two-finger pinch. The extra step2 failures look like timing flakiness under swiftshader rather than a merge regression, but that is not proven: base portrait was rerun only twice and merged once more. No tests were edited. Portrait 393x852 screenshots at 15:00 and 21:00 (/tmp/harness/out/portrait-h15.png, /tmp/harness/out/portrait-h21.png) look correct. grep 'src=\"three.min.js\"' matches, and the #err texts and getElementById('err') references are identical to base.",
+  "summary": "I merged track A (B35 gathering/fishing/crab pot/crows, B40 townsfolk homes/ghosts/October) and track B (B39 Fogwell condo) into /home/user/Booknest/ghost-town/index.html, 1978938 bytes, identical to /tmp/harness/merged-b5a.html. The premerge backup is /tmp/harness/backup-b5a-premerge.html. Only 2 textual conflicts came up, in the fresh() wrapper chain and in migrate(); both were resolved by keeping both sides. No duplicate declarations, hook keys, HUD slots, ids or wrapper overlaps were found. Integration changes in the file: Fogwell residents now get their floor in FGW.who while home (fwWho in fwTick); the B35 sfx events pickup, spot, plip, strike and catch now have sounds; Ambrose's daily lobby greeting now shows a speech bubble through npcSay. Stubs that wait on B28, B31, B36 and B41 stay guarded. Smoke passes at 15, 1 and 21 on all 3 viewports. B35, B39 and B40 tests all pass. Every other batch-2 and round-1 test failure also happens on the base file. The extra step2 failures on the merged file vary between runs. I read them as flaky zoom and pinch timing, not a merge problem, but I reran base portrait only twice and merged once more. Nothing was committed."
+ },
+ "confirmed": [
+  {
+   "title": "Renting Fogwell 5C makes every later load fail: migrate() runs condoFix before the B39 const FWUB exists (TDZ), and the misleading 'needs WebGL' error shows",
+   "severity": "high"
+  },
+  {
+   "title": "An invisible toast swallows every tap on the new B35 pier chip (rod, crab pot, fish here, drop/pull)",
+   "severity": "high"
+  },
+  {
+   "title": "The fishing lure and ripple ring are drawn off-screen, so there is nothing to tap; the 'fish here' chip also fails to appear at the pier end",
+   "severity": "high"
+  },
+  {
+   "title": "Holding the stick or arrow key toward the Fogwell stair door cycles through every floor without stopping (wrapping R to L), with a synchronous rebuild each time",
+   "severity": "high"
+  },
+  {
+   "title": "The Today in Rain City card always shows '\ud83e\udd80 [object Object]' (merge seam: B25 todayCard expects a string, B35 crabStatus returns an object)",
+   "severity": "medium"
+  },
+  {
+   "title": "The porch jack-o'-lantern flag S.you.home.jk is lost on every reload (cabinFix rebuilds home without it), so trick-or-treaters stop coming",
+   "severity": "medium"
+  },
+  {
+   "title": "natOK rejects every point inside a plaza or lot, so cherry blossom petals never spawn and pumpkins almost never do (the Field Notes book cannot be completed)",
+   "severity": "medium"
+  },
+  {
+   "title": "The ripple ring never visually meets the lure: it is still about 44 px at the hit moment, so a player who follows the hint is always late",
+   "severity": "medium"
+  },
+  {
+   "title": "The chanterelle 'never eat a wild mushroom' safety warning is cut off in the 3-line, 2.5 s pick-up toast",
+   "severity": "medium"
+  },
+  {
+   "title": "B35 breaks the LF conventions: scene.add instead of worldAdd, and no PREWARM for its late materials (shader compiles on the first walk, plus more at night)",
+   "severity": "medium"
+  },
+  {
+   "title": "The gathered-finds instances go stale when the mask changes outside a day change (midnight before dayCheck, cloud-save adoption), leaving finds that are invisible but gatherable or drawn but ungatherable",
+   "severity": "medium"
+  },
+  {
+   "title": "B40's shed and houseboat have no collision (COLP push after COL is built), and B35 fall apples spawn inside the shed",
+   "severity": "medium"
+  },
+  {
+   "title": "Crab and fish payouts disagree with the spec and the card; the once-ever message bottle can be sold to Pearl for 1 coin",
+   "severity": "medium"
+  },
+  {
+   "title": "Fogwell residents count as 'home' for any rest block anywhere, so condo windows light for residents the town sim shows in their shop back rooms",
+   "severity": "medium"
+  },
+  {
+   "title": "Choosing a floor and then walking away still teleports the walker into the elevator about 12 s later",
+   "severity": "medium"
+  },
+  {
+   "title": "Hollis, the parade leader, skips the Oct 31 2026 parade because that day is a Saturday and his later-pushed sqpatch stall block wins",
+   "severity": "medium"
+  },
+  {
+   "title": "On Oct 31 Mocha can pick 'visit my ghost friends' at the cemetery from 17:00 while the ghosts are trick-or-treating on Maple Row, and the diary describes loops between headstones",
+   "severity": "medium"
+  },
+  {
+   "title": "The Fogwell (and library) door banner says 'Wendell is in': doorBanner names every non-keeper agent Wendell",
+   "severity": "medium"
+  },
+  {
+   "title": "Fishing on the Duo with the side panel open: the catch card and the Field Notes book cover the panel, and two \u2715 buttons stack in the corner",
+   "severity": "medium"
+  },
+  {
+   "title": "Fishing overlay leftovers on the phone: the stale 'fish here' chip stays shown, the hint is cut off and stays behind the card, and the reel bar sits on the joystick and zoom buttons",
+   "severity": "low"
+  },
+  {
+   "title": "Rent is a dead end: the FOR RENT card says 'ask Ambrose' but no in-game path exists, the lease never renews or lapses, and a rented 5C stays FOR RENT",
+   "severity": "low"
+  },
+  {
+   "title": "Ghost-friend frame code runs every frame all day and re-uploads the 512-point GLOWPTS buffer even when the ghosts are not out",
+   "severity": "low"
+  },
+  {
+   "title": "Crab, crow and keep rewards ignore full pockets: items are announced as kept or delivered but are silently lost",
+   "severity": "low"
+  },
+  {
+   "title": "Fogwell is very dark: the open-air roof renders in a black void at 15:00, and floor 5 at night hides the vacant 5C",
+   "severity": "low"
+  },
+  {
+   "title": "Critters and fish ignore the time of day: day birds appear at night, and the 'dusk' salmon boost covers 00:00-08:00",
+   "severity": "low"
+  },
+  {
+   "title": "On Oct 31 the owner's porch stays silent unless he already knows to place a jol in decorate mode",
+   "severity": "low"
+  },
+  {
+   "title": "Rainy-evening rest blocks for B40 keepers still use the shop back room instead of their homes",
+   "severity": "low"
+  },
+  {
+   "title": "Marigold, Dale and Birch show 'on the train home to Ballard Junction' all night",
+   "severity": "low"
+  },
+  {
+   "title": "An Oct 24+ ring pumpkin overlaps a patch pumpkin and a hay bale in the square",
+   "severity": "low"
+  },
+  {
+   "title": "Tapping a townsperson's front door at night walks Jesse into the house and pins the camera on the door",
+   "severity": "low"
+  },
+  {
+   "title": "The ghost friends read as small Mocha copies rather than distinct characters",
+   "severity": "low"
+  },
+  {
+   "title": "Trick-or-treat groups repeat costumes in the toast and the guestbook",
+   "severity": "low"
+  }
+ ],
+ "rejected": [],
+ "fix": {
+  "fixed": [
+   "HIGH (fishPick 'wet is not defined'): this was already fixed in the current /home/user/Booknest/ghost-town/index.html when I started. The '// salmon bite best around sunrise and sunset (Reed's tip)' comment is on its own line (10117) and 'let wet=false' sits on the fishPick line (10118). I checked it with the reviewer's own repro /tmp/harness/rv-b5a/final/wet.js on desktop: fishCast, then 20 s gives 0 errors, the bite picks a species (sp 'flnd'), and fishBite({}) returns 'ok prch'. No edit was needed.",
+   "MEDIUM (fishing overlay layout): the new fishSafe(F,ov) runs once in fishCast, not per frame. It reads HUD.bands() (leaving out b35chip and edge) and picks the ring centre nearest the projected lure where the largest ring (radius about 86 px) touches no HUD band: the dock with 'watch Mocha', the joystick, zoom, the diary panel and so on. fishFrame uses F.tx/F.ty when a spot was found and otherwise falls back to the old clamp. fishSafe also sets the CSS variable --b35b, which lifts the reel bar and hint above the bottom row of controls when that row is under the centre column (default stays 120px). While fishing, #dock, #joy and #zoom are dimmed to .35 opacity. The overlay already blocks them, and HUD.vis only treats opacity under .05 as hidden, so the HUD layout is unchanged. Screenshots: /tmp/harness/rv-b5a/fix2/ring-{portrait,landscape,desktop}.png. In portrait the ring sits clear of the dock and the hint is above the joystick and zoom; on desktop the ring and hint are clear of the diary panel and dock. The 'fish here' chip was already hidden by body.b35fishing."
+  ],
+  "not_fixed": [
+   "LOW (the condo-exterior shot was framed on the wrong spot): not a game bug. The fault is in the reviewer's shot script, so nothing to change in index.html.",
+   "Pre-existing failures, not caused by this fix. I compared FAIL lines with the previous fixer's logs /tmp/harness/rv-b5a/fx-test-*.log, and the base runs in bk-summary.log fail the same tests; my run has no new FAIL lines. Failing tests: B7 (exit 1, no FAIL line), B8 (the autonomy source-slice check, plus a missing /tmp/harness/backup-B8.html crash), B9 (cafe locked toast, note in the near pill), B10 (Wendell's route log), B11 (cafe wall), B12 (shop DISPLAY slots, exit 0), B14 (late-show TV film), B15 (night hemisphere, families, RIM grade), B16 (cafe closing lights, Wendell flicker, chimney smoke), B17 (catchUp hangouts per day), and steps 2-6 (exit 1 with no FAIL lines; step2 has the same NaN painting-aspect output as the earlier logs). These look like look-and-feel drift in the old tests against the published base."
+  ],
+  "tests_run": "Backed up to /tmp/harness/backup-b5a-fix2.html. Ran /tmp/harness/rv-b5a/final/wet.js before editing (fishPick already fixed) and /tmp/harness/rv-b5a/fix2/ring.js in portrait, landscape and desktop after the fix. Then the full sequence from /tmp/harness/rv-b5a/fix2/run.sh, log at /tmp/harness/rv-b5a/fix2/log: smoke.js 15 OK (desktop, portrait, landscape); smoke.js 1 OK (all 3); test-B35 portrait,desktop ALL 20 PASSED; test-B40 ALL PASS; test-B39 portrait, landscape and desktop rc 0; test-B13 and test-step1b pass; test-B12 rc 0 with 1 old FAIL. B7, B8, B9, B10, B11, B14, B15, B16, B17 and step2-6 exit 1 with the same or fewer FAIL lines than the previous fixer's logs, so there are no new failures. No tests were changed.",
+  "smoke_passed": true,
+  "summary": "The HIGH fishPick 'wet' regression was already fixed in the working file; wet.js shows natural bites and fishBite({}) both work. I fixed the MEDIUM fishing-overlay layout in /home/user/Booknest/ghost-town/index.html. A new fishSafe() runs once per cast: it places the ring clear of the HUD bands and lifts the hint and reel above the bottom row of controls with the CSS variable --b35b. The dock, joystick and zoom are dimmed while fishing. There is no per-frame allocation, autonomy is untouched, and the three.js loader and the #err texts are untouched. Smoke 15 and 1 pass, and so do B35, B40 and B39 (all 3 viewports). The batch-2 and round-1 tests show no new failures; their existing failures are the same ones the base and the previous fixer's runs show. The LOW finding was a fault in the reviewer's shot script, not the game."
+ },
+ "qa": {
+  "pass": true,
+  "problems": [
+   "LOW (shot-script, not a game bug): the camera framing for the condo exterior is awkward. Using you(30,-44..-46) puts the walker in front of Spoke & Sprocket, and its shop pill and close camera take over. A yaw of PI/2 down the street shows the Fogwell's brick facade at the right edge (condo-ext-b.png). No game defect.",
+   "COSMETIC (pre-existing, not from this batch): the default diary entry says '150 coins saved up', while the wallet HUD shows 120 or 135.",
+   "NOTE: the first landscape 15:00 shot (landscape-h15.png) came out almost black because it caught a transient interior/door fade while Mocha was leaving. Retakes 2 s and 4 s later (landscape-h15-r2000/r4000.png) render normally, and no page errors were logged.",
+   "NOTE: the fishing shot script found no .b35card in the DOM 6 s after an auto-reel, because the SwiftShader reel is still running then (fish-card-portrait.png shows the reel bar). test-B35 confirms the catch card, keep/sell/release, and auto-release in both viewports."
+  ],
+  "screenshots": [
+   "/tmp/harness/rv-b5a/final/q/portrait-h15.png",
+   "/tmp/harness/rv-b5a/final/q/portrait-h21.png",
+   "/tmp/harness/rv-b5a/final/q/landscape-h15-r4000.png",
+   "/tmp/harness/rv-b5a/final/q/landscape-h21.png",
+   "/tmp/harness/rv-b5a/final/q/duo-h15.png",
+   "/tmp/harness/rv-b5a/final/q/duo-h21.png",
+   "/tmp/harness/rv-b5a/final/q/desktop-h15.png",
+   "/tmp/harness/rv-b5a/final/q/desktop-h21.png",
+   "/tmp/harness/rv-b5a/final/q/fish-pier-portrait.png",
+   "/tmp/harness/rv-b5a/final/q/fish-ring-portrait.png",
+   "/tmp/harness/rv-b5a/final/q/fish-card-portrait.png",
+   "/tmp/harness/rv-b5a/final/q/fish-ring-desktop.png",
+   "/tmp/harness/rv-b5a/final/q/fish-after-desktop.png",
+   "/tmp/harness/rv-b5a/final/q/condo-ext-b.png",
+   "/tmp/harness/rv-b5a/final/q/condo-f3-portrait.png",
+   "/tmp/harness/rv-b5a/final/q/condo-lobby-portrait.png",
+   "/tmp/harness/rv-b5a/final/q/home-pink-night-desktop.png",
+   "/tmp/harness/rv-b5a/final/q/lantern-oct31-h19-portrait.png",
+   "/tmp/harness/rv-b5a/final/q/lantern-oct31-h19-desktop.png"
+  ],
+  "summary": "Final QA of /home/user/Booknest/ghost-town/index.html, which I did not edit, found no real breakage. All requested tests pass (log: /tmp/harness/rv-b5a/final/q/log):\n- smoke.js 15 and smoke.js 1: OK in desktop, portrait and landscape.\n- test-B35 (portrait, desktop): 20 of 20 passed.\n- test-B40: ALL PASS.\n- test-B39: ALL PASS in portrait (including the real 23:00 WLT load), landscape and desktop.\n\nThe final screenshot set is in /tmp/harness/rv-b5a/final/q/: 4 viewports at 15:00 and 21:00, pier fishing at 16:00, the condo exterior plus floor 3 and the lobby, the pink house at night, and Lantern Square on Oct 31 at 19:00. The shot script logged no page errors.\n\nFix spot-checks:\n1. fishPick no longer throws 'wet is not defined'. 'let wet=false' is on the fishPick line, and natural bites pick a species (ling and quil showed up during the shot run).\n2. fishSafe() runs once per cast. In portrait the ring sits in open water clear of the dock and 'watch Mocha'. The hint and reel bar sit above the joystick and zoom. The dock, joystick and zoom are dimmed while fishing. On desktop the ring and hint are clear of the diary panel and the dock. The X closes the overlay and the HUD comes back to normal.\n\nOther things the screenshots show working:\n- The 'fish here' and 'drop the crab pot' chips appear on the pier.\n- The condo floor picker (R/5/4/3/2/L) and Vesper's 3A unit render, with the coffin and candles.\n- The pink house porch is lit at night with its pumpkins.\n- Oct 31 shows the pumpkins, bunting and a witch-hat character, with the HUD reading 'halloween'.\n\nOne 15:00 landscape frame came out black because it caught a door fade; retakes are normal. The remaining nits are cosmetic or come from the shot script, not the game."
+ },
+ "fix1": {
+  "fixed": [
+   "HIGH: Renting 5C no longer stops later boots. condoFix now checks keys against literals only ('5C' and 'you') and no longer reads the B39 const FWUB, which caused the TDZ crash. The three per-step fixer lines in migrate() (natFix, b40Fix, condoFix) are each wrapped in try/catch; a failed condoFix falls back to {rent:{},due:0}. Verified with rv-b5a/rent2.js: the save loads with __mocha present and no page errors.",
+   "HIGH: The invisible toast no longer swallows taps on the pier chip. ntcHide now removes both 'show' and 'tap', and the old CSS rule '#toast.tap' became '#toast.show.tap'. b35chip was not moved.",
+   "HIGH: The fishing lure and ring now stay on screen. fishEdge orders its directions from camera-forward and probes at 1.5 m and 3 m, using a reused Vector3 and no per-call array. The forced-cast fallback is also camera-forward. fishFrame clamps the lure, ring and shadow point to [40, VW-40] by [20%, 70%] of the height.",
+   "HIGH: The Fogwell stair door no longer cycles floors while you hold toward it. The walker now arrives 1.35 to 1.75 from the trigger, outside its radius. A disarm flag (sNo) re-arms only after the walker is more than 1.2 away, there is a 1 s cooldown, the stairs from R go down to 5 instead of wrapping to L, and fwOff clears the flag.",
+   "The Today card shows a crab-pot text line, or nothing when no pot is down. It no longer shows '[object Object]'.",
+   "cabinFix keeps home.jk, so the jack-o'-lantern flag survives a reload.",
+   "natOK no longer rejects plaza and lot rectangles (your own cabin lot is still excluded), so cherry petals and pumpkins can spawn.",
+   "The ripple ring now shrinks to about a 20 px inner diameter (lure plus halo) exactly at F.meet.",
+   "The chanterelle pick-up toast leads with the full 'Never eat a wild mushroom unless an expert identifies it.' line. The book and the returned fact keep the full text.",
+   "B35 objects (finds group, critter sprites, sparkles, buoy) now use worldAdd. PREWARM entries were added for the finds' instanced ToonM, the sparkle Points, a sprite, a clone of the buoy and B40's mushroom mesh. The manual IN.on hiding was left in place.",
+   "Gathered-find instances follow the mask. natBuild rebuilds when the day or S.you.day.g changes, which covers midnight and cloud-save adoption. natBuild and natGather run dayCheck first when day.k is stale.",
+   "The B40 shed now has collision. A new runtime COLX box list is checked in COL.hit, and the shed box is pushed when the B40 block loads, so the walker and spawns respect it. The late COLP push, which had no effect, was removed.",
+   "Items tagged 'keep', such as the message bottle, are excluded from Pearl's thrift sell list.",
+   "Hollis's Saturday sqpatch block is pushed before the Oct 31 parade and candy blocks, so the parade wins. The parade now has 14 walkers.",
+   "GHOST_ACT.hw is -30 while ghostMode is 'trick', so Mocha does not pick the cemetery visit on Oct 31.",
+   "doorBanner uses CASTB names for non-keeper agents instead of calling everyone Wendell.",
+   "The fishing board phase is cancelled when the walker moves away from the car (more than 1.5 past the closest approach, or more than 2.5 away after 12 s), so there is no teleport.",
+   "Crab pulls and crow gifts check canPut. Crabs that don't fit go back with a note, and the crow gift is deferred without using up the peanuts or the crow day.",
+   "b40GhostFrame does nothing per frame while the ghosts are not out; the glows are zeroed once.",
+   "Day birds (hummingbird, jay, goldfinch) do not spawn after dark, and the salmon boost is limited to sunrise or sunset plus or minus 1.5 h, using SUN.",
+   "Trick-or-treat groups use a seeded shuffle, so costumes don't repeat.",
+   "The train status says 'on the train' only for about 1.25 h after departure; after that it says at home or asleep in Ballard Junction.",
+   "Fishing UI: the chip click sets chipK=null so a stale chip is not left showing, the hint clears when the catch card shows, and the hint wraps (with :empty hidden)."
+  ],
+  "not_fixed": [
+   "Fogwell residents counted as home for any rest block (fwRes): not fixed. This needs a tRhy-style move of the residents' B22 rest place to 'fogwell'. Only filtering on b[3]==='fogwell' would leave every window except Clem's always dark. INTEGRATION.",
+   "Crab and fish payouts vs YOUX 50% sell price: not changed (the price tables are left as they are). Only the bottle-to-thrift part was fixed.",
+   "Duo side-panel overlap of the B35 cards and the double X (HUD/layout change; INTEGRATION).",
+   "The reel bar over the joystick and zoom, and the X offset in landscape (HUD slot hiding; INTEGRATION).",
+   "Rent dead end and the FOR RENT card text (stretch; atlas art unchanged).",
+   "Dark Fogwell roof and floors (art direction, B42).",
+   "Rainy-evening rainrest blocks for B40 keepers still use the shop back room.",
+   "The ring pumpkin overlaps a patch pumpkin and a hay bale.",
+   "Tapping a townsperson's door at night walks into the house (also in the base build).",
+   "The ghost friends' distinct silhouettes (art).",
+   "The porch jack-o'-lantern chip or notice for discoverability (UX addition; the jk persistence fix it depends on is done).",
+   "Duplicate-free routing beyond the existing sellList, and pricing alignment (see the payouts item)."
+  ],
+  "tests_run": "On the fixed file: smoke.js 15 and smoke.js 1 OK in all 3 viewports (run twice, the second time after the final edit). test-B35 portrait and desktop: 20/20, then portrait 10/10 again after the final edit. test-B40: ALL PASS (Hollis now in the parade, 14 walkers). test-B39 portrait (including the 23:00 load), landscape and desktop: ALL PASS. rv-b5a/rent2.js (boot with condo.rent 5C): __mocha present, no page errors. Batch-2 tests B7 to B17 and round-1 tests step1b to step6 were run against the fixed file and against the pre-fix backup (/tmp/harness/backup-b5a-fix1.html) through redirect.js. B12, B13 and step1b pass. B7, B8, B9, B10, B11, B14, B15, B16, B17 and step2 to step6 have failures, but every one of them except one also fails on the pre-fix backup: same failure names (the step2 pinch differs only in joystick numbers), and the backup even has one more step5 failure. The exception is B16 'chimney smoke puffs from his lit chimney'. It is timing-dependent: it fails when the camera ends up inside a room (IN.on) after the test's CAM pop. My first PREWARM entry called natBuild() during boot, and with it the check failed every time; with that entry removed it passed once. I replaced it with a side-effect-free InstancedMesh, and after that the check passed 3 of 4 isolated runs (rv-b5a/t16dbg.js) but failed in the full test-B16 run. It stays an open, flaky check; the backup passed it in both of its runs. Logs are in /tmp/harness/rv-b5a/fx-*.log (fixed) and bk-*.log (backup). No tests were edited.",
+  "smoke_passed": true,
+  "summary": "I fixed all 4 high findings and 20 of the medium and low ones in /home/user/Booknest/ghost-town/index.html (backup at /tmp/harness/backup-b5a-fix1.html). The three.js loader and the #err texts are untouched, autonomy is unchanged, and no per-frame allocation was added.\n\nSmoke 15 and 1 pass in all 3 viewports, and the B35, B39 and B40 step tests all pass. The batch-2 and round-1 tests show no new failure against the pre-fix backup except one: B16's chimney-smoke check is still unresolved. It depends on timing (whether the camera ends inside a room after the test's camera pop). It passed 3 of 4 isolated runs on the fixed file but failed in the final full test-B16 run, while the backup passed it both times.\n\nBefore you merge, note these shared hot spots I edited:\n- migrate() lines, now wrapped in try/catch\n- cabinFix (+jk)\n- the toast CSS and ntcHide\n- a new COLX check in COL.hit\n- SELLF.thrift\n- doorBanner\n- the todayCard crab line\n- 5 PREWARM entries\n\nThe unfixed items are mostly layout, art, or integration work (Fogwell resident rest place, Duo panel layout, rent UI, payout tables); they are listed in not_fixed."
+ },
+ "qa1": {
+  "pass": false,
+  "problems": [
+   "HIGH, a regression from the fixer: fishing never gets a natural bite. In /home/user/Booknest/ghost-town/index.html line 10117, the fishPick 'SUN rise/set' fix puts the comment `// salmon bite best around sunrise and sunset (Reed's tip)` in front of `let wet=false;try{wet=WX.wet(t)}catch(e){}` on the same line. The declaration is now commented out, so fishPick throws `ReferenceError: wet is not defined` every time it runs. Callers: fishRing whenever no species is forced (every real bite after a cast), and __mocha.fishBite({}). Reproduced in /tmp/harness/rv-b5a/final/wet.js on desktop: after fishCast, one console.error 'B35 ReferenceError: wet is not defined' at fishPick:10118 / fishRing / fishFrame / b35Frame / frame, then fishState stays {ph:'wait'} for good (20 s observed), and fishBite({}) throws. test-B35 does not catch this because it always passes sp. The pre-fix backup (backup-b5a-fix1.html) declared `let wet` correctly. Fix: move the comment to the end of the line or put a newline before `let wet`. I checked every other changed line in the fixer's diff that has an inline comment, and this is the only place where the comment swallows code.",
+   "MEDIUM, layout and known INTEGRATION items (already deferred, not blocking): in portrait at 393 px the fishing ring is drawn at the right edge, overlapping the 'watch Mocha' pill and the right HUD column, and is partly clipped (the clamp covers the lure, not the ring radius). The hint and reel bar sit over the joystick and zoom. On desktop the diary side panel is open while fishing, and the ring overlaps the edge of the panel. The 'fish here / drop the crab pot' chip stays visible under the fishing overlay.",
+   "LOW: my condo-exterior shot was framed on the wrong spot (the camera landed on a Main St shopfront), so it does not show the Fogwell facade. That is a fault in my shot script, not the game. The lobby and floor-3 interiors render correctly with the R/5/4/3/2/L picker and the 'The Fogwell, Ambrose is in' card."
+  ],
+  "screenshots": [
+   "/tmp/harness/rv-b5a/final/portrait-h15.png",
+   "/tmp/harness/rv-b5a/final/portrait-h21.png",
+   "/tmp/harness/rv-b5a/final/landscape-h15.png",
+   "/tmp/harness/rv-b5a/final/landscape-h21.png",
+   "/tmp/harness/rv-b5a/final/duo-h15.png",
+   "/tmp/harness/rv-b5a/final/duo-h21.png",
+   "/tmp/harness/rv-b5a/final/desktop-h15.png",
+   "/tmp/harness/rv-b5a/final/desktop-h21.png",
+   "/tmp/harness/rv-b5a/final/fish-pier-portrait.png",
+   "/tmp/harness/rv-b5a/final/fish-ring-portrait.png",
+   "/tmp/harness/rv-b5a/final/fish-card-portrait.png",
+   "/tmp/harness/rv-b5a/final/fish-ring-desktop.png",
+   "/tmp/harness/rv-b5a/final/fish-card-desktop.png",
+   "/tmp/harness/rv-b5a/final/condo-exterior-portrait.png",
+   "/tmp/harness/rv-b5a/final/condo-lobby-portrait.png",
+   "/tmp/harness/rv-b5a/final/condo-f3-portrait.png",
+   "/tmp/harness/rv-b5a/final/home-pink-night-desktop.png",
+   "/tmp/harness/rv-b5a/final/lantern-oct31-h19-portrait.png",
+   "/tmp/harness/rv-b5a/final/lantern-oct31-h19-desktop.png"
+  ],
+  "summary": "Final QA on /home/user/Booknest/ghost-town/index.html: fail. The fixer's fishPick edit broke real fishing.\n\n**Tests run:**\n- smoke.js 15 and smoke.js 1: no errors in desktop, portrait or landscape.\n- test-B35 portrait and desktop: all 20 passed.\n- test-B40: all passed, including Hollis in the 14-walker parade, the pink-house status, ghost bonds and the Oct 24 ring.\n- test-B39: all passed in portrait (with the 23:00 load), landscape and desktop.\n- Logs are in /tmp/harness/rv-b5a/final/.\n\n**Blocking bug:** In fishPick (index.html line 10117), the new comment `// salmon bite best around sunrise and sunset (Reed's tip)` sits on the same line in front of `let wet=false;...`, so that declaration is commented out. Every natural bite therefore throws `ReferenceError: wet is not defined`. The fishing phase then stays at 'wait' for good, so a player who casts never gets a bite. `__mocha.fishBite({})` also throws.\n- I reproduced it in /tmp/harness/rv-b5a/final/wet.js: one console.error, then the phase was still 'wait' after 20 s.\n- test-B35 misses it because it always forces a species.\n- The one-line fix is to move the comment to the end of the line.\n- No other fixer change has code trapped behind an inline comment.\n\n**Screenshots** are in /tmp/harness/rv-b5a/final/ (all four viewports at 15:00 and 21:00, the pier ring and catch card, the Fogwell lobby and floor 3, the pink house at 21:30, Lantern Square on Oct 31 at 19:00). Apart from the fishing run, these produced no page errors. The HUD is clean in all viewports. The Fogwell floor picker and card render well. The pink house is lit and decorated at night, and the Oct 31 square has pumpkins and bunting. My condo-exterior shot was framed on a Main St shopfront instead of the Fogwell (my script's fault), so the facade itself is not shown.\n\n**Fix spot-checks that held:** rent-5C boot (B39 rent test), the stair re-arm, Hollis in the parade, the shed collision, the catch card (keep/sell/release), and the crab and crow flows (test-B35).\n\n**Remaining layout issues, all already deferred as INTEGRATION:** in portrait the fishing ring sits partly off-screen over the right HUD column, and the reel bar covers the joystick. On desktop the ring overlaps the edge of the open diary panel."
+ }
+}
