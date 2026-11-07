@@ -10203,11 +10203,12 @@ const PROGS={boot:renderer.info.programs.length,n:0,ms:0,err:null};
 //  API: AUD.bus{music,amb,sfx,vo} · AUD.voice(cat,...) · AUD.emitter(o)/AUD.drop(e) · AUD.spat(x,z,ref,max,pid) · AUD.timer(fn,ms) · AUD.duck(s) · AUD.music(on)
 // ====================================================================
 var AUD=null;
-function sndDefaults(){const D={m:80,mu:30,am:35,fx:50,vo:45,mode:'on',picks:true,babble:true,quiet:true,mix:false,hint:0};if(!SET.snd||typeof SET.snd!=='object')SET.snd={};for(const k in D)if(SET.snd[k]===undefined)SET.snd[k]=D[k];if(!/^(muted|quiet|on)$/.test(SET.snd.mode))SET.snd.mode='on';return SET.snd}
+function sndDefaults(){const D={m:80,mu:30,am:30,fx:40,vo:45,mode:'on',picks:true,babble:true,quiet:true,mix:false,hint:0,fire:true};if(!SET.snd||typeof SET.snd!=='object')SET.snd={};for(const k in D)if(SET.snd[k]===undefined)SET.snd[k]=D[k];if(!/^(muted|quiet|on)$/.test(SET.snd.mode))SET.snd.mode='on';return SET.snd}
 sndDefaults();
+{const s=SET.snd;if(!s.mx1){s.mx1=1;if(s.fx===50)s.fx=40;if(s.am===35)s.am=30}}   // sound pass: the old untouched defaults (fx 50, am 35) move to the new quieter ones once
 AUD={c:null,born:0,T:[],V:{music:[],sfx:[],voices:[]},CAP:{music:8,sfx:4,voices:2},st:{},rl:{},q:[],beds:{},zone:'',bedZ:'',wx:null,E:[],subs:[],mOn:false,idle:0,tierF:null,lisF:null,last:'',w:null,wild:[],cr:null,crSaid:0,gust:0,born2:0,
   // ref/max per emitter type (B20 table)
-  RM:{player:[6,28],shop:[5,24],fire:[3,12],babble:[8,25],tink:[15,60],bird:[12,50],train:[30,180],ferry:[40,220],door:[6,35],town:[20,90],clock:[30,160]}};
+  RM:{player:[4,20],shop:[5,24],fire:[1.5,8],babble:[3,12],tink:[6,30],bird:[8,35],train:[30,180],ferry:[40,220],door:[3,12],town:[12,60],clock:[30,160],act:[2.5,12],step:[1.5,8]}};   // sound pass: fire 1.5/8, doors and world one-shots 3/12, activities 2.5/12, footsteps 1.5/8 (shop music keeps 5/24)
 function audTier(){if(AUD.tierF)return AUD.tierF;if(SET.saver||ADAPT.drops>=2)return'LOW';return TOUCH?'MED':'HIGH'}
 function audOn(){return!!(AUD.c&&AUD.c.state==='running'&&SET.snd.mode!=='muted'&&!document.hidden&&!AUD.idle)}
 // ---- engine ----
@@ -10264,8 +10265,8 @@ function audDuck(s){const A=AUD;if(!A.c)return;const g=A.dk.gain,t=A.c.currentTi
 const AP={x:0,z:0,pid:null,rx:1,rz:0},ASP={g:1,pan:0,lp:20000};
 function audLis(){const L=AUD.lisF;AP.x=L?L[0]:camS.tx;AP.z=L?L[1]:camS.tz;AP.pid=placeAt(AP.x,AP.z)||(CB&&CB.grp&&cabIn(AP.x,AP.z)?'cabin':null);const m=camera.matrixWorld.elements;const l=Math.hypot(m[0],m[2])||1;AP.rx=m[0]/l;AP.rz=m[2]/l}
 function audSpat(x,z,ref,max,pid,o){o=o||ASP;const dx=x-AP.x,dz=z-AP.z,d=Math.hypot(dx,dz);if(d>=max){o.g=0;o.pan=0;o.lp=20000;return o}
-  let g=1/(1+(d/ref)*(d/ref))*Math.min(1,(max-d)/(max*.2));const ep=pid===undefined?placeAt(x,z):pid;let lp=20000;
-  if((ep||null)!==(AP.pid||null)){const dd=DBY[ep||AP.pid],op=dd&&(dd.tgt>0||dd.ang>.25);lp=op?2500:700;g*=op?.7:.5}
+  let g=1/(1+(d/ref)*(d/ref))*Math.min(1,(max-d)/(max*.2));const ep=pid===undefined?placeAt(x,z):pid;let lp=d>2?Math.max(1800,18000/(1+d*.12)):20000;
+  if((ep||null)!==(AP.pid||null)){const dd=DBY[ep||AP.pid],op=dd&&(dd.tgt>0||dd.ang>.25);lp=Math.min(lp,op?2200:600);g*=op?.6:.3}
   o.g=g;o.pan=d>.4?clamp((dx*AP.rx+dz*AP.rz)/d,-1,1)*Math.min(1,d/4):0;o.lp=lp;return o}
 // persistent emitters (B21 shop music, record players, the fireplace): connect a source to e.in; updated at 10 Hz
 function audEmitter(o){const A=AUD,fresh=!A.c;if(!audInit())return null;if(fresh)audSync();const c=A.c,rm=A.RM[o.type]||[o.ref||6,o.max||30],e={x:o.x||0,z:o.z||0,ref:o.ref||rm[0],max:o.max||rm[1],pid:o.pid,obj:o.obj||null,in:c.createGain(),f:c.createBiquadFilter(),g:c.createGain(),p:c.createStereoPanner?c.createStereoPanner():null,solo:0};
@@ -10325,7 +10326,7 @@ const SFXR={
   typing:()=>[0,1,2,3,4,5].map(i=>ANZ(3500,.02,.16,{at:i*.11+AR()*.04,q:3})),
   page:()=>[ANZ(2500,.35,.13,{f2:5000,a:.1,q:.8})],
   fridge:()=>[AO(118,1.4,.05,{w:'triangle',h:1,a:.3})],
-  crackle:()=>[0,1,2,3,4].map(()=>ANZ(2000+AR()*3000,.015,.22,{at:AR()*.8,q:2})),
+  crackle:()=>[0,1,2,3,4].map(()=>ANZ(800+AR()*1500,.02,.08,{at:AR()*.8,q:1.4,a:.003})),
   bubbles:()=>[0,1,2,3,4].map(i=>AO(400+AR()*600,.06,.13,{f2:900+AR()*800,at:i*.1+AR()*.05})),
   tap:()=>[AO(880,.012,.1,{a:.002})],open:()=>[AO(523,.12,.1,{f2:784,w:'triangle'})],shut:()=>[AO(784,.12,.1,{f2:523,w:'triangle'})],
   toggle:()=>[AO(660,.03,.1,{w:'triangle'}),AO(990,.04,.09,{at:.04,w:'triangle'})],nope:()=>[AO(220,.18,.12,{w:'triangle',f2:196})],
@@ -10348,19 +10349,27 @@ const SFXR={
   talk:()=>[AO(880,.07,.1,{w:'triangle'}),AO(1175,.09,.09,{at:.07,w:'triangle'})]};
 Object.assign(SFXR,{spout:()=>[ANZ(950,.45,.2,{q:1.3,a:.05,f2:760}),ANZ(1150,.3,.06,{q:2,at:.05})],splash:()=>[ANZ(600,.6,.32,{ft:'lowpass',a:.01}),ANZ(2200,.8,.15,{q:.8,at:.04,f2:1100}),...[.12,.22,.36,.5].map(at=>ANZ(3000+AR()*1800,.07,.07,{at,q:2}))],splashS:()=>[ANZ(1500,.32,.13,{q:1,f2:850}),ANZ(3100,.05,.05,{at:.12,q:2})]});   // LF2: the sea
 // merge b5a: B35 gathering and fishing one-shots
+// sound pass: lighting a fire; café and home activity sounds (all soft, routed through ACTV emitters)
+Object.assign(SFXR,{firelit:()=>[ANZ(240,.8,.2,{ft:'lowpass',f2:110,a:.14,q:.5}),ANZ(420,.55,.05,{q:.7,a:.1}),...Array.from({length:2+(AR()<.5?1:0)},()=>ANZ(800+AR()*1300,.03,.035,{at:.3+AR()*.8,q:1.4,a:.004}))],
+  grind:()=>[ANZ(1000+AR()*200,1.1+AR()*.5,.1,{q:1.1,a:.15,h:1,am:34+AR()*8}),ANZ(380,1.2,.06,{ft:'lowpass',a:.15,h:1})],tamp:()=>[AO(150,.07,.16,{f2:105,w:'triangle'}),ANZ(800,.03,.04,{q:2,at:.01})],
+  pour:()=>[ANZ(1300+AR()*300,.9+AR()*.5,.08,{f2:1800,q:2.5,a:.15,h:1}),ANZ(500,1,.05,{ft:'lowpass',a:.2,h:1})],chop:()=>[AO(230+AR()*40,.05,.12,{f2:150,w:'triangle'}),ANZ(1200,.025,.04,{q:2})],
+  scrib:()=>[ANZ(2600+AR()*500,.3+AR()*.25,.08,{q:2,a:.05,am:12+AR()*6})]});
 Object.assign(SFXR,{pickup:()=>[AO(660,.08,.16,{w:'triangle',f2:990}),ANZ(3000,.05,.06,{q:2})],spot:()=>[AO(1568,.12,.1,{w:'triangle'}),AO(2093,.18,.09,{at:.09,w:'triangle'})],plip:()=>[AO(900,.07,.18,{f2:1600}),ANZ(2400,.05,.06,{at:.03,q:3})],strike:()=>[ANZ(1500,.12,.28,{q:1.5}),AO(240,.1,.2,{f2:520,w:'triangle'})],'catch':()=>[523,784,1046].map((f,i)=>AO(f,.2,.12,{at:i*.07,w:'triangle'}))});
 // how each sound travels: bus, emitter type (ref/max), and notable ones duck the music
 const AMBS=new Set(['gull','buoy','pier','flicker','robin','chickadee','thrush','crow','hummer','owl','chime','ooo','frog','foghorn']),
   SFT={tink:'tink',train:'train',crossing:'town',ferry:'ferry',foghorn:'ferry',clock:'clock',bikebell:'town',freewheel:'door',elevator:'door'},
   DUCKS=new Set(['bell','train','ferry','textIn','mail','yay','clock']),UIS=new Set(['tap','open','shut','toggle','nope','yay','tok','swish','pop','talk']),
   ARL={step:1/6,coin:.25,tap:.1,open:.1,shut:.1,toggle:.1,nope:.1};
+SFT.step='step';SFT.firelit='fire';
+// sound pass: loudness classes (K-weighted loudest 100 ms of the raw recipe, see /tmp/harness/fire/audio): UI ticks -38, notices -32, world -31, footsteps -38, wildlife -32, events -27 (dB)
+const SFXN={bell:.19,bikebell:.29,blip:.69,boo:.44,brush:.95,bubbles:.80,buoy:.29,buy:.19,'catch':.58,chickadee:.38,chime:.60,chime1:.71,chime4:.36,clink:.72,clock:.32,close:.21,coin:.24,creak:.62,creakG:.95,crossing:.52,ding:.26,elevator:.26,ferry:.31,foghorn:.41,fridge:.84,gate:.58,gift:.66,giggle:.54,gull:.91,hammer:.44,hum:.78,kettle:.39,knock:.25,mail:.19,mhum:.43,needle:.40,nope:.41,ooo:.92,open:.60,owl:.46,page:.78,pickup:.91,plip:.68,pop:.26,robin:.67,shut:.60,shutter:.80,sigh:.90,sign:.92,sizzle:.31,slide:.87,spot:.79,step:.64,strike:.60,swish:.64,talk:.50,textIn:.18,textOut:.66,tink:.35,toggle:.72,tok:.29,train:.49,yay:.30};
 // pitched UI sounds follow SONG.key (B21) when it exists: semitones from C, or a note name
 function audKey(){try{if(typeof SONG==='undefined'||!SONG||SONG.key==null)return 1;let k=SONG.key;if(typeof k==='string'){const m=k.match(/^([A-G])([#b]?)/i);if(!m)return 1;k={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1].toUpperCase()]+(m[2]==='#'?1:m[2]==='b'?-1:0)}k=((Math.round(+k)%12)+12)%12;if(k>6)k-=12;return Math.pow(2,k/12)}catch(e){return 1}}
 // play a palette sound. o: {x,z,pid,type,ref,max,k (pitch mult),g (gain mult),bus,noOcc}. Returns the voice or null.
 function audShot(name,o){const A=AUD;o=o||{};A.st[name]=(A.st[name]||0)+1;A.last=name;if(!audOn())return null;const r=SFXR[name];if(!r)return null;
   const tn=performance.now()/1000,lim=ARL[name]||.05;if(tn-(A.rl[name]||-9)<lim){A.st.limited=(A.st.limited||0)+1;return null}A.rl[name]=tn;
-  const c=A.c,t=c.currentTime+.01,n=[],out=c.createGain();let g=o.g==null?1:o.g,dst=A.bus[o.bus||(AMBS.has(name)?'amb':UIS.has(name)?'sfx':'sfx')];
-  if(o.x!=null){audLis();const rm=A.RM[o.type||SFT[name]||(AMBS.has(name)?'bird':'door')],s=audSpat(o.x,o.z,o.ref||rm[0],o.max||rm[1],o.noOcc?AP.pid:o.pid);if(s.g<.004){A.st.far=(A.st.far||0)+1;return null}g*=s.g;
+  const c=A.c,t=c.currentTime+.01,n=[],out=c.createGain();let g=(o.g==null?1:o.g)*(SFXN[name]||1),dst=o.dst||A.bus[o.bus||(AMBS.has(name)?'amb':UIS.has(name)?'sfx':'sfx')];
+  if(o.x!=null&&!o.dst){audLis();const rm=A.RM[o.type||SFT[name]||(AMBS.has(name)?'bird':'door')],s=audSpat(o.x,o.z,o.ref||rm[0],o.max||rm[1],o.noOcc?AP.pid:o.pid);if(s.g<.004){A.st.far=(A.st.far||0)+1;return null}g*=s.g;
     if(s.lp<19000){const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=s.lp;f.connect(dst);dst=f;n.push(f)}if(c.createStereoPanner&&Math.abs(s.pan)>.02){const p=c.createStereoPanner();p.pan.value=s.pan;p.connect(dst);dst=p;n.push(p)}}
   out.gain.value=g;out.connect(dst);const k=(o.k||1)*(UIS.has(name)?audKey():1);let end=t;for(const p of r(o))end=Math.max(end,audPart(c,out,p,t,k,n));
   if(DUCKS.has(name))audDuck(end-t);A.st.played=(A.st.played||0)+1;A.st['p:'+name]=(A.st['p:'+name]||0)+1;return audVoice('sfx',n,out,end,g)}
@@ -10391,11 +10400,11 @@ const BRX=/(\.\.\.|…)|(\p{Extended_Pictographic})|([b-df-hj-np-tv-xz]*)([aeiou
 // babble(id,text,{obj,x,y,z,pid,force,g}) -> {ok,why,dur,n}. Only on-screen speakers within 25 of the listener; at most 2 at once; Mocha's muttering is -6 dB.
 function babble(id,text,o){const A=AUD;if(!A)return{ok:0,why:'boot'};o=o||{};const no=why=>{A.st['bab:'+why]=(A.st['bab:'+why]||0)+1;return{ok:0,why}};
   if(!audOn())return no('silent');if(!text)return no('empty');const bk=String(id).toLowerCase()+'|'+String(text).slice(0,80),bn=performance.now();if(A.bk===bk&&bn-(A.bkt||0)<800)return no('dup');const pos=voxPos(id,o);if(!pos)return no('nowhere');audLis();
-  if(Math.hypot(pos[0]-AP.x,pos[2]-AP.z)>25)return no('far');if(!o.force){const pp=project(pos[0],pos[1],pos[2]);if(!pp.vis||pp.x<0||pp.y<0||pp.x>innerWidth||pp.y>innerHeight)return no('offscreen')}
+  if(Math.hypot(pos[0]-AP.x,pos[2]-AP.z)>A.RM.babble[1])return no('far');if(!o.force){const pp=project(pos[0],pos[1],pos[2]);if(!pp.vis||pp.x<0||pp.y<0||pp.x>innerWidth||pp.y>innerHeight)return no('offscreen')}
   const V=voxOf(id),s=String(text).toLowerCase().slice(0,240),L=[];if(String(id).toLowerCase()==='mocha'){const em=/he?he|haha|giggl/.test(s)?'giggle':/sigh/.test(s)?'sigh':/\bboo\b/.test(s)?'boo':'';if(em)audShot(em,{x:pos[0],z:pos[2]})}if(!SET.snd.babble)return no('off');let m;BRX.lastIndex=0;
   while((m=BRX.exec(s))&&L.length<22){if(m[1])L.push({k:'hum'});else if(m[2])L.push({k:'pop'});else if(m[4])L.push({k:'s',v:m[4][0],c:!!m[3]});else if(m[5]){const p=L[L.length-1];if(p&&p.k==='s'){if(m[5]==='.')p.dn=1;else if(m[5]===',')p.gap=1;else p.up=1}}}
   if(!L.length)return no('empty');const q=V[4];if(L.length<21&&AR()<.3){if(q==='heh')L.push({k:'s',v:'e',c:1});else if(q==='hoo')L.push({k:'s',v:'u',c:1});else if(q==='awoo')L.push({k:'s',v:'a'},{k:'s',v:'u',c:1,up:1})}
-  const c=A.c,t0=c.currentTime+.03,sd=1/V[3],base=V[1],rng=V[2],lp=V[5]||0,n=[],out=c.createGain(),sp=audSpat(pos[0],pos[2],8,25,o.pid);let dst=A.bus.vo;
+  const c=A.c,t0=c.currentTime+.03,sd=1/V[3],base=V[1],rng=V[2],lp=V[5]||0,n=[],out=c.createGain(),sp=audSpat(pos[0],pos[2],A.RM.babble[0],A.RM.babble[1],o.pid);let dst=A.bus.vo;
   if(sp.lp<19000){const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=sp.lp;f.connect(dst);dst=f;n.push(f)}if(c.createStereoPanner){const p=c.createStereoPanner();p.pan.value=sp.pan;p.connect(dst);dst=p;n.push(p)}
   out.gain.value=Math.max(.05,sp.g)*(String(id).toLowerCase()==='mocha'&&!o.loud?.5:1)*(o.g||1);out.connect(dst);
   const bq=(t,f,qq)=>{const b=c.createBiquadFilter();b.type=t;b.frequency.value=f;b.Q.value=qq;return b},osc=c.createOscillator(),b1=bq('bandpass',800,5),b2=bq('bandpass',1200,7),g2=c.createGain(),env=c.createGain(),nz=c.createBufferSource(),hp=bq('highpass',2500,.7),ng=c.createGain();
@@ -10420,10 +10429,10 @@ const CRF={7:64,8:58,9:50};
 function bedMk(name){const A=AUD,c=A.c,out=c.createGain(),n=[out];out.gain.value=0;out.connect(A.bus.amb);const B={kind:name,out,n,u:null};
   const loop=(buf,ft,f,q,g,rate)=>{const s=c.createBufferSource();s.buffer=buf;s.loop=true;if(rate)s.playbackRate.value=rate;let x=s;n.push(s);if(ft){const b=c.createBiquadFilter();b.type=ft;b.frequency.value=f;b.Q.value=q||.7;s.connect(b);x=b;n.push(b)}const gg=c.createGain();gg.gain.value=g;x.connect(gg);gg.connect(out);n.push(gg);s.start(0,AR()*1.9);return gg};
   const lfo=(pr,rate,dep)=>{const l=c.createOscillator(),lg=c.createGain();l.frequency.value=rate;lg.gain.value=dep;l.connect(lg);lg.connect(pr);l.start();n.push(l,lg)},sr=c.sampleRate;
-  if(name==='waterfront'){const g=loop(A.pink,'lowpass',420,.7,.5);lfo(g.gain,.11,.3)}
-  else if(name==='downtown')loop(A.pink,'lowpass',170,.7,.4);else if(name==='indoor')loop(A.pink,'lowpass',230,.7,.14);
+  if(name==='waterfront'){const g=loop(A.pink,'lowpass',420,.7,.3);lfo(g.gain,.11,.18)}
+  else if(name==='downtown')loop(A.pink,'lowpass',170,.7,.2);else if(name==='indoor')loop(A.pink,'lowpass',230,.7,.14);   // sound pass: the street beds sit under the music (were ~6 dB over it)
   else if(name==='park'){const g=loop(A.pink,'bandpass',650,.6,.25);lfo(g.gain,.07,.1);B.u=()=>g.gain.setTargetAtTime(.08+WIND*.45,c.currentTime,1)}
-  else if(name==='home'){loop(A.tik,'',0,0,.1);const f=c.createOscillator(),fg=c.createGain();f.type='triangle';f.frequency.value=118;fg.gain.value=.012;f.connect(fg);fg.connect(out);f.start();n.push(f,fg);const mo=new Date().getMonth();if(mo>=9||mo<=3)loop(A.crk,'highpass',600,.7,.35)}
+  else if(name==='home'){loop(A.tik,'lowpass',2400,.7,.045);const f=c.createOscillator(),fg=c.createGain();f.type='triangle';f.frequency.value=118;fg.gain.value=.01;f.connect(fg);fg.connect(out);f.start();n.push(f,fg)}
   else if(name==='cemetery')loop(A.pink,'bandpass',380,.8,.12);
   else if(name==='crickets'){const F=CRF[new Date().getMonth()]||58,cpm=4*(F-40),P=60/cpm,b=c.createBuffer(1,Math.round(P*2*sr),sr),d=b.getChannelData(0),L=Math.round(.014*sr);A.cr={F,cpm};
     for(const s0 of [0,P])for(let k=0;k<3;k++){const o=Math.round((s0+.03+k*.022)*sr);for(let i=0;i<L&&o+i<d.length;i++)d[o+i]+=Math.sin(i/sr*4600*6.283)*Math.sin(Math.PI*i/L)*.6}loop(b,'',0,0,.18);loop(b,'',0,0,.08,1.03)}
@@ -10433,14 +10442,15 @@ function bedEnd(b){const A=AUD,t=A.c.currentTime;b.out.gain.cancelScheduledValue
 function bedSet(key,want,lvl){const A=AUD;let b=A.beds[key];if(b&&b.kind!==want){bedEnd(b);delete A.beds[key];b=null}if(!want)return;if(!b)b=A.beds[key]=bedMk(want);b.out.gain.setTargetAtTime(lvl==null?1:lvl,A.c.currentTime,.6);if(b.u)b.u()}
 function audBedList(){const A=AUD,L=Object.values(A.beds).map(b=>b.kind);if(A.wx&&A.wx.lvl>0)L.push('rain');return L}
 // rain: pink noise HP 300 / LP 1.8k (indoors LP 600 plus roof ticks); drizzle is a high hiss; gusts follow WIND. LOW keeps only this bed.
-function wxUpd(low){const A=AUD,k=WEATHER.kind,inside=!!AP.pid;let lvl=k==='rain'?.6:k==='drizzle'?.25:0;if(!A.wx&&!lvl&&(low||WIND<=.3))return;
+// pd = pitDuck(): next to the lit yard fire pit (outdoors, Fireplace sound on) the drizzle hiss and the gusts step back with the other beds; heavy rain is left as it is
+function wxUpd(low,pd){if(pd==null)pd=1;const A=AUD,k=WEATHER.kind,inside=!!AP.pid;let lvl=k==='rain'?.6:k==='drizzle'?.25:0;if(!A.wx&&!lvl&&(low||WIND<=.3))return;
   if(!A.wx){const c=A.c,s=c.createBufferSource(),hp=c.createBiquadFilter(),lp=c.createBiquadFilter(),g=c.createGain(),d=c.createBufferSource(),dg=c.createGain(),gs=c.createBufferSource(),gb=c.createBiquadFilter(),gg=c.createGain();
     s.buffer=gs.buffer=A.pink;d.buffer=A.drp;s.loop=d.loop=gs.loop=true;gs.playbackRate.value=.7;hp.type='highpass';hp.frequency.value=300;lp.type='lowpass';lp.frequency.value=1800;gb.type='bandpass';gb.frequency.value=450;gb.Q.value=.8;g.gain.value=dg.gain.value=gg.gain.value=0;
     s.connect(hp);hp.connect(lp);lp.connect(g);d.connect(dg);gs.connect(gb);gb.connect(gg);for(const x of [g,dg,gg])x.connect(A.bus.amb);s.start(0,AR());d.start(0,AR());gs.start(0,AR());A.wx={s,hp,lp,g,d,dg,gs,gb,gg,lvl:0,in:0,lpv:1800}}
-  const w=A.wx,t=A.c.currentTime;if(inside)lvl*=.75;const lpv=inside?600:k==='drizzle'?5000:1800;w.g.gain.setTargetAtTime(lvl,t,.7);w.lp.frequency.setTargetAtTime(lpv,t,.3);w.hp.frequency.setTargetAtTime(k==='drizzle'&&!inside?1200:300,t,.3);
-  w.dg.gain.setTargetAtTime(inside&&lvl>0?(k==='rain'?.5:.25):0,t,.7);A.gust=clamp(A.gust+(AR()-.5)*.15,0,1);w.gg.gain.setTargetAtTime(low||inside?0:Math.max(0,WIND-.3)*A.gust*.6+(k==='rain'?.03:0),t,.8);w.lvl=lvl;w.in=inside;w.lpv=lpv}
-function audBeds(){const A=AUD,low=audTier()==='LOW';audRoom();const z=audZoneOf();A.zone=z;bedSet('zone',low?null:z,z==='home'?.9:1);
-  const mo=new Date().getMonth(),h=audHour();let wb=null;if(!low&&!AP.pid&&WEATHER.kind!=='rain'){if(mo>=7&&mo<=9&&(h>=19.5||h<1)&&z!=='waterfront')wb='crickets';else if(mo<=6&&(h>=19.5||h<5)&&z==='park')wb='frogs'}bedSet('wild',wb,.8);wxUpd(low)}
+  const w=A.wx,t=A.c.currentTime;if(inside)lvl*=.75;const lpv=inside?600:k==='drizzle'?5000:1800;w.g.gain.setTargetAtTime(k==='drizzle'?lvl*pd:lvl,t,.7);w.lp.frequency.setTargetAtTime(lpv,t,.3);w.hp.frequency.setTargetAtTime(k==='drizzle'&&!inside?1200:300,t,.3);
+  w.dg.gain.setTargetAtTime(inside&&lvl>0?(k==='rain'?.5:.25):0,t,.7);A.gust=clamp(A.gust+(AR()-.5)*.15,0,1);w.gg.gain.setTargetAtTime(low||inside?0:(Math.max(0,WIND-.3)*A.gust*.6+(k==='rain'?.03:0))*pd,t,.8);w.lvl=lvl;w.in=inside;w.lpv=lpv}
+function audBeds(){const A=AUD,low=audTier()==='LOW';audRoom();const z=audZoneOf();A.zone=z;const pd=pitDuck();bedSet('zone',low?null:z,(z==='home'?.9:1)*pd);
+  const mo=new Date().getMonth(),h=audHour();let wb=null;if(!low&&!AP.pid&&WEATHER.kind!=='rain'){if(mo>=7&&mo<=9&&(h>=19.5||h<1)&&z!=='waterfront')wb='crickets';else if(mo<=6&&(h>=19.5||h<5)&&z==='park')wb='frogs'}bedSet('wild',wb,.8*pd);wxUpd(low,pd)}
 // the wildlife calendar (true to Seattle): robin dawn carols and chickadee 'fee-bee' (spring/summer), Swainson's thrush at dusk (late spring/summer), crows to their evening roosts,
 // Anna's hummingbird squeaks in winter, flicker drumming in spring, gulls, the bell buoy and pier creaks on the waterfront, owl, wind chime and ghostly 'ooo' in the cemetery at night
 const WILD=[['robin',(m,h)=>m>=2&&m<=7&&h>=4.5&&h<7.5,.15],['chickadee',(m,h)=>m>=1&&m<=7&&h>=7&&h<17,.03],['thrush',(m,h)=>m>=4&&m<=7&&h>=19&&h<21.5,.1],
@@ -10468,7 +10478,8 @@ function audWatch(dt){const A=AUD,now=performance.now(),gd=Math.hypot(G.x-AP.x,G
   const sp=Math.hypot(G.x-w.gx,G.z-w.gz)/Math.max(.05,dt);w.gx=G.x;w.gz=G.z;if(G.biking){if(gd<25&&sp>.5&&now-w.wh>2600){w.wh=now;audShot(AR()<.12?'bikebell':'freewheel',{x:G.x,z:G.z})}}else if(sp>7&&sp<60&&gd<20&&now-w.wh>1500){w.wh=now;audShot('whoosh',{x:G.x,z:G.z})}
   const a=G.mode==='activity'?G.act:null;if(a!==w.act){w.act=a;w.at=0;w.k1=0}
   if(a&&gd<14){w.at-=dt;const tx2=(a.doing||'')+' '+(a.fx||'');if(a.fx==='sleep'){if(gd<8&&now-w.br>4500){w.br=now;audShot('breath',{x:G.x,z:G.z,g:.6})}}
-    else for(const [re,nm,ev] of AHS)if(re.test(tx2)){if(!ev){if(!w.k1){w.k1=1;audShot(nm,{x:G.x,z:G.z})}}else if(w.at<=0){w.at=ev*(.7+AR()*.6);audShot(nm,{x:G.x,z:G.z})}break}}
+    else for(const [re,nm] of AHS)if(re.test(tx2)){actOn('mocha',ACTOF[nm]||nm,G.x,G.z,{tok:a});break}}
+  actCafe(now);
   // the walker's footsteps by floorType (B11), ±8% pitch, snow outdoors in snow
   if(camS.mode==='walk'&&YOU.moving){w.acc+=Math.hypot(YOU.x-w.fx,YOU.z-w.fz);if(w.acc>1.15){w.acc=0;let f=typeof floorType==='function'?floorType(YOU.x,YOU.z):'grass';if(WEATHER.kind==='snow'&&/grass|sidewalk/.test(f))f='snow';audShot('step',{f,k:.92+AR()*.16,x:YOU.x,z:YOU.z})}}else w.acc=0;w.fx=YOU.x;w.fz=YOU.z}
 // the 10 Hz audio tick (LOW: 400 ms): queue, emitters, voice GC, watchers; beds at 2 Hz; gains, wildlife and idle at 1 Hz
@@ -10498,7 +10509,7 @@ function sndSetUI(host){if(!host||!AUD||host.querySelector('#sndSet'))return;con
   const sl=[['m','Master'],['mu','Music'],['am','Ambience'],['fx','Effects'],['vo','Voices']].map(([k,l])=>`<label class="sndR"><span>${l}</span><input type="range" min="0" max="100" step="1" data-snd="${k}" value="${s[k]}"><b>${s[k]}</b></label>`).join(''),
     tg=(k,l,sm)=>`<div class="set"><div>${l}<small>${sm}</small></div><input type="checkbox" class="tog" data-sndt="${k}" ${s[k]?'checked':''}></div>`;
   const h=`<div class="set" id="sndSet" style="display:block"><div>🔊 Sound<small>Every sound is made right here as you listen; nothing is downloaded. Tap the speaker for on, quiet or off. Long-press it to come back here.</small></div><div class="seg">${[['muted','🔇 off'],['quiet','🔉 quiet'],['on','🔊 on']].map(([v,l])=>`<button data-smode="${v}" class="${s.mode===v?'on':''}">${l}</button>`).join('')}</div>${sl}</div>`+
-    tg('picks',"Mocha's picks can take over the town music","When he's out and about, the town's music leans toward what he likes.")+tg('babble','Babble voices',"Everyone talks in soft little babble when they're on screen and close by. Texts and the diary stay quiet.")+
+    tg('picks',"Mocha's picks can take over the town music","When he's out and about, the town's music leans toward what he likes.")+tg('babble','Babble voices',"Everyone talks in soft little babble when they're on screen and close by. Texts and the diary stay quiet.")+tg('fire','Fireplace sound','A soft wood-stove crackle you only hear right beside a lit fire.')+
     tg('quiet','Quiet hours','From 10pm to 7am the music plays at half volume.')+tg('mix','Mix with my other audio (follows the silent switch)',"Off: the town plays even with your iPhone's silent switch on. On: it mixes with your music or podcasts, and the silent switch mutes it.");
   if(at)at.insertAdjacentHTML('beforebegin',h);else host.insertAdjacentHTML('beforeend',h);
   host.querySelectorAll('[data-snd]').forEach(r=>{r.oninput=()=>{s[r.dataset.snd]=+r.value;r.nextElementSibling.textContent=r.value;audApply()};r.onchange=()=>saveSet()});
@@ -11648,8 +11659,8 @@ function cabLsp(sp,h){const k=sp.l.kind;if(k==='fire'||k==='hearth'){const H=HEA
 function cabTimeOK(){const d=new Date(),h=d.getHours()+d.getMinutes()/60;return{h,dusk:h>=16.25||LX.dark>.45,late:h>=22.5||h<5}}
 function cabSetPit(on,force){const h=S.you.home,t=cabTimeOK();if(!on){const was=cabPitLit();h.pit=0;save();if(was){toast('🔥 the fire pit settles into embers… out');sfx('sigh',{x:CB.pit.x,z:CB.pit.z})}return{lit:false}}
   if(t.late&&!force)return{lit:false,why:'late'};if(!t.dusk&&!force)return{lit:false,why:'day'};const d=new Date();d.setHours(22,30,0,0);if(d<=Date.now())d.setDate(d.getDate()+1);h.pit=+d;save();CB.pitAt=performance.now();
-  sfx('crackle',{x:CB.pit.x,z:CB.pit.z});toast('🔥 the fire pit is lit (burns until 22:30). Anyone passing will see it.');return{lit:true,until:h.pit}}
-function cabSetHearth(on){const h=S.you.home;if(on){const d=new Date();d.setHours(23,30,0,0);h.hf=Math.min(Date.now()+4*36e5,+d>Date.now()?+d:Date.now()+36e5);sfx('crackle',{x:HEARTHBY.cabin.x,z:HEARTHBY.cabin.z});toast('🔥 the fire crackles in the hearth')}else{h.hf=0;toast('the hearth goes quiet')}save();return!!on}
+  sfx('firelit',{x:CB.pit.x,z:CB.pit.z,pid:null,g:12});toast('🔥 the fire pit is lit (burns until 22:30). Anyone passing will see it.');return{lit:true,until:h.pit}}
+function cabSetHearth(on){const h=S.you.home;if(on){const d=new Date();d.setHours(23,30,0,0);h.hf=Math.min(Date.now()+4*36e5,+d>Date.now()?+d:Date.now()+36e5);sfx('firelit',{x:HEARTHBY.cabin.x,z:HEARTHBY.cabin.z,pid:'cabin'});toast('🔥 the fire crackles in the hearth')}else{h.hf=0;toast('the hearth goes quiet')}save();return!!on}
 function cabAnimStart(a,kind,dur){const C=CB,now=performance.now();let e=C.anim.find(x=>x.a===a);if(!e){if(C.anim.length>=3){const o=C.anim.shift();if(o.obj)o.obj.visible=false;if(o.kind==='music')cabMusicStop()}e={a,kind,t0:now,until:0,obj:null};C.anim.push(e)}e.kind=kind;e.t0=now;e.until=now+dur*1e3;e.obj=cabAnimObj(kind);if(e.obj){e.obj.position.set(a.x,a.y,a.z);e.obj.visible=true}C.animN=Math.max(C.animN,C.anim.length);return e}
 function cabAnimObj(kind){const C=CB;let o=C.ao[kind];if(o)return o;o=new THREE.Group();o.name='cabAnim:'+kind;o.visible=false;C.ga.add(o);C.ao[kind]=o;const m=(g,c)=>{const x=new THREE.Mesh(g,lam(c));o.add(x);return x};
   if(kind==='music'){const d=m(new THREE.CylinderGeometry(.16,.16,.012,16),'#1e1a18');d.position.y=.01;const l=m(new THREE.CylinderGeometry(.05,.05,.014,10),'#c94f4f');l.position.y=.018;o.userData.spin=[d,l]}
@@ -12639,15 +12650,74 @@ function youUmbShow(on){const v=visitor,u=v.userData;let m=u.umb;if(!on){if(m)m.
   if(!m){const mat=new THREE.MeshLambertMaterial({color:c,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false}),dome=new THREE.Mesh(new THREE.SphereGeometry(.78,16,6,0,Math.PI*2,0,Math.PI*.42),mat),
       stick=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,1.05,6),new THREE.MeshLambertMaterial({color:'#5a4a3a'}));stick.position.y=-.5;m=new THREE.Group();m.add(dome,stick);dome.position.y=-.2;m.userData.mat=mat;u.umb=m;v.add(m)}
   const sc=v.scale.y||1;m.position.set(.22/sc,2.25/sc,0);if(m.userData.c!==c){m.userData.c=c;m.userData.mat.color.set(c);m.userData.mat.opacity=/clear/i.test(vr.nm||'')?.45:.85}m.visible=true}
-const MB3={F:{},t:0};
-// 1 Hz from frame() (so it pauses when hidden): the cabin hearth and the yard fire pit crackle through B20 'fire' emitters while they burn
-function mb3Fire(k,lit,x,z,pid){const F=MB3.F[k];if(lit&&!F&&AUD&&AUD.c&&AUD.crk&&audOn()){const e=audEmitter({type:'fire',x,z,pid,bus:'amb'});if(e){const c=AUD.c,s=c.createBufferSource(),g=c.createGain();s.buffer=AUD.crk;s.loop=true;g.gain.value=.6;s.connect(g);g.connect(e.in);s.start(0,Math.random()*1.5);MB3.F[k]={e,s}}}
-  else if(!lit&&F){try{F.s.stop()}catch(_){}audDrop(F.e);delete MB3.F[k]}}
+// ====================================================================
+//  SOUND PASS: FIRE + ACTIVITY VOICES. The fire is a quiet wood stove you hear only up close (RM.fire 1.5/8: clear within 2-3 m, faint by 5, silent by 8).
+//  No loop: a scheduled generator. Bed: brown noise (6.3 s, seamless) band-limited to 150-560 Hz, playback rate drifting .94-1.06 and a random slow flutter
+//  (a new target every .9-3.2 s). Crackles: Poisson in clusters (calm ~1.4/s, lively ~3/s, 25% get 1-2 follow-ups 12-140 ms later), white-noise bursts
+//  band-passed 650-2300 Hz, 2-5 ms attack, 5-27 ms decay, levels over ~17 dB. A low wood pop (200-650 Hz sine falling 30%) every 4-13 s.
+//  The whole fire is low-passed twice at 3.4 kHz. One voice per lit fire within reach of the listener; ~1 s fade in and out; Settings > Sound > Fireplace sound.
+// ====================================================================
+function fireBuf(c){const A=AUD;if(A.brn&&A.brn.sampleRate===c.sampleRate)return A.brn;const sr=c.sampleRate,n=Math.round(6.3*sr),L=Math.round(.25*sr),a=new Float32Array(n+L);let y=0,m=0;
+  for(let i=0;i<n+L;i++){y=(y+(Math.random()*2-1)*.02)*.998;a[i]=y;m+=y}m/=n+L;const b=c.createBuffer(1,n,sr),d=b.getChannelData(0);let pk=0;
+  for(let i=0;i<n;i++){const v=i<L?(a[i]-m)*(i/L)+(a[n+i]-m)*(1-i/L):a[i]-m;d[i]=v;pk=Math.max(pk,Math.abs(v))}for(let i=0;i<n;i++)d[i]*=.9/pk;return A.brn=b}
+function fireMk(c,dst,lvl,ck){const t=c.currentTime,G=v=>{const g=c.createGain();g.gain.value=v;return g},L=(f,q)=>{const b=c.createBiquadFilter();b.type='lowpass';b.frequency.value=f;b.Q.value=q;return b};
+  const F={c,lvl:lvl==null?1:lvl,ck:ck||1,nt:t+.05+Math.random()*.4,ft:t,pt:t+1+Math.random()*4,k:0,st:{crk:0,pop:0}};F.out=G(0);F.lp=L(3400,.5);F.lp2=L(3400,.5);F.bus=G(1);
+  F.bus.connect(F.lp);F.lp.connect(F.lp2);F.lp2.connect(F.out);F.out.connect(dst);const s=c.createBufferSource();s.buffer=fireBuf(c);s.loop=true;F.bf=L(560,.4);F.bg=G(F.lvl*.17);F.hp=c.createBiquadFilter();F.hp.type='highpass';F.hp.frequency.value=150;F.hp.Q.value=.5;
+  s.connect(F.hp);F.hp.connect(F.bf);F.bf.connect(F.bg);F.bg.connect(F.lp);s.start(t,Math.random()*6);F.s=s;return F}
+function fireCrk(F,t,g){const c=F.c,s=c.createBufferSource(),b=c.createBiquadFilter(),e=c.createGain(),a=.002+Math.random()*.003,tau=.005+Math.random()*.022;s.buffer=AUD.white;
+  b.type='bandpass';b.frequency.value=650+Math.random()*1650;b.Q.value=.9+Math.random()*1.4;e.gain.value=0;e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(g,t+a);e.gain.setTargetAtTime(0,t+a,tau);
+  s.connect(b);b.connect(e);e.connect(F.bus);s.start(t,Math.random()*1.7,a+tau*7);s.onended=()=>{try{s.disconnect();b.disconnect();e.disconnect()}catch(_){}};F.st.crk++}
+function firePop(F,t){const c=F.c,o=c.createOscillator(),e=c.createGain(),f=200+Math.random()*450,g=F.lvl*(.05+Math.random()*.07),tau=.02+Math.random()*.03;o.type='sine';
+  o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*.7,t+.08);e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(g,t+.003);e.gain.setTargetAtTime(0,t+.003,tau);
+  o.connect(e);e.connect(F.bus);o.start(t);o.stop(t+.003+tau*7);o.onended=()=>{try{o.disconnect();e.disconnect()}catch(_){}};fireCrk(F,t+.001,g*.5);F.st.pop++}
+// schedule everything up to 'until' (context time); after a suspend the clocks jump to now (nothing piles up)
+function fireSched(F,until){const ct=F.c.currentTime;if(F.nt<ct)F.nt=ct+.02+Math.random()*.2;if(F.ft<ct)F.ft=ct;if(F.pt<ct)F.pt=ct+.5+Math.random()*3;
+  while(F.ft<until){F.bg.gain.setTargetAtTime(F.lvl*(.12+Math.random()*.12),F.ft,.3+Math.random()*.5);F.s.playbackRate.setTargetAtTime(.94+Math.random()*.12,F.ft,1.2);F.ft+=.9+Math.random()*2.3}
+  while(F.nt<until){if(Math.random()<.07)F.k^=1;const t=F.nt,g=F.lvl*F.ck*.056*Math.exp(Math.random()*2)*(F.k?1:.8);fireCrk(F,t,Math.min(.5*F.lvl*F.ck,g));
+    if(Math.random()<.25){let u=t;for(let j=1+(Math.random()<.5?1:0);j>0;j--){u+=.012+Math.random()*.13;fireCrk(F,u,g*(.25+Math.random()*.45))}}F.nt+=-Math.log(1-Math.random()*.999)*(F.k?.33:.7)}
+  while(F.pt<until){firePop(F,F.pt);F.pt+=4+Math.random()*9}}
+function fireEnd(F,done){const c=F.c,t=c.currentTime;F.dead=1;F.out.gain.cancelScheduledValues(t);F.out.gain.setTargetAtTime(0,t,.3);AUD.q.push({t:performance.now()+1700,cl:1,fn:()=>{try{F.s.stop()}catch(_){}for(const n of [F.s,F.hp,F.bf,F.bg,F.bus,F.lp,F.lp2,F.out])try{n.disconnect()}catch(_){}if(done)done()}})}
+const MB3={F:{},t:0,A:{},OUT:1.2,CK:2.4};   // the yard fire pit (outdoors, against the park bed): +1.6 dB over a hearth, its crackles a further +7.6 dB
+// next to a lit fire pit the outdoor beds step back (about -12 dB within 2.5 m, back to full by 6 m), so its soft crackle carries where you stand
+function pitDuck(){try{if(AP.pid||SET.snd.fire===false||!(CB&&CB.pit)||!cabPitLit())return 1;const d=Math.hypot(CB.pit.x-AP.x,CB.pit.z-AP.z);return d>=6?1:.25+.75*Math.max(0,(d-2.5)/3.5)}catch(e){return 1}}
+// 1 Hz from frame() (so it pauses when hidden): every lit fire (the cabin hearth, the yard fire pit, Wendell's and the cottages' fireplaces, the Evergreen stove)
+// gets a FIRE voice only while the listener is within reach (start inside 9.5 m, fade out past 11 m); the generator runs at 10 Hz from the B20 tick
+function mb3Fire(k,lit,x,z,pid){const F=MB3.F[k],A=AUD,on=!!(lit&&x!=null&&A&&A.c&&audOn()&&SET.snd.fire!==false),mx=A?A.RM.fire[1]:8,d=on?Math.hypot(x-AP.x,z-AP.z):1e9;if(lit&&SET.snd.fire!==false)MB3.A[k]=1;else delete MB3.A[k];
+  if(on&&!F&&d<mx+1.5){const e=audEmitter({type:'fire',x,z,pid,bus:'amb'});if(e){const f=pid==null?fireMk(A.c,e.in,MB3.OUT,MB3.CK):fireMk(A.c,e.in,1);f.out.gain.setTargetAtTime(1,A.c.currentTime,.3);fireSched(f,A.c.currentTime+.6);MB3.F[k]={e,f,x,z}}}
+  else if(F&&(!on||d>mx+3)){delete MB3.F[k];fireEnd(F.f,()=>audDrop(F.e))}}
 function mb3Frame(dt){const tn=performance.now();if(tn<MB3.t)return;MB3.t=tn+1000;try{const H=typeof HEARTHBY==='object'&&HEARTHBY.cabin;mb3Fire('hearth',!!(H&&H.p&&H.p.hearthLit&&H.p.hearthLit()),H&&H.x,H&&H.z,'cabin');
-  if(typeof CB==='object'&&CB&&CB.pit)mb3Fire('pit',typeof cabPitLit==='function'&&cabPitLit(),CB.pit.x,CB.pit.z,null)}catch(e){}}
+  if(typeof CB==='object'&&CB&&CB.pit)mb3Fire('pit',typeof cabPitLit==='function'&&cabPitLit(),CB.pit.x,CB.pit.z,null);
+  for(const Q of HEARTH){const id=Q.p&&Q.p.id;if(!id||id==='cabin'||id==='cabinpit')continue;mb3Fire('h:'+id,!!Q.lit,Q.x,Q.z,id)}}catch(e){}}
+// ---- activity voices: what is being done right now, heard up close (RM.act 2.5/12): an emitter at the spot, a .4 s fade in, varied one-shots from the
+//      activity's set (never the same sound at the same pitch twice in a row, +-6% pitch, -2/+2 dB), a .5 s fade out when it ends or you walk away.
+//      seq sets run in order then rest (the café counter: grind, tamp, pour, steam the milk, set the cup down; quicker while Mocha works the counter).
+const ACTOF={kettle:'tea',sizzle:'cook',brush:'paint',typing:'type',page:'read',bubbles:'bath'};
+const ACTSET={tea:{a:['kettle',2.2],n:[['pour',1.8],['clink',1.2]],seq:1,rest:[12,20]},cook:{n:[['sizzle',1.9],['chop',.8],['clink',1.6],['sizzle',2.2]]},paint:{n:[['brush',1.8],['scrib',2.2]]},
+  type:{n:[['typing',1.1],['typing',1.6]]},read:{n:[['page',7]]},bath:{n:[['bubbles',2.2]]},coffee:{n:[['grind',2],['tamp',1],['pour',2],['steam',2.4],['clink',1.2]],seq:1,rest:[5,12]}};
+const ACTV={L:{},st:{},force:null,cafeAt:null,once:{}};
+function actOn(id,k,x,z,o){const A=AUD,S2=ACTSET[k];if(!S2||!A||!A.c||!audOn())return null;let V=ACTV.L[id];if(V&&V.k!==k){actOff(V);V=null}
+  if(!V){if(Math.hypot(x-AP.x,z-AP.z)>A.RM.act[1]+1)return null;const e=audEmitter({type:'act',x,z,pid:o&&o.pid!==undefined?o.pid:undefined,bus:'sfx'});if(!e)return null;const c=A.c,g=c.createGain();
+    g.gain.value=0;g.connect(e.in);g.gain.setTargetAtTime(1,c.currentTime,.13);V=ACTV.L[id]={id,k,S:S2,e,g,nt:performance.now()+250+AR()*500,i:0,last:'',lk:0,seen:0,fast:0,tok:o&&o.tok,a:0};ACTV.st.on=(ACTV.st.on||0)+1}
+  if(o&&o.tok&&V.tok!==o.tok){V.tok=o.tok;V.a=0;V.i=0}   // a new activity of the same kind (another pot of tea) opens with its kettle again
+  V.e.x=x;V.e.z=z;V.seen=performance.now();V.fast=o&&o.fast?1:0;return V}
+function actOff(V){if(ACTV.L[V.id]===V)delete ACTV.L[V.id];ACTV.st.off=(ACTV.st.off||0)+1;const t=AUD.c.currentTime;V.g.gain.cancelScheduledValues(t);V.g.gain.setTargetAtTime(0,t,.16);
+  AUD.q.push({t:performance.now()+1000,cl:1,fn:()=>{try{V.g.disconnect()}catch(_){}audDrop(V.e)}})}
+function actTick(){const A=AUD,now=performance.now();for(const id in ACTV.L){const V=ACTV.L[id];if(now-V.seen>700||Math.hypot(V.e.x-AP.x,V.e.z-AP.z)>A.RM.act[1]+2){actOff(V);continue}
+  if(now<V.nt)continue;const S2=V.S;let nm,gap;
+  // an opening sound (the tea kettle) plays once per activity: not again when you walk away and come back while it is still going
+  if(S2.a&&!V.a){V.a=1;if(V.tok==null||ACTV.once[V.id]!==V.tok){ACTV.once[V.id]=V.tok;nm=S2.a[0];gap=S2.a[1]*(.85+AR()*.3)}}
+  if(nm){}else if(S2.seq){const st=S2.n[V.i%S2.n.length];nm=st[0];gap=st[1]*(.85+AR()*.3);V.i++;if(V.i%S2.n.length===0)gap+=(S2.rest[0]+AR()*(S2.rest[1]-S2.rest[0]))*(V.fast?.4:1)}
+  else{let c2=S2.n.filter(q=>q[0]!==V.last);if(!c2.length)c2=S2.n;const q=c2[Math.floor(AR()*c2.length)];nm=q[0];gap=q[1]*(.7+AR()*.7)}
+  let k=1;for(let j=0;j<6;j++){k=[.94,1,1.06][Math.floor(AR()*3)];if(nm!==V.last||k!==V.lk)break}V.last=nm;V.lk=k;audShot(nm,{dst:V.g,k,g:.8+AR()*.45});V.nt=now+gap*1000;ACTV.st[nm]=(ACTV.st[nm]||0)+1}}
+// the café's espresso counter while it is open (or forced by the hook): a drink every 6-15 s, quicker while Mocha works a shift there
+function actCafe(now){const p=byId.cafe;if(!p)return;const on=ACTV.force==null?isOpen(p):!!ACTV.force;if(!on)return;const q=ACTV.cafeAt||(ACTV.cafeAt=toWorld(p,0,-3.4));
+  if(Math.hypot(q.x-AP.x,q.z-AP.z)>AUD.RM.act[1]+1)return;const a=G.mode==='activity'?G.act:null;actOn('cafe','coffee',q.x,q.z,{pid:'cafe',fast:!!(a&&a.p==='cafe'&&/shift|helping|counter/.test(a.doing||''))})}
+AUD.subs.push(()=>{for(const k in MB3.F){const F=MB3.F[k];if(F&&F.f&&!F.f.dead)fireSched(F.f,AUD.c.currentTime+.6)}},actTick);
+AUD.fire={mk:fireMk,sched:fireSched,end:fireEnd,buf:fireBuf};AUD.N=SFXN;
 // precompile what track B built after the B15 renderer.compile (cabin exterior toon variant, decorate dust) so it never hitches on first view
 try{camera.updateMatrixWorld();renderer.compile(scene,camera)}catch(e){}
-Object.assign(window.__mocha,{lookTry,lookTryEnd,lookOfItem,youWornJacket,youUmb:()=>{const r=youUmb();return r?{nm:r.nm,c:r.c,shown:!!(visitor.userData.umb&&visitor.userData.umb.visible)}:null},hearthSnd:()=>({hearth:!!MB3.F.hearth,pit:!!MB3.F.pit})});
+Object.assign(window.__mocha,{lookTry,lookTryEnd,lookOfItem,youWornJacket,youUmb:()=>{const r=youUmb();return r?{nm:r.nm,c:r.c,shown:!!(visitor.userData.umb&&visitor.userData.umb.visible)}:null},hearthSnd:()=>({hearth:!!MB3.A.hearth,pit:!!MB3.A.pit,at:{hearth:HEARTHBY.cabin?[HEARTHBY.cabin.x,HEARTHBY.cabin.z]:null,pit:CB&&CB.pit?[CB.pit.x,CB.pit.z]:null},live:Object.keys(MB3.F),fires:Object.fromEntries(Object.entries(MB3.F).map(([k,F])=>[k,{crk:F.f.st.crk,pop:F.f.st.pop,g:+F.e.g.gain.value.toFixed(3)}]))}),
+  actSnd:o=>{if(o&&o.node)return ACTV.L[o.node]?ACTV.L[o.node].e.g:null;if(o&&o.cafe!==undefined)ACTV.force=o.cafe;return{live:Object.values(ACTV.L).map(V=>({id:V.id,k:V.k,x:+V.e.x.toFixed(1),z:+V.e.z.toFixed(1),g:+V.e.g.gain.value.toFixed(3)})),st:{...ACTV.st},force:ACTV.force,cafeAt:ACTV.cafeAt}}});
 // ====================================================================
 //  B21 SOUND B: the Town Songbook (24 hourly themes from S.music.seed), GENRES + RECORDS, MUSIC.play(id,emitter), Mocha's radio,
 //  the Lantern Square jukebox, the Rain City Records request box, phone call-ins to Drizzle FM, pickMusic(ctx), the now-playing chip,
@@ -12704,7 +12774,7 @@ RADIO={drizzle:{id:'drizzle',n:'Drizzle FM',f:'88.5',g:Object.keys(GENRES),town:
 const MSIG={jazz:'vibe',folk:'uke',musicbox:'mbox',citypop:'rhodes',lofi:'felt',ambient:'pad',spooky:'organ',chiptune:'sq'},GNAME={lofi:'lo-fi',jazz:'jazz',musicbox:'music-box',folk:'folk',citypop:'city-pop',ambient:'ambient',spooky:'spooky-organ',chiptune:'chiptune'};
 // shop soundtracks (recipes; '@' = the featured record) and shop sounds (palette one-shots while you're inside)
 const SHOPM={cafe:'bossa',records:'@',studio:'harp',arcade:'chiptune',market:'bossa',grocery:'bossa',phones:'synthpop',bikes:'surf',fogwell:'elevator',evergreen:'evjazz',threads:'citypop',nursery:'harp',bakery:'musicbox',lantern:'glass'};
-const SHOPFX={cafe:[['clink',.14],['steam',.05]],records:[['crackle',.12]],petstore:[['bubbles',.18],['robin',.05]],bikes:[['freewheel',.07]],bookstore:[['page',.08]],library:[['page',.07]],market:[['blip',.09]],grocery:[['blip',.1]],fogwell:[['elevator',.015]],nursery:[['robin',.05],['chime',.05]],bakery:[['hum',.06]],townhall:[]};
+const SHOPFX={cafe:[],records:[['crackle',.12]],petstore:[['bubbles',.18],['robin',.05]],bikes:[['freewheel',.07]],bookstore:[['page',.08]],library:[['page',.07]],market:[['blip',.09]],grocery:[['blip',.1]],fogwell:[['elevator',.015]],nursery:[['robin',.05],['chime',.05]],bakery:[['hum',.06]],townhall:[]};
 // ---- instruments: oscillators + envelopes (spec recipes). p:[[ratio,gain,wave,decay x faster,detune cents]], a attack, d decay | h hold (+r release) ----
 const INS={marimba:{p:[[1,1],[4,.12,0,4]],a:.002,d:.6,drop:1},kalimba:{p:[[1,1],[5.4,.08,0,3]],a:.003,d:1.2},mbox:{p:[[1,1],[4.2,.18,0,3],[2,.1,0,2]],a:.002,d:1.6,det:4},
   glock:{p:[[1,1,'triangle'],[2.76,.15,'triangle',2]],a:.002,d:1,hp:600},celesta:{p:[[1,1,'triangle'],[2.76,.15,'triangle',2]],a:.002,d:1,hp:600},rhodes:{fm:[1,2.2,.3,.4],a:.004,d:1.8},
@@ -12840,7 +12910,7 @@ function musSync(now){const c=AUD.c,t=c.currentTime,M=S.music;audLis();const ins
   // the hour chime: an original 4-note bell phrase from Town Hall (one soft note in quiet hours), then the strikes; the new theme fades in over 2 bars
   AUD.noClock=1;const hr=new Date(now).getHours();if(MUS.hr==null)MUS.hr=hr;else if(hr!==MUS.hr){MUS.hr=hr;const dn=new Date(now);if(dn.getMinutes()*60+dn.getSeconds()<90)musChime(hr)}
   // shop sounds while you're inside
-  const fx=SHOPFX[AP.pid];if(fx&&Math.random()<.5)for(const [nm,p] of fx)if(Math.random()<p*2){const pl=byId[AP.pid];audShot(nm,{x:pl.x+(Math.random()-.5)*4,z:pl.z+(Math.random()-.5)*4,pid:AP.pid});break}}
+  const fx=SHOPFX[AP.pid];if(fx&&Math.random()<.5)for(const [nm,p] of fx)if(Math.random()<p*2){const pl=byId[AP.pid];audShot(nm,{x:pl.x+(Math.random()-.5)*4,z:pl.z+(Math.random()-.5)*4,pid:AP.pid,type:'act'});break}}
 function musChime(hr){const q=(SET.snd.quiet&&(hr>=22||hr<7)),k=Math.pow(2,(((SONG.th&&SONG.th.root)||0)%12)/12),o={x:-47.5,z:33,pid:null,k};MUS.st.chime=(MUS.st.chime||0)+1;MUS.lastChime={hr,quiet:q,t:Date.now()};
   if(q){audShot('chime1',o);return}audShot('chime4',o);if(hr>=7&&hr<=21)for(let i=0;i<(hr%12||12);i++)AUD.q.push({t:performance.now()+2900+i*1700,fn:()=>audShot('clock',{x:-47.5,z:33,pid:null})})}
 function musCadence(P){MUS.cine.end=(MUS.cine.end||0)+1;if(!P.out||!AUD.c)return;const t=AUD.c.currentTime+.05,th=P.th,b=60/th.bpm;[[4,b*1.5],[0,b*3]].forEach(([d,len],i)=>{const pcs=chordPcs(Object.assign({},th,{sev:i===0}),d);pcs.forEach(v=>mN(P,'felt',mcv(v,55)+12,t+i*b*1.5,len,.08));mN(P,'felt',mcv(pcs[0],36)+12,t+i*b*1.5,len,.14)})}
@@ -12977,7 +13047,7 @@ function diagTick(force){const d=document.getElementById('diagD');if(!d||!d.open
 {const m0=applyMind;applyMind=function(r,f){try{if(r&&r.record)musicMind(r.record)}catch(e){}return m0.apply(this,arguments)}}
 // ---- palette additions: the hour chime (original 4-note phrase: do, sol, la, mi; sine f + 2.76f + 5.4f, 3 s), shop sounds ----
 Object.assign(SFXR,{chime4:()=>[0,7,9,4].flatMap((s,i)=>{const f=523.25*Math.pow(2,s/12),at=i*.62;return[AO(f,3,.16,{at}),AO(f*2.76,2,.05,{at}),AO(f*5.4,1.2,.025,{at})]}),chime1:()=>[AO(261.6,3,.09),AO(261.6*2.76,2,.03),AO(261.6*5.4,1.2,.012)],
-  clink:()=>[AO(2600+AR()*500,.25,.07),AO(5300,.1,.025)],steam:()=>[ANZ(4500,1.2,.05,{ft:'highpass',a:.15,h:1})],blip:()=>[AO(1760,.07,.08,{w:'square',ff:3000}),AO(2349,.09,.07,{at:.08,w:'square',ff:3000})],hum:()=>[AO(60,1.4,.05,{w:'triangle',h:1,a:.3}),AO(120,1.4,.02,{h:1,a:.3})]});
+  clink:()=>[AO(2600+AR()*500,.25,.07),AO(5300,.1,.025)],steam:()=>[ANZ(2400,1.5,.055,{q:.8,f2:3000,a:.35,h:1}),ANZ(700,1.5,.03,{ft:'lowpass',a:.35,h:1})],blip:()=>[AO(1760,.07,.08,{w:'square',ff:3000}),AO(2349,.09,.07,{at:.08,w:'square',ff:3000})],hum:()=>[AO(60,1.4,.05,{w:'triangle',h:1,a:.3}),AO(120,1.4,.02,{h:1,a:.3})]});
 SFT.chime4=SFT.chime1='clock';DUCKS.add('chime4');
 // ---- boot ----
 AUD.noClock=1;MUS={P:[],live:[],TC:new Map(),st:{notes:0},cap:28,tickN:0,hf:null,jb:null,li:0,cine:{on:0},acc:0,fc:0,fps:0,sp:{g:1,pan:0,lp:20000},chipOn:null,radioW:toWorld(byId.home,-1.55,-6.3),nextPick:0,lastAct:null,pa:null};
@@ -13004,7 +13074,7 @@ Object.assign(window.__mocha,{MUS,MUSIC,RECORDS,GENRES,RADIO,pickMusic,
 const RGC={lofi:'#B07A5E',jazz:'#3F5F7A',musicbox:'#C9A2B4',folk:'#7F8F55',citypop:'#C47A90',ambient:'#6F9A92',spooky:'#C9772E',chiptune:'#6E62A8',mine:'#F3E6CC'};
 const REC={a:0,drop:0,drops:0,n:-1,sig:'',w:toWorld(byId.home,2.9,2.5),arm:null,lab:null,crate:null,lc:'',acc:0,hum:3,hums:0,nd:{},pa:null,os:{on:0,vs:0,last:0,heard:{},cand:0},M4:new THREE.Matrix4(),Q:new THREE.Quaternion(),E:new THREE.Euler(),V:new THREE.Vector3(),SC:new THREE.Vector3(),C:new THREE.Color()};
 Object.assign(SFXR,{needle:()=>[AO(150,.06,.35,{f2:55}),ANZ(3800,.02,.3,{q:3}),ANZ(1300,.09,.12,{at:.03,q:1})],
-  crk2:()=>Array.from({length:22},()=>ANZ(1800+AR()*3600,.012,.16,{at:.08+AR()*1.9,q:2})).concat([ANZ(700,2,.025,{ft:'lowpass',a:.15,h:1})]),
+  crk2:()=>Array.from({length:16},()=>ANZ(1400+AR()*2400,.012,.08,{at:.08+AR()*1.9,q:1.6,a:.002})).concat([ANZ(700,2,.025,{ft:'lowpass',a:.15,h:1})]),
   mhum:o=>((o&&o.notes)||[]).map(([m,at,d])=>AO(440*Math.pow(2,(m-12-69)/12),Math.max(.14,d),.42,{at,w:'mo',a:.05,ff:1100,ft:'lowpass'}))});
 SFT.needle=SFT.crk2='player';SFT.mhum='babble';
 function recPlaying(){const n=S.music&&S.music.now;return!!(n&&n.src==='record'&&RECBY[n.id])}
@@ -13303,7 +13373,6 @@ function fpLog(e){FP.log.push([e,Math.round(FP.t*10)/10]);if(FP.log.length>40)FP
 function fpTick(dt){if(!VYG.mar)return;const lit=cabPitLit(),who=fpWho();if(!FP.on){if(lit&&(who.m||who.w)&&S.visYou.fp!==dkey(Date.now()))fpStart();else return}
   FP.t+=dt;if(who.m&&!FP.who.m){FP.who.m=1;fpLog('join:m')}if(who.w&&!FP.who.w){FP.who.w=1;fpLog('join:w');if(FP.who.m)FP.q.push([FP.t+2*(FP.sc||1),'m','wendell!! pull up a log']);fpStory(FP.fire?6:30)}const s=VYG.mar,u=s.userData;while(FP.q.length&&FP.q[0][0]<=FP.t){const e=FP.q.shift();if(e[1]==='x'){if(e[2]==='toast'){s.visible=true;FP.mt=FP.t}else{FP.fire=1;u.fl.visible=true;try{sfx('crackle',{x:CB.pit.x,z:CB.pit.z})}catch(_){}}fpLog(e[2])}else{if(e[1]==='m'&&who.m)say(e[2],4);else if(e[1]==='w'&&who.w)wSay(e[2],4.5);else if(e[1]==='m')wSay(e[2],4);else say(e[2],4);fpLog(e[1]+':'+e[2].slice(0,30))}}
   if(s.visible){const a=(who.m?mocha.position:wObj.position),k=Math.min(1,(FP.t-FP.mt)/(18*(FP.sc||1)));s.position.set((a.x+CB.pit.x)/2,.95,(a.z+CB.pit.z)/2);const c=u.mm.material.color;if(FP.fire)c.set('#2a1a10');else if(k<.5)c.set('#f8f4ec').lerp(_vyGold,k*2);else c.copy(_vyGold).lerp(_vyBrown,(k-.5)*2);if(FP.fire)u.fl.scale.y=.07+Math.sin(T*18)*.02}
-  if(Math.random()<dt*.12)try{sfx('crackle',{x:CB.pit.x,z:CB.pit.z,g:.5})}catch(_){}
   if(!lit||fpLeft()<=0||(!who.m&&!who.w&&FP.t>5))fpEnd()}
 // fpTick sees "who" each frame: a guest who arrives later joins (Wendell's story is queued then)
 const _vyGold=new THREE.Color('#e0b050'),_vyBrown=new THREE.Color('#8a5a2a');
