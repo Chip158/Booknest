@@ -772,14 +772,14 @@ function nSet(m,b){return b<0||nHas(m,b)?(+m||0):(+m||0)+Math.pow(2,b)}
 function talkFix(t){if(!t||typeof t!=='object'||Array.isArray(t))t={};t.news=(Array.isArray(t.news)?t.news:[]).filter(n=>Array.isArray(n)&&n[2]).slice(-16).map(n=>[+n[0]||0,String(n[1]||'misc').slice(0,12),String(n[2]).slice(0,140),String(n[3]||'').slice(0,24),Math.max(0,+n[4]||0)]);return t}
 function relFix(y){if(!y||typeof y!=='object')return y;const r=y.rel&&typeof y.rel==='object'&&!Array.isArray(y.rel)?y.rel:{},o={};Object.keys(r).slice(-60).forEach(k=>{const a=r[k];if(Array.isArray(a))o[k]=[0,1,2,3,4,5,6].map(i=>+a[i]||0)});y.rel=o;
   y.facts=(Array.isArray(y.facts)?y.facts:[]).filter(f=>Array.isArray(f)&&f[0]&&f[1]!=null).slice(-16).map(f=>[String(f[0]).slice(0,16),String(f[1]).slice(0,40),String(f[2]||'').slice(0,16),+f[3]||0]);return y}
-function newsPush(kind,text,place,t=Date.now(),who,mocha=kind!=='you'){if(!S||!S.town||!text)return null;const N=Array.isArray(S.town.news)?S.town.news:(S.town.news=[]);text=String(text).slice(0,140);if(N.some(n=>n[2]===text))return null;
+function newsPush(kind,text,place,t=Date.now(),who,mocha=kind!=='you'){if(!S||!S.town||!text)return null;const N=Array.isArray(S.town.news)?S.town.news:(S.town.news=[]);text=String(text);if(text.length>140)text=text.slice(0,139).replace(/\s+\S*$/,'')+'…';if(N.some(n=>n[2]===text))return null;
   let m=0;if(mocha)m=nSet(m,NB_M);if(kind==='you')m=nSet(m,NB_U);const k=place&&TKEEP[place];if(k)m=nSet(m,nBit(k));(who||[]).forEach(id=>m=nSet(m,nBit(id)));
   if(!isQuiet&&mocha)try{for(const id in TN){const n=TN[id];if(n&&n.x!=null&&!n.hide&&Math.hypot(n.x-G.x,n.z-G.z)<14)m=nSet(m,nBit(id))}}catch(e){}
-  const e=[+t||Date.now(),String(kind).slice(0,12),text,String(place||'').slice(0,24),m];N.push(e);N.sort((a,b)=>a[0]-b[0]);if(N.length>16)N.splice(0,N.length-16);return e}
+  const e=[+t||Date.now(),String(kind).slice(0,12),text,String(place||'').slice(0,24),m];N.push(e);N.sort((a,b)=>a[0]-b[0]);if(kind==='you')for(let y=N.filter(n=>n[1]==='you').length;y>6;y--){const i=N.findIndex(n=>n[1]==='you'&&n!==e);if(i<0)break;N.splice(i,1)}if(N.length>16)N.splice(0,N.length-16);return e}// fix1: the owner's own lines keep at most 6 of the 16 slots
 function newsTx(kind,d,t){d=d||{};let x=null,pl='',who;switch(kind){case'pet':x=`Mocha adopted a ${d.label} named ${d.name}`;pl='petstore';break;
   case'paint':{const pt=(S.paintings||[]).find(p=>p.id===d.id),w=pt&&pt.where||'';x=`Mocha painted "${d.title}"`;pl='studio';if(w==='sold'){x=`Mocha sold his painting "${d.title}" at the market`;pl='market'}else if(w.startsWith('gift:')){const g=w.slice(5),c=CASTB[g];if(c){x=`Mocha gave ${c.name.split(' ')[0]} his painting "${d.title}"`;who=[g]}}break}
   case'hobby':x=`Mocha has a new hobby: ${d.name}`;break;case'goal':x=`Mocha did what he set out to do: ${d.text}`;break;case'discover':x=`Mocha found ${d.name}`;break;
-  case'bike':x=`Mocha got a ${String(d.label||'new').toLowerCase()} bike${d.name?' named '+d.name:''}`;pl='bikes';break;case'phone':x='Mocha bought his very first phone';pl='phones';break;
+  case'bike':x=`Mocha got a ${String(d.label||'new').toLowerCase().replace(/\s*bike$/,'')} bike${d.name?' named '+d.name:''}`;pl='bikes';break;case'phone':x='Mocha bought his very first phone';pl='phones';break;
   case'trip':if(d.k==='home'&&TRIPS[d.id]){x=`Mocha is back from ${TRIPS[d.id].s}`;pl='station'}break}
   if(x)newsPush(kind,x,pl,t,who)}
 // p=.35 a day per pal edge (.2 shop neighbours, .12 Jot's mail route); live hourly calls use .6 when the two stand together
@@ -1626,11 +1626,11 @@ const DREAMS={music:{n:'play the piano for real',i:['music'],tr:'creativity',st:
  reading:{n:"read Mabel's whole shelf",i:['reading','writing'],tr:'curiosity',st:[['act','read|book|library|poetry',20,"read 20 books from Mabel's shelf"]],k:'a bookmark Mabel pressed a fern into'},
  plants:{n:'grow the biggest pumpkin',i:['plants','nature'],tr:'coziness',st:[['act','plant|garden|nursery|water',10,'tend the garden 10 times'],['event','pumpkin',1,'the biggest pumpkin for October','plant|garden']],k:'a blue-ribbon pumpkin stem'},
  career:{n:'get a promotion',i:['helping'],tr:'sociability',need:()=>!!(S&&S.career),st:[['event','promo',1,'get a promotion']],k:'a tiny name badge'},
- civic:{n:'get a music venue built',i:['music','people'],tr:'sociability',need:()=>typeof fileMochaPetition==='function',st:[['event','venue',1,'get a music venue built']],k:'the first ticket from the new venue'},
+ civic:{n:'get a music venue built',i:['music','people'],tr:'sociability',need:()=>typeof fileMochaPetition==='function'&&!(S&&S.town&&(S.town.built||[]).some(b=>b.tpl==='venue')),st:[['event','venue',1,'get a music venue built']],k:'the first ticket from the new venue'},
  stars:{n:'see a meteor shower from the Needle',i:['stars','heights'],tr:'curiosity',need:()=>typeof meteorTonight==='function',st:[['act','stars|night|needle',3,'stargaze 3 nights'],['event','meteor',1,'a meteor shower from the Needle']],k:'a star chart with one star circled'}};
 const B30={sh:0,shN:0,last:null,log:[]};
 function b30Fix(s){s=s||S;if(!s||typeof s!=='object')return s;const o=v=>!!v&&typeof v==='object'&&!Array.isArray(v),N=(v,a,b,d)=>{v=+v;return isFinite(v)?Math.max(a,Math.min(b,v)):d};
-  s.wants=Array.isArray(s.wants)?s.wants.filter(w=>o(w)&&typeof w.id==='string').slice(0,12).map(w=>Object.assign(w,{w:N(w.w,0,1,.5),s:N(w.s,0,999,1)|0,why:String(w.why||'').slice(0,60)})):[];
+  s.wants=Array.isArray(s.wants)?s.wants.filter(w=>o(w)&&typeof w.id==='string').slice(0,12).map(w=>{Object.assign(w,{w:N(w.w,0,1,.5),s:N(w.s,0,999,1)|0,why:String(w.why||'').slice(0,60)});if(!w.c&&/^(it|rec):/.test(w.id)){const it=catItem(w.id.split(':')[1]);if(it){w.c=it.price;if(!w.p)w.p=w.nd&&NEST_DESK.includes(it.code)?'evergreen':shopOf(it)}}return w}):[];// fix1: wants made in the boot catch-up (before the catalog) get their price once it exists
   if(!o(s.taste))s.taste={st:{},col:[]};const st=o(s.taste.st)?s.taste.st:(s.taste.st={});const it=s.interests||{};
   TASTE_K.forEach(k=>{if(!(k in st)){const v=TASTE_I[k].reduce((a,q)=>a+Math.max(0,+it[q]||0),0);st[k]=+Math.min(1,.2+v*.06+(k==='cozy'?.15:0)).toFixed(2)}else st[k]=N(st[k],0,1,.3)});s.taste.col=Array.isArray(s.taste.col)?s.taste.col.filter(x=>typeof x==='string').slice(-4):[];
   const d=o(s.dreams)?s.dreams:(s.dreams={});d.a=Array.isArray(d.a)?d.a.filter(x=>o(x)&&DREAMS[x.id]).slice(0,2):[];d.d=Array.isArray(d.d)?d.d.filter(o).slice(-20):[];d.nt=N(d.nt,0,9e15,0);d.dk=N(d.dk,0,1e8,0);
@@ -1874,7 +1874,7 @@ function mkDone(e,t,live){if(e.status==='done')return;e.status='done';e.pr=1;e.m
   addEntry('Friends',`Wendell came by to look at ${mkN(e)}. He said "${pick(['well, I\'ll be. sturdy as a lighthouse.','you made this? with your hands? ...do you have hands?','my bottle caps would look nice on that. just saying.','that\'s a fine piece of work, kiddo.'])}"`,w,t+1);
   try{wantDrop('mk:'+e.k)}catch(_){}try{if(typeof coreAdd==='function'&&(e.kind==='place'||!(S.made||[]).some(m=>m!==e&&m.status==='done')))coreAdd(S,'made',`built ${mkN(e)} in ${w}`,e.made,e.kind==='place'?4.5:3.5)}catch(_){}
   try{if(typeof spark==='function')spark(S.made.filter(m=>m.status==='done').length===1?'first':'win',1.4,t)}catch(_){}try{if(typeof bondAdd==='function')bondAdd('wendell',3,'made',t)}catch(_){}
-  try{if(typeof newsPush==='function')newsPush('build',`Mocha built ${e.name} in ${w==='my yard'?'his yard':w}.`,'',t,['wendell'])}catch(_){}try{if(typeof dreamCheck==='function'){dreamCheck('event','made',t);dreamCheck('act','made '+(e.k||'')+' '+e.name.toLowerCase(),t)}}catch(_){}
+  try{if(typeof newsPush==='function')newsPush('build',`Mocha built ${e.name} ${w==='my yard'?'in his yard':/^(near|at|in|on|by|beside|under)\b/i.test(String(w))?w:'in '+w}`,'',t,['wendell'])}catch(_){}try{if(typeof dreamCheck==='function'){dreamCheck('event','made',t);dreamCheck('act','made '+(e.k||'')+' '+e.name.toLowerCase(),t)}}catch(_){}
   mkLog('done '+e.name,t);MK.dirty=1;MK.fresh={id:e.id,t:e.made,live:!!live}}
 // nightly (from consolidate, live and catchUp): ideas, small upgrades, retirements; capped and seeded
 function mkNight(t){if(!S||!Array.isArray(S.made))return;t=+t||Date.now();const dk=dkey(t);if(S.mk.dk===dk)return;S.mk.dk=dk;const R=seeded(mkHash('n'+dk+(+S.born||0))),tr=S.traits||{},age=(t-(+S.born||t))/864e5;
@@ -2263,8 +2263,8 @@ function tierNoise(){if(TIER.bn)return TIER.bn;const N=64,a=new Float32Array(N*N
  const t=new THREE.DataTexture(d,N,N,THREE.RGBAFormat);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.minFilter=t.magFilter=THREE.NearestFilter;t.generateMipmaps=false;t.needsUpdate=true;return TIER.bn=t}
 // the live parts. LOW keeps today's saver path (castShadow off, PR 1); PHONE, HIGH and ULTRA never toggle castShadow or the shadow map type (no program changes among them)
 function applyTier(sw){const T=TIER,n=T.n,f=T.f=tierF(n);T.rzK=String(f.msaa);T.name=f.name;const first=!T.applied;T.applied=true;
- try{const cs=n>0;if(sun.castShadow!==cs){sun.castShadow=cs;sun.shadow.needsUpdate=true}
-  if(cs){const sz=f.shadow.size;if(sun.shadow.mapSize.x!==sz){sun.shadow.mapSize.set(sz,sz);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}sun.shadow.needsUpdate=true}if(sun.shadow.radius!==f.shadow.radius)sun.shadow.radius=f.shadow.radius}
+ try{const cs=n>0||!!T.keepCS;if(sun.castShadow!==cs){sun.castShadow=cs;sun.shadow.needsUpdate=true}
+  if(cs){const sz=f.shadow.size||1024;if(sun.shadow.mapSize.x!==sz){sun.shadow.mapSize.set(sz,sz);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}sun.shadow.needsUpdate=true}if(sun.shadow.radius!==f.shadow.radius)sun.shadow.radius=f.shadow.radius}
   const r0=T.rt;let rs=false;if(Math.abs(renderer.getPixelRatio()-f.pr)>1e-3){renderer.setPixelRatio(f.pr);rs=true}tierRT(f);if(rs||T.rt!==r0)resize();
   const U=post.uniforms;U.tsn.value=f.ts>6?f.ts:0;U.dith.value=f.dither?1:0;if(f.dither)U.tBn.value=tierNoise();U.fxa.value=f.fxaa?1:0;
   T.farOut=1200*f.far;if(!IN.on&&camera.far!==T.farOut){camera.far=T.farOut;camera.updateProjectionMatrix()}
@@ -2274,6 +2274,7 @@ function tierFade(fn){let el=document.getElementById('gfxFade');if(!el){el=docum
  el.style.transition='none';el.style.opacity='.6';void el.offsetWidth;try{fn()}catch(e){TIER.fail.push('fade:'+e.message)}requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.transition='opacity .3s';el.style.opacity='0'}))}// dim at once, apply, fade back in over 300 ms
 // a switch: 'auto' | 'low' | 'phone' | 'high' | 'ultra' | 0..3. Clears ADAPT's demotions; SET.gfx/SET.saver follow unless o.keep; o.now skips the fade (hooks, context restore)
 function tierSet(v,o){const T=TIER,m={low:0,phone:1,high:2,ultra:3};o=o||{};let n;if(v==='auto'||v==null){T.auto=true;n=T.autoN}else{n=typeof v==='number'?v:m[v];if(n==null)return tierInfo();T.auto=false}n=Math.max(0,Math.min(3,n|0));
+ if(!o.keep&&T.auto&&T.lowS){T.lowS=0;try{B41.lowed=0;ADAPT.drops=0}catch(e){}}if(n!==0||!T.auto)T.lowS=0;if(!T.lowS)T.keepCS=0;// fix1: an explicit pick ends B41's session LOW
  if(!o.keep){SET.gfx=T.auto?'auto':['low','phone','high','ultra'][n];SET.saver=n===0;saveSet()}T.off={};T.prDrop=0;const go=()=>{T.n=n;applyTier(true);tierSync()};
  if(o.now||!T.applied)go();else tierFade(go);return tierInfo()}
 // ADAPT, demote only: under .65x the cap (60 at most) for 4 s, step down one live feature: bloom, SAO, depth tilt-shift, 4096 shadows, pixel ratio -.25, then the tier
@@ -2306,7 +2307,7 @@ function tierMem(){const R=TIER.rt||rt,ms=R.isWebGLMultisampleRenderTarget&&rend
 function tierMemAt(w,h,n=3){const o=TIER.off,d=TIER.prDrop;TIER.off={};TIER.prDrop=0;const f=tierF(n,w,h);TIER.off=o;TIER.prDrop=d;const pw=Math.round(w*f.pr),ph=Math.round(h*f.pr),px=pw*ph,ms=f.msaa?4:0,b=(ms?px*(ms*8+6):px*6)+f.shadow.size*f.shadow.size*6+(f.dither?64*64*4:0);return{w,h,n,pr:f.pr,mp:+(px/1e6).toFixed(2),msaa:f.msaa,fxaa:f.fxaa,shadow:f.shadow.size,mb:+(b/1048576).toFixed(1)}}
 // Settings: Graphics row (Auto · <pick> / Battery saver / Phone / High / Ultra); live parts behind the fade, structural ones after a reload
 function tierNote(){const T=TIER;let s='';if(T.n===3&&T.caps.touch)s+='Ultra may get warm and use more battery. ';const d=T.f.dens-T.built.dens;if(d)s+=`${d>0?'More trees and longer views':'Lighter scenery'} after reload. <button data-gfxreload style="min-height:44px;margin-left:4px">Reload</button>`;return s}
-function tierRow(){const T=TIER,cur=SET.gfx||'auto',nm=['Saver','Phone','High','Ultra'],o=[['auto','Auto · '+nm[T.autoN]],['low','Battery saver'],['phone','Phone'],['high','High'],['ultra','Ultra']];
+function tierRow(){const T=TIER,cur=SET.gfx||'auto',nm=['Saver','Phone','High','Ultra'],o=[['auto','Auto · '+nm[T.lowS?0:T.autoN]],['low','Battery saver'],['phone','Phone'],['high','High'],['ultra','Ultra']];
  return`<div class="set" style="display:block" id="gfxRow"><div>Graphics<small>Auto picks for this device. High and Ultra add crisper shadows, smoother edges, a finer miniature blur, more leaves and longer views.</small></div><div class="seg">${o.map(([v,l])=>`<button data-gfx="${v}" class="${cur===v?'on':''}">${l}</button>`).join('')}</div><div id="gfxNote" class="muted" style="font-size:12px;margin-top:6px">${tierNote()}</div></div>`}
 function tierSync(){const h=document.getElementById('gfxRow');if(!h)return;h.querySelectorAll('[data-gfx]').forEach(b=>b.classList.toggle('on',b.dataset.gfx===(SET.gfx||'auto')));const nt=document.getElementById('gfxNote');if(nt)nt.innerHTML=tierNote();const sv=document.querySelector('#tab-set [data-t="saver"]');if(sv)sv.checked=!!SET.saver}
 function tierWire(host){const h=host&&host.querySelector('#gfxRow');if(!h)return;h.onclick=e=>{const b=e.target.closest('[data-gfx]');if(b){tierSet(b.dataset.gfx);tierSync();return}if(e.target.closest('[data-gfxreload]'))location.reload()}}
@@ -4233,8 +4234,8 @@ LAYOUTS.townhall={floor:['herring',INT.chestnut,INT.seam],goods:false,rug:[0,2.4
  fn(p,R,L){const zb=-p.d/2+.3,xl=-p.w/2+.3,xr=p.w/2-.3,wal=INT.walnut,br=INT.brass,G=k=>{const g=new THREE.Group();g.userData.kind=k;R.add(g);return g};
   // the council dais: a low walnut half-round, a curved desk with a brass rail, five tufted chairs, name plates
   {const g=G('dais');const pl=new THREE.Mesh(new THREE.CylinderGeometry(3.3,3.3,.12,24,1,false,-Math.PI/2,Math.PI),lam(wal));pl.position.set(.8,.36,zb);g.add(pl);
-   for(let k=0;k<9;k++){const a=-1.02+k*2.04/8,x=.8+Math.sin(a)*2.75,z=zb+Math.cos(a)*2.75,s=box(.7,1.05,.22,INT.walnutHi,x,.95,z,g);s.rotation.y=a;const t=box(.76,.06,.4,wal,x,1.5,z-Math.cos(a)*.06,g,false);t.rotation.y=a}
-   const rail=new THREE.Mesh(new THREE.TorusGeometry(2.92,.035,5,28,2.1),lam(br));rail.rotation.set(Math.PI/2,0,Math.PI/2-1.05);rail.position.set(.8,1.62,zb);g.add(rail);
+   for(let k=0;k<9;k++){const a=-1.02+k*2.04/8,x=.8+Math.sin(a)*2.75,z=zb+Math.cos(a)*2.75,s=box(.7,.6,.22,INT.walnutHi,x,.72,z,g);s.rotation.y=a;const t=box(.76,.06,.4,wal,x,1.05,z-Math.cos(a)*.06,g,false);t.rotation.y=a}
+   const rail=new THREE.Mesh(new THREE.TorusGeometry(2.92,.035,5,28,2.1),lam(br));rail.rotation.set(Math.PI/2,0,Math.PI/2-1.05);rail.position.set(.8,1.17,zb);g.add(rail);
    L.seats.forEach(([x,z,a])=>rsPut(g,'tufted',x-Math.sin(a)*.35,.42,z-Math.cos(a)*.35,a))}
   // two public benches facing the dais
   for(const z of [-.2,1.05]){const g=G('bench');box(3.4,.1,.55,wal,1.2,.78,z,g);box(3.4,.55,.08,wal,1.2,1.15,z+.26,g,false);for(const x of [-.4,2.8]){box(.1,.5,.5,INT.walnutHi,x,.53,z,g,false)}}
@@ -4812,7 +4813,7 @@ trees.forEach(t=>{const fir=t.hand?t.kind!==2:RT()<.55,s=t.hand?t.s0:rr(.85,1.35
   if(nc)for(const t of maples.slice(0,110))for(let i=0;i<6;i++){const a=RT()*6.28,r=Math.sqrt(RT())*4.5*t.s;d.position.set(t.x+Math.cos(a)*r,.1+RT()*.02,t.z+Math.sin(a)*r);d.rotation.set(-Math.PI/2,0,RT()*6);d.scale.setScalar(rr(1.5,2.5));d.updateMatrix();m.setMatrixAt(q,d.matrix);m.setColorAt(q++,_gc.set(AUT.litter[Math.floor(RT()*AUT.litter.length)]))}
   if(LIT.dx){const R2=seeded(7337);for(let i=0;i<LIT.dx;i++){const t=maples[Math.floor(R2()*maples.length)],a=R2()*6.28,r=Math.sqrt(R2())*4.8*t.s;d.position.set(t.x+Math.cos(a)*r,.09+R2()*.02,t.z+Math.sin(a)*r);d.rotation.set(-Math.PI/2,0,R2()*6);d.scale.setScalar(.7+R2()*.5);d.updateMatrix();m.setMatrixAt(q,d.matrix);m.setColorAt(q++,_gc.set(cols[Math.floor(R2()*cols.length)]))}}// LF4: HIGH/ULTRA density, appended after PHONE's leaves from their own seed (PHONE stays a strict prefix)
   m.count=q;LIT.im=m;LIT.base=q;LIT.n=q;LIT.d=new THREE.Object3D();m.name='litter';m.receiveShadow=true;m.frustumCulled=false;scene.add(m)}}
- if(SEASON.snowy){const g=new THREE.CircleGeometry(1,16);g.rotateX(-Math.PI/2);for(let i=0;i<90;i++){const x=rr(-55,150),z=rr(-120,120);TB.add('snow',g,snowC,x,.1,z,rr(2,5),1,rr(1.5,3.5),x,z,rr(0,3))}}
+ if(SEASON.snowy){const g=new THREE.CircleGeometry(1,24);g.rotateX(-Math.PI/2);for(let i=0;i<90;i++){const x=rr(-55,150),z=rr(-120,120);TB.add('snow',g,'#E6E1EC',x,.1,z,rr(2,5),1,rr(1.5,3.5),x,z,rr(0,3))}}
 // bushes: round puffs (+ little flowers in spring/summer)
 {const bc=SEASON.snowy?['#cdd7e2','#e6edf4']:SEASON_KEY==='fall'?AUT.bushFall:['#4f9a55','#66b25e','#5aa65a'];for(let i=0,n=0;i<900&&n<90;i++){const x=rr(-55,150),z=rr(-120,120);if(blockers.some(b=>Math.hypot(x-b.x,z-b.z)<b.r-1)||nearRoad(x,z,6.5)||Math.abs(x-151.4)<5||trees.some(t=>Math.hypot(t.x-x,t.z-z)<3))continue;n++;
   if(!SEASON.snowy&&RT()<.5){const r=rr(.75,.95);TB.add('bush',leafTierG(9,4),jit(AUT.shrub,.05),x,-.05,z,r,r*.85,r,x,z,RT()*3)}else for(let k=0;k<3;k++){const r=rr(.62,1);TB.add('bush',smallPuffG,jit(bc[k%bc.length],.05),x+rr(-.6,.6),r*.62,z+rr(-.6,.6),r,r*.85,r,x,z)}
@@ -5966,7 +5967,9 @@ if(S.trip&&!TRIPS[S.trip.id])S.trip=null;S.trips=(S.trips||[]).filter(x=>TRIPS[x
 let awayMs=0;function catchUp(){if(isNew)return 0;const now=Date.now(),away=now-S.lastSeen;awayMs=away;if(away<8*60e3)return 0;isQuiet=true;mailDeliver(now);let t=S.lastSeen,n=0;const NC=Math.min(44,14+10*Math.floor(away/864e5));if(S.trip){n+=Math.min(3,tripAdvance(now,false));if(!S.trip&&S.trips[0])t=Math.max(t,S.trips[0].t1+rand(10,25)*60e3)}
   while(!S.trip&&t<now-6*60e3&&n<NC){wendSim(t);if(asleepAt(hourAt(t),t)){const wake=t+secondsToWake(t)*1000;if(wake>now){addEntry('Rest','Went to bed. The old house creaked softly and I drifted off.',"Mocha's House",t);n++;break}
       addEntry('Rest',fill(pick(['Slept through the night. Dreamed about {dream}.','Slept like a log. A ghostly, floaty log.',(WX.wet(wake-36e5)?'Slept in a little. The rain on the roof was too cozy.':'Slept in a little. The morning was too still and cozy to get up.')])),"Mocha's House",wake);S.needs.energy=100;t=wake+rand(15,40)*60e3;n++;continue}
-    const c=localChoose(t);if(c.explore){if(Math.random()<.5)discover(c.explore,t,false);t+=rand(30,60)*60e3;continue}if(c.act.fx==='sleep'){t+=45*60e3;continue}if(c.act.fx==='trip'){if(tripBegin(c.act.trip,Math.min(t+rand(8,20)*60e3,now-60e3),false)){n+=Math.min(3,tripAdvance(now,false));if(S.trip)break;t=S.trips[0].t1+rand(15,40)*60e3;continue}t+=20*60e3;continue}localOutcome(c.act,t,false);t+=rand(40,90)*60e3;n++}
+    {const C=S.career,j=C&&C.j;let w=false;try{if(j&&shiftNow(t)){const D=+startOfDay(t);w=j.sd===dkey(t)||(D+(j.h[0]+.5)*36e5>(+C.lt||0)&&D+j.h[1]*36e5>j.s&&!econClosed(j.b,{dow:new Date(t).getDay()}))}}catch(e){}if(w){t=Math.max(t+15*60e3,+startOfDay(t)+j.h[1]*36e5+rand(5,20)*60e3);continue}}// B37 fix1: his shift hours are work (b37Away writes and pays the shift)
+    const c=localChoose(t);if(c.act&&c.act.fx==='job'&&S.career&&S.career.j&&S.career.j.b===c.act.p){t+=20*60e3;continue}// B37 fix1: no odd job at his own workplace (its gate loads after the boot catchUp)
+    if(c.explore){if(Math.random()<.5)discover(c.explore,t,false);t+=rand(30,60)*60e3;continue}if(c.act.fx==='sleep'){t+=45*60e3;continue}if(c.act.fx==='trip'){if(tripBegin(c.act.trip,Math.min(t+rand(8,20)*60e3,now-60e3),false)){n+=Math.min(3,tripAdvance(now,false));if(S.trip)break;t=S.trips[0].t1+rand(15,40)*60e3;continue}t+=20*60e3;continue}localOutcome(c.act,t,false);t+=rand(40,90)*60e3;n++}
   try{spreadNews(Math.min(7,away/864e5))}catch(e){}// B23
   try{const wr=away>4*36e5&&!WX_FORCED?WX.recap(now-away,now):'';if(wr)addEntry('Weather',wr[0].toUpperCase()+wr.slice(1)+'.','',now-6e4)}catch(e){}isQuiet=false;S.diary.sort((a,b)=>b.t-a.t);S.lastSeen=now;return n}
 let awayCount=0;try{awayCount=catchUp()}catch(e){isQuiet=false;console.warn('catchUp failed',e)}try{occRebuild()}catch(_){}txAwayFlush();mailDeliver();
@@ -5998,7 +6001,7 @@ function updateSky(dt){const d=new Date();if(d.getDate()!==keysDay||d.getTimezon
   scene.fog.near=WEATHER.kind==='fog'?20:80;scene.fog.far=WEATHER.kind==='fog'?140:240;
   hemi.intensity=(hi*(1-o*.2)+.15)*lerp(.62,.78,nightAmt)*lerp(1.1,1.22,nightAmt);hemi.color.copy(HEMC[0]).lerp(HEMC[2],nightAmt);sun.intensity=si*(1-o*.6)*lerp(.64,.42,nightAmt);hemi.groundColor.copy(HEMC[1]).lerp(HEMC[3],nightAmt);rimSky(dt,h);
   const sa=clamp((h-SUN.rise)/(SUN.set-SUN.rise),0,1)*Math.PI;sun.position.set(camS.tx+Math.cos(sa)*60,20+Math.max(.15,Math.sin(sa))*60,camS.tz+30);sun.target.position.set(camS.tx,0,camS.tz);{const se=STYLE.shadowHalf||(IN.on?Math.min(90,Math.max(50,Math.round(STYLE.effDist()*1.3/5)*5)):clamp(Math.round(STYLE.effDist()*1.3/5)*5,25,90)),sc=sun.shadow.camera;if(sc.right!==se){sc.left=sc.bottom=-se;sc.right=sc.top=se;sc.updateProjectionMatrix();sun.shadow.needsUpdate=true}}sun.color.set(nightAmt>.5?'#b4c6ff':h<9||h>16?'#ffd6b0':'#fff4e6');
-  nightAmt=clamp((.62-si)/.4,0,1);post.uniforms.night.value=nightAmt;{const frz=nightAmt>=.85,sq=UIQ.level>=1,hz=sq?1:2;UIQ.frz=frz||sq;sun.shadow.autoUpdate=!UIQ.frz;if(UIQ.frz&&Math.floor(T*hz)!==Math.floor((T-dt)*hz))sun.shadow.needsUpdate=true}LUXS.si=si;nightGlows.forEach(g=>g.material.opacity=g.userData.op*(.15+nightAmt*.85));
+  nightAmt=clamp((.62-si)/.4,0,1);post.uniforms.night.value=nightAmt;{const frz=nightAmt>=.85||!!(TIER.keepCS&&TIER.n===0),sq=UIQ.level>=1,hz=sq?1:2;UIQ.frz=frz||sq;sun.shadow.autoUpdate=!UIQ.frz;if(UIQ.frz&&Math.floor(T*hz)!==Math.floor((T-dt)*hz))sun.shadow.needsUpdate=true}LUXS.si=si;nightGlows.forEach(g=>g.material.opacity=g.userData.op*(.15+nightAmt*.85));
   stars.material.opacity=nightAmt*(1-o);moon.material.opacity=nightAmt*(1-o*.8)+.05;fireflies.material.opacity=nightAmt*.8*(WEATHER.kind==='rain'?.2:1);
   clouds.forEach(c=>{c.m.opacity=.45+o*.45;c.m.color.set(day>.3?(o>.5?'#d5dbe3':'#ffffff'):'#4b5577');c.m.emissiveIntensity=day>.3?.5:.04});
   if(p_mtn){p_mtn[0].color.set(day>.3?'#9aa8c4':'#2e3656').lerp(cB,.35);p_mtn[1].color.set(day>.3?'#f4f6fb':'#8a94b4').lerp(cB,.2)}p_olym.forEach(m=>m.color.set(day>.3?'#86a0c4':'#28304e').lerp(cB,.5));p_snow.forEach(m=>m.color.set(day>.3?'#f4f6fb':'#6a7496').lerp(cB,.3));p_sky.forEach(([m,c])=>m.color.set(day>.3?c:'#2a3152').lerp(cB,day>.3?.68:.4));
@@ -6187,14 +6190,14 @@ const SKYEV={force:B41FORCE,
 // ---- GRADE: three uniforms and two lines in post (before the first compile; pqPost's anchors untouched)
 const GK={L:new THREE.Vector3(),G:new THREE.Vector3(1,1,1),S:1,key:'day',k:.5,w:{}};// k: how far the gain keys pull from neutral (B27Sa/POL3 already warm the picture)
 post.uniforms.gkL={value:GK.L};post.uniforms.gkG={value:GK.G};post.uniforms.gkS={value:1};
-{const a='col=mix(col,1.-(1.-col)*(1.-col),air);',fs=post.fragmentShader;if(fs.split(a).length===2&&fs.split('uniform sampler2D tDiffuse;').length===2){post.fragmentShader=fs.replace('uniform sampler2D tDiffuse;','uniform vec3 gkL;uniform vec3 gkG;uniform float gkS;uniform sampler2D tDiffuse;').replace(a,a+'col=mix(vec3(dot(col,vec3(.299,.587,.114))),col,gkS);col=col*gkG+gkL*(1.-col);');post.needsUpdate=true}else GK.fail=1}
-const GKEY={day:['#000000',0,'#FFFFFF',1],morning:['#1E2A4A',.04,'#FFF4E6',1.08],golden:['#3A2A50',.05,'#FFD9A8',1.18],blue:['#26306A',.08,'#C8D2FF',1],night:['#141C40',.07,'#D6DEFF',.95],
+{const a='col=mix(col,1.-(1.-col)*(1.-col),air);',fs=post.fragmentShader;if(fs.split(a).length===2&&fs.split('uniform sampler2D tDiffuse;').length===2){post.fragmentShader=fs.replace('uniform sampler2D tDiffuse;','uniform vec3 gkL;uniform vec3 gkG;uniform float gkS;uniform sampler2D tDiffuse;').replace(a,a+'{float gkY=dot(col,vec3(.299,.587,.114)),gkP=smoothstep(.8,.96,gkY);col=mix(vec3(gkY),col,mix(gkS,1.,gkP));col=col*mix(gkG,vec3(1.),gkP)+gkL*(1.-col);}');/* fix1: near-white (Mocha) is protected from the grade's gain and saturation */post.needsUpdate=true}else GK.fail=1}
+const GKEY={day:['#000000',0,'#FFFFFF',1],morning:['#1E2A4A',.04,'#FFF4E6',1.08],golden:['#3A2A50',.05,'#FFD9A8',1.08],blue:['#26306A',.08,'#C8D2FF',1],night:['#141C40',.07,'#D6DEFF',.95],
   plum:['#2A1840',.06,'#D6DEFF',.95],market:['#2A1E18',.07,'#FFE2BC',.9]};
 const GKC=Object.fromEntries(Object.keys(GKEY).map(k=>[k,[new THREE.Color(GKEY[k][0]),GKEY[k][1],new THREE.Color(GKEY[k][2]),GKEY[k][3]]]));
 function b41Bump(x,a,b,f){return clamp(Math.min((x-a)/f,(b-x)/f),0,1)}
 function b41Grade(){const h=B41.h||12,r=SUN.rise,s=SUN.set,mo=B41.mon,inn=IN.on?.4:1;let wn=clamp(nightAmt*1.25-.2,0,1);const rest=1-wn;
   let wm=b41Bump(h,r-.8,r+2.4,.6)*rest,wg=b41Bump(h,s-1.7,s+.15,.45)*rest,wb=b41Bump(h,s+.05,s+1.35,.3)*rest;const sum=wn+wm+wg+wb,wd=Math.max(0,1-sum),tot=Math.max(1,sum+wd);
-  const mk=b41Market()&&Math.hypot(camS.tx+30,camS.tz-33)<60?wn*.85:0,nk=mo===9?'plum':'night',W=GK.w;W.day=wd/tot;W.morning=wm/tot;W.golden=wg/tot;W.blue=wb/tot;W.night=wn/tot*(1-mk);W.market=wn/tot*mk;
+  const mk=b41Market()&&Math.hypot(camS.tx+30,camS.tz-33)<60?wn*.85:0,nk=mo===9&&(B41.dd|0)>=17?'plum':'night',W=GK.w;W.day=wd/tot;W.morning=wm/tot;W.golden=wg/tot;W.blue=wb/tot;W.night=wn/tot*(1-mk);W.market=wn/tot*mk;
   let lr=0,lg=0,lb=0,gr=0,gg=0,gb=0,sat=0,best='day',bw=-1;for(const k in W){const w=W[k]*inn+(k==='day'?1-inn:0);if(!w)continue;const K=GKC[k==='night'?nk:k];lr+=K[0].r*K[1]*w;lg+=K[0].g*K[1]*w;lb+=K[0].b*K[1]*w;gr+=K[2].r*w;gg+=K[2].g*w;gb+=K[2].b*w;sat+=K[3]*w;if(W[k]>bw){bw=W[k];best=k==='night'?nk:k}}
   const wet=(WEATHER.kind==='rain'||WEATHER.kind==='drizzle')?Math.min(1,WEATHER.wet*1.5):0;sat*=1-.15*wet;const sn=Math.max(WEATHER.kind==='snow'?WEATHER.wet:0,B41.SN);lr+=.86*.035*sn;lg+=.89*.035*sn;lb+=.95*.035*sn;
   const k=GK.k;GK.L.set(lr,lg,lb);GK.G.set(1+(gr-1)*k,1+(gg-1)*k,1+(gb-1)*k);GK.S=sat;post.uniforms.gkS.value=sat;GK.key=wet>.3&&best==='day'?'rain':sn>.3&&best==='day'?'snow':best}
@@ -6271,7 +6274,7 @@ const roofMats={list:()=>B41.roofs||[],add(m){if(B41.roofs&&m&&m.color&&!B41.roo
 const B41SNOWC=new THREE.Color('#F4F8FC');
 function b41RoofTick(){const R=B41.roofs;if(!R)return;const k=+(B41.SN*.85).toFixed(3);if(k===B41.roofK)return;B41.roofK=k;for(const q of R)q.m.color.copy(q.c).lerp(B41SNOWC,k)}
 // ---- snowmen the morning after snow (yards, the square, the park) + the one Mocha builds himself
-const B41SMP=[[16.5,49.5],[21,68.5],[76.5,53.5],[-25.5,29.5],[73.5,21.5],[44.5,67.5]];
+const B41SMP=[[19.3,48.8],[21,68.5],[76.5,53.5],[-25.5,29.5],[73.5,21.5],[44.5,67.5]];
 function b41SnowDay(t){const k=dkey(t-864e5),y=WX.forDate(k),h=hourAt(t);return!!(y&&y.snow&&h>=8&&h<21)}
 function b41Snowmen(){const im=B41.sm;if(!im)return;const t=Date.now(),town=b41SnowDay(t),mine=S.deco&&S.deco.sm&&t-S.deco.sm<36*36e5,key=(town?1:0)+(mine?2:0);if(key===B41.snowmen)return;B41.snowmen=key;let n=0;const d=_b41d;
   const one=(x,z,s,ry)=>{const P=(dx,dy,dz,r,c,sx=1,sy=1,sz=1)=>{if(n>=56)return;const c0=Math.cos(ry),s0=Math.sin(ry);d.position.set(x+(dx*c0+dz*s0)*s,dy*s,z+(-dx*s0+dz*c0)*s);d.rotation.set(0,ry,0);d.scale.set(r*sx*s,r*sy*s,r*sz*s);d.updateMatrix();im.setMatrixAt(n,d.matrix);im.setColorAt(n++,_b41c.set(c))};
@@ -6299,7 +6302,7 @@ function b41DecoCatch(){const D=b41DecoPlan();if(!D||D.no||D.strands>=3||!D.d0)r
   if(D.strands>=2)holString(K,[LW(f,4.2,H+.2,Dd/2+.45),LW(f,9,H+.2,Dd/2+.45),LW(f,13.9,H+.2,Dd/2+.45)],c,.75,.25)}}
 // Wendell always puts up WAY too many lights: three more eave rows, corner drops, the door frame, both fence runs and his shrubs
 {const fs0=frontString;frontString=function(K,f,cols,dy,sp){fs0.apply(this,arguments);if(!f||f.id!=='neighbor'||dy)return;const th=HOL.theme;if(th!=='winter'&&th!=='newyear'&&th!=='halloween')return;
-  const wc=th==='halloween'?['#FF8A2A','#9B5DE5','#FF8A2A','#7DFF6A']:['#FF4A4A','#3FBF5A','#FFD36B','#4A9AE8','#FFFFFF','#FF8AD0'];fs0(K,f,wc,-.34,.42);const W=f.w/2-.35,y=f.y-.3,z=f.fz-.05,dx=f.dx||0;for(let x=-W+.3,i=0;x<=W-.3;x+=.62,i++){const L=.3+((i*7)%5)*.12;holString(K,[LW(f,x,y-.08,z+.02),LW(f,x,y-.08-L,z+.02)],wc,.2,0)}
+  const wc=th==='halloween'?['#FF8A2A','#9B5DE5','#FF8A2A','#9B5DE5']:['#FFF1D0','#FFF1D0','#FFC27A','#FFF1D0','#FFD36B','#FFC27A'];/* fix1: Wendell overdoes the quantity, not the palette (S2b warm white, every third amber, a few brass) */fs0(K,f,wc,-.34,.42);const W=f.w/2-.35,y=f.y-.3,z=f.fz-.05,dx=f.dx||0;for(let x=-W+.3,i=0;x<=W-.3;x+=.62,i++){const L=.3+((i*7)%5)*.12;holString(K,[LW(f,x,y-.08,z+.02),LW(f,x,y-.08-L,z+.02)],wc,.2,0)}
   for(const s of [-1,1])holString(K,[LW(f,s*W,y,z),LW(f,s*W,.5,z)],wc,.32,0);holString(K,[LW(f,dx-.95,.3,f.door+.12),LW(f,dx-.95,2.55,f.door+.12),LW(f,dx+.95,2.55,f.door+.12),LW(f,dx+.95,.3,f.door+.12)],wc,.3,.02);
   holString(K,[[7.6,1.22,51.3],[14.2,1.22,51.3]],wc,.42,.08);holString(K,[[17.8,1.22,51.3],[21.8,1.22,51.3]],wc,.42,.08);
   for(const [x,z] of [[8.4,46.2],[21.6,45.6]]){const P=[];for(let i=0;i<=14;i++){const a=i*.9,yy=.25+i*.09,r=.95-i*.035;P.push([x+Math.cos(a)*r,yy,z+Math.sin(a)*r])}holString(K,P,wc,.3,0)}}}
@@ -6324,7 +6327,7 @@ function b41Cascade(){const s=B41.strands.find(q=>q.owner==='tree');if(!s)return
 // ---- framing: the subject on the lower-third line of the free area (HUD.bands); round 1's panel offsets win when a sheet is open
 {const vt0=voTarget;voTarget=function(){vt0.apply(this,arguments);B41.voP=!!(VO.tx||VO.ty);try{b41VO()}catch(e){}}}
 function b41VO(){B41.vo=null;const cw=CAM.cur&&CAM.cur.owner,room=cw==='room';B41.voWhy=B41.voP?'panel':!B41.boot?'boot':camS.mode!=='follow'?'mode':cw&&!room?'cam:'+cw:IN.on&&!room?'in':G.mode==='trip'?'trip':!mocha.visible||!IN.see('mocha')?'hidden':'';if(B41.voWhy)return;const walk=false;/* the follow view and its room layer; the walk camera keeps the owner's over-the-shoulder framing */const w=innerWidth,h=innerHeight;let top=0,bot=h;
-  for(const b of HUD.bands()){if(b.h>h*.45)continue;const cy=b.y+b.h/2;if(cy<h*.42)top=Math.max(top,b.y+b.h);else if(cy>h*.58)bot=Math.min(bot,b.y)}if(bot-top<h*.3){top=0;bot=h}
+  for(const b of HUD.bands()){if(b.h>h*.45||(b.w>0&&b.w<w*.5))continue;const cy=b.y+b.h/2;if(cy<h*.42)top=Math.max(top,b.y+b.h);else if(cy>h*.58)bot=Math.min(bot,b.y)}if(bot-top<h*.3){top=0;bot=h}
   const yt=top+(bot-top)*2/3,gs=typeof growScale==='function'?growScale():1,pp=walk?project(YOU.x,camS.ty-.55,YOU.z):project(G.x,mocha.position.y+.55*gs,G.z);if(!pp.vis){B41.voWhy='offscreen';return}const oy=camera.view&&camera.view.enabled?camera.view.offsetY:0,y0=pp.y+oy;
   const want=clamp(y0-yt,-h*.22,h*.22),cur=B41.voT||0;if(Math.abs(want-cur)>h*.035||B41.voK!==cw)B41.voT=cur+(want-cur)*(B41.voK!==cw?1:.35);B41.voK=cw;VO.ty=Math.abs(B41.voT)<.6?0:B41.voT;// deadband + a slow follow, so a room never bobs
 B41.vo={who:walk?'you':'mocha',room,top:Math.round(top),bot:Math.round(bot),yt:Math.round(yt),y0:Math.round(y0),ty:Math.round(VO.ty)}}
@@ -6336,21 +6339,24 @@ function b41GlideTick(){const g=B41.gl;if(!g)return;const e=CAM.S.find(q=>q.owne
 function b41GlideEnd(){if(!B41.gl)return;B41.gl=null;B41.glDone=1;CAM.pop('b41glide')}
 function b41GlideSkip(){if(B41.gl)b41GlideEnd()}
 // ---- quality: Auto + two ADAPT drops -> LOW for this session (Settings shows 'Auto · Saver'); never saved, never promoted
-function b41TierTick(){const T=TIER;if(B41.lowed||!T.auto||T.n!==1||(ADAPT.drops|0)<2)return;B41.lowed=1;T.autoN=0;T.n=0;applyTier(true);try{tierSync()}catch(e){}}
+function b41TierTick(f){const T=TIER;if(B41.lowed||!T.auto||T.n!==1||(ADAPT.drops|0)<2)return;if(T.caps&&T.caps.soft&&!f&&!T.adSW)return;// fix1: software GL (the test harness) is exempt, as in tierAdapt
+ B41.lowed=1;T.lowS=1;T.keepCS=1;T.n=0;applyTier(true);try{tierSync()}catch(e){}}// fix1: the session LOW keeps the sun's castShadow (same programs, PREWARM stays valid; 1024 shadows refreshed at 2 Hz) and leaves T.autoN alone, so re-picking Auto brings MED back
 function b41TierView(){const T=TIER,n=T.n;return{tier:['LOW','MED','HIGH','ULTRA'][n],name:T.name,auto:T.auto,saver:!!SET.saver,adaptDrops:ADAPT.drops|0,lowFromAdapt:!!B41.lowed,fps:T.fps(),shadows:sun.castShadow?sun.shadow.mapSize.x:0,pr:+renderer.getPixelRatio().toFixed(2),
   l2:RIG&&RIG.L[1]?+RIG.L[1].intensity.toFixed(3):null,smoke:!SET.saver,sunbeams:!SET.saver,ts:+post.uniforms.ts.value.toFixed(2),glow:T.f.glow,label:(document.querySelector('#gfxRow .seg .on')||{}).textContent||null}}
+// fix1: B41's hidden sky and weather meshes are compiled with the PREWARM pass (stand-ins sharing each material), so the first rain, fog, rainbow, aurora, meteor or moon path links no shader mid-play
+PREWARM.add('b41:fx',()=>{if(!B41.boot)return null;const g=new THREE.Group();for(const o of [B41.fogb,B41.refl,B41.puddles,B41.rbw,B41.aur,B41.star,B41.mp,B41.sm]){if(!o||!o.material)continue;let q;if(o.isInstancedMesh){q=new THREE.InstancedMesh(o.geometry,o.material,1);if(o.instanceColor)q.setColorAt(0,new THREE.Color(1,1,1))}else if(o.isSprite)q=new THREE.Sprite(o.material);else q=new THREE.Mesh(o.geometry,o.material);q.castShadow=!!o.castShadow;q.receiveShadow=!!o.receiveShadow;q.frustumCulled=false;g.add(q)}return g.children.length?g:null});
 // ---- 1 Hz: the clock, wetness, snow, rainbow, the day's events, puddles, fog banks, reflections, moon path, aurora, snowmen, roofs, strands near
 function b41Wet(sec){const k=WEATHER.kind,F=SKYEV.force;if(F.wet!=null)B41.W=F.wet;else B41.W=clamp(B41.W+sec*(k==='rain'?1/600:k==='drizzle'?(B41.W<.55?1/900:0):-1/1200),0,1);B41.SN=F.snow!=null?F.snow:clamp(B41.SN+sec*(k==='snow'?1/900:-1/3600),0,1)}
 function b41Tick(){const now=Date.now(),d=new Date(now);B41.mon=d.getMonth();B41.dd=d.getDate();B41.h=d.getHours()+d.getMinutes()/60;const k=WEATHER.kind,F=SKYEV.force;
   b41Wet(1);
   const wetK=k==='rain'||k==='drizzle';if(B41.pk&&/rain|drizzle/.test(B41.pk)&&k==='clear'&&nightAmt<.25&&B41.h>SUN.rise+.3&&B41.h<SUN.set-.3){B41.rbT0=now;B41.rbDur=(120+Math.random()*120)*1e3}B41.pk=k;
-  if(F.rainbow){B41.rbT0=now;B41.rbDur=F.rainbow*1e3;F.rainbow=0}const rp=(now-B41.rbT0)/(B41.rbDur||1);B41.rb=B41.rbDur&&rp>=0&&rp<1?clamp(Math.min((rp+.02)*10,(1-rp)*10),0,1):0;if(rp>=1)B41.rbDur=0;
+  if(F.rainbow){B41.rbT0=now;B41.rbDur=F.rainbow*1e3;F.rainbow=0}const rp=(now-B41.rbT0)/(B41.rbDur||1);B41.rb=B41.rbDur&&rp>=0&&rp<1?clamp(Math.min((rp+.02)*10,(1-rp)*10),0,1):0;if(rp>=1||(B41.rbDur&&/rain|drizzle|fog|snow|storm/.test(String(WEATHER.kind))&&now-B41.rbT0>2e3)){B41.rbDur=0;B41.rb=0}
   const dk=dkey(now);if(B41.dayK!==dk){B41.dayK=dk;B41.day=b41Day(now)}const ev=id=>B41.day&&B41.day.events.some(e=>e.id===id);
   // puddles
   const im=B41.puddles;if(im){const on=B41.W>.03&&!IN.on;im.visible=on;if(on&&Math.abs(B41.W-(B41.pW||0))>.01)b41PudSet();const U=im.material.uniforms;U.uA.value=Math.min(.78,B41.W*2);U.uR.value=wetK?1:0;const nk=clamp(nightAmt*1.4,0,1);
     U.uC.value.copy(skyMat.uniforms.bot.value).multiplyScalar(1.02-.72*nk);U.uH.value.copy(skyMat.uniforms.top.value).multiplyScalar(1.05-.7*nk)}
   // wet-road lamp reflections
-  if(B41.refl){const wet=Math.max(WEATHER.wet,B41.W),on=nightAmt>.35&&wet>.2&&!IN.on;B41.refl.visible=on;if(on)b41Refl(wet)}
+  if(B41.refl){const wet=WEATHER.kind==='snow'?B41.W:Math.max(WEATHER.wet,B41.W),on=nightAmt>.35&&wet>.2&&!IN.on;B41.refl.visible=on;if(on)b41Refl(wet)}
   // fog banks
   if(B41.fogb)b41Fog();
   // moon: face once a day; path on clear nights
@@ -6389,11 +6395,11 @@ const B41DIA={rainbow:'Saw a rainbow over town right after the rain stopped. I s
   alpenglow:'The mountain turned pink right after sunset. Alpenglow, it\'s called. It only lasts a few minutes, and I caught it.',meteor:'Saw a shooting star tonight. I made a wish. I\'m not telling.',fullmoon:'Full moon tonight. Everything had a silver outline, including me.',mountain:'The mountain was out today. Everyone in town kept stopping to look at it, me included.'};
 function b41Notice(now){if(!S||!S.sky||G.mode==='trip'||G.sleep||IN.on||typeof inHome==='function'&&inHome(G.x,G.z))return;const vis=SKYEV.now();if(B41.met.on&&B41.day&&B41.day.events.some(e=>e.id==='perseids'||e.id==='geminids'))vis.push('meteor');
   if(B41.day&&B41.day.events.some(e=>e.id==='fullmoon')&&nightAmt>.7&&WEATHER.kind==='clear')vis.push('fullmoon');
-  for(const id of vis){if(!B41SAY[id])continue;const key=dkey(now)+':'+id;if(S.sky.seen.includes(key)||Math.random()>.2)continue;S.sky.seen.push(key);if(S.sky.seen.length>24)S.sky.seen.shift();
+  for(const id of vis){if(!B41SAY[id])continue;const key=dkey(now)+':'+id;if(S.sky.seen.includes(key)||Math.random()>.2)continue;if(id==='mountain'&&S.sky.seen.some(k=>{const p=String(k).split(':');return p[1]==='mountain'&&now-+dFromKey(isNaN(+p[0])?p[0]:+p[0])<7*864e5}))continue;S.sky.seen.push(key);if(S.sky.seen.length>24)S.sky.seen.shift();
     say(pick(B41SAY[id]),4.5);addEntry('Sky',B41DIA[id],'',now);if(/rainbow|aurora|alpenglow/.test(id)&&S.phone)try{takeSelfie({rainbow:'me + a rainbow 🌈',aurora:'northern lights!! 💚',alpenglow:'pink mountain 🏔'}[id],'')}catch(e){}B41.sayK=key;break}}
 // ---- per frame (after styleFrame, before the tier frame and the render)
 function b41Frame(dt,T0){if(!B41.boot)b41Boot();if(B41.dead)return;try{B41U.tw.value=T0;B41U.pt.value=T0;B41U.wind.value=WIND;
-  rain.rotation.z=-WIND*(WEATHER.kind==='snow'?.12:.3);const fk=(WEATHER.kind==='fog'?1:Math.max(WEATHER.wet,B41.W)*.6)*nightAmt;if(fk>.01)GLOWPTS.u.uScale.value*=1+.4*fk;
+  rain.rotation.z=-WIND*(WEATHER.kind==='snow'?.12:.3);const fk=(WEATHER.kind==='fog'?1:(WEATHER.kind==='snow'?B41.W:Math.max(WEATHER.wet,B41.W))*.6)*nightAmt;if(fk>.01)GLOWPTS.u.uScale.value*=1+.4*fk;
   post.uniforms.gkS.value=GK.S;
   if((B41.acc-=dt)<=0){B41.acc=1;b41Tick()}if((B41.acc10-=dt)<=0){B41.acc10=.1;b41Pat10()}if((B41.acc2-=dt)<=0){B41.acc2=.25;if(B41.fogb&&B41.fogb.visible)b41Fog()}
   b41SkyFrame(dt,T0);b41GlideTick()}catch(e){if(!B41.err){B41.err=1;console.warn('B41 frame',e)}}}
@@ -6408,7 +6414,7 @@ function b41SkyEv(o){o=o||{};const F=SKYEV.force;if(o.aurora!=null){F.aurora=!!o
 function b41GradeInfo(){const r=v=>+v.toFixed(4);return{key:GK.key,lift:[r(GK.L.x),r(GK.L.y),r(GK.L.z)],gain:[r(GK.G.x),r(GK.G.y),r(GK.G.z)],sat:r(GK.S),w:Object.fromEntries(Object.entries(GK.w).map(([k,v])=>[k,r(v)])),k:GK.k,market:b41Market(),patched:!GK.fail,inPost:/gkL/.test(post.fragmentShader)}}
 STYLE.hooks.push(m=>{const t0=m.tier;Object.assign(m,{skyEv:o=>b41SkyEv(o),grade:()=>b41GradeInfo(),strands:o=>b41Strands(o),puddles:o=>b41Puddles(o),b41:()=>({vo:B41.vo,glide:!!B41.gl,glDone:B41.glDone,boot:B41.boot,dead:B41.dead,err:B41.err}),
   b41glide:()=>b41Glide(true),b41vo:()=>{voTarget();return B41.vo||{why:B41.voWhy}},
-  b41adapt:n=>{ADAPT.drops=n|0;B41.lowed=0;b41TierTick();return b41TierView()},
+  b41adapt:n=>{ADAPT.drops=n|0;B41.lowed=0;b41TierTick(1);return b41TierView()},
   b41dbg:()=>({B41,GK,SKYEV}),
   tier:v=>{if(v==='med'||v==='MED')v='phone';if(v==='LOW')v='low';if(v==='HIGH')v='high';const r=t0?t0(v):tierInfo();return Object.assign(r||{},{b41:b41TierView()})}})});
 
@@ -8007,7 +8013,7 @@ const CARDART={
   g.fillStyle=cgrad(g,Y+H*.7,Y+H,['#a7d07a','#86bc5e']);g.beginPath();g.moveTo(X,Y+H*.74);g.quadraticCurveTo(X+W*.5,Y+H*.66,X+W,Y+H*.74);g.lineTo(X+W,Y+H);g.lineTo(X,Y+H);g.fill();
   const fc=['#8a6bd8','#e0508a','#ffffff','#ffd34e','#7a5bd0'];for(let i=0;i<180;i++){g.fillStyle=fc[i%5];g.beginPath();g.arc(X+r()*W,Y+H*(.73+r()*.27),1.5+r()*1.8,0,7);g.fill()}
   cghost(g,X+W*.86,Y+H*.66,24)},
- leavenworth(g,X,Y,W,H,r,xm){g.fillStyle=cgrad(g,Y,Y+H*.6,xm?['#26305a','#4f4a7a','#b98aa8']:['#86c3ec','#cfe8f6','#fff4e0']);g.fillRect(X,Y,W,H);if(xm)for(let i=0;i<40;i++){g.fillStyle=`rgba(255,255,255,${.4+r()*.6})`;g.fillRect(X+r()*W,Y+r()*H*.35,1.7,1.7)}
+ leavenworth(g,X,Y,W,H,r,xm){g.fillStyle=cgrad(g,Y,Y+H*.6,xm?['#1C1A22','#2A2428','#3A3330']:['#86c3ec','#cfe8f6','#fff4e0']);g.fillRect(X,Y,W,H);if(xm)for(let i=0;i<40;i++){g.fillStyle=`rgba(255,236,200,${.4+r()*.6})`;g.fillRect(X+r()*W,Y+r()*H*.35,1.7,1.7)}
   const mb=Y+H*.52;cpoly(g,[X-10,mb,X+W*.12,Y+H*.2,X+W*.24,Y+H*.32,X+W*.38,Y+H*.12,X+W*.52,Y+H*.3,X+W*.68,Y+H*.16,X+W*.84,Y+H*.34,X+W+10,Y+H*.22,X+W+10,mb],xm?'#5b6488':'#8d9cbc');
   g.fillStyle='#ffffff';[[.12,.2],[.38,.12],[.68,.16]].forEach(([a,b])=>{const x=X+W*a,y=Y+H*b;g.beginPath();g.moveTo(x,y);g.lineTo(x-15,y+17);g.lineTo(x-5,y+12);g.lineTo(x+4,y+18);g.lineTo(x+14,y+14);g.closePath();g.fill()});
   for(let i=0;i<24;i++)cfir(g,X+r()*W,Y+H*(.52+r()*.05),22+r()*14,xm?'#2a4a3a':'#3a6a4a');
@@ -9184,7 +9190,7 @@ function tkAgo(t){const m=(Date.now()-t)/6e4;return m<2?'just now':m<60?`${Math.
 #tkChips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.tkChip{min-height:44px;padding:0 15px;border-radius:22px;border:2px solid var(--line);background:#fff;font:inherit;font-weight:700;font-size:14px;color:var(--ink);cursor:pointer}.tkChip.bye{background:var(--accent);border-color:var(--accent);color:#fff}
 #tkForm{display:none;gap:6px;margin-top:10px}#talkCard.inp #tkForm{display:flex}#talkCard.inp #tkChips{display:none}#tkIn{flex:1;min-width:0;min-height:44px;border-radius:22px;border:2px solid var(--line);padding:0 14px;font:inherit;font-size:16px;color:var(--ink);background:#fff}
 #tkForm button{min-width:44px;min-height:44px;border-radius:22px;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:800;cursor:pointer}#tkForm button.mic{background:var(--soft);color:var(--ink)}#tkForm button.mic.on{background:var(--teal);color:#fff}
-@media (orientation:landscape) and (max-height:520px){#talkCard{left:20vw;right:20vw;max-height:52vh;padding-top:10px}#tkChips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}.tkChip{flex:0 0 auto;padding:0 12px;font-size:13px}}
+@media (orientation:landscape) and (max-height:520px){#talkCard{left:20vw;right:20vw;max-height:52vh;padding-top:10px}#tkChips{flex-wrap:wrap;row-gap:6px;padding-bottom:2px}.tkChip{flex:0 0 auto;padding:0 12px;font-size:13px}}
 @media (min-width:761px) and (min-height:521px){#talkCard{left:50%;right:auto;width:560px;transform:translateX(-50%)}}
 body.talking #joy,body.talking #look,body.talking #dock,body.talking #chatwrap,body.talking #near,body.talking #zoom,body.talking #edge,body.talking #hint,body.talking #emoteFan,body.talking #ptag,body.talking .npChip,body.talking .hudMore,body.talking .hudPop,body.talking .tkHide{display:none!important}
 #near.tk{pointer-events:auto;cursor:pointer;background:var(--accent);color:#fff;min-height:44px;line-height:28px;font-size:15px;box-sizing:border-box}
@@ -9282,7 +9288,7 @@ function talkOpen(id,o={}){if(document.body.classList.contains('ylOn'))return nu
   else{tkHold(id,true);const r=relOf(id),first=!r,q=tkQDue(id);relOf(id,true);if(q){TK.q=q;TK.bang['q'+id]=dkey(Date.now());tkSay(tkVoice(id,(first?tkFirst(id)+' ':'')+q.q,'ask'),{src:'ask'})}else{const g=npcReply(id,first?'first':'hi');tkSay(g.text,{src:g.src,raw:g.raw})}}
   tkChipsRender();tkKb();setTimeout(()=>{try{save()}catch(e){}},250);return talkInfo()}// fix: the save waits until the card has painted
 function talkBye(){const id=TK.id;if(id==='mocha')say(G.sleep?'zzz…':pick(['bye!! 👋','see you later! 👻','bye bye!']),2.5);else if(id&&id!=='board'){const r=npcReply(id,'bye');npcSay(id,r.text,2.5)}return talkClose()}
-function talkClose(quiet){if(!TK.open)return null;const id=TK.id;if(id&&id!=='mocha'&&id!=='board')tkHold(id,false);TK.open=false;TK.id=null;TK.c=null;TK.q=null;TK.inp=false;TK.mwait=false;TKI.blur();clearTimeout(sendTimer);
+function talkClose(quiet){if(!TK.open)return null;const id=TK.id;if(id&&id!=='mocha'&&id!=='board')tkHold(id,false);TK.open=false;TK.b38=null;TK.id=null;TK.c=null;TK.q=null;TK.inp=false;TK.mwait=false;TKI.blur();clearTimeout(sendTimer);
   CARD.classList.remove('on','inp');document.body.classList.remove('talking');document.querySelectorAll('.tkHide').forEach(e=>e.classList.remove('tkHide'));CAM.pop('talk');CARD.style.bottom='';TK.near=null;if(!quiet)save();try{HUD.layout()}catch(e){}return talkInfo()}
 function tkFit(){if(!TK.open)return;const H=innerHeight,W=innerWidth,kb=TK.kb;CARD.style.bottom=kb>0?(kb+8)+'px':'';const r0=CARD.getBoundingClientRect();let top=8;
   for(const e of document.querySelectorAll('#leftTop>*,#meters,.hudS,#knock,#toast.show')){if(CARD.contains(e))continue;const q=e.getBoundingClientRect();if(!q.width||!q.height||q.top>H*.5)continue;const cs=getComputedStyle(e);if(cs.display==='none'||cs.visibility==='hidden'||+cs.opacity<.05)continue;if(q.right>r0.left&&q.left<r0.right)top=Math.max(top,q.bottom+8)}
@@ -9350,7 +9356,7 @@ function npcReply(id,intent,ctx={}){const c=CASTB[id];if(!c)return{text:'…',ra
   const pron=c.pr==='she'?'she':c.pr==='they'?'they':'he';
   switch(intent){
    case'first':L=[tkFirst(id)+' welcome to town!'];break;
-   case'hi':L=r[6]&4&&r[3]<=1?[`${me}! mocha introduced us, remember?`]:(c.k&&c.k.hi||[]).concat([`hi ${me}!`,`oh, hello ${me}!`,`${me}! good to see you`]);if(new Date().getHours()<11)L.push(`morning, ${me}!`);break;
+   case'hi':L=r[6]&4&&r[3]<=1?[`${me}! mocha introduced us, remember?`]:(c.k&&c.k.hi||[]).map(x=>x.replace(/\bmocha\b/gi,m=>m===m.toUpperCase()?String(me).toUpperCase():me)).concat([`hi ${me}!`,`oh, hello ${me}!`,`${me}! good to see you`]);if(new Date().getHours()<11)L.push(`morning, ${me}!`);break;
    case'bye':L=[`bye, ${me}!`,'see you around!','come back soon!','take care!'];break;
    case'new':{const nw=N.filter(n=>nHas(n[4],bk)&&!nHas(n[4],NB_U)&&n[1]!=='you'&&now-n[0]<5*864e5);if(nw.length){const n=nw[nw.length-1];n[4]=nSet(n[4],NB_U);raw=`did you hear? ${n[2]}!`;src='news';break}
      const w=weeklyAt(id);if(w)L.push(`this week's project: ${w.goal}. so far: ${w.done?'all done!':w.text}`);const st=npcStatus(id);if(st)L.push(`oh, you know. right now: ${st}`);if(B[1])L.push(`my usual: ${B[1]}`);
@@ -13806,11 +13812,11 @@ function b38Score(pet,t){const T=bizTpl()[pet.tpl],TT=S.town,mo=new Date(t).getM
   const sig=Math.min(6,pet.sigs.length)*.6,funds=T.cost<=TT.fund?1:.3,dup=(TT.built.some(b=>b.tpl===pet.tpl)||TT.petitions.some(q=>q!==pet&&q.tpl===pet.tpl&&/approved|pending|building|open/.test(q.st)))?2:0;
   let sea=.2;if(T.c==='outdoors'&&win)sea=-.4;if(pet.tpl==='icecream')sea=sum?.5:win?-.3:.1;if(pet.tpl==='haunted')sea=mo===9?.6:.1;if(pet.tpl==='observatory'&&win)sea=.4;
   return{base:sig+funds-dup+sea,sig,funds,dup,sea}}
-function b38Vote(pet,t){const T=bizTpl()[pet.tpl];if(!T)return null;const sc=b38Score(pet,t),R=seeded(wxHash('b38v'+pet.id+dkey(t))),v=[];let y=0,n=0;
-  for(const [id,w,ck] of B38C){const m=Math.max(-1.5,Math.min(1.5,T.tags.reduce((a,k)=>a+(w[k]||0),0)+ck*T.cost/1000)),s=sc.base+m+(R()-.5),vo=pet.by===id?0:s>=2.4?1:-1;v.push([id,vo,+s.toFixed(2),+m.toFixed(2)]);if(vo>0)y++;else if(vo<0)n++}
-  let tie=false;if(y===n){tie=true;const o=v[0],tb=o[1]||(sc.base+o[3]>=2.4?1:-1);if(tb>0)y++;else n++;o[4]=tb}return{y,n,tie,v,sc,ok:y>n}}
-function b38Why(pet,r){const T=bizTpl()[pet.tpl],sc=r.sc,L=[];if(sc.dup)L.push('the town already has one');if(sc.sig<1.8)L.push(`it needs more signatures (${pet.sigs.length} so far)`);if(sc.funds<1)L.push(`it costs ${T.cost}, more than the Town Fund holds`);if(sc.sea<0)L.push('the season is wrong for it');
-  const no=r.v.filter(x=>x[1]<0&&x[3]<0).map(x=>({odalie:'the mayor wants it to wait',mabel:'Mabel found it short on culture',hank:'Hank worries about the cost',willa:'Willa wants more green',gus:'Gus doubts the business case'})[x[0]]);return L.concat(no).slice(0,3).join('; ')||'a close vote'}
+function b38Vote(pet,t){const T=bizTpl()[pet.tpl];if(!T)return null;const sc=b38Score(pet,t),nl=!b38LotFor(pet.tpl,pet.lw),R=seeded(wxHash('b38v'+pet.id+dkey(t))),v=[];let y=0,n=0;
+  for(const [id,w,ck] of B38C){const m=Math.max(-1.5,Math.min(1.5,T.tags.reduce((a,k)=>a+(w[k]||0),0)+ck*T.cost/1000)),s=sc.base+m+(R()-.5),vo=pet.by===id?0:nl?-1:s>=2.4?1:-1;v.push([id,vo,+s.toFixed(2),+m.toFixed(2)]);if(vo>0)y++;else if(vo<0)n++}
+  let tie=false;if(y===n){tie=true;const o=v[0],tb=nl?-1:(o[1]||(sc.base+o[3]>=2.4?1:-1));if(tb>0)y++;else n++;o[4]=tb}return{y,n,tie,v,sc,nl,ok:y>n&&!nl}}// fix1: no free lot that fits -> every seat votes no
+function b38Why(pet,r){const T=bizTpl()[pet.tpl],sc=r.sc,L=r.nl?['no free lot in town fits it']:[];if(sc.dup)L.push('the town already has one');if(sc.sig<1.8)L.push(`it needs more signatures (${pet.sigs.length} so far)`);if(sc.funds<1)L.push(`it costs ${T.cost}, more than the Town Fund holds`);if(sc.sea<0)L.push('the season is wrong for it');
+  const no=r.v.filter(x=>x[1]<0&&x[3]<0).map(x=>({odalie:'the mayor wants it to wait',mabel:'Mabel found it short on culture',hank:'Hank worries about the cost',willa:'Willa wants more green',gus:'Gus doubts the business case'})[x[0]]);return L.concat(no).slice(0,2).join('; ')||'a close vote'}
 // the first free lot that fits a template's class (L6 for maritime, L9 for open-air)
 function b38LotFor(tpl,want){const T=bizTpl()[tpl];if(!T)return null;const used=new Set(S.town.petitions.filter(p=>p.lot&&/building|open/.test(p.st)).map(p=>p.lot).concat(S.town.built.map(b=>b.lot)));
   const ok=id=>{const q=byId[id];if(!q||used.has(id))return false;const c=q.pier?'P':q.cls;return T.cls.includes(c)};if(want&&ok(want))return want;for(const id of ['L8','L7','L5','L1','L2','L9','L6'])if(ok(id))return id;return null}
@@ -13821,22 +13827,25 @@ function b38Decide(pet,t,live){const r=b38Vote(pet,t),T=bizTpl()[pet.tpl];if(!r)
   if(pet.by==='mocha'||S.phone)try{addEntry('Town',(S.phone?'📱 A text from Town Hall: ':'Jot brought word from Town Hall: ')+tx+(pet.by==='mocha'?(pet.st==='denied'?' My petition. I\'ll gather more friends and try again.':' MY petition!!'):''),'Town Hall',t+60e3)}catch(e){}
   try{if(pet.by==='mocha'&&pet.st!=='denied')spark('win',1.2,t)}catch(e){}return r}
 // funding clears: the fund pays, a lot is assigned, construction starts (ap); without a fitting lot it waits as 'approved'
-function b38Fund(pet,t){const T=bizTpl()[pet.tpl];S.town.fund=Math.max(0,S.town.fund+(+pet.got||0)-T.cost);pet.got=0;const lot=b38LotFor(pet.tpl,pet.lw);if(!lot){pet.st='approved';pet.why='waiting for a lot that fits';return}pet.lot=lot;pet.ap=t;pet.st='building';pet.why=''}
+function b38Fund(pet,t){const T=bizTpl()[pet.tpl],lot=b38LotFor(pet.tpl,pet.lw);if(!lot){S.town.fund+=(+pet.got||0);pet.got=0;pet.st='denied';pet.voteAt=t;pet.why='no free lot fits it any more; the jar went to the Town Fund';return}// fix1: find the lot before charging
+  S.town.fund=Math.max(0,S.town.fund+(+pet.got||0)-T.cost);pet.got=0;try{if(fundLinked()&&S.econ&&S.econ.fl)S.econ.fl[1]=Math.min(99999,(+S.econ.fl[1]||0)+T.cost)}catch(e){}pet.lot=lot;pet.ap=t;pet.st='building';pet.why=''}
 function b38New(tpl,by,name,t,sigs){const T=S.town,L=T.petitions;if(L.some(p=>p.tpl===tpl&&/sigs|approved|pending|building/.test(p.st)))return{ok:false,why:'dup',p:L.find(p=>p.tpl===tpl&&/sigs|approved|pending|building/.test(p.st))};
   {const i=L.findIndex(p=>p.tpl===tpl&&p.st==='denied'&&p.by===by);if(i>=0){sigs=[...new Set(L[i].sigs.concat(sigs||[]))];L.splice(i,1)}}// a resubmission keeps its support
   if(L.length>=8){const i=L.findIndex(p=>p.st==='denied'||p.st==='open');if(i<0)return{ok:false,why:'full'};L.splice(i,1)}
   const p={id:'p'+(t%1e9).toString(36)+tpl.slice(0,3),tpl,name:name||bizTpl()[tpl].n,by,sigs:(sigs||[]).slice(0,24),st:'sigs',filed:t,voteAt:b38Wed(t+20*36e5),why:''};L.push(p);return{ok:true,p}}
 // data-only catch-up (idempotent, cheap): fund income, townsfolk filings (~1 in 10 days), Mocha's friends signing, missed votes, openings
 function b38Catch(now){now=+now||Date.now();if(!S||!S.town)return 0;b38Fix(S);const T=S.town,d0=dkey(now);let n=0;
+  let eok=true;try{if(Math.abs(now-Date.now())<36e5&&fundLinked()&&S.econ&&S.econ.biz&&hourAt(now)>=6)eok=!!S.econ.d&&S.econ.d>=dkey(+dFromKey(dkey(now))-12*36e5)}catch(e){}// fix1: votes wait (a minute at most) until the economy has settled the days away, so the fund is current
   if(!T.fi)T.fi=d0;else if(T.fi!==d0){let k=0,t=+dFromKey(T.fi)+864e5;while(dkey(t)<=d0&&k<30){if(!fundLinked())T.fund=Math.min(9999,T.fund+20);t+=864e5;k++}T.fi=d0}
-  if(!T.tf)T.tf=d0;else if(T.tf!==d0){let t=+dFromKey(T.tf)+864e5,k=0;while(dkey(t)<=d0&&k<14){const dk=dkey(t),r=seeded(wxHash('b38tf'+dk));if(r()<.1){const ks=Object.keys(bizTpl()).filter(x=>!T.built.some(b=>b.tpl===x)&&!T.petitions.some(p=>p.tpl===x&&p.st!=='denied')),by=['marigold','dale','birch','pippin','juniper','monty','bea','sol'][Math.floor(r()*8)];
+  if(!T.tf)T.tf=d0;else if(T.tf!==d0){let t=+dFromKey(T.tf)+864e5,k=0;while(dkey(t)<=d0&&k<14){const dk=dkey(t),r=seeded(wxHash('b38tf'+dk));if(r()<.1){const ks=Object.keys(bizTpl()).filter(x=>!T.built.some(b=>b.tpl===x)&&!T.petitions.some(p=>p.tpl===x&&p.st!=='denied')&&b38LotFor(x)),by=['marigold','dale','birch','pippin','juniper','monty','bea','sol'][Math.floor(r()*8)];
       if(ks.length&&CASTB[by]){const tp=ks[Math.floor(r()*ks.length)],pals=(typeof PALS!=='undefined'?PALS:[]).filter(e=>e[0]===by||e[1]===by).map(e=>e[0]===by?e[1]:e[0]);const q=b38New(tp,by,null,t+10*36e5,[by].concat(pals.slice(0,2)));if(q.ok){n++;try{newsPush('petition',`${CASTB[by].name.split(' ')[0]} filed a petition for ${q.p.name}`,'townhall',t+10*36e5,[by],false)}catch(e){}}}}t+=864e5;k++}T.tf=d0}
   for(const p of T.petitions){if(p.st==='sigs'&&p.by==='mocha'){const r=seeded(wxHash('b38m'+p.id+d0));for(const id in (S.bonds||{})){if(!CASTB[id]||p.sigs.includes(id)||p.sigs.length>=12)continue;const tr=tierOf(bondOf(id));if(r()<(tr>=2?.8:tr>=1?.25:0))p.sigs.push(id)}}
-    if(p.st==='sigs'&&p.voteAt&&now>=p.voteAt+(B38.live?2*36e5:0)){b38Decide(p,p.voteAt+30*6e4,false);n++}
+    if(eok&&p.st==='sigs'&&p.voteAt&&now>=p.voteAt+(B38.live?2*36e5:1.5*36e5)){b38Decide(p,Math.min(p.voteAt+30*6e4,now),false);n++}// fix1: at boot a same-evening vote is left for the live council (18:15-19:30)
+    if(p.st==='approved'&&!p.lot){const lot=b38LotFor(p.tpl,p.lw);if(lot){p.lot=lot;p.ap=now;p.st='building';p.why='';n++}}
     if(p.st==='pending'&&S.town.fund+(+p.got||0)>=bizTpl()[p.tpl].cost){b38Fund(p,now);n++}
     if(p.st==='building'&&now>=b38OpenAt(p)){b38Open(p,b38OpenAt(p));n++}}return n}
 function b38Open(p,t){const T=bizTpl()[p.tpl];p.st='open';const k=T.keeper||('bk'+p.lot);S.town.built=S.town.built.filter(b=>b.lot!==p.lot);S.town.built.push({tpl:p.tpl,name:p.name,lot:p.lot,keeper:k,opened:t,id:p.id});if(S.town.built.length>7)S.town.built.shift();
-  try{newsPush('opening',`${p.name} opened on ${byId[p.lot].name} with a ribbon-cutting!`,'townhall',t,['odalie'],true)}catch(e){}try{addEntry('Town',`${p.name} had its grand opening today. Mayor Odalie cut the ribbon with very long scissors.`,byId[p.lot].name,t)}catch(e){}return p}
+  try{newsPush('opening',`${p.name} opened on ${byId[p.lot].name} with a ribbon-cutting!`,'townhall',t,['odalie'],true)}catch(e){}try{if(dreamCheck('event',p.tpl,t)&&p.by==='mocha')addEntry('Town',`${p.name} is open. That was MY petition. I keep walking past just to look at it.`,byId[p.lot].name,t+60e3)}catch(e){}/* fix1: Mocha's civic dream completes */try{addEntry('Town',`${p.name} had its grand opening today. Mayor Odalie cut the ribbon with very long scissors.`,byId[p.lot].name,t)}catch(e){}return p}
 // Mocha files from a biz: want (B30 wantDecay calls this when w > .7)
 function fileMochaPetition(k,why){if(!S||!S.town)return false;b38Fix(S);const tpl=bizTpl()[k]?k:b38Match(k);if(!tpl)return false;const r=b38New(tpl,'mocha',null,Date.now(),[]);if(!r.ok)return r.why==='dup';
   try{addEntry('Town',`I filed a petition at Town Hall for ${r.p.name}${why?', because '+String(why).slice(0,60):''}. Marigold stamped it twice. Now I need signatures!`,'Town Hall',r.p.filed,true)}catch(e){}try{newsPush('petition',`Mocha filed a petition for ${r.p.name}`,'townhall',r.p.filed,['marigold'],true)}catch(e){}B38.dirty=1;return true}
@@ -13919,7 +13928,7 @@ function b38Line(id,vo,nm,tb){const L=B38L[id],r=Math.floor(Math.random()*9);if(
 function b38Council(o){o=o||{};if(!S||!S.town)return null;b38Fix(S);const now=Date.now(),L=S.town.petitions.filter(p=>p.st==='sigs'&&(o.force||now>=p.voteAt-2*36e5)),out=[];
   B38.bub.length=0;let dl=0;if(!L.length){const b=[];for(const [id] of B38C){const t=id==='odalie'?'No petitions tonight. Meeting adjourned.':'Seconded!';b.push({id,text:t});B38.bub.push({id,text:t})}b.forEach((x,i)=>setTimeout(()=>{try{npcSay(x.id,x.text,3.4)}catch(e){}},i*700));S.town.cn=dkey(now);return{n:0,bubbles:b,results:[]}}
   for(const p of L){const r=b38Decide(p,now,true);if(!r)continue;const b=r.v.map(x=>({id:x[0],vote:x[1],text:b38Line(x[0],x[1],p.name)}));if(r.tie){const o=r.v[0];b.push({id:'odalie',vote:o[4],text:b38Line('odalie',0,p.name,o[4]),tb:1})}
-    b.forEach(x=>{B38.bub.push(x);const d=dl;dl+=900;setTimeout(()=>{try{npcSay(x.id,x.text,3.6)}catch(e){}},d)});dl+=600;out.push({id:p.id,name:p.name,st:p.st,y:r.y,n:r.n,tie:r.tie,why:p.why,bubbles:b})}
+    b.forEach(x=>{B38.bub.push(x);const d=dl;dl+=2600;setTimeout(()=>{try{npcSay(x.id,x.text,2.5)}catch(e){}},d)});dl+=600;out.push({id:p.id,name:p.name,st:p.st,y:r.y,n:r.n,tie:r.tie,why:p.why,bubbles:b})}
   B38.dirty=1;try{b38Board()}catch(e){}try{save()}catch(e){}return{n:out.length,results:out,bubbles:B38.bub.slice()}}
 // the notice board: the B38 lines (B36 owns the board; b38BoardLines() is its feed)
 function b38BoardLines(){const T=S.town,L=[];for(const p of T.petitions.slice().reverse()){if(L.length>=4)break;
@@ -13930,15 +13939,15 @@ function b38Board(){const L=b38BoardLines();if(!L.length)return false;if(typeof 
 function b38FileUser(text,by){by=by||'you';const tpl=b38Match(text);if(!tpl)return{ok:false,why:'nomatch',line:"Hmm. I don't have a form for that one yet. Could you describe it another way? A shop, a park, a venue?"};const now=Date.now(),nm=b38Name(text,tpl);
   const r=b38New(tpl,by,nm,now,by==='you'?[]:[by]);if(!r.ok)return Object.assign(r,{line:r.why==='dup'?`There is already a petition for ${r.p?r.p.name:'that'}. Ask folks to sign it!`:'The petition tray is full. Let the council catch up first.'});
   try{newsPush(by==='you'?'you':'petition',`${by==='you'?youName():by==='mocha'?'Mocha':(CASTB[by]?CASTB[by].name:by)} filed a petition for ${r.p.name}`,'townhall',now,['marigold'],by==='mocha')}catch(e){}B38.dirty=1;try{save()}catch(e){}
-  return Object.assign(r,{tpl,line:`Stamped and filed: ${r.p.name}. *thunk* The council votes ${new Date(r.p.voteAt).toLocaleDateString('en-US',{weekday:'long'})} at six. Gather signatures before then!`})}
+  return Object.assign(r,{tpl,line:`Stamped and filed: ${r.p.name}. *thunk* The council votes ${r.p.voteAt-Date.now()>30*36e5?'next '+new Date(r.p.voteAt).toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}):new Date(r.p.voteAt).toLocaleDateString('en-US',{weekday:'long'})} at six. Gather signatures before then!`})}
 // signing: townsfolk sign by tier (yours for your petitions, Mocha's bond for his) and values; k = petition id or index (default: the newest open one by you)
 function b38Pick(k,by){const L=S.town.petitions;if(k!=null&&typeof k==='object')return k;if(typeof k==='number')return L[k]||null;if(k)return L.find(p=>p.id===k||p.tpl===k)||null;return L.slice().reverse().find(p=>p.st==='sigs'&&(!by||p.by===by))||L.slice().reverse().find(p=>p.st==='sigs')||null}
 function b38SignP(pid,k,force){const p=b38Pick(k,'you'),c=CASTB[pid];if(!p)return{ok:false,why:'none',line:'Sign what, now?'};if(!c&&pid!=='mocha')return{ok:false,why:'who'};if(p.st!=='sigs')return{ok:false,why:'closed',line:'That one already went before the council.'};if(p.sigs.includes(pid))return{ok:false,why:'signed',line:'Already signed it! My best handwriting, too.'};
   const T=bizTpl()[p.tpl],cm=B38C.find(x=>x[0]===pid),val=cm?T.tags.reduce((a,t)=>a+(cm[1][t]||0),0):((wxHash(pid+p.tpl)%70)/100-.3),tier=pid==='mocha'?3:p.by==='mocha'?tierOf(bondOf(pid)):tierOf((relOf(pid)||[0])[0]),pr=.3+.18*tier+.3*val+(p.sigs.length>=3?.1:0);
   const yes=force||pid===p.by||seeded(wxHash(pid+p.id))()<pr;if(!yes)return{ok:false,why:'no',p:+pr.toFixed(2),line:pick(["Hmm, I'm not sure the town needs that. Get a few more names and ask me again?",'Let me sleep on it. Ask me again when more folks have signed.'])};
-  p.sigs.push(pid);B38.dirty=1;try{save()}catch(e){}return{ok:true,n:p.sigs.length,line:pick([`Happy to! *signs with a flourish* That makes ${p.sigs.length}.`,`For ${p.name}? Of course. ${p.sigs.length} names now!`,`Signed! Tell the council I said hello.`])}}
+  p.sigs.push(pid);B38.dirty=1;try{save()}catch(e){}return{ok:true,n:p.sigs.length,line:pick([`Happy to! *signs with a flourish* That makes ${p.sigs.length}.`,`For ${p.name}? Of course. ${p.sigs.length} name${p.sigs.length===1?'':'s'} now!`,`Signed! Tell the council I said hello.`])}}
 // donations (the user's own coins, at the desk or the board): only toward an approved-pending-funding campaign
-function b38Donate(n,who){const p=S.town.petitions.find(q=>q.st==='pending');n=Math.round(+n)||0;if(!p||n<=0)return{ok:false,why:p?'n':'none'};if(who==='mocha'){if(S.coins<n)return{ok:false,why:'coins'};S.coins-=n}else{if(typeof addCoins!=='function'||S.you.coins<n)return{ok:false,why:'coins'};addCoins(-n,'b38:fund')}
+function b38Donate(n,who){const p=S.town.petitions.find(q=>q.st==='pending');n=Math.round(+n)||0;if(!p||n<=0)return{ok:false,why:p?'n':'none'};if(who==='mocha'){if(S.coins<n)return{ok:false,why:'coins'};S.coins-=n;try{if(S.econ&&S.econ.mc>=0)S.econ.mc-=n}catch(e){}}else{if(typeof addCoins!=='function'||S.you.coins<n)return{ok:false,why:'coins'};addCoins(-n,'b38:fund')}
   p.got=(+p.got||0)+n;if(S.town.fund+p.got>=bizTpl()[p.tpl].cost)b38Fund(p,Date.now());B38.dirty=1;try{b38ThermDraw()}catch(e){}try{save()}catch(e){}return{ok:true,got:p.got,st:p.st}}
 // HIS acts (localChoose weighs them; no user term): attend council night; drop coins in the Town Fund jar while a campaign runs
 const B38ACT={p:'townhall',s:'bench1',doing:'watching the town council vote',tags:['people','learning'],need:{social:20,curious:25},b38:1,lines:['Sat on the public bench at Town Hall and watched the council vote. Mayor Odalie stood on one leg the whole time.'],
@@ -13970,7 +13979,7 @@ function b38Chips(id){const L=[],my=S.town.petitions.filter(p=>p.by==='you'&&p.s
   else if(my.length&&!my[0].sigs.includes(id))L.push({l:'Sign my petition?',f:()=>{const r=b38SignP(id,my[0].id);tkSay(r.line||'…',{src:'b38'});tkChipsRender()}});
   const c=CASTB[id];if(c&&c.b38&&byId[c.b38])L.push({l:"What's in stock?",f:()=>{let s=[];try{s=stockFor(c.b38).slice(0,4).map(e=>{const it=CAT.by[e.code];return it?`${it.name} (${priceOf(c.b38,e)} 🪙)`:''}).filter(Boolean)}catch(e){}tkSay(s.length?'Fresh today: '+s.join(', ')+'.':'Still unpacking boxes! Come back soon.',{src:'b38'})}});return L}
 {const nc0=npcChips;npcChips=function(id){if(id==='marigold'&&TK.page==='b38')return b38Chips(id);const L=nc0.apply(this,arguments);try{if(TK.page!==1&&TK.gv!==id){const X=b38Chips(id);if(X.length)L.splice(Math.min(1,L.length),0,...X);if(L.length>6)L.length=6}}catch(e){}return L}}
-{const nt0=npcTyped;npcTyped=function(id,t){if(id==='marigold'&&TK.b38==='file'){TK.b38=null;const r=b38FileUser(t,'you');return Promise.resolve({text:r.line,src:'b38',intent:'petition'})}return nt0.apply(this,arguments)}}
+{const nt0=npcTyped;npcTyped=function(id,t){if(id==='marigold'&&TK.b38==='file'&&TK.page==='b38'){TK.b38=null;const r=b38FileUser(t,'you');return Promise.resolve({text:r.line,src:'b38',intent:'petition'})}return nt0.apply(this,arguments)}}
 // ---------- hooks ----------
 function b38State(){const T=S.town;return{fund:T.fund,cn:T.cn,petitions:T.petitions.map(p=>({id:p.id,tpl:p.tpl,name:p.name,by:p.by,sigs:p.sigs.slice(),st:p.st,voteAt:p.voteAt,lot:p.lot||null,stage:p.st==='building'?b38Stage(p,Date.now()):p.st==='open'?7:null,res:p.res||null,why:p.why||''})),built:T.built.slice(),
   lots:Object.fromEntries(Object.entries(B38.lots).map(([k,v])=>[k,{st:v.st,meshes:v.g?v.g.children.length:0,kids:v.g?(()=>{let n=0;v.g.traverse(q=>{if(q.isMesh)n++});return n})():0,glow:v.gi.map(i=>i>=0?+GLOWPTS.A[i].toFixed(2):null)}])),board:b38BoardLines(),bub:B38.bub.slice(-12),ms:B38.ms}}
@@ -14092,14 +14101,14 @@ function youPts(id){const r=S.you&&S.you.rel&&S.you.rel[id];return r?r[0]:0}
 function youTier(id){const p=typeof id==='number'?id:youPts(id);let i=0;while(i<YT.length-1&&p>=YT[i+1])i++;return i}
 const NICK={gus:'Captain',chip:'Player Two',pearl:'Dollface',monty:'our Leading Star',hank:'Chief',juniper:'sunshine',basil:'maestro',mabel:'bookworm',rosalind:'scholar',wendell:'neighbor',sol:'my muse',bea:'pal',willa:'sprout',luma:'little lamp',pippin:'crumb'};
 const SHTITLE={juniper:'my best barista',pippin:'my best baker',rosalind:'my star shelver',mabel:'my favorite shelver',basil:'my crate-digger',hank:'Chief Stacker',gus:'my first mate',willa:'my best gardener',pearl:'my wrapping wizard',wren:'my wool wizard'};
-const FGIFT={basil:['a record from the back room',/vinyl|record(?! player)/i],mabel:['a pressed-flower bookmark',/bookmark/i],gus:['a fish doormat',/doormat/i],juniper:['a chalkboard mug',/mug/i],pearl:['a vintage brooch',/brooch/i],hank:['a little birdhouse',/birdhouse/i],sol:['a tiny watercolor',/painting|print/i],wendell:['a jar of tomato jam',/jam|jar/i]};
+const FGIFT={basil:['a record from the back room',null],mabel:['a pressed-flower bookmark',null],gus:['a fish doormat',null],juniper:['a speckled mug','mug'],pearl:['a vintage brooch',null],hank:['a bird feeder he built','bfd'],sol:['a tiny watercolor',null],wendell:['a cookie jar (full)','ccj']};// fix1: explicit catalog codes; a gift with no catalog item is a keepsake note and never promises an item for your house
 function b36Note(t,txt){try{const V=S.visYou;if(!V||!Array.isArray(V.mb))return;V.mb.push([t||Date.now(),String(txt).slice(0,140)]);V.mb=V.mb.slice(-8);S.you.home.mb=Math.min(9,(S.you.home.mb|0)+1)}catch(e){}}
 function b36Cat(re){try{for(const c in CAT.by){const it=CAT.by[c];if(it&&re.test(it.name||''))return c}}catch(e){}return null}
 // hearts in, unlocks out (a tier crossing fires its unlock once: flag bits in rel[6])
 function youRelAdd(id,n,why){if(!CASTB[id]||id==='mocha')return null;let r=relOf(id,false);if(!r){const now=Date.now();r=S.you.rel[id]=[0,now,now,0,dkey(now),0,0]}const t0=youTier(r[0]);r[0]=Math.max(0,Math.min(999,r[0]+(+n||0)));const out=relUnlock(id,r);out.from=t0;return out}
 function relUnlock(id,r){const c=CASTB[id],nm=c?c.name.split(' ')[0]:id,me=youName(),t=youTier(r[0]),now=Date.now(),got=[];let gift=null;
   if(t>=1&&!(r[6]&8)){r[6]|=8;got.push('acquaintance')}
-  if(t>=2&&!(r[6]&16)){r[6]|=16;got.push('friend');const F=FGIFT[id];const g=F?F[0]:'a little thank-you',code=F?b36Cat(F[1]):null;if(code)try{putItem(code,0);catOwn(code)}catch(e){}gift={what:g,code};b36Note(now,`for your house, ${me}. friends trade! (${g}) -${nm}`);try{toast(`🎁 ${nm} counts you as a friend: ${g} for your house`)}catch(e){}try{newsPush('you',`${nm} and ${me} are friends now`,c&&c.k?c.k.shop:'',now,[id])}catch(e){}}
+  if(t>=2&&!(r[6]&16)){r[6]|=16;got.push('friend');const F=FGIFT[id];const g=F?F[0]:'a little thank-you',code=F&&F[1]&&typeof CAT!=='undefined'&&CAT&&CAT.by&&CAT.by[F[1]]?F[1]:null;if(code)try{putItem(code,0);catOwn(code)}catch(e){}gift={what:g,code};b36Note(now,code?`for your house, ${me}. friends trade! (${g}, it's in your storage) -${nm}`:`a little keepsake for you, ${me}: ${g}. friends trade! -${nm}`);try{toast(code?`🎁 ${nm} counts you as a friend: ${g} for your house`:`💌 ${nm} counts you as a friend (${g})`)}catch(e){}try{newsPush('you',`${nm} and ${me} are friends now`,c&&c.k?c.k.shop:'',now,[id])}catch(e){}}
   if(t>=3&&!(r[6]&32)){r[6]|=32;got.push('good friend');const B=BIBLE[id]||[];b36Note(now,`come find me some evening${B[1]?' ('+String(B[1]).slice(0,60)+')':''}. bring ${NICK[id]?'yourself, '+NICK[id]:'a friend'} -${nm}`)}
   if(t>=4&&!(r[6]&64)){r[6]|=64;got.push('close friend');b36Note(now,`a framed photo of us, for your wall. don't tell anyone my secret, ok? -${nm}`)}
   return{id,pts:r[0],tier:t,name:YTN[t],got,gift}}
@@ -14132,7 +14141,7 @@ function tevAct(e,t){const ev=tevNow(t);if(!ev||ev.id!==e.id)return false;const 
 // he reads the notice board on his own (daytime, once a day); a posted event that matches his interests weighs a little more that day
 const B36BRD={p:'square',at:[-30,24.2],doing:'checking the notice board',tags:['people'],need:{curious:15,social:5},fx:'board',hw:.3,ok:t=>{const h=hourAt(t);return h>=8&&h<20&&!(B36.read&&B36.read.dk===dkey(t))}};
 // a wish on holidays and his birthday (one of his coins)
-const B36WSH={p:'square',at:[-27.2,33],doing:'tossing a coin in the fountain',tags:['cozy'],need:{fun:10},fx:'wishm',hw:1.2,ok:t=>{try{const d=new Date(t),b=S.mem&&S.mem.bday,bd=b&&b.m===d.getMonth()+1&&b.d===d.getDate();return(S.coins|0)>=1&&S.mem.wishD!==dkey(t)&&(bd||holsOn(t).some(h=>h.big))&&hourAt(t)>=9&&hourAt(t)<20}catch(e){return false}}};
+const B36WSH={p:'square',at:[-27.2,33],doing:'tossing a coin in the fountain',tags:['cozy'],need:{fun:10},fx:'wishm',hw:1.2,ok:t=>{try{const d=new Date(t),b=S.mem&&S.mem.bday,bd=b&&b.m===d.getMonth()&&b.d===d.getDate();return(S.coins|0)>=1&&S.mem.wishD!==dkey(t)&&(bd||holsOn(t).some(h=>h.big))&&hourAt(t)>=9&&hourAt(t)<20}catch(e){return false}}};
 [...B36ACT,B36BRD,B36WSH].forEach(a=>{ACTS.push(a);I5.acts.push(a)});
 const TRIVQ=['the tallest mountain in Washington','orcas','the Space Needle','salmon runs','ferries','bats','libraries','the moon','volcanoes','coffee'];
 LOFX.tev=(act,t,live)=>{const e=TEVB[act.ev];i5Base(act,t,act.p,act.p+'.'+act.ev);if(!e)return null;const tr=S.traits||{},host=e.host&&CASTB[e.host]?CASTB[e.host].name.split(' ')[0]:'everyone';try{if(e.host&&typeof bondAdd==='function')bondAdd(e.host,2,'event',t)}catch(_){}
@@ -14144,7 +14153,7 @@ LOFX.tev=(act,t,live)=>{const e=TEVB[act.ev];i5Base(act,t,act.p,act.p+'.'+act.ev
   addEntry('Town',line,e.where||'',t);return e.id};
 LOFX.board=(act,t,live)=>{i5Base(act,t,'square','square.board');const d=dkey(t),e=tevOn(t),i=e&&e.tags?Math.max(0,...e.tags.filter(k=>k!=='people').map(k=>+((S.interests||{})[k]||0))):0;B36.read={dk:d,ev:e&&e.p&&i>0?e.id:null};
   addEntry('Town',e&&e.p?`Read the notice board in Lantern Square: ${e.n} today, ${tevTime(e)}.${i>0?' I might go! I like that kind of thing.':' Good to know.'}`:'Read the notice board in Lantern Square. Lost umbrella (still), a cat photo, and a poem someone pinned up. Good board.','Lantern Square',t);return B36.read};
-LOFX.wishm=(act,t,live)=>{i5Base(act,t,'square','square.wish');if((S.coins|0)<1)return null;S.coins-=1;S.mem.wishD=dkey(t);const w=pick(['that everyone I know has a cozy night','for snow, but the gentle kind','that Wendell finds the bottle cap he wants','for one more friend this year','that the mountain is out tomorrow']);
+LOFX.wishm=(act,t,live)=>{i5Base(act,t,'square','square.wish');if((S.coins|0)<1)return null;S.coins-=1;try{if(S.econ&&S.econ.mc>=0)S.econ.mc-=1}catch(e){}S.mem.wishD=dkey(t);const w=pick(['that everyone I know has a cozy night','for snow, but the gentle kind','that Wendell finds the bottle cap he wants','for one more friend this year','that the mountain is out tomorrow']);
   addEntry('Wishes',`Tossed one of my coins into the Lantern Square fountain. Plink! I wished ${w}. (I'm not supposed to say. I just did. Oops.)`,'Lantern Square',t);if(live)try{sfx('coin')}catch(e){}return w};
 // the calendar shares the events: the selected day's event goes into its day box
 {const rc=renderCal;renderCal=function(){rc.apply(this,arguments);try{const el=$('#tab-cal .calDay .cdh');if(!el||!CAL.sel)return;const d=dFromKey(CAL.sel),e=tevOn(d.getTime());if(!e)return;const x=document.createElement('div');x.className='hd';x.innerHTML=`<span>${e.e}</span><div><b>${esc(e.n)}</b><small>${esc(tevTime(e)+(e.where?' · '+e.where:'')+' · '+e.info)}</small></div>`;el.after(x)}catch(e){}};TABS.R.cal=renderCal}
@@ -14194,7 +14203,7 @@ function npcRequest(id,peek){if(!S||!S.you)return null;const L=S.you.req||[];con
   const off=rqOffers().find(o=>o.k===id);if(peek)return ready>=0||!!off;if(ready>=0){const q=L[ready],t=rqT(q)||{},r=rqFinish(ready);return r?(t.done||'thank you!'):null}
   if(off){const q=rqAccept(off);if(!q)return'you already have your hands full! another day';return(rqT(q)||{}).ask}return null}
 // talking to someone completes what you carried to them (deliver / relay), or what you found for them
-{const to=talkOpen;talkOpen=function(id,o){const r=to.apply(this,arguments);try{if(TK.open&&TK.id===id&&id!=='mocha'&&id!=='board'&&npcRequest(id,true)){const L=S.you.req||[];if(L.some(q=>(q.b===id&&(q.kind==='deliver'||q.kind==='relay'))||(q.k===id&&((q.kind==='lost'&&q.got)||(q.kind==='gosee'&&q.got)||(q.kind==='fetch'&&rqHave(q)>=q.n))))){const s=npcRequest(id);if(s){tkSay(tkVoice(id,s,'answer'),{src:'favor'});tkChipsRender()}}}}catch(e){}return r}}
+{const to=talkOpen;talkOpen=function(id,o){const r=to.apply(this,arguments);try{if(TK.open&&TK.id===id&&id!=='mocha'&&id!=='board'&&npcRequest(id,true)){const L=S.you.req||[];if(L.some(q=>(q.b===id&&(q.kind==='deliver'||q.kind==='relay'))||(q.k===id&&((q.kind==='lost'&&q.got)||(q.kind==='gosee'&&q.got)||(q.kind==='fetch'&&rqHave(q)>=q.n))))){const s=npcRequest(id);if(s){tkSay(tkVoice(id,s,'answer')+(TK.q&&TK.q.q?' '+tkVoice(id,TK.q.q,'ask'):''),{src:'favor'});tkChipsRender()}}}}catch(e){}return r}}// fix1: a first-meet question is asked again after the favor line, so its answer chips make sense
 // ---------- the walker's hand: one shared box / bag / envelope ----------
 function b36CarryBuild(){const g=new THREE.Group();g.name='b36carry';const mk=(geo,col,y)=>{const m=new THREE.Mesh(geo,lam(col));m.position.y=y;m.castShadow=false;g.add(m);return m};
   const box=mk(new THREE.BoxGeometry(.34,.22,.28),'#F2B8C8',0);
@@ -14221,8 +14230,8 @@ function b36Found(){const F=S.found;if(!F||!F.length||!mocha.visible||G.mode!=='
 const SHG={juniper:'latte',pippin:'latte',luma:'wrap',rosalind:'shelf',mabel:'shelf',basil:'shelf',rowan:'shelf',monty:'shelf',hank:'stack',gus:'stack',willa:'stack',kip:'stack',chip:'stack',bea:'stack',pearl:'wrap',wren:'wrap',otis:'wrap',dot:'wrap',sol:'wrap'};
 const SHPAY=[0,8,14,20];
 function shiftOk(k){const c=CASTB[k];if(!c||!c.k)return'who';const s=S.you.shc&&S.you.shc[k];if(s&&s[1]===b36Day())return'today';return''}
-function shiftDo(k,tier){const why=shiftOk(k);if(why)return{ok:false,why};tier=Math.max(1,Math.min(3,tier|0));const c=CASTB[k],nm=c.name.split(' ')[0],me=youName(),pay=SHPAY[tier],now=Date.now(),y=S.you,s=y.shc[k]||[0,0,0];
-  y.shc[k]=[s[0]+(tier>=2?1:0),b36Day(),s[2]+1];addCoins(pay,'shift');const h=youRelAdd(k,3,'shift');let st=0;try{st=stampShop(c.k.shop)}catch(e){}
+function shiftDo(k,tier){const why=shiftOk(k);if(why)return{ok:false,why};tier=Math.max(1,Math.min(3,tier|0));const c=CASTB[k],nm=c.name.split(' ')[0],me=youName(),pay=Object.keys(S.you.shc||{}).filter(x=>x!==k&&S.you.shc[x]&&S.you.shc[x][1]===b36Day()).length>=3?0:SHPAY[tier],now=Date.now(),y=S.you,s=y.shc[k]||[0,0,0];// fix1: three paid shifts a day; later ones still give hearts and stamps
+  y.shc[k]=[s[0]+(tier>=2?1:0),b36Day(),s[2]+1];if(pay)addCoins(pay,'shift');const h=youRelAdd(k,3,'shift');let st=0;try{st=stampShop(c.k.shop)}catch(e){}
   const title=y.shc[k][0]>=3&&SHTITLE[k]?SHTITLE[k]:'';try{newsPush('you',`${me} worked a shift at ${byId[c.k.shop].name}${title?` (${nm} calls ${me} "${title}")`:''}`,c.k.shop,now,[k])}catch(e){}save();
   return{ok:true,k,tier,pay,hearts:h,stamp:st,title,count:y.shc[k]}}
 const MG={on:false,el:null,cv:null,g:null,w:0,h:0,dpr:1,raf:0,last:0,acc:0,game:null,left:0,secs:0,score:0,done:null,P:{down:false,x:0,y:0,sx:0,sy:0}};
@@ -14272,7 +14281,7 @@ function mgStack(){const G0={cx:0,v:110,ap:null,msg:'',mt:0,n:0};return{help:'ta
   down(x){if(!G0.ap)G0.ap={x:MG.w/2,y:MG.h*.12,vy:0}},
   draw(g,w,h){g.fillStyle=MGC.wood;g.fillRect(w/2-30,h*.06,60,10);mgTxt(g,'🍎',w/2,h*.12,30);const cw=Math.min(120,w*.3),cy=h*.82;g.fillStyle=MGC.wood2;g.fillRect(G0.cx-cw/2,cy-20,cw,44);g.fillStyle='#4B2A1F';for(let i=0;i<3;i++)g.fillRect(G0.cx-cw/2,cy-12+i*14,cw,4);
     for(let i=0;i<Math.min(9,G0.n);i++)mgTxt(g,'🍎',G0.cx-cw/2+16+(i%4)*((cw-32)/3),cy-30-Math.floor(i/4)*14,18);if(G0.ap)mgTxt(g,'🍎',G0.ap.x,G0.ap.y,30);g.fillStyle=MGC.wood;g.fillRect(0,cy+26,w,6);if(G0.mt>0)mgTxt(g,G0.msg,w/2,h*.45,18,MGC.gold)},tier:s=>s>=12?3:s>=7?2:1}}
-function mgWrap(){const PAP=[['blue','#4A7AB0','loves the sea'],['red','#C45B4A','loves cherries'],['green','#5A9A5A','loves the forest'],['gold','#E9B949','loves sunshine'],['pink','#F29FB5','loves roses'],['purple','#7A5AA6','loves plums']],RIB=[['gold','#E9B949'],['silver','#C9CED6'],['white','#FFFFFF']],WHO=['my sister','my grandpa','a friend','my neighbor','my teacher','my cat (don\'t ask)'];
+function mgWrap(){const PAP=[['blue','#4A7AB0','loves the sea'],['red','#C45B4A','loves cherries'],['green','#5A9A5A','loves the forest'],['gold','#E9B949','loves sunshine'],['pink','#F29FB5','loves flamingos'],['purple','#7A5AA6','loves plums']],RIB=[['gold','#E9B949'],['silver','#C9CED6'],['white','#FFFFFF']],WHO=['my sister','my grandpa','a friend','my neighbor','my teacher','my cat (don\'t ask)'];
   const G0={c:null,p:-1,r:-1,msg:'',mt:0,box:0};const nc=()=>{const i=Math.floor(Math.random()*6),P=[i];while(P.length<3){const j=Math.floor(Math.random()*6);if(!P.includes(j))P.push(j)}P.sort(()=>Math.random()-.5);G0.c={pi:i,ri:Math.floor(Math.random()*3),who:pick(WHO),P};G0.p=G0.r=-1};
   const L=(w,h)=>{const s=Math.min(84,w/3.6),y1=h*.48,y2=h*.74;return{s,y1,y2,x:i=>w/2+(i-1)*(s+16)}};return{help:'pick the paper and the ribbon the customer describes',
   init(){nc()},step(dt){G0.mt-=dt;if(G0.box>0&&(G0.box-=dt)<=0)nc()},
@@ -14287,12 +14296,13 @@ const MGAMES={latte:[mgLatte,"Latte Rush! tap when the needle hits the green for
 async function shiftStart(k){if(B36.mg)return null;const why=shiftOk(k);if(why){try{toast(why==='today'?'you already worked a shift here today. come back tomorrow!':'no shifts here')}catch(e){}return null}B36.mg=1;try{talkClose(true)}catch(e){}
   const gk=SHG[k]||'wrap',[mk,help]=MGAMES[gk],c=CASTB[k],nm=c.name.split(' ')[0],s=S.you.shc[k];let tier=0;
   try{const go=await mgIntro(k,`${nm}: "${s&&s[0]>=3&&SHTITLE[k]?SHTITLE[k]+', you\'re back!':'oh, would you? thank you!'}" ${help}`);if(go)tier=await mgRun(mk(),50)}catch(e){console.error('B36 shift',e)}
-  let r=null;if(tier>0){r=shiftDo(k,tier);await mgCard('Shift done! '+'⭐'.repeat(tier),`${nm} pays you ${r.pay} coins and gives you a hug-sized thank-you (+3 hearts).${r.title?` "${r.title}!"`:''}`,'Thanks!')}mgOpen(false);B36.mg=0;
+  let r=null;if(tier>0){r=shiftDo(k,tier);await mgCard('Shift done! '+'⭐'.repeat(tier),`${r.pay?`${nm} pays you ${r.pay} coins and gives you`:`The till's done for today (three paid shifts a day), so ${nm} gives you`} a hug-sized thank-you (+3 hearts).${r.title?` "${r.title}!"`:''}`,'Thanks!')}mgOpen(false);B36.mg=0;
   try{if(c.obj&&r){emote(c.obj,'heart',1.8);npcSay(k,`${tier>=3?'amazing work':'thanks'}, ${youName()}!`,3)}}catch(e){}return r||{ok:false,why:'quit'}}
 // the talk card: "Need a hand today?" at an open counter, "Can I help? ❗" when they have a favor; extras go first, the topic chip yields
-{const nc=npcChips;npcChips=function(id){const L=nc(id);try{if(TK.page)return L;const c=CASTB[id];if(!c||c.kind==='pet')return L;const X=[];
+{const nc=npcChips;npcChips=function(id){const L=nc(id);try{if(TK.page===1&&TK.b36h===id&&npcRequest(id,true)){const n=L.length,o=L.filter(q=>!/^Can I help\?/.test(q.l));o.unshift({l:'Can I help? ❗',f:()=>tkAsk(id,'help')});while(o.length>n)o.splice(o.length-2,1);return o}// fix1: a favor moved off page one leads the More… page
+  if(TK.page)return L;const c=CASTB[id];if(!c||c.kind==='pet')return L;const X=[];
   if(c.k&&!shiftOk(id)&&byId[c.k.shop]&&isOpen(byId[c.k.shop])){X.push({l:'Need a hand today?',f:()=>{shiftStart(id)}})}
-  if(npcRequest(id,true))X.push({l:'Can I help? ❗',f:()=>tkAsk(id,'help')});if(!X.length)return L;const out=X.concat(L);for(const re of [/^Tell me about/,/^How's Mocha/,/^What's new/])if(out.length>5){const i=out.findIndex(q=>re.test(q.l));if(i>=0)out.splice(i,1)}return out}catch(e){return L}}}
+  if(npcRequest(id,true))X.push({l:'Can I help? ❗',f:()=>tkAsk(id,'help')});TK.b36h=null;if(!X.length)return L;const out=X.concat(L);const cut=re=>{if(out.length>5){const i=out.findIndex(q=>re.test(q.l));if(i>=0)out.splice(i,1)}};cut(/^What's new\?$/);if(out.length>5){const i=out.findIndex(q=>q.l==='Can I help? ❗');if(i>=0){out.splice(i,1);TK.b36h=id}}for(const re of [/^Tell me about/,/^How's Mocha/])cut(re);return out}catch(e){return L}}}// fix1: the topic and How's Mocha stay on page one (B23); What's new? goes first, then the favor moves to More…
 // ---------- the notice board: derived, redrawn daily and on change (512x384 on the B8 face; dark wood, cream paper) ----------
 function boardData(t){t=t||Date.now();const d=new Date(t),dow=d.getDay(),mon=new Date(d);mon.setDate(d.getDate()-((dow+6)%7));const week=[];for(let i=0;i<7;i++){const x=new Date(mon);x.setDate(mon.getDate()+i);const e=tevOn(x.getTime());if(e)week.push({id:e.id,e:e.e,n:e.n,when:x.toLocaleDateString([],{weekday:'short'})+' '+tevTime(e),today:x.getDay()===dow,dk:dkey(x)})}
   const bd=[];try{for(let i=0;i<7;i++){const x=new Date(t+i*864e5),md=String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');for(const id in BIBLE)if(BIBLE[id][2]===md&&CASTB[id])bd.push(CASTB[id].name.split(' ')[0]+(i?' '+x.toLocaleDateString([],{weekday:'short'}):' today!'))}}catch(e){}
@@ -14316,7 +14326,7 @@ function boardReqText(){const O=rqOffers().map(o=>`📌 ${CASTB[o.k].name} could
 // ---------- the wishing fountain: one coin a day; tomorrow's first find is a little luckier ----------
 function b36Wish(){const y=S.you,d=b36Day();if(y.wf===d)return{ok:false,why:'today'};if((y.coins|0)<1)return{ok:false,why:'coins'};addCoins(-1,'wish');y.wf=d;try{sfx('ding')}catch(e){}B36.plink=1.2;save();return{ok:true,day:d}}
 function b36Lucky(){try{return S.you.wf===dShift(b36Day(),-1)}catch(e){return false}}
-{const ng=natGather;natGather=function(i,o){const r=ng.apply(this,arguments);try{if(r&&r.ok&&b36Lucky()&&!B36.lucky){B36.lucky=b36Day();addCoins(3,'luck');toast('🍀 a lucky find (the fountain wish): +3 🪙')}}catch(e){}return r}}
+{const ng=natGather;natGather=function(i,o){const r=ng.apply(this,arguments);try{if(r&&r.ok&&b36Lucky()&&B36.lucky!==b36Day()&&S.you.wl!==b36Day()){B36.lucky=S.you.wl=b36Day();addCoins(3,'luck');toast('🍀 a lucky find (the fountain wish): +3 🪙')}}catch(e){}return r}}
 // ---------- Lantern Square: spray, pigeons, event dressing ----------
 const SQ={fx:-30,fz:33,sp:null,pos:null,pg:null,pd:[],m4:new THREE.Object3D(),near:false};
 function sqFrozen(t){t=t||Date.now();const m=new Date(t).getMonth();if(m!==11&&m!==0&&m!==1)return false;try{const w=WX.forDate(new Date(t));return!!(w&&w.snow)||wxKind(t)==='snow'||m===0}catch(e){return m===0}}
@@ -14422,7 +14432,7 @@ const ESEA={cozy:[1.1,1.05,1,.95,.95,.9,.9,.9,1,1.1,1.15,1.2],fun:[1.05,1.05,1,.
   flat:[1,1,1,1,1,1,1,1,1,1,1,1.05],out:[.6,.65,.85,1.1,1.25,1.3,1.35,1.3,1.1,.9,.75,.7],trav:[.75,.75,.85,.95,1.05,1.25,1.35,1.3,1.1,.95,.85,1]};
 const EDOW=[1.15,.85,.9,.92,.97,1.12,1.3],EEV={openmic:{records:1.3},film:{cinema:1.35},story:{library:1.2,bookstore:1.1},trivia:{cafe:1.2},artwalk:{studio:1.3,lantern:1.1},market:{market:1.3,bakery:1.15,grocery:1.05}};
 const EFACE=['😣','😕','🙂','😊','🤩'],ESTN={sale:'running a sale',spec:'trying a seasonal special',ev:'hosting an event',fav:'could use a hand',grant:'got a small town grant',brk:'on a short break',reno:'renovated',hire:'hiring',spons:'sponsoring a festival'};
-const econOn=()=>!!(S&&S.econ&&S.econ.biz);
+function econOn(){return!!(S&&S.econ&&S.econ.biz)}// fix1: hoisted, so shiftNow() works in the boot catchUp
 function econB(pid){if(!econOn()||!EB37[pid])return null;let b=S.econ.biz[pid];if(!b)b=S.econ.biz[pid]=[EB37[pid][0]*6,0x8888888,0,'',0,0,0,0,0,0];return b}
 const econNm=pid=>byId[pid]?byId[pid].name:pid,econK=pid=>{const k=KEEPERS.find(x=>x.shop===pid);return k||null};
 function econSale(pid,amt,who){const b=econB(pid);amt=Math.round(+amt)||0;if(!b||amt<=0)return 0;b[7]=Math.min(99999,b[7]+amt);return amt}
@@ -14457,10 +14467,10 @@ function econStrat(pid,b,x,r,H,fl){const E=EB37[pid],k=econK(pid),kn=k?k.name.sp
   if(b[3]&&x.dk<b[6])return;const was=b[3];b[3]='';b[6]=0;if(was==='hire'&&JOBR[pid])H.push([0,pid,'']);
   if(b[2]<=-1){if(r()>(b[2]===-2?.85:.6))return;let low=0;for(let i=0;i<4;i++)if(((b[1]>>(4*i))&15)<6)low++;
     if(b[2]===-2&&low>=4&&b[0]<E[0]*3&&r()<.3){b[3]='brk';b[6]=until(r()<.5?1:2);H.push([4,pid,`${nm} is on a short break. ${kn} says they'll be back in a day or two with a new idea`]);return}
-    const seq=['sale','spec','ev','fav','grant'],st=seq[b[9]%seq.length];b[9]++;if(st==='ev'&&!/records|cinema|cafe|bookstore|studio|library|arcade|lantern/.test(pid)){b[3]='sale';b[6]=until(3);H.push([3,pid,`${nm}: ${ESALE[pid]||'a sale this week'}`]);return}
+    const seq=['sale','spec','ev','fav','grant'],st0=seq[b[9]%seq.length],st=st0==='fav'&&!(k&&REQT.some(q=>q.k===k.id))?'grant':st0;b[9]++;if(st==='ev'&&!/records|cinema|cafe|bookstore|studio|library|arcade|lantern/.test(pid)){b[3]='sale';b[6]=until(3);H.push([3,pid,`${nm}: ${ESALE[pid]||'a sale this week'}`]);return}
     if(st==='grant'){const g=Math.min(S.econ.funds-fl[1],60);if(g<20){b[3]='sale';b[6]=until(3);return}fl[1]+=g;b[0]+=g;b[3]='grant';b[6]=until(3);H.push([3,pid,`Town Hall gives ${nm} a small grant (${g} coins) to get through a slow stretch`]);return}
     b[3]=st;b[6]=until(st==='fav'?2:3);H.push([3,pid,st==='sale'?`${nm} is running a sale: ${ESALE[pid]||'20% off'}`:st==='spec'?`New at ${nm}: ${ESPEC[pid]||'a seasonal special'}`:st==='ev'?`${kn} is hosting a night at ${nm} to bring folks in`:`${kn} at ${nm} could use a hand this week`]);return}
-  if(b[2]>=1&&r()<.3){const nb=[0,1,2,3].filter(i=>!(b[4]&(1<<i)));if(nb.length&&b[0]>E[0]*5&&r()<.5){const i=nb[0];b[4]|=1<<i;b[0]-=E[0]*3;b[3]='reno';b[6]=until(4);H.push([3,pid,`${nm} got a fresh look: ${['a new striped awning','window boxes full of ferns','wall lanterns by the door','a stone base under the windows'][i]}`]);return}
+  if(b[2]>=1&&r()<.3){const nb=[0,1,2,3].filter(i=>!(b[4]&(1<<i)));if(nb.length&&b[0]>E[0]*5&&r()<.5){const i=nb[0];b[4]|=1<<i;b[0]-=E[0]*3;b[3]='reno';b[6]=until(4);H.push([3,pid,`${nm} fixed up the inside: ${['new shelves along the back wall','a fresh coat of paint behind the counter','a cozy new reading corner','new lamps over the counter'][i]}`]);return}
     if(JOBR[pid]&&b[0]>E[0]*3&&r()<.5&&Object.values(S.econ.biz).filter(q=>q[3]==='hire'&&x.dk<q[6]).length<2&&!(S.career&&S.career.j&&S.career.j.b===pid)){b[3]='hire';b[6]=until(7);H.push([2,pid,`${nm} is hiring: a part-time ${JOBR[pid][0]}`]);return}
     if(b[2]===2&&b[0]>E[0]*6){const d=Math.round(E[0]*.8);b[0]-=d;fl[0]+=d;b[3]='spons';b[6]=until(3);H.push([2,pid,`${nm} is sponsoring this weekend's festival (${d} coins to the town)`]);return}}}
 // one day of the town's money (data only; < 2 ms)
@@ -14488,7 +14498,7 @@ function townRent(n){n=Math.round(+n)||0;if(!econOn()||n<=0)return 0;S.econ.fund
 {const ob=orderBuy;orderBuy=function(code){const c0=S.you.coins|0;B37.inBuy++;let r;try{r=ob.apply(this,arguments)}finally{B37.inBuy--}try{if(r&&r.ok)econSale('evergreen',c0-(S.you.coins|0),'you')}catch(e){}return r}}
 {const ac=addCoins;addCoins=function(n,code,src){const r=ac.apply(this,arguments);try{if(!B37.inBuy&&econOn()){n=Math.round(+n)||0;
   if(code==='fish'&&n>0)econCost('market',n);else if((code==='rod'||code==='pot')&&n<0)econSale('market',-n,'you');else if(code==='sell'&&n>0&&IN.on&&EB37[IN.pid])econCost(IN.pid,n);
-  else if(n<0&&!/^(wish|jar|paint|mp|test|div|cat|luck)$/.test(String(code))&&IN.on&&EB37[IN.pid])econSale(IN.pid,-n,'you')}}catch(e){}return r}}
+  else if(n<0&&!/^(wish|jar|paint|mp|test|div|cat|luck|b38:fund)$/.test(String(code))&&IN.on&&EB37[IN.pid])econSale(IN.pid,-n,'you')}}catch(e){}return r}}
 {const sd=shiftDo;shiftDo=function(k,tier){const c0=S.you.coins|0,r=sd.apply(this,arguments);try{const d=(S.you.coins|0)-c0,c=CASTB[k],pid=c&&c.k&&c.k.shop;if(d>0&&pid)econCost(pid,d)}catch(e){}return r}}
 {const pj=payJob;payJob=function(act,t,live){const pay=pj.apply(this,arguments);try{if(act&&act.p)econCost(act.p,pay);const C=S.career,tg=(act.tags||[]).filter(x=>x!=='helping'),i=Math.max(0,...tg.map(k=>+((S.interests||{})[k]||0))),r=seeded(catHash('oj:'+(+t||0)));
   if(C&&(i>0||r()<.5)){C.oj=Math.min(999,C.oj+1);if(C.oj===2&&!C.j)addEntry('Work',`Helping out at ${act.p&&byId[act.p]?byId[act.p].name:'the shop'} was actually fun. Twice now. Maybe work isn't so bad when it's somewhere you like.`,act.p&&byId[act.p]?byId[act.p].name:'',(+t||Date.now())+1)}}catch(e){}return pay}}
@@ -14527,7 +14537,7 @@ function jobFit(pid,t){const R=JOBR[pid],p=byId[pid];if(!R||!p)return 0;const I=
   return Math.max(0,Math.min(1,.4*Math.tanh(i/5)+.25*Math.min(1,bt/3)+(w&&w.ok?.2:0)+.15*Math.min(1,R[3]/24)+(b&&b[3]==='hire'?.1:0)-(S.career&&S.career.past.some(x=>x.b===pid&&x.why==='low')?.3:0)))}
 function careerReady(t){const C=S.career;t=+t||Date.now();let r=0;if(t-(+S.born||t)>=5*864e5)r+=.2;const c=S.coins|0,w=(S.wants||[]).filter(x=>(+x.c||0)>c);if(w.length)r+=.15+Math.min(.1,w.length*.03);
   if(S.goal&&S.goal.kind==='save')r+=.2;else{try{if(S.dreams&&S.dreams.a.some(a=>{const s=dreamStep(a);return s&&s[0]==='save'}))r+=.15}catch(e){}}
-  const tr=S.traits||{};r+=(+tr.sociability||0)*.08+(+tr.curiosity||0)*.05+(+tr.adventure||0)*.04;if(C.oj>=2)r+=.1;if(c<40)r+=.08;return Math.max(0,Math.min(1,+r.toFixed(3)))}
+  const tr=S.traits||{};r+=(+tr.sociability||0)*.08+(+tr.curiosity||0)*.05+(+tr.adventure||0)*.04;if(C.oj>=2||(S.jobs|0)>=4)r+=.1;if(c<40)r+=.08;return Math.max(0,Math.min(1,+r.toFixed(3)))}
 function careerWhy(){const g=S.goal;if(g&&g.kind==='save'&&g.key){const it=catItem(String(g.key).split(':')[1]);if(it)return`I want ${/^[aeiou]/i.test(it.name)?'an':'a'} ${it.name.toLowerCase()}`}const w=(S.wants||[]).filter(x=>(+x.c||0)>(S.coins|0)).sort((a,b)=>b.w-a.w)[0];
   if(w){const it=catItem(String(w.id).split(':')[1]);if(it)return`I want ${/^[aeiou]/i.test(it.name)?'an':'a'} ${it.name.toLowerCase()}`}return'I want to make something of my days'}
 function careerAnnounce(t,live){const C=S.career,dk=dkey(t);if(C.j||C.st||C.ann===dk)return false;C.st='look';C.ann=dk;C.lk=dk;addEntry('Work',`I think I want a job. Not because I have to. Because ${careerWhy()}. I'm going to go read the help-wanted signs in Lantern Square.`,'',t,true);try{if(live)toast('💼 Mocha is thinking about getting a job (his idea!)')}catch(e){}return true}
@@ -14557,7 +14567,7 @@ function careerNight(now,days){if(!careerOn())return;const C=S.career,dk=dkey(no
     return}
   C.rd=careerReady(now);if(C.st==='iv'&&C.iv&&C.iv.d<dk){careerHire(+dFromKey(C.iv.d)+C.iv.h*36e5,false);return}
   if(C.st==='look'&&C.lk&&C.lk<dk){careerHunt(t,false);return}
-  if(!C.st&&!C.fl&&C.rd>.6&&dk>=C.brk)careerAnnounce(t,false)}
+  if(!C.st&&!C.fl&&C.rd>.6&&dk>=C.brk&&now-(+S.born||now)>=5*864e5)careerAnnounce(t,false)}// fix1: never in his first 5 days
 function jobReady(v){if(!careerOn())return null;const C=S.career,now=Date.now();if(v!=null){C.rd=Math.max(0,Math.min(1,+v||0));if(C.rd>.6&&!C.j&&!C.st){C.fl='';C.ann=0;C.brk=0;careerAnnounce(now,true)}}return careerSnap()}
 // the scheduled acts: shifts (+8 in his hours; sleep wins), the hunt, the interview, freelance
 function shiftNow(t){const C=S&&S.career,j=C&&C.j;if(!j)return false;const d=new Date(t),h=hourAt(t),p=byId[j.b];if(!p||!j.dw.includes(d.getDay())||h<j.h[0]||h>=j.h[1]-.2)return false;if(asleepAt(h,t))return false;try{if(!isOpen(p,h,d.getDay()))return false}catch(e){}const b=econOn()&&S.econ.biz[j.b];return!(b&&b[3]==='brk'&&dkey(t)<=b[6])}
@@ -14675,7 +14685,7 @@ function b5bPetWire(el){const go=el.querySelector('.b5bGo'),i=el.querySelector('
   el.querySelectorAll('.b5bDon').forEach(b=>b.onclick=()=>{const r=b38Donate(10,'you');if(o)o.textContent=r.ok?(r.st==='building'?'that did it: construction starts!':'clink! thank you. the jar is fuller.'):r.why==='coins'?'(you need 10 coins)':'(no campaign right now)';if(r.ok)setTimeout(()=>{try{if($('#tab-biz.on'))renderBiz()}catch(e){}},1200)})}
 {const st=document.createElement('style');st.textContent=`.bzP small{display:block;opacity:.75;font-size:12px}.bzP .b5bDon,.b5bGo{border:0;border-radius:999px;padding:6px 14px;min-height:36px;font:inherit;font-size:12px;font-weight:800;background:var(--teal,#2f6f62);color:#fff;cursor:pointer;margin-top:4px}
 .touch .bzP .b5bDon,.touch .b5bGo{min-height:44px}.b5bFile{display:flex;gap:6px;margin:8px 0 2px}.b5bIn{flex:1;min-width:0;border:1px solid rgba(0,0,0,.15);border-radius:12px;padding:8px 10px;font:inherit;font-size:16px;background:var(--paper,#fffaf2);color:inherit;min-height:44px;box-sizing:border-box}.b5bOut{margin:2px 0 6px;font-size:12px}
-#tab-town>.subnav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}#tab-town>.subnav::-webkit-scrollbar{display:none}#tab-town>.subnav>button{flex:0 0 auto}`;document.head.appendChild(st)}
+#tab-town>.subnav{flex-wrap:wrap;row-gap:6px;overflow-x:visible}#tab-town>.subnav::-webkit-scrollbar{display:none}#tab-town>.subnav>button{flex:0 0 auto}`;document.head.appendChild(st)}
 // B38 businesses get B37 ledgers: a profile by template category ([base, rain x, sun x, season curve, skill])
 const B5BCAT={food:[100,1.08,.97,'cozy',1.02],hobby:[70,1.1,.95,'gift',1],culture:[90,1.15,.9,'fun',1.01],outdoors:[50,.72,1.28,'out',1],maritime:[80,.85,1.2,'trav',1],civic:[60,1,1,'flat',1]};
 function b5bEcon(id,tpl){try{if(!id||EB37[id]||!byId[id])return false;const T=bizTpl()[tpl];if(!T)return false;EB37[id]=(B5BCAT[T.c]||B5BCAT.civic).slice();return true}catch(e){return false}}
