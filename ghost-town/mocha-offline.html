@@ -2014,6 +2014,7 @@ function fresh(){const tr=()=>+(Math.random()).toFixed(2);return{v:1,wend:wendFr
 {const f4=fresh;fresh=function(){const s=f4();natFix(s.you);return s}}
 {const f5=fresh;fresh=function(){const s=f5();b40Fix(s.you);return s}}
 {const f39=fresh;fresh=function(){const s=f39();s.condo=condoFix(null);return s}}// B39
+{const fW2=fresh;fresh=function(){const s=fW2();tamFix(s);return s}}// W2: S.tam
 {const f36=fresh;fresh=function(){const s=f36();b36Fix(s);return s}}// B36
 {const f37=fresh;fresh=function(){const s=f37();b37Fix(s);return s}}// B37
 {const f38=fresh;fresh=function(){const s=f38();b38Fix(s);return s}}// B38
@@ -2034,6 +2035,7 @@ function migrate(){S.you=youFix(S.you);S.wend=wendFix(S.wend);S.town=townFix(S.t
   try{if(typeof natFix==='function')natFix(S.you)}catch(e){}
   try{if(typeof b40Fix==='function')b40Fix(S.you)}catch(e){}
   try{if(typeof condoFix==='function')S.condo=condoFix(S.condo)}catch(e){S.condo={rent:{},due:0}}// B39
+  try{if(typeof tamFix==='function')tamFix(S)}catch(e){}// W2: S.tam
   try{if(typeof b36Fix==='function')b36Fix(S)}catch(e){}// B36
   try{if(typeof b37Fix==='function')b37Fix(S)}catch(e){}// B37
   try{if(typeof b38Fix==='function')b38Fix(S)}catch(e){}// B38
@@ -2281,7 +2283,7 @@ function applyTier(sw){const T=TIER,n=T.n,f=T.f=tierF(n);T.rzK=String(f.msaa);T.
 function tierFade(fn){let el=document.getElementById('gfxFade');if(!el){el=document.createElement('div');el.id='gfxFade';el.style.cssText='position:fixed;inset:0;background:#2A2230;opacity:0;pointer-events:none;transition:opacity .15s';cv.insertAdjacentElement('afterend',el)}
  el.style.transition='none';el.style.opacity='.6';void el.offsetWidth;try{fn()}catch(e){TIER.fail.push('fade:'+e.message)}requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.transition='opacity .3s';el.style.opacity='0'}))}// dim at once, apply, fade back in over 300 ms
 // a switch: 'auto' | 'low' | 'phone' | 'high' | 'ultra' | 0..3. Clears ADAPT's demotions; SET.gfx/SET.saver follow unless o.keep; o.now skips the fade (hooks, context restore)
-function tierSet(v,o){const T=TIER,m={low:0,phone:1,high:2,ultra:3};o=o||{};let n;if(v==='auto'||v==null){T.auto=true;n=T.autoN}else{n=typeof v==='number'?v:m[v];if(n==null)return tierInfo();T.auto=false}n=Math.max(0,Math.min(3,n|0));
+function tierSet(v,o){const T=TIER,m={low:0,phone:1,high:2,ultra:3,med:1,medium:1};o=o||{};if(typeof v==='string')v=v.trim().toLowerCase();let n;if(v==='auto'||v==null){T.auto=true;n=T.autoN}else{n=typeof v==='number'?v:m[v];if(n==null)return tierInfo();T.auto=false}n=Math.max(0,Math.min(3,n|0));
  if(!o.keep&&T.auto&&T.lowS){T.lowS=0;try{B41.lowed=0;ADAPT.drops=0}catch(e){}}if(n!==0||!T.auto)T.lowS=0;if(!T.lowS)T.keepCS=0;// fix1: an explicit pick ends B41's session LOW
  if(!o.keep){SET.gfx=T.auto?'auto':['low','phone','high','ultra'][n];SET.saver=n===0;saveSet()}T.off={};T.prDrop=0;const go=()=>{T.n=n;applyTier(true);tierSync()};
  if(o.now||!T.applied)go();else tierFade(go);return tierInfo()}
@@ -2336,6 +2338,9 @@ const BEND_GLSL='\n#ifndef NO_BEND\n{float bd=max(0.,length(vec2(mvPosition.z,mv
 // B15 PATCH pipeline: ordered {id,test(m),apply(sh,m)}; every material compiles the patches whose test passes, and the program cache key lists exactly those ids.
 // bend = all lit materials + sprites (as round 1); sway = userData.sway (trees); rim = userData.rim (Mocha, pets; B18 characters, B25 goods); win = userData.win (B16 fills apply); wind = B41 (WIND into sway at /*WIND*/)
 const RIM={col:{value:new THREE.Color(PAL.rim.day[0])},amt:{value:PAL.rim.day[1]}};
+// fix1: lower-case a fact's first letter only for ordinary sentence starters (never a place name such as Leavenworth)
+function lcFirst(f){f=String(f||'');return/^(The|It|Its|It's|They|There|This|That|These|Those|A|An|In|On|At|Every|Each|Some|Most|Many|People|He|She|You|We|Our|Their|When|If|Once|After|Before|During|All|Some|One|No|Not|Only|Even|Back|Long)\b/.test(f)?f.charAt(0).toLowerCase()+f.slice(1):f}
+const SNOWU={value:0},WSN={done:0,mats:0,pb:0,skip:new Set(['park','plaza','lot','cemetery','dock','hill','spot','wheel','troll','gumwall','conservatory'])};// fix1 (W1 CORE 4): roof snow amount + the flag pass state
 const bendOK=m=>!(m.isShaderMaterial||m.isMeshDepthMaterial||m.isMeshDistanceMaterial||m.userData.noBend);
 const PATCH=[
  {id:'b',test:bendOK,apply(sh,m){let v=sh.vertexShader;
@@ -2346,7 +2351,11 @@ const PATCH=[
  {id:'r',test:m=>!!m.userData.rim&&!!(m.isMeshToonMaterial||m.isMeshPhongMaterial||m.isMeshStandardMaterial),apply(sh){sh.uniforms.rimCol=RIM.col;sh.uniforms.rimAmt=RIM.amt;
    sh.fragmentShader='uniform vec3 rimCol;uniform float rimAmt;\n'+sh.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );','outgoingLight+=pow(1.-max(dot(normal,normalize(vViewPosition)),0.),2.5)*rimAmt*rimCol;\ngl_FragColor = vec4( outgoingLight, diffuseColor.a );')}},
  {id:'w',test:m=>!!m.userData.win,apply(sh,m){}},
- {id:'x',test:m=>!!(m.userData.wind&&m.userData.sway),apply(sh,m){}}];
+ {id:'x',test:m=>!!(m.userData.wind&&m.userData.sway),apply(sh,m){}},
+ // fix1 (W1 CORE 4): snow on upward faces above the eaves (world normal.y, world y > 2.6) of flagged exterior materials (userData.snow, set by wsnFlag in winter only); SNOWU from b41RoofTick
+ {id:'n',test:m=>!!m.userData.snow&&!!m.isMeshToonMaterial&&bendOK(m),apply(sh){if(!sh.vertexShader.includes('#include <begin_vertex>')||!sh.fragmentShader.includes('#include <color_fragment>'))return;sh.uniforms.snowK=SNOWU;
+   sh.vertexShader='varying vec2 vSn;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n{vec4 sw=vec4(transformed,1.);vec3 sn=objectNormal;\n#ifdef USE_INSTANCING\nsw=instanceMatrix*sw;sn=mat3(instanceMatrix)*sn;\n#endif\nvSn=vec2((modelMatrix*sw).y,normalize(mat3(modelMatrix)*sn).y);}');
+   sh.fragmentShader='uniform float snowK;varying vec2 vSn;\n'+sh.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.rgb=mix(diffuseColor.rgb,vec3(.957,.973,.988),snowK*smoothstep(.42,.72,vSn.y)*smoothstep(2.4,2.8,vSn.x));')}}];
 const PATCHI=Object.fromEntries(PATCH.map(p=>[p.id,p]));
 THREE.Material.prototype.onBeforeCompile=function(sh){for(const p of PATCH)if(p.test(this))p.apply(sh,this)};
 THREE.Material.prototype.customProgramCacheKey=function(){let k='';for(const p of PATCH)if(p.test(this))k+=p.id;return k};
@@ -2524,12 +2533,20 @@ function wltSlot(key){let i=WLT.by[key];if(i!=null)return i;i=WLT.S.length;if(i>
 function wemBake(g,W,H,list){g.fillStyle='#000';g.fillRect(0,0,W,H);g.fillStyle='#fff';for(const L of list)if(L[4]){if(L[6])L[6](g);else g.fillRect(L[0],L[1],L[2],L[3])}
   const src=g.getImageData(0,0,W,H),a=src.data,out=g.createImageData(W,H),o=out.data;for(let i=3;i<o.length;i+=4)o[i]=255;
   for(const L of list){const s=L[4];if(!s)continue;const x0=Math.max(0,Math.floor(L[0])),y0=Math.max(0,Math.floor(L[1])),x1=Math.min(W,Math.ceil(L[0]+L[2])),y1=Math.min(H,Math.ceil(L[1]+L[3])),cx=L[0]+L[2]/2,cy=L[1]+L[3]/2,hw=L[2]*.3,hh=L[3]*.32;
-    for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const k=(y*W+x)*4;if(a[k+1]<128)continue;o[k]=s;o[k+1]=Math.abs(x+.5-cx)<=hw&&Math.abs(y+.5-cy)<=hh?255:185;o[k+2]=L[5]||0}}
+    for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const k=(y*W+x)*4;if(a[k+1]<128)continue;if(L[7]){if(o[k]===s)o[k+2]=L[5];continue}/* fix1: overlay items (holiday windows) only set the variant byte, so the window's own brightness is unchanged */o[k]=s;o[k+1]=Math.abs(x+.5-cx)<=hw&&Math.abs(y+.5-cy)<=hh?255:185;o[k+2]=L[5]||0}}
   g.putImageData(out,0,0)}
 function wemTex(t){t.minFilter=t.magFilter=THREE.NearestFilter;t.generateMipmaps=false;t.anisotropy=1;t.wlt=1;return t}
 // wallTex windows -> slot: a shop's ground row = sales floor (side walls alternate with the back room), upper rows = upstairs; homes = rooms (cottage() re-encodes); no place = a seeded 'sched' house
 function wltDef(L,o,sch){const p=CAPT;if(!p)return L[4]?sch:0;if(p.hours){if(L[5]>0)return wltSlot(p.id+':up');if(L[6]===-1||L[6]===-3)return wltSlot(p.id+':sec');if(o.front||L[6]<0)return wltSlot(p.id+':main');return wltSlot(p.id+(L[6]%2?':back':':main'))}return L[4]||o.front?wltSlot(p.id+':main'):0}
-function wltEm(g,W,H,lit,fn){wemBake(g,W,H,lit.map(L=>[L[0],L[1],L[2],L[3],fn(L),0]))}
+function wltEm(g,W,H,lit,fn){const out=[];for(const L of lit){const sl=fn(L);out.push([L[0],L[1],L[2],L[3],sl,0]);if(sl)wltHol(out,L,sl)}wemBake(g,W,H,out)}
+// fix1 (W1 CORE 5): holiday windows. About 1 lit home window in 3 carries a candle (variant 3 body, 4 flame) or a silhouette (variant 2: a cat on the sill or a wreath);
+// WLT.u.v keeps every variant at 1x outside the market window (invisible), and w1Sync sets the silhouettes dark and the candles hot inside it. 0 draws, 0 programs.
+function wltHp(out,...A){for(const a of A){a[6]=null;a[7]=1;out.push(a)}}// overlay items: variant byte only (wemBake keeps the window's slot and brightness)
+function wltHol(out,L,sl){const S=WLT.S[sl];if(!S||!(L[2]>=20&&L[3]>=20))return;const P=byId[S.pid];if(!(P?(P.kind==='home'||P.kind==='npchome'||P.kind==='cottage'||P.cot):S.pid!=='sky'&&S.pid!=='night'))return;
+  const r=seeded(wltHash(S.key+'|'+Math.round(L[0])+','+Math.round(L[1])))();if(r>.36)return;const [x,y,w,h]=L,cx=x+w/2;WLT.hol=(WLT.hol||0)+1;
+  if(r<.15){for(const sx of (r<.07?[0]:[-.22,.22])){const bx=cx+sx*w;wltHp(out,[bx-2,y+h*.62,4,h*.3,sl,3],[bx-1,y+h*.5,2,h*.1,sl,4])}}
+  else if(r<.26){const bx=cx-w*.18;wltHp(out,[bx,y+h*.78,w*.34,h*.18,sl,2],[bx+w*.22,y+h*.64,w*.16,h*.16,sl,2],[bx+w*.22,y+h*.58,2,h*.07,sl,2],[bx+w*.33,y+h*.58,2,h*.07,sl,2],[bx-2,y+h*.86,3,h*.1,sl,2])}
+  else{const s2=Math.min(w,h)*.42,wx=cx-s2/2,wy=y+h*.16,t=3;wltHp(out,[wx,wy,s2,t,sl,2],[wx,wy+s2-t,s2,t,sl,2],[wx,wy,t,s2,sl,2],[wx+s2-t,wy,t,s2,sl,2])}}
 // re-encode a wallTex material's windows with a new slot fn; clone=true returns a copy (same map, new em canvas) for walls that share a material
 function wltRe(m,fn,clone){const I=m.userData.wl;if(!I)return m;const t=wemTex(canvasTex(I.W,I.H,g=>wltEm(g,I.W,I.H,I.lit,fn)));const n=clone?m.clone():m;if(!clone&&n.emissiveMap)n.emissiveMap.dispose();n.emissiveMap=t;n.userData=Object.assign({},m.userData);if(clone)winMats.push(n);n.needsUpdate=true;return n}
 PATCHI.w.apply=(sh)=>{sh.uniforms.winLUT=WLT.u.lut;sh.uniforms.winOn=WLT.u.on;sh.uniforms.winVar=WLT.u.v;
@@ -5608,7 +5625,11 @@ function calCheck(t=Date.now(),brief){S.calT=t;const up=holUpcoming(t,21,4),pl=S
   else{const n=holUpcoming(t,400,1)[0];s=`Checked my calendar. Next up: ${n?n.h.n+' on '+n.h.date.toLocaleDateString([],{month:'long',day:'numeric'}):'nothing'}. Lots of regular cozy days until then, which are my favorite kind.`}
   if(mailWaiting(t).length)s+=' Oh, and the mailbox flag is up!';if(!brief)addEntry('Calendar',s.trim(),"Mocha's House",t);return s}
 // ---------- holiday activities (the built-in brain weighs these on the right days; Claude sees them in context) ----------
-const OFR={x:18.5,z:-12.6},TOWNTREE={x:34.5,z:-9.6};
+const OFR={x:18.5,z:-12.6},TOWNTREE={x:-23.6,z:38.9};// W1: the one town tree lives in Lantern Square now (SQUARE.treeSlot -30,27.5 sits on the fountain's NAV ring and in front of the notice board, so this is the nearest clear spot)
+// W1: the six December market stalls [id,x,z,ry,w,d,name,keeper,line]; their colliders (and the tree's) go into COLP here so COL sees them, and W1 parks them far away outside the window
+const W1S=[['cocoa',-27,41,Math.PI,2.4,1.3,'Cocoa Cabin','juniper','hot cocoa with a cinnamon stick'],['chestnut',-34.5,41,Math.PI,1.4,1.3,'Roasted Chestnuts','gus','warm paper cones of chestnuts'],['knits',-41.8,38.2,Math.PI/2,2.4,1.3,'Knit Hats & Mittens','pearl','hand-knit hats, scarves and mittens'],
+ ['ornaments',-41.8,28.6,Math.PI/2,2.4,1.3,'Glass Ornaments','otis','glass baubles and tin stars'],['ginger',-41.8,26,Math.PI/2,2.4,1.3,'Gingerbread Hearts','pippin','iced gingerbread hearts on ribbons'],['candles',-22.4,27.2,-Math.PI/2,2.2,1.3,'Beeswax Candles','honey','hand-dipped beeswax candles']];
+const W1C=[];for(const s of W1S){const c=Math.cos(s[3]),n=Math.sin(s[3]);for(const k of [-1,1]){const lx=k*s[4]/4;W1C.push([s[1]+lx*c,s[2]-lx*n,Math.min(.72,s[5]/2+.06)])}}W1C.push([TOWNTREE.x,TOWNTREE.z,1.0]);for(const q of W1C)COLP.push(q.slice());
 const HA=(k,h,w0,w1,p,s,doing,tags,w,o)=>Object.assign({k,h,w0,w1,p,s,doing,tags,need:{fun:25},hx:k,w,once:1,fx:'hol'},o||{});
 const HACTS=[
  HA('costume','halloween',-12,0,'thrift','racks','looking for a Halloween costume',['fashion'],3.2,{no:'costume'}),
@@ -5627,7 +5648,7 @@ const HACTS=[
  HA('gifts','christmas',-20,-1,'bookstore','shelves','shopping for little presents',['people','reading'],3),
  HA('wrap','christmas',-14,-1,'home','desk','wrapping presents',['cozy'],2.6,{req:'gifts'}),
  HA('cookies','christmas',-1,-1,'home','kitchen','baking holiday cookies',['cooking','cozy'],3.2),
- HA('townlights','christmas',-24,6,'library',null,'looking at the big holiday tree',['people','cozy'],2.2,{hr:[16.3,20],at:[TOWNTREE.x-3.2,TOWNTREE.z+3.4]}),
+ HA('townlights','christmas',-24,6,'square',null,'looking at the big holiday tree',['people','cozy'],2.2,{hr:[16.3,20],at:[TOWNTREE.x-2.9,TOWNTREE.z-2.7]}),// W1: the tree moved into Lantern Square
  HA('presents','christmas',0,0,'home','tree','opening presents',['cozy','friends'],10,{hr:[0,13]}),
  HA('givew','christmas',0,1,'neighbor',null,'giving Wendell his present',['friends'],6,{wen:1,req:'gifts'}),
  HA('nye','nye',0,0,'needle',null,'waiting for the midnight fireworks',['heights','stars'],12,{hr:[22.3,24],once:0}),
@@ -5686,7 +5707,7 @@ function holOutcome(a,t=Date.now(),live=true,brief=false){const key=a.hk||'',pn=
    case'gifts':holMark(key+':gifts');S.coins=Math.max(0,S.coins-12);E('Holidays','Shopped for little presents at Rainy Day Books (12 coins): a book about bottle caps for Wendell, and tiny bookmarks for the shopkeepers. Mabel wrapped them in brown paper with string.');break;
    case'wrap':E('Holidays','Wrapped presents at my desk. Used way too much tape. One present is mostly tape now. It\'s fine. It\'s festive.');break;
    case'cookies':S.pantry=Math.max(0,S.pantry-15);E('Holidays',pick(['Baked holiday cookies: stars, trees and one that was supposed to be a reindeer but looks like a potato. I\'ll leave some out for anyone who visits.','Made sugar cookies and decorated them with way too many sprinkles. The kitchen looks like a snow globe.']));break;
-   case'townlights':E('Holidays','Floated around the big holiday tree in front of the library. Every light was a different color and they all twinkled at slightly different speeds, like they were talking to each other.');break;
+   case'townlights':E('Holidays','Floated around the big holiday tree in Lantern Square. Four hundred little warm-white lights, and they all twinkled at slightly different speeds, like they were talking to each other.');break;
    case'presents':{const g=unwrapGifts(t,live),hasG=holDone(key+':gifts'),gaveW=holDone(key+':givew');E('Christmas',`Christmas morning! ${g.length?`Opened the box from Mom and Dad: ${g.join(', ')}.`:'Sat by my little tree in the morning light.'} ${S.metW?'Wendell came over in his pajamas and gave me a bottle cap with a snowflake on it. ':'I '}${hasG?(S.metW?(gaveW?'He was still carrying around the bottle cap book I gave him.':'I gave him the book about bottle caps. He hugged it.'):'wrapped presents for the shopkeepers.'):(S.metW?'I gave him a very enthusiastic hug.':'sang a little song to myself.')} Merry Christmas.`,1);if(S.metW&&hasG&&!gaveW){holMark(key+':givew');S.friendW=(S.friendW||0)+1;try{if(typeof bondAdd==='function'&&S.bonds)bondAdd('wendell',12,'gift',t)}catch(_){}}if(S.metW&&!S.items.some(i=>i.name==='a bottle cap with a snowflake on it'))S.items.push({name:'a bottle cap with a snowflake on it',from:'Wendell',t});break}
    case'givew':S.friendW=(S.friendW||0)+1;try{if(typeof bondAdd==='function'&&S.bonds)bondAdd('wendell',12,'gift',t)}catch(_){};E('Holidays','Gave Wendell his present: a book all about bottle caps. He read the first page out loud, very slowly, then hugged it. Then he hugged me. Raccoon hugs are the best hugs.');break;
    case'nye':{const ny=new Date(t).getMonth()===0;if(ny&&!holDone('ny-'+new Date(t).getFullYear())){holMark('ny-'+new Date(t).getFullYear());E('New Year',`Happy New Year!! Watched the fireworks from the top of the Sky Needle. Everybody counted down from ten, and on zero the whole sky over the water went POP in every color. I made a wish. (It's a secret.)`,1)}else if(!ny&&!holDone(key+':wait')){holMark(key+':wait');E('New Year','Floated up to the top of the Sky Needle to wait for midnight. It\'s cold and windy up here and everybody is wearing sparkly hats. Almost time!')}break}
@@ -5781,7 +5802,7 @@ function localOutcome(act,t=Date.now(),live=true){const p=byId[act.p];const pnam
   if(act.p==='home'&&act.s==='kitchen'&&act.doing==='cooking'&&S.pantry<12){addEntry('Food','Opened the fridge to cook something. It was completely empty except for one very lonely pickle. I need groceries.',pname,t);bumpInterest('cooking',-.3);S.needs.snack=clamp(S.needs.snack-30,0,100);S.recent.unshift('home.kitchen');return}
   if(act.p==='home'&&act.s==='kitchen'&&act.doing==='cooking')S.pantry=Math.max(0,S.pantry-25);
   if(act.fx==='movie'){const f=act.film&&act.film.title?act.film:pick(FILMS);S.seen.push(f.title);S.seen=S.seen.slice(-12);const fact=pick(f.facts||['It was really good.']);if(f.facts)addLearned(`${f.title} (${f.year||'film'})`,f.facts,t);
-    addEntry('Movies',`Watched "${f.title}"${f.year?' ('+f.year+')':''} at Rain City Cinema. ${f.scenes?'My favorite part: '+pick(f.scenes)+'. ':''}I learned that ${fact.charAt(0).toLowerCase()+fact.slice(1)}${e>.6?' Loved it.':''}`,pname,t);S.recent.unshift('cinema.seat');S.xp+=4;return}
+    addEntry('Movies',`Watched "${f.title}"${f.year?' ('+f.year+')':''} at Rain City Cinema. ${f.scenes?'My favorite part: '+pick(f.scenes)+'. ':''}I learned that ${lcFirst(fact)}${e>.6?' Loved it.':''}`,pname,t);S.recent.unshift('cinema.seat');S.xp+=4;return}
   if(act.fx==='ask'){const k=KB[act.keeper];if(k){const key=pick(k.fk.filter(x=>FACTS[x]));const fact=pick(FACTS[key]||['they know a lot']);addLearned(`${key} (asked ${k.name})`,[fact],t);S.know[k.id]=(S.know[k.id]||0)+1;S.askT=t;
     addEntry('Asked',`Asked ${k.name} the ${k.species} about ${k.topic}. ${k.pr==='they'?'They':k.pr==='she'?'She':'He'} told me: "${fact}" ${pick(['Writing that down.','I love when people know things.','My brain grew a size.'])}`,pname,t);if(live&&k.obj.visible)kSay(k,fact,5);S.recent.unshift(act.p+'.counter');return}}
   if(act.p==='studio'&&(act.fx==='paint'||/paint/i.test(act.doing||''))){const subj=pick([...topInterests(3).map(([k])=>k),'the sound at sunset','a rainy street','my house','the mountain','autumn trees','wendell','myself','the night sky']);const ptN=makePainting(subj,pick(['Untitled #'+(S.paintings.length+1),'Rainy Mood','Little Light','Gray, But Specific','Hello, '+subj,'A Quiet Moment','Drizzle Study']),t);maybePostPainting(ptN,e,t);if(Math.random()<.15)localAcquire({...act,pool:['beret','apron']},t,pname);}
@@ -5908,7 +5929,7 @@ function tripPlan(id,t0,chk){const T=TRIPS[id];if(!T)return null;const h0=hourAt
 // '' = he could go now; otherwise why not (Claude sees these reasons)
 function tripOk(id,at=Date.now()){const T=own(TRIPS,id)?TRIPS[id]:null;if(!T)return'not a place he knows how to get to';if(S.trip)return'he is already on a trip';if(asleepAt(hourAt(at),at))return'it is his bedtime';
   if(S.coins<T.cost)return`a ticket costs ${T.cost} coins and he has ${S.coins}`;if(at-(S.tripLast||0)<TRIPGAP)return'he went on a trip recently';
-  if(!tripPlan(id,at,1)||!tripPlan(id,at+15*60e3,1))return T.by==='ferry'?'no ferry gets him there and back before bed':'no train gets him there and back before bed';return''}
+  if(!tripPlan(id,at,1)||!tripPlan(id,at+15*60e3,1))return T.by==='ferry'?'no ferry gets him there and back before bed':'no train gets him there and back before bed';{const w=typeof wtrTripClash==='function'?wtrTripClash(id,at):'';if(w)return w}return''}
 function tripAct(id){const T=TRIPS[id],tr=T.by==='train';return{p:tr?'station':'ferry',s:tr?'platform':null,doing:(tr?'catching the train to ':'taking the ferry to ')+T.s,tags:T.tags.slice(),need:{fun:45,curious:40},fx:'trip',trip:id}}
 // the built-in brain: maybe one trip candidate (a destination he picks by taste), with its own weight `tw`
 function tripCand(at){if(S.trip)return null;const ids=Object.keys(TRIPS).filter(id=>!tripOk(id,at));if(!ids.length)return null;
@@ -5933,7 +5954,7 @@ function tripCard(t,live,o={}){const tp=S.trip;if(!tp||tp.pc)return null;const T
   if(live)toast(`📮 Mocha sent a postcard from ${T.s}`);txEvent('trip',{k:'card',id:tp.id,pic:tp.pid?'feed:'+tp.pid:'card:'+id},t);return id}
 // one moment of the trip (also replayed while you were away)
 function tripEv(k,t,live){const tp=S.trip;if(!tp)return;const T=TRIPS[tp.id],F=FACTS[T.fk]||[],pet=S.pets.length?S.pets[0]:null;
-  const fact=i=>{const f=F[i%Math.max(1,F.length)];if(!f)return'';addLearned(T.s,[f],t);return' I learned that '+f.charAt(0).toLowerCase()+f.slice(1)};
+  const fact=i=>{const f=F[i%Math.max(1,F.length)];if(!f)return'';addLearned(T.s,[f],t);return' I learned that '+lcFirst(f)};
   switch(k){
    case'go':addEntry('Trip',T.by==='train'?`Bought a ticket from Rowan (${T.cost} coins) and caught the ${fmtH(hourAt(t))} train to ${T.n}! Window seat.${pet?` ${pet.name} came too.`:''} ${pick(['I waved at my whole neighborhood as we went by.','The train hummed the whole way. So did I.','I pressed my face to the window. Ghost face. No smudges.'])}`:`Bought a ferry ticket (${T.cost} coins) and floated aboard for ${T.n}!${pet?` ${pet.name} came too.`:''} ${pick(['Stood at the very front so the wind could flap my sheet.','The ferry horn made me jump right out of my sheet. Almost.'])}`,T.by==='train'?'Rain City Station':'Ferry Dock',t,true);txEvent('trip',{k:'go',id:tp.id},t);break;
    case'arrive':addEntry('Trip',(tp.xm&&T.arrX?T.arrX:pick(T.arr))+fact(0),T.s,t,true);txEvent('trip',{k:'arrive',id:tp.id},t);if(live)toast(`${T.e} Mocha made it to ${T.s}!`);break;
@@ -5945,7 +5966,7 @@ function tripEv(k,t,live){const tp=S.trip;if(!tp)return;const T=TRIPS[tp.id],F=F
    case'leave':addEntry('Trip',T.by==='train'?`Caught the train home from ${T.s}. ${pick(['I watched everything go by backwards.','Fell half asleep against the window.','Counted tunnels. Lost count. Started over.'])}`:`Took the ferry home from ${T.s}. The city got bigger and bigger over the water until it was home again.`,T.s,t);txEvent('trip',{k:'leave',id:tp.id},t);break;
    case'home':tripEnd(t,live);break}}
 // replay every moment that is due (live: stops before 'home'; he still has to step off the train)
-function tripAdvance(now=Date.now(),live=true){let n=0;while(S.trip){const tp=S.trip,e=tp.ev[tp.i];if(!e||e[0]>now||(live&&e[1]==='home'))break;tp.i++;tripEv(e[1],e[0],live);n++}return n}
+function tripAdvance(now=Date.now(),live=true){try{if(typeof wtrTripFit==='function')wtrTripFit(now,live)}catch(e){}let n=0;while(S.trip){const tp=S.trip,e=tp.ev[tp.i];if(!e||e[0]>now||(live&&e[1]==='home'))break;tp.i++;tripEv(e[1],e[0],live);n++}return n}
 // he's back: remembers the trip, feels it
 function tripEnd(t=Date.now(),live=true){const tp=S.trip;if(!tp)return;while(tp.i<tp.ev.length){const e=tp.ev[tp.i++];if(e[1]!=='home')tripEv(e[1],Math.min(e[0],t),live)}
   const T=TRIPS[tp.id];let e=.45+rand(-.3,.5);T.tags.forEach(k=>e+=(S.interests[k]||0)*.03);e=clamp(e,-1,1);
@@ -6280,7 +6301,8 @@ function b41PudSet(){const im=B41.puddles,W=B41.W,d=_b41d,P=B41.pud;if(!im)retur
 function b41Roofs(){const L=[];for(const p of PLACES)if(Array.isArray(p.roofShell))for(const m of p.roofShell)if(m&&m.color&&!L.some(q=>q.m===m))L.push({m,c:m.color.clone()});return L}
 const roofMats={list:()=>B41.roofs||[],add(m){if(B41.roofs&&m&&m.color&&!B41.roofs.some(q=>q.m===m))B41.roofs.push({m,c:m.color.clone()})}};
 const B41SNOWC=new THREE.Color('#F4F8FC');
-function b41RoofTick(){const R=B41.roofs;if(!R)return;const k=+(B41.SN*.85).toFixed(3);if(k===B41.roofK)return;B41.roofK=k;for(const q of R)q.m.color.copy(q.c).lerp(B41SNOWC,k)}
+function b41RoofTick(){const win=B41.mon===11||(B41.mon===0&&B41.dd<7),k=+Math.max(B41.SN*.85,win?.7:0).toFixed(3);SNOWU.value=k;if(k>0&&!WSN.done){try{wsnFlag()}catch(e){WSN.err=String(e&&e.message||e)}}const R=B41.roofs;if(!R)return;// fix1 (W1 CORE 4): snow weather or the December window ([Dec 1, Jan 7)) puts snow on every roof
+  if(k===B41.roofK)return;B41.roofK=k;for(const q of R)q.m.color.copy(q.c).lerp(B41SNOWC,k)}
 // ---- snowmen the morning after snow (yards, the square, the park) + the one Mocha builds himself
 const B41SMP=[[19.3,48.8],[21,68.5],[76.5,53.5],[-25.5,29.5],[73.5,21.5],[44.5,67.5]];
 function b41SnowDay(t){const k=dkey(t-864e5),y=WX.forDate(k),h=hourAt(t);return!!(y&&y.snow&&h>=8&&h<21)}
@@ -6330,7 +6352,7 @@ function b41Pat10(){const now=performance.now()/1000,C=B41.casc;for(const s of B
     let any=false;const sh=Math.floor(now*1.5),ch=Math.floor(now*6);for(const i of s.near){let b=1,j=i;if(pat==='twinkle')b=.62+.38*Math.max(0,Math.sin(now*(1.1+H[i]*2.3)+H[i]*40));else if(pat==='chase')b=(i+ch)%3===0?1:.34;else if(pat==='cycle')j=(i+sh)%s.n;
       if(cas)b*=clamp((now-C.t0)*s.n/3.2-i*1,0,1);A[i*3]=B[j*3]*b;A[i*3+1]=B[j*3+1]*b;A[i*3+2]=B[j*3+2]*b;any=true}
     s.dim=cas;if(any)s.im.instanceColor.needsUpdate=true}
-  if(C){const e=now-C.t0;while(C.k<4&&e>=C.k*.32){try{typeof sfx==='function'&&sfx('chime',{x:TOWNTREE.x,z:TOWNTREE.z,n:C.k})}catch(_){}C.k++}if(e>3.6){B41.casc=null;C.s.im.instanceColor.array.set(C.s.base);C.s.im.instanceColor.needsUpdate=true;C.s.dim=false;b41Near()}}}
+  if(C){const e=now-C.t0;while(C.k<4&&e>=C.k*.32){try{typeof sfx==='function'&&sfx('chime',{x:TOWNTREE.x,z:TOWNTREE.z,n:C.k,ref:3,max:10})}catch(_){}C.k++}if(e>3.6){B41.casc=null;C.s.im.instanceColor.array.set(C.s.base);C.s.im.instanceColor.needsUpdate=true;C.s.dim=false;b41Near()}}}
 function b41Cascade(){const s=B41.strands.find(q=>q.owner==='tree');if(!s)return false;s.near=Array.from({length:s.n},(_,i)=>i);B41.casc={s,t0:performance.now()/1000,k:0};return true}
 // ---- framing: the subject on the lower-third line of the free area (HUD.bands); round 1's panel offsets win when a sheet is open
 {const vt0=voTarget;voTarget=function(){vt0.apply(this,arguments);B41.voP=!!(VO.tx||VO.ty);try{b41VO()}catch(e){}}}
@@ -7754,7 +7776,7 @@ function updateLeaves(dt,t){const wind=WEATHER.kind==='rain'?2.2:WEATHER.kind===
   leafMesh.instanceMatrix.needsUpdate=true}
 const ptrs=new Map();let downAt=null,two=null,hintGone=false;
 try{if(localStorage.getItem('mocha-hint')){hintGone=true;$('#hint').style.display='none'}}catch(e){}
-function hideHint(){if(!hintGone){hintGone=true;$('#hint').style.opacity=0;try{localStorage.setItem('mocha-hint','1')}catch(e){}}}
+function hideHint(){if(!hintGone){hintGone=true;$('#hint').style.opacity=0;let seen=true;try{seen=!!TAMH.seenT&&performance.now()-TAMH.seenT>1500}catch(e){}if(seen)try{localStorage.setItem('mocha-hint','1')}catch(e){}}}// fix1: remembered only once the hint was actually on screen for a moment
 function twoState(){const [a,b]=[...ptrs.values()];return{d:Math.hypot(a.x-b.x,a.y-b.y),ang:Math.atan2(b.y-a.y,b.x-a.x),my:(a.y+b.y)/2}}
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}if(camS.mode==='walk'&&ctlDown(e))return;
@@ -8353,6 +8375,7 @@ function frame(now){const fps=Math.min(TIER.fps(),UIQ.fps());if(now-last<1000/fp
   b18Frame(dt,T);
   b19Frame(sd,T);townFrame(sd,T);
   b23Frame(dt,T);
+  if(typeof tamFrame==='function')tamFrame(sd,T,dt);// W2: Tamarack, the first-run hint
   b21Frame(dt);
   b35Frame(dt,T);
   b40Frame(dt,T);
@@ -9308,6 +9331,7 @@ addEventListener('keydown',e=>{const tg=e.target&&e.target.tagName;if(tg==='INPU
   if(TK.open){if(k==='Escape'){talkClose();e.preventDefault()}else if(/^[1-6]$/.test(k)){tkPick(+k-1);e.preventDefault()}return}
   if((k==='t'||k==='T'||k==='Enter')&&camS.mode==='walk'&&!msgOpen&&TK.near&&!(tg==='BUTTON'&&k==='Enter')){talkOpen(TK.near.id);e.preventDefault()}});
 // ---------- chips ----------
+const TKLBL={leavenworth:'Leavenworth','nw plants':'NW plants'};// fix1: proper nouns keep their capitals on the chips
 const TKTOP={vesper:['bats','film history'],clem:['records'],hollis:['nw plants'],tabitha:['libraries','ghosts'],ambrose:['gothic architecture'],morel:['ferns'],honey:['groceries'],reed:['salmon'],odalie:['birds'],marigold:['birds'],jot:['birds'],dale:['woodworking'],birch:['woodworking'],barnaby:['ferries','orcas'],wendell:['tea','birds'],fennel:['ghosts'],tuffet:['ghosts'],hush:['stars']};
 function tkTopics(id){const c=CASTB[id];return((c&&c.k&&c.k.fk)||TKTOP[id]||[]).filter(t=>FACTS[t])}
 function tkTopic(id){const T=tkTopics(id),r=relOf(id)||[0,0,0,0,0,0,0];let b=0;for(const t of T){const n=FACTS[t].length;for(let i=0;i<n;i++)if(b+i<31&&!(r[5]&(1<<(b+i))))return t;b+=n}return T[T.length-1]||null}
@@ -9317,7 +9341,7 @@ function tkPal(id){const e=PALS.find(x=>x[0]===id||x[1]===id);if(e)return e[0]==
 function npcChips(id){const c=CASTB[id];if(c.kind==='pet')return[{l:'Pet her',f:()=>tkAsk(id,'pet')}];const sit=tkSit(id),tp=tkTopic(id),pal=tkPal(id);
   if(TK.page===1){const L=[];if(sit)L.push({l:"What's new?",f:()=>tkAsk(id,'new')});L.push({l:'Any recommendations?',f:()=>tkAsk(id,'rec')},{l:'About you…',f:()=>tkAsk(id,'about')});if(pal&&CASTB[pal])L.push({l:`What do you think of ${CASTB[pal].name.split(' ')[0]}?`,f:()=>tkAsk(id,'pal',{pal})});
     if(typeof npcRequest==='function')L.push({l:'Can I help?',f:()=>tkAsk(id,'help')});if(typeof giveTo==='function')L.push({l:'Give…',f:()=>tkAsk(id,'give')});return L.slice(0,4).concat([{l:'Back',f:()=>{TK.page=0;tkChipsRender()}}])}
-  const L=[];if(sit)L.push(sit);else L.push({l:"What's new?",f:()=>tkAsk(id,'new')});L.push({l:"How's Mocha?",f:()=>tkAsk(id,'mocha')});if(tp)L.push({l:`Tell me about ${tp}`,f:()=>tkAsk(id,'topic',{topic:tp})});
+  const L=[];if(sit)L.push(sit);else L.push({l:"What's new?",f:()=>tkAsk(id,'new')});L.push({l:"How's Mocha?",f:()=>tkAsk(id,'mocha')});if(tp)L.push({l:`Tell me about ${TKLBL[tp]||tp}`,f:()=>tkAsk(id,'topic',{topic:tp})});
   L.push({l:'More…',f:()=>{TK.page=1;tkChipsRender()}},{l:'Say something…',f:()=>tkInput(true)});return L}
 function mochaChips(){return[{l:'Hi Mocha!',f:()=>tkMocha('hi')},{l:'What are you up to?',f:()=>tkMocha('up')},{l:'How are you feeling?',f:()=>tkMocha('feel')},{l:'Wanna hang out sometime?',f:()=>tkMocha('hang')},{l:'Say something…',f:()=>tkInput(true)}]}
 function boardChips(){return[{l:'Town news',f:()=>tkSay(boardText('news'),{src:'board'})},{l:'This week in town',f:()=>tkSay(boardText('week'),{src:'board'})}]}
@@ -10380,7 +10404,7 @@ function audShot(name,o){const A=AUD;o=o||{};A.st[name]=(A.st[name]||0)+1;A.last
   if(o.x!=null&&!o.dst){audLis();const rm=A.RM[o.type||SFT[name]||(AMBS.has(name)?'bird':'door')],s=audSpat(o.x,o.z,o.ref||rm[0],o.max||rm[1],o.noOcc?AP.pid:o.pid);if(s.g<.004){A.st.far=(A.st.far||0)+1;return null}g*=s.g;
     if(s.lp<19000){const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=s.lp;f.connect(dst);dst=f;n.push(f)}if(c.createStereoPanner&&Math.abs(s.pan)>.02){const p=c.createStereoPanner();p.pan.value=s.pan;p.connect(dst);dst=p;n.push(p)}}
   out.gain.value=g;out.connect(dst);const k=(o.k||1)*(UIS.has(name)?audKey():1);let end=t;for(const p of r(o))end=Math.max(end,audPart(c,out,p,t,k,n));
-  if(DUCKS.has(name))audDuck(end-t);A.st.played=(A.st.played||0)+1;A.st['p:'+name]=(A.st['p:'+name]||0)+1;return audVoice('sfx',n,out,end,g)}
+  if(DUCKS.has(name)&&!o.noDuck)audDuck(end-t);A.st.played=(A.st.played||0)+1;A.st['p:'+name]=(A.st['p:'+name]||0)+1;return audVoice('sfx',n,out,end,g)}
 SFXEV.on('*',e=>{if(e&&e.name)audShot(e.name,e.data||undefined)});SFXEV.on('tink',e=>{AUD.st.tinkEv=(AUD.st.tinkEv||0)+1;if(e)audShot('tink',{x:e.x,z:e.z})});
 // doors (B9 DOOREV): a creak and latch by style (Mocha's gothic creak, iron gate creak, rail gate clack), the shop bell, thumps, knocks, rattles
 const SHOPBELL=new Set(['records','books','thrift','pet','shop','bakery','plum','green','lantern','pine','willa']);
@@ -14449,7 +14473,7 @@ const SPEMO={otter:'🦦',fox:'🦊',owl:'🦉',rabbit:'🐰',bear:'🐻',possum
 function spEmo(c){const s=String(c.species||'').toLowerCase();if(c.kind==='ghost')return'👻';for(const k in SPEMO)if(s===k.toLowerCase())return SPEMO[k];for(const k in SPEMO)if(s.includes(k.toLowerCase()))return SPEMO[k];return'🙂'}
 function b36Bday(id){const b=BIBLE[id]&&BIBLE[id][2];if(!b)return'';const [m,d]=b.split('-').map(Number);try{return new Date(2026,m-1,d).toLocaleDateString([],{month:'short',day:'numeric'})}catch(e){return b}}
 function b36Told(id,r){const B=BIBLE[id],t=youTier(r?r[0]:0),L=[];if(B&&B[3])for(let i=0;i<3&&i<t-1;i++)if(B[3][i])L.push(B[3][i]);(S.you.facts||[]).filter(f=>f[2]===id).forEach(f=>L.push(`asked about your ${f[0]}: "${f[1]}"`));let n=0,v=r?r[5]:0;while(v){n+=v&1;v>>>=1}if(n)L.push(`${n} fun fact${n>1?'s':''} shared`);return L}
-function peopleList(){return CAST.filter(c=>c&&c.id&&c.name).map(c=>{const r=S.you.rel&&S.you.rel[c.id],p=r?r[0]:0,t=youTier(p),mb=bondOf(c.id),st=(()=>{try{return npcStatus(c.id)}catch(e){return''}})();
+function peopleList(){return CAST.filter(c=>c&&c.id&&c.name&&!c.hideP).map(c=>{const r=S.you.rel&&S.you.rel[c.id],p=r?r[0]:0,t=youTier(p),mb=bondOf(c.id),st=(()=>{try{return npcStatus(c.id)}catch(e){return''}})();
   return{id:c.id,name:c.name,species:c.species||'',kind:c.kind||'',shop:c.k&&byId[c.k.shop]?byId[c.k.shop].name:c.role||'',status:st,you:p,youTier:YTN[t],mocha:Math.round(mb),mochaTier:TIER_N[tierOf(mb)],bday:b36Bday(c.id),told:b36Told(c.id,r),nick:t>=3&&NICK[c.id]?NICK[c.id]:'',emo:spEmo(c),col:tkColor(c.id)}}).sort((a,b)=>b.you-a.you||(a.kind==='keeper'?-1:0)-(b.kind==='keeper'?-1:0)||a.name.localeCompare(b.name))}
 function b36Hearts(p){const t=youTier(p),nx=YT[t+1];return`${'♥'.repeat(t)}${'♡'.repeat(4-t)}${nx?` <small>${p}/${nx}</small>`:''}`}
 function renderPeople(){const el=$('#tab-people');if(!el)return;const L=peopleList();
@@ -14695,6 +14719,240 @@ function b37Hz(){if(!S||!S.econ||!S.career)return;const now=Date.now();if(!B37.b
   econCatch(now);const C=S.career;if(C.st==='iv'&&C.iv&&dkey(now)>C.iv.d)careerHire(+dFromKey(C.iv.d)+C.iv.h*36e5,false);b37Away(now);b37Coins(now);
   if(curTab==='biz'&&!panel.classList.contains('hidden')&&now-(B37.rT||0)>5e3){B37.rT=now;try{renderBiz()}catch(e){}}}
 function b37Frame(dt){if((B37.t1-=dt)<=0){B37.t1=1;try{b37Hz()}catch(e){console.error('B37',e)}}if((B37.t4-=dt)<=0){B37.t4=.25;const on=!!(G.act&&G.act.fx==='shift'&&G.mode==='activity');if(on||B37.apron){const a=b37Apron();if(a&&a.visible!==on)a.visible=on}}}
+// ======== W2 (winter update, Nov 7): TAMARACK THE LARCH GOAT, the December Leavenworth postcard, and fixes (job vs trips, the first-run hint) ========
+// Tamarack (original): a shaggy, grumbly-polite mountain-goat spirit. He rides the evening train down "from up the Icicle" on Dec 5 (Krampusnacht, the eve of St. Nicholas Day)
+// and leaves on the evening train on Jan 6. Evenings (16-22) he sweeps doorsteps round Lantern Square, jingles his horn bells and warms his hooves by the fountain; by day he rests
+// out of view up Drizzle Alley. He is townsfolk: he stops and faces you and talks through the talk card. Mocha's reactions are weighted I5 candidates only (TAMACT).
+// Nothing in this block writes G.act, G.target or G.mode. S.tam={met (t of Mocha's first meeting), gifts, seen (season year he last arrived), bye (season year of the goodbye note), d (last gift dkey), rk {fx: dkey}}
+function tamFix(s){if(!s)return s;let T=s.tam;if(!T||typeof T!=='object'||Array.isArray(T))T=s.tam={};T.met=+T.met||0;T.gifts=Math.max(0,Math.min(9999,T.gifts|0));T.seen=T.seen|0;T.bye=T.bye|0;T.d=T.d|0;
+  if(!T.rk||typeof T.rk!=='object'||Array.isArray(T.rk))T.rk={};for(const k of Object.keys(T.rk))if(!/^tam[a-z]{2,8}$/.test(k)||typeof T.rk[k]!=='number')delete T.rk[k];return s}
+const TAMSN=new Map();
+function tamSeasonY(Y){let s=TAMSN.get(Y);if(s)return s;const ta=nextTrain(+new Date(Y,11,5,17,55)),td=nextTrain(+new Date(Y+1,0,6,18,25));s={Y,ta,td,te:td+TRN.dwell*1000};if(TAMSN.size>6)TAMSN.clear();TAMSN.set(Y,s);return s}
+function tamSeason(t){const d=new Date(t),m=d.getMonth();if(m!==11&&m!==0)return null;return tamSeasonY(m===11?d.getFullYear():d.getFullYear()-1)}
+// 'off' (not in town) | 'arr' (stepping off the Dec 5 train, walking to the square) | 'eve' (in the square, 16-22) | 'rest' (out of view) | 'dep' (Jan 6: to the station, aboard)
+function tamPhase(t){const s=tamSeason(t);if(!s||t<s.ta||t>=s.te)return'off';if(t>=s.td-14*60e3)return'dep';if(t<s.ta+6*60e3)return'arr';const h=hourAt(t);return h>=16&&h<22?'eve':'rest'}
+const TAMLOOK={fur:'#3A2C26',light:'#5E4C40',ears:'side',earC:'#3A2C26',snout:'short',nose:'#241C14',legC:'#3A2C26',shoe:'#241C14',tail:'short',x:['beard'],beardC:'#D9B26A',sc:1.24};
+const TAMC={id:'tamarack',name:'Tamarack',species:'larch goat',pr:'he',kind:'visitor',role:'a winter visitor from up the Icicle',home:'square',likes:['cocoa','swept doorsteps','licorice','first snow'],dislikes:['slush','rushing','loud sleigh bells'],look:TAMLOOK,spot:[-30,30,0],hideP:true};
+const TAMEYE=new THREE.MeshBasicMaterial({vertexColors:true});// warm amber eyes: unlit (reads as emissive), no light
+// the look (S15): chibi kit ~1.24x; a coat of stacked scalloped fringes (firTierG) in #3A2C26 with frost tips #D9D2E4, a larch-gold mane, short curled horns with tiny brass bells,
+// a birch-twig bundle tied with a red ribbon, a garland of tin stars. 7 draws at full (body, head, 2 arms, 2 legs, eyes); the face atlas is hidden (his eyes are their own mesh)
+function tamBuild(c){const L=c.look,P=castParts(L),PI=Math.PI,F=firTierG(9),S2=[-1,1],h=(g,col,p,s,r)=>P.HEAD.push({g,c:col,p,s,r}),b=(g,col,p,s,r)=>P.BODY.push({g,c:col,p,s,r}),E=[];
+  for(const [y,R,H] of [[.9,.4,.34],[.64,.46,.38],[.38,.5,.36]]){b(F,'#D9D2E4',[0,y-.045,0],[R*1.09,H*.34,R*1.0]);b(F,'#3A2C26',[0,y,0],[R,H,R*.92])}
+  h('s','#D9B26A',[0,.77,-.06],[.27,.15,.25]);for(const a of [-.55,-.2,.2,.55])h('k','#D9B26A',[Math.sin(a)*.17,.86,-.02],[.06,.17,.06],[-.25,0,-a*.7]);
+  b('k','#D9B26A',[0,1.07,-.2],[.14,.26,.1],[-.9,0,0]);b('k','#C9A25A',[0,.95,-.28],[.12,.22,.08],[-1.1,0,0]);
+  for(const s of S2){h('t:.09,.032,5,10,3.6','#CDBB9C',[s*.27,.82,-.07],1,[0,s*PI/2,.25*s]);h('s8','#C9A04A',[s*.33,.7,-.01],[.05,.058,.05]);h('c','#7A5A22',[s*.33,.65,-.01],[.018,.02,.018])}
+  b('t:.4,.016,4,26','#C9C2B0',[0,.86,0],[1,1,.92],[PI/2-.22,0,0]);for(let i=0;i<5;i++){const a=.45+i*.56,x=Math.cos(a)*.4,z=Math.sin(a)*.37+.02,y=.86-Math.sin(a)*.085;b('b','#E2DCCB',[x,y,z],[.07,.07,.02],[0,0,PI/4]);b('b','#C9C2B0',[x,y,z+.003],[.07,.07,.02])}
+  for(let j=0;j<7;j++)P.ARMR.push({g:'c',c:j%2?'#CFC3AA':'#B3A68C',p:[(j-3)*.017,-.53,.07+((j%3)-1)*.016],s:[.012,.46,.012],r:[0,0,(j-3)*.05]});
+  P.ARMR.push({g:'t:.05,.016,4,12',c:'#A8282A',p:[0,-.36,.07],s:1,r:[PI/2,0,0]});for(const s of S2){P.ARMR.push({g:'s8',c:'#A8282A',p:[s*.05,-.33,.12],s:[.045,.03,.02],r:[0,0,s*.5]});P.ARMR.push({g:'b',c:'#A8282A',p:[s*.025,-.42,.12],s:[.018,.08,.01],r:[0,0,s*.2]})}
+  // fix1: a soft face (S15 'never threatening'): round dark pupils with a cream catchlight (no bar pupils), a cream muzzle with a tiny smile, rosy cheeks; all merged into the head and eye draws (+0 draws)
+  for(const s of S2){E.push({g:'s8',c:'#FFC873',p:[s*.15,.45,.352],s:[.075,.088,.04]});E.push({g:'s8',c:'#24160C',p:[s*.15,.44,.386],s:[.042,.048,.014]});E.push({g:'s8',c:'#FFF4DC',p:[s*.15-.016,.468,.398],s:[.016,.016,.006]});h('s8','#C98A84',[s*.25,.355,.3],[.05,.032,.02])}
+  h('s','#E6D3B2',[0,.33,.33],[.16,.11,.1]);E.push({g:'t:.032,.008,3,8,2.3',c:'#3A2416',p:[0,.33,.428],s:1,r:[0,0,Math.PI+.42]});
+  const g=chibiRig(P,{mark:'plain',shadow:false,mat:CHIBI_MAT}),u=g.userData;u.look=L;u.bob=1;u.face.visible=false;const ey=new THREE.Mesh(mergeParts(E,null),TAMEYE);u.head.add(ey);u.eyes=ey;
+  const lo=new THREE.Mesh(tamLod(P,E),CHIBI_MAT);lo.visible=false;g.add(lo);u.lod1=lo;const hb=u.M.HEAD.geometry;hb.computeBoundingBox();u.top=CHR.neck+hb.boundingBox.max.y;u.emY=u.top+.45;
+  g.traverse(o=>{if(o.isMesh&&u.M&&o!==u.M.BODY)o.castShadow=false});// fix1: only his body casts a shadow (was 6 shadow casters)
+  g.scale.setScalar(L.sc||1);u.castId=c.id;return g}
+// his LOD1 (one draw): lod1Geo's rest-pose merge with his own amber eyes instead of the baked dark eye dots
+function tamLod(P,E){const o=[],add=(A,ox,oy,oz)=>{if(A)for(const q of A){const p=q.p||[0,0,0];o.push(Object.assign({},q,{p:[p[0]+ox,p[1]+oy,p[2]+oz]}))}};
+  add(P.BODY,0,0,0);add(P.HEAD,0,CHR.neck,0);add(E,0,CHR.neck,0);add(P.ARML,-CHR.sh[0],CHR.sh[1],0);add(P.ARMR,CHR.sh[0],CHR.sh[1],0);add(P.LEGL,-CHR.hip[0],CHR.hip[1],0);add(P.LEGR,CHR.hip[0],CHR.hip[1],0);add(P.TAIL,0,CHR.tail[0],CHR.tail[1]);return mergeParts(o,null)}
+// places in Lantern Square: doorsteps to sweep, the fountain (warm hooves), two spots for a jingle; the den (rest, out of view) up Drizzle Alley
+const TAMS=[{k:'sweep',x:-41.7,z:33.6,ry:-Math.PI/2,n:'the Town Hall steps'},{k:'sweep',x:-19.5,z:35,ry:Math.PI/2,n:'the bakery step'},{k:'sweep',x:-36,z:41.3,ry:0,n:'the Drizzle Threads step'},{k:'sweep',x:+(TOWNTREE.x+.735*-2.75).toFixed(2),z:+(TOWNTREE.z+.678*-2.75).toFixed(2),ry:.825,n:'the snow round the big tree'},// merge W1xW2: the nursery step sits behind W1's town tree now
+  {k:'warm',x:-34.05,z:33,ry:Math.PI/2,n:'the fountain'},{k:'warm',x:-30,z:37.05,ry:Math.PI,n:'the fountain'},{k:'bells',x:-35,z:28.6,ry:2.4,n:'the square'},{k:'bells',x:-24.6,z:30,ry:-2.2,n:'the square'}];
+const TAMDEN={x:-21.6,z:15.5},TAMIN={x:-21.8,z:25.2};
+const TAM={left:0,c:TAMC,obj:null,r:null,st:'hide',goal:null,path:null,pi:0,spd:1.5,task:null,ti:-1,taskT:0,mv:0,ryT:0,pause:0,jing:0,sndT:-1e9,sayT:0,force:null,boot:1,ph:'off',hT:0,pT:0,dT:0,n:{arr:0,board:0,puff:0}};
+const TAMHI=["hmph. mind the ice.","evening. *jingle*","the step was snowy. now it isn't.","cocoa weather, this."];
+const TPF={n:16,t:9,pts:null,v:new Float32Array(48)};
+try{const c=TAMC,g=tamBuild(c);g.position.set(-30,floorAt(-30,30),30);g.visible=false;scene.add(g);const r=castReg(c,g);r.y0=g.position.y;r.drive=tamDrive;r.post=tamPost;TAM.obj=g;TAM.r=r;CAST.push(c);CASTB.tamarack=c;
+  const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(TPF.n*3),3));
+  const pm=new THREE.PointsMaterial({color:'#F4F8FC',size:.3,map:canvasTex(32,32,q=>{const gr=q.createRadialGradient(16,16,0,16,16,16);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(1,'rgba(255,255,255,0)');q.fillStyle=gr;q.fillRect(0,0,32,32)}),transparent:true,depthWrite:false,opacity:.9});
+  TPF.pts=new THREE.Points(pg,pm);TPF.pts.frustumCulled=false;TPF.pts.visible=false;TPF.pts.name='tamPuff';scene.add(TPF.pts);
+  PREWARM.add('w2:tamarack',()=>{const q=TAM.obj.clone();q.visible=true;q.traverse(o=>{if(o.isMesh)o.visible=true});return q});PREWARM.add('w2:puff',()=>{const q=TPF.pts.clone();q.visible=true;return q})}catch(e){console.warn('tamarack',e)}
+try{VOX.tamarack=['sawtooth',165,2,9,'heh',950]}catch(e){}
+try{TKTOP.tamarack=['leavenworth']}catch(e){}
+try{FACTS.leavenworth.push("Amtrak's Empire Builder, the long-distance train between Seattle and Chicago, stops at Leavenworth's Icicle Station.","High above Leavenworth, in the Enchantments, the subalpine larches turn gold in the fall, then drop their needles for the winter.")}catch(e){}
+function tamDrive(r,dt,t){const st=r.obj.userData.st;if(!st)return;st.mv=TAM.mv;st.run=0;st.pose=null;st.look=TAM.pause>0?0:Math.sin(t*.45+1)*.28;r.mv=TAM.mv}
+function tamPost(r,dt,t){const u=r.obj.userData;if(!u.arms)return;const k=!TAM.mv&&TAM.st==='task'&&TAM.task?TAM.task.k:'';
+  if(k==='sweep'&&TAM.pause<=0){u.arms[1].rotation.x=-.55+Math.sin(t*4.5)*.18;u.arms[1].rotation.z=.25+Math.sin(t*4.5)*.4}
+  else if(k==='warm'){const a=Math.sin(t*1.6);u.legs[0].rotation.x=Math.max(0,a)*.5;u.legs[1].rotation.x=Math.max(0,-a)*.5;u.arms[0].rotation.x=u.arms[1].rotation.x=-.85}
+  if(TAM.jing>0)u.head.rotation.z=Math.sin(t*16)*.13*Math.min(1,TAM.jing)}
+// the snow puff when he steps off the train or out of the alley (16 points, one draw while it lasts; off on LOW / saver)
+function tamPuff(x,z){if(!TPF.pts||SET.saver)return;const a=TPF.pts.geometry.attributes.position.array,y=floorAt(x,z);for(let i=0;i<TPF.n;i++){const an=i/TPF.n*6.283+Math.random()*.3,sp=.6+Math.random()*.9;a[i*3]=x;a[i*3+1]=y+.15+Math.random()*.3;a[i*3+2]=z;TPF.v[i*3]=Math.cos(an)*sp;TPF.v[i*3+1]=.6+Math.random()*1.1;TPF.v[i*3+2]=Math.sin(an)*sp}
+  TPF.pts.geometry.attributes.position.needsUpdate=true;TPF.t=0;TPF.pts.visible=true;TPF.pts.material.opacity=.9;TAM.n.puff++}
+function tamPuffStep(dt){if(!TPF.pts||!TPF.pts.visible)return;TPF.t+=dt;const a=TPF.pts.geometry.attributes.position.array,v=TPF.v;for(let i=0;i<TPF.n*3;i+=3){a[i]+=v[i]*dt;a[i+1]+=v[i+1]*dt;a[i+2]+=v[i+2]*dt;v[i+1]-=1.6*dt;v[i]*=.97;v[i+2]*=.97}
+  TPF.pts.geometry.attributes.position.needsUpdate=true;TPF.pts.material.opacity=Math.max(0,.9*(1-TPF.t/1.3));if(TPF.t>1.3)TPF.pts.visible=false}
+// tiny sounds, proximity only (3-10 m), through audShot (SFXN gains, the sfx bus); one one-shot per 20 s at most
+function tamSnd(n){const now=performance.now();if(now-TAM.sndT<20000||!TAM.obj||!TAM.obj.visible)return;TAM.sndT=now;const o=TAM.obj.position;try{if(typeof audShot==='function')audShot(n,{x:o.x,z:o.z,ref:3,max:10,noDuck:1,g:n==='bell'?.6:.3,k:n==='bell'?1.9:1})}catch(e){}}
+function tamJingle(){TAM.jing=1.3;tamSnd('bell')}
+// paths: straight lines inside the square (around the fountain basin), the street graph for long walks (station, den)
+// merge W1xW2: in-square paths keep to what the walker can't walk through (COL: the fountain basin, benches, lamps, planters, the notice board, and W1's six market stalls
+// while they stand) plus the big tree's lowest tier: a 0.5 m grid A* in the square's box, string-pulled; the straight line with the fountain detour stays as the fallback
+const TAMNV={x0:-44.5,z0:21.5,n:56,m:46,c:.5,g:null,k:'',t:0,n1:0};
+function tamFree(x,z){try{if(COL.hit(x,z,.32))return false}catch(e){}try{if(WMK.tree&&WMK.tree.visible&&Math.hypot(x-TOWNTREE.x,z-TOWNTREE.z)<2.25)return false}catch(e){}return true}
+function tamGrid(){const N=TAMNV,now=Date.now();let k='';try{k=(WMK.on?'1':'0')+(WMK.tree&&WMK.tree.visible?'1':'0')}catch(e){}if(N.g&&N.k===k&&now-N.t<30e3)return N.g;
+  const g=new Uint8Array(N.n*N.m);for(let j=0;j<N.m;j++)for(let i=0;i<N.n;i++)g[j*N.n+i]=tamFree(N.x0+(i+.5)*N.c,N.z0+(j+.5)*N.c)?1:0;N.g=g;N.k=k;N.t=now;N.n1++;return g}
+function tamCell(x,z){const N=TAMNV,i=Math.floor((x-N.x0)/N.c),j=Math.floor((z-N.z0)/N.c);return i<0||j<0||i>=N.n||j>=N.m?-1:j*N.n+i}
+function tamClear(g,ax,az,bx,bz){const L=Math.hypot(bx-ax,bz-az),n=Math.ceil(L/.2),c0=tamCell(ax,az),c1=tamCell(bx,bz);for(let i=1;i<n;i++){const t=i/n,c=tamCell(ax+(bx-ax)*t,az+(bz-az)*t);if(c<0||(!g[c]&&c!==c0&&c!==c1))return false}return true}
+function tamAstar(ax,az,bx,bz){const N=TAMNV,W=N.n,M=N.m,g=tamGrid(),s=tamCell(ax,az),e=tamCell(bx,bz);if(s<0||e<0)return null;if(tamClear(g,ax,az,bx,bz))return[[bx,bz]];
+  const G=new Float32Array(W*M).fill(1e9),F=new Int32Array(W*M).fill(-1),done=new Uint8Array(W*M),ex=e%W,ez=(e/W)|0,h=c=>Math.hypot(c%W-ex,((c/W)|0)-ez),open=[s];G[s]=0;let it=0;
+  while(open.length&&it++<5000){let bi=0,bf=1e9;for(let q=0;q<open.length;q++){const f=G[open[q]]+h(open[q]);if(f<bf){bf=f;bi=q}}const c=open[bi];open[bi]=open[open.length-1];open.pop();if(c===e)break;if(done[c])continue;done[c]=1;
+    const ci=c%W,cj=(c/W)|0;for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){if(!di&&!dj)continue;const ni=ci+di,nj=cj+dj;if(ni<0||nj<0||ni>=W||nj>=M)continue;const nc=nj*W+ni;if(!g[nc]&&nc!==e)continue;
+      if(di&&dj&&(!g[cj*W+ni]||!g[nj*W+ci])&&c!==s)continue;const ng=G[c]+(di&&dj?1.414:1);if(ng<G[nc]){G[nc]=ng;F[nc]=c;open.push(nc)}}}
+  if(F[e]<0)return null;const C=[];for(let c=e;c>=0&&c!==s;c=F[c])C.push([N.x0+(c%W+.5)*N.c,N.z0+(((c/W)|0)+.5)*N.c]);C.reverse();C[C.length-1]=[bx,bz];
+  const out=[];let cx=ax,cz=az,i=0;while(i<C.length){let j=C.length-1;while(j>i&&!tamClear(g,cx,cz,C[j][0],C[j][1]))j--;out.push(C[j]);cx=C[j][0];cz=C[j][1];i=j+1}return out}
+function tamSeg(P,ax,az,bx,bz,dp){if(!dp){try{const N=TAMNV,inb=(x,z)=>x>N.x0+.5&&x<N.x0+N.n*N.c-.5&&z>N.z0+.5&&z<N.z0+N.m*N.c-.5;if(inb(ax,az)&&inb(bx,bz)){const Q=tamAstar(ax,az,bx,bz);if(Q){for(const q of Q)P.push(q);return P}}}catch(e){}}
+  return tamSegL(P,ax,az,bx,bz,dp)}
+function tamSegL(P,ax,az,bx,bz,dp){const fx=-30,fz=33,dx=bx-ax,dz=bz-az,L2=dx*dx+dz*dz||1,k=clamp(((fx-ax)*dx+(fz-az)*dz)/L2,0,1),cx=ax+dx*k,cz=az+dz*k,dc=Math.hypot(cx-fx,cz-fz);
+  if(!dp&&k>.02&&k<.98&&dc<3.95){const ux=dc>.01?(cx-fx)/dc:0,uz=dc>.01?(cz-fz)/dc:1,wx=fx+ux*4.6,wz=fz+uz*4.6;P.push([wx,wz]);return tamSegL(P,wx,wz,bx,bz,1)}P.push([bx,bz]);return P}
+function tamRoute(bx,bz){const o=TAM.obj.position,P=[];if(Math.hypot(bx-o.x,bz-o.z)>40){try{const r=navRoute(o.x,o.z,bx,bz,null);if(r&&r.n>1){for(let i=0;i<Math.min(r.n,96);i++)P.push([r.P[2*i],r.P[2*i+1]]);P.push([bx,bz]);return P}}catch(e){}}return tamSeg(P,o.x,o.z,bx,bz)}
+function tamWalk(P,goal,spd){TAM.path=P;TAM.pi=0;TAM.goal=goal;TAM.spd=spd||1.5;TAM.st='walk';TAM.task=null}
+function tamMove(dt){const P=TAM.path,o=TAM.obj.position;if(!P||TAM.pi>=P.length)return true;let left=TAM.spd*dt;
+  while(left>0&&TAM.pi<P.length){const q=P[TAM.pi],dx=q[0]-o.x,dz=q[1]-o.z,d=Math.hypot(dx,dz);if(d<=left){o.x=q[0];o.z=q[1];left-=d;TAM.pi++}else{o.x+=dx/d*left;o.z+=dz/d*left;TAM.ryT=Math.atan2(dx,dz);left=0}}
+  o.y=floorAt(o.x,o.z);return TAM.pi>=P.length}
+function tamSpawn(x,z,puff){const o=TAM.obj;o.position.set(x,floorAt(x,z),z);o.visible=true;TAM.pause=0;if(puff)tamPuff(x,z)}
+function tamHide(puff){const o=TAM.obj;if(puff&&o.visible)tamPuff(o.position.x,o.position.z);o.visible=false;TAM.st='hide';TAM.path=null;TAM.goal=null;TAM.task=null;TAM.mv=0;try{if(TK.open&&TK.id==='tamarack')talkClose(true)}catch(e){}}
+function tamPick(){let i=Math.floor(Math.random()*TAMS.length);if(i===TAM.ti)i=(i+1+Math.floor(Math.random()*(TAMS.length-1)))%TAMS.length;TAM.ti=i;return TAMS[i]}
+function tamPlace(){const s=tamPick();tamSpawn(s.x,s.z,false);TAM.obj.rotation.y=TAM.ryT=s.ry;TAM.st='task';TAM.task=s;TAM.taskT=rand(5,14);TAM.goal=null;TAM.path=null}
+function tamNext(){const s=tamPick(),o=TAM.obj.position;tamWalk(tamSeg([],o.x,o.z,s.x,s.z),'task',1.4);TAM.task=s}
+function tamArrive(){const g=TAM.goal,o=TAM.obj.position;TAM.path=null;
+  if(g==='task'){const s=TAMS[TAM.ti]||TAMS[0];TAM.st='task';TAM.task=s;TAM.taskT=rand(9,20);TAM.ryT=s.ry;TAM.goal=null;if(s.k==='bells'||Math.random()<.3)tamJingle()}
+  else if(g==='sq'){const s=tamPick();tamWalk(tamSeg([],o.x,o.z,s.x,s.z),'task',1.4);TAM.task=s}
+  else if(g==='den')tamHide(true);
+  else if(g==='stn'){TAM.st='board';TAM.goal=null;TAM.ryT=Math.PI/2}}
+function tamPlat(){return{x:TRN.x-1.75,z:trainDoorZ(0)+.8}}
+// 2 Hz: what he should be doing now (pure tamPhase, so a reopened app finds him where he'd be: "already in town")
+function tamPhaseStep(now){const ph=TAM.force||tamPhase(now),boot=TAM.boot,st=TAM.st,o=TAM.obj,s=tamSeason(now);TAM.boot=0;TAM.ph=ph;
+  if(ph==='off'||ph==='rest'){if(st==='hide'){if(o.visible)o.visible=false;return}if(boot||st==='board'||TAM.goal==='stn'){tamHide(st==='board');return}if(TAM.goal!=='den')tamWalk(tamSeg([],o.position.x,o.position.z,TAMIN.x,TAMIN.z).concat([[TAMDEN.x,TAMDEN.z]]),'den',1.4);return}
+  if(ph==='arr'||ph==='eve'){if(st==='hide'){const tr=trainAt(now);
+      if(ph==='arr'&&tr.st==='dwell'&&tr.left>3){const p=tamPlat();tamSpawn(p.x,p.z,true);TAM.obj.rotation.y=TAM.ryT=-Math.PI/2;tamWalk(tamRoute(TAMIN.x,TAMIN.z),'sq',2.3);TAM.pause=1.2;TAM.n.arr++;return}
+      if(boot||ph==='arr'){tamPlace();return}
+      tamSpawn(TAMDEN.x,TAMDEN.z,true);tamWalk([[TAMIN.x,TAMIN.z]],'sq',1.4);return}
+    if(TAM.goal==='den'||TAM.goal==='stn'||st==='board'){const q=o.position;tamWalk(tamRoute(TAMIN.x,TAMIN.z),'sq',1.6)}return}
+  if(ph==='dep'){const p=tamPlat();if(st==='hide'){if(TAM.left&&now-TAM.left<15*60e3)return;if(!s||now<s.td+TRN.dwell*1000-6000){tamSpawn(p.x,p.z,false);TAM.st='board';TAM.ryT=Math.PI/2}return}
+    if(st==='board'){const tr=trainAt(now);if(tr.st==='dwell'&&(!s||now>=s.td-3000)&&tr.left<TRN.dwell-6){tamHide(true);TAM.left=now;TAM.n.board++;try{tamTick(Date.now())}catch(e){}}return}
+    if(TAM.goal!=='stn')tamWalk(tamRoute(p.x,p.z),'stn',2.3)}}
+// per frame: stop and face (the talk card, or you close by: his manners, never Mocha's steering), walk, tasks, jingles
+function tamStep(dt,t){const o=TAM.obj,q=o.position;if(dt<=0)return;const now=performance.now();let fx=null,fz=0,dy=1e9;
+  if(camS.mode==='walk')dy=Math.hypot(YOU.x-q.x,YOU.z-q.z);
+  if((TK.open&&TK.id==='tamarack')||(dy<2.4&&TAM.st!=='board')){fx=YOU.x;fz=YOU.z;TAM.pause=1.2;TAM.ryT=Math.atan2(fx-q.x,fz-q.z)}
+  TAM.mv=0;if(TAM.pause>0)TAM.pause-=dt;else if(TAM.st==='walk'){TAM.mv=1;if(tamMove(dt))tamArrive()}
+  else if(TAM.st==='task'){TAM.taskT-=dt;if(TAM.task&&TAM.task.k==='sweep'&&Math.random()<dt*.06)tamSnd('brush');else if(Math.random()<dt*.025)tamJingle();if(TAM.taskT<=0)tamNext()}
+  const a=o.rotation.y,d=((TAM.ryT-a)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI;o.rotation.y=a+d*Math.min(1,dt*6);if(TAM.jing>0)TAM.jing-=dt;
+  if(dy<6&&dy>1.2&&!TK.open&&now>TAM.sayT&&TAM.st!=='board'){TAM.sayT=now+28000;try{npcSay('tamarack',pick(TAMHI),3)}catch(e){}}
+  try{if(S.tam&&!S.tam.met&&G.mode!=='trip'&&!G.sleep&&Math.hypot(G.x-q.x,G.z-q.z)<10)tamMeet(Date.now())}catch(e){}}
+// Mocha's first meeting: a field-notes entry in his diary (once ever)
+function tamMeet(t){tamFix(S);const T=S.tam;if(T.met)return false;T.met=t;addEntry('Note','Field notes: Tamarack, a Larch Goat. A coat like a little fir tree, with frost on every tip. A gold mane, the color the larches up in the Cascades turn in October. Tiny brass bells on his curly horns, and eyes like two warm lanterns. He says "hmph" a lot, but he swept the bakery step without anybody asking. He came down on December 5th: in the Alps they call that night Krampusnacht.','Lantern Square',t,true);
+  try{if(typeof spark==='function')spark('first',.8,t)}catch(e){}return true}
+const TAMGR=['otis','gus','marigold','barnaby','monty'],TAMKD=['pippin','juniper','bea','wendell','willa','jot','wren'];
+const TAMBYE="Mocha. The train is here and the bells are packed. Thank you for the cocoa, and for the giggling. I heard all of it. Keep the steps swept. I'll be back when the larches have gone gold and the snow comes down. -T. (one gingerbread heart enclosed. do not eat it all at once.)";
+// fix1: the goodbye note only thanks him for what really happened (S.tam.rk), and a short different note when they never met
+function tamByeText(T){const rk=(T&&T.rk)||{};if(!T||!T.met)return"Little ghost. I didn't catch you this year. The square was lovely anyway. Next December, when the larches have gone gold. -T.";
+  const th=[rk.tamcocoa?'the cocoa':'',(rk.tamhide||rk.tampeek)?'the giggling':''].filter(Boolean);
+  return"Mocha. The train is here and the bells are packed. "+(th.length?"Thank you for "+th.join(', and for ')+"."+(rk.tamhide||rk.tampeek?" I heard all of it.":""):"Thank you for saying hello.")+" Keep the steps swept. I'll be back when the larches have gone gold and the snow comes down. -T. (one gingerbread heart enclosed. do not eat it all at once.)"}
+function tamGift(t,k){const T=S.tam,r=seeded(wxHash('tam'+k));if(T.met&&r()<.3){T.gifts++;addEntry('Town',pick(['Found a gingerbread heart on my porch rail tonight, tied with a red ribbon. Somewhere down Maple Row, tiny bells were jingling. I KNOW who it was.','Tamarack left me a gingerbread heart! He pretended he was just sweeping my step. He was not just sweeping my step.']),"Mocha's House",t);return 'mocha'}
+  const coal=r()<.45,L=coal?TAMGR:TAMKD,id=L[Math.floor(r()*L.length)],c=CASTB[id];if(!c)return null;const nm=c.name.split(' ')[0];T.gifts++;
+  try{newsPush('gift',coal?`Tamarack left a licorice "good coal" on ${nm}'s step. ${nm} pretended not to smile`:`Tamarack left a gingerbread heart on ${nm}'s step, tied with a red ribbon`,c.k?c.k.shop:'',t,[id],true)}catch(e){}return id}
+// 1 Hz (and on boot, so it catches up): the People list, his arrival news, a gift every evening, and the goodbye note in the mail after the Jan 6 train
+function tamTick(now){if(!S)return;tamFix(S);const T=S.tam,d=new Date(now),m=d.getMonth(),s=tamSeasonY(m===11?d.getFullYear():d.getFullYear()-1),inS=now>=s.ta&&now<s.te;
+  TAMC.hideP=!(inS||T.met);TAMC.role=inS?'a winter visitor from up the Icicle (evenings in Lantern Square)':'back home up the Icicle until next December';
+  const born=+S.born||0;if(now>=s.ta&&now<s.te+30*864e5&&T.seen<s.Y&&born<s.te){T.seen=s.Y;const t=Math.max(born,Math.min(now,s.ta+3*60e3));addEntry('Town',T.met?'Tamarack is back! He came in on the evening train with his twig bundle and his tiny bells, and went straight to Lantern Square to sweep the steps. Now it is really winter.':'Something new in town: a shaggy little goat with bells on his curly horns stepped off the evening train and trotted to Lantern Square. Jot says his name is Tamarack and he comes down "from up the Icicle" every December.','Lantern Square',t,true);
+    try{newsPush('visitor','Tamarack the Larch Goat came in on the evening train','',t,['tamarack'],true)}catch(e){}}
+  if(now>=s.ta&&now<s.te+30*864e5){const D=new Date(s.ta);D.setHours(21,0,0,0);for(let i=0;i<34;i++,D.setDate(D.getDate()+1)){const gt=+D;if(gt>now||gt>s.td)break;const k=dkey(gt);if(k<=T.d)continue;T.d=k;if(gt>born)tamGift(gt,k)}}
+  if(now>=s.td+20e3&&T.bye<s.Y&&born<s.td&&now-s.td<40*864e5){T.bye=s.Y;S.mail=Array.isArray(S.mail)?S.mail:[];S.mail.unshift({id:'tam'+s.Y,h:'tamarack',k:'tam-bye-'+s.Y,t:s.td,from:'Tamarack',text:tamByeText(T),gift:'',reply:null,seen:0});S.mail.length=Math.min(S.mail.length,40);
+    if(T.met)addEntry('Town','Tamarack went home on the evening train. The square is very quiet without the jingling. He left me a note.','Rain City Station',s.td);try{calDot()}catch(e){}}}
+// ---- Mocha's reactions: weighted localChoose candidates (I5 acts, gated by the clock only; hw is a plain weight, no userBias term), outcomes in LOFX ----
+function tamOk(fx){return t=>{try{if(tamPhase(t)!=='eve'||!S.tam||S.tam.rk[fx]===dkey(t))return false;if(fx==='tampeek'){const tt=TOWNTREE,near=Math.hypot(tt.x+30,tt.z-33)<20;TAMACT[0].at=near?tamPeekAt():[-35.4,28.2];TAMACT[0].doing=near?'peeking at Tamarack from behind the big tree':'peeking at Tamarack from behind a lamppost'}if(fx==='tamcocoa')TAMACT[1].at=tamCocoaAt(t);return fx!=='tamhide'||!!S.tam.met}catch(e){return false}}}
+// merge W1xW2: the peek spot is round the far side of the tree from the fountain (W1 moved the tree into Lantern Square); the cocoa comes from W1's Cocoa Cabin stall in the market window
+function tamPeekAt(){const tt=TOWNTREE,dx=tt.x+30,dz=tt.z-33,L=Math.hypot(dx,dz)||1,ux=dx/L,uz=dz/L,c=Math.cos(-.75),s=Math.sin(-.75);return[+(tt.x+(ux*c-uz*s)*2.75).toFixed(2),+(tt.z+(ux*s+uz*c)*2.75).toFixed(2)]}
+function tamCocoaAt(t){try{const q=W1S.find(s=>s[0]==='cocoa');if(q&&w1Win(t)){const o=q[5]/2+.5;return[+(q[1]+Math.sin(q[3])*o).toFixed(2),+(q[2]+Math.cos(q[3])*o).toFixed(2)]}}catch(e){}return[-31.4,29.6]}
+const TAMACT=[{p:'square',at:[-35.4,28.2],doing:'peeking at Tamarack from behind the big tree',tags:['cozy','people'],need:{curious:15,fun:10},fx:'tampeek',hw:1.1,ok:tamOk('tampeek')},
+  {p:'square',at:[-31.4,29.6],doing:'bringing Tamarack a cup of cocoa',tags:['people','cozy'],need:{social:20,fun:5},fx:'tamcocoa',hw:1,ok:tamOk('tamcocoa')},
+  {p:'square',at:[-30,24.4],doing:'hiding behind the notice board, giggling',tags:['people','cozy'],need:{fun:15},fx:'tamhide',hw:.9,ok:tamOk('tamhide')},
+  {p:'station',s:'platform',doing:"waving goodbye to Tamarack's train",tags:['trains','people'],need:{social:10},fx:'tamwave',hw:3,ok:t=>{try{const s=tamSeason(t);return!!s&&t>=s.td-25*60e3&&t<s.td&&!!S.tam&&S.tam.rk.tamwave!==dkey(t)}catch(e){return false}}}];
+const TAMLN={tampeek:['Peeked at Tamarack from behind the {w}. He was sweeping a doorstep with his twig bundle, very seriously, and his bells went jingle-jingle. I giggled. He pretended not to hear.','Watched Tamarack warm his hooves by the fountain, one hoof, then the other. I stayed hidden. I think he knew.'],
+  tamcocoa:["Got two cups of cocoa {c} and brought one to Tamarack. He said \"hmph. thank you.\" and drank the whole thing, and his eyes went all warm and glowy.","Shared cocoa with Tamarack by the fountain. He doesn't talk much. That's okay. The snow did the talking."],
+  tamhide:['Hid behind the notice board and giggled while Tamarack jingled past. He stopped, harrumphed, and left a tiny gingerbread heart on the corner of the board. For me??','Played hide-and-giggle with Tamarack. He is very bad at finding me. On purpose, I think.'],
+  tamwave:["Went to the station to wave goodbye to Tamarack's train. He leaned out of the window and rang his little horn bells at me until the train went around the bend."]};
+function tamLofx(act,t,live){i5Base(act,t,act.p,act.p+'.'+act.fx);tamFix(S);S.tam.rk[act.fx]=dkey(t);const first=tamMeet(t);try{if(typeof bondAdd==='function')bondAdd('tamarack',2,'visit',t)}catch(e){}
+  const tt=TOWNTREE,w=Math.hypot(tt.x+30,tt.z-33)<20?'big tree':'lamppost';const ck=(()=>{try{const i=W1S.findIndex(q=>q[0]==='cocoa');return i>=0&&w1Win(t)?w1Keeper(i):null}catch(e){return null}})(),c=ck?`from ${ck} at the Cocoa Cabin stall`:'from my own thermos (nobody was minding the Cocoa Cabin yet)';// fix1: the cocoa line follows the stall's keeper
+  addEntry('Town',pick(TAMLN[act.fx]||TAMLN.tampeek).replace('{w}',w).replace('{c}',c),act.p==='station'?'Rain City Station':'Lantern Square',t+1);
+  if(act.fx==='tamcocoa'&&live)try{npcSay('tamarack','hmph. thank you.',3)}catch(e){}return{fx:act.fx,first}}
+['tampeek','tamcocoa','tamhide','tamwave'].forEach(k=>LOFX[k]=tamLofx);
+TAMACT.forEach(a=>{ACTS.push(a);I5.acts.push(a)});
+// ---- his lines (talk card): short, grumbly-polite, original ----
+const TAML={first:["hmph. a visitor. i'm Tamarack. down from up the Icicle for the winter. mind the bells.","oh. hello. you'd be {me}, from kansas city. Tamarack. pleased, i suppose. *jingle*"],
+  hi:['evening.','hmph. hello again, {me}.','*tiny jingle* evening, {me}.','you again. good. the step needed company.'],
+  bye:['off you go. mind the ice.','goodnight, {me}. *jingle*','hmph. come back tomorrow, if you like.'],
+  new:['swept eleven doorsteps tonight. twelve, if you count the bench.',"the fountain is warm on the hooves. don't tell anyone.",'the little ghost peeks at me from behind things. i let him think i don\'t notice.'],
+  about:['up the Icicle, the larches go gold in the fall. then the snow comes, and so do i.','i leave good coal for the grumpy ones. licorice. they need sweetening.','the bells were my grandmother\'s. very small. very loud, if you ask the goats.'],
+  rec:['cocoa by the fountain. i insist.','walk the square after dark. the lights are better than the day.'],
+  help:["sweep the bakery step, if you're bored. i'll pretend i did it."]};
+{const nr=npcReply;npcReply=function(id,intent,ctx){if(id==='tamarack'&&own(TAML,intent)){const me=youName(),d=new Date();let L=TAML[intent];if(intent==='hi'&&d.getMonth()===11&&d.getDate()===5)L=["it's Krampusnacht in the Alps tonight. they tell stories about grumpy creatures. i'm only a little grumpy."];
+    const raw=String(typeof tkLine==='function'?tkLine(id,L):pick(L)).replace(/\{me\}/g,me);return{text:raw,raw,src:'tam',intent}}return nr.apply(this,arguments)}}
+// ---- the December Leavenworth postcard, in the s5 palette (S2g): a plum-umber night, the moon, snowy Cascades, half-timber houses with snow roofs, warm Village of Lights strands, a lit tree ----
+function wtrLeav(g,X,Y,W,H,r){g.fillStyle=cgrad(g,Y,Y+H*.62,['#1C1A22','#2A2428','#3A3330']);g.fillRect(X,Y,W,H);
+  const mx=X+W*.17,my=Y+H*.14,mr=H*.05,hg=g.createRadialGradient(mx,my,mr*.6,mx,my,mr*3.2);hg.addColorStop(0,'rgba(227,200,167,.5)');hg.addColorStop(1,'rgba(227,200,167,0)');g.fillStyle=hg;g.fillRect(mx-mr*3.3,my-mr*3.3,mr*6.6,mr*6.6);g.fillStyle='#F0DDBE';g.beginPath();g.arc(mx,my,mr,0,7);g.fill();
+  for(let i=0;i<26;i++){g.fillStyle=`rgba(240,221,190,${(.2+r()*.35).toFixed(2)})`;g.fillRect(X+r()*W,Y+r()*H*.3,1.4,1.4)}
+  const mb=Y+H*.6,pk=[[.06,.32],[.2,.4],[.35,.19],[.5,.34],[.63,.15],[.78,.31],[.92,.22]],far=[X-10,mb];pk.forEach(([a,b])=>far.push(X+W*a,Y+H*b));far.push(X+W+10,Y+H*.32,X+W+10,mb);cpoly(g,far,'#2E2A30');
+  for(const [a,b] of pk){if(b>.36)continue;const x=X+W*a,y=Y+H*b;cpoly(g,[x,y,x-W*.045,y+H*.07,x-W*.02,y+H*.06,x,y+H*.085,x+W*.022,y+H*.058,x+W*.05,y+H*.075],'#8E8496')}
+  cpoly(g,[X-10,mb,X+W*.12,Y+H*.46,X+W*.3,Y+H*.52,X+W*.5,Y+H*.44,X+W*.72,Y+H*.53,X+W*.88,Y+H*.47,X+W+10,Y+H*.52,X+W+10,mb+8,X-10,mb+8],'#26222A');
+  for(let i=0;i<30;i++){const x=X+r()*W,y=Y+H*(.58+r()*.06),hh=18+r()*16;cfir(g,x,y,hh,'#1C1814');g.fillStyle='rgba(230,211,184,.55)';g.fillRect(x-hh*.18,y-hh*.3,hh*.36,1.6)}
+  const gg=g.createLinearGradient(X,0,X+W,0);gg.addColorStop(0,'#7A7488');gg.addColorStop(.5,'#E6D3B8');gg.addColorStop(1,'#7A7488');g.fillStyle=gg;g.fillRect(X,Y+H*.79,W,H*.21);
+  const bulbs=[];
+  const house=(a,w,hh,i)=>{const x=X+W*a,ww=W*w,base=Y+H*.81,lh=hh*.5,j=ww*.05,x0=x+4,x1=x+ww-4;g.fillStyle='#CDB79A';g.fillRect(x0,base-lh,x1-x0,lh);g.fillRect(x0-j,base-hh,x1-x0+2*j,hh-lh);
+    g.strokeStyle='#3A2A20';g.lineWidth=2.6;g.strokeRect(x0,base-lh,x1-x0,lh);g.strokeRect(x0-j,base-hh,x1-x0+2*j,hh-lh);g.beginPath();for(let k=1;k<4;k++){const px=x0-j+(x1-x0+2*j)*k/4;g.moveTo(px,base-hh);g.lineTo(px,base-lh)}
+    for(let k=0;k<4;k+=2){const p0=x0-j+(x1-x0+2*j)*k/4,p1=x0-j+(x1-x0+2*j)*(k+1)/4;g.moveTo(p0,base-hh);g.lineTo(p1,base-lh);g.moveTo(p1,base-hh);g.lineTo(p0,base-lh)}g.stroke();
+    const rh=H*.13,rx0=x0-j-6,rx1=x1+j+6,ry=base-hh;cpoly(g,[rx0,ry,(rx0+rx1)/2,ry-rh,rx1,ry],'#4A3A30');cpoly(g,[rx0-1,ry+1,(rx0+rx1)/2,ry-rh-2,rx1+1,ry+1,(rx0+rx1)/2,ry-rh+8],'#F4F8FC');
+    g.fillStyle='#F4F8FC';for(let k=0;k<=8;k++){const t=k/8,px=rx0+(rx1-rx0)*t,py=ry+1-Math.abs(t-.5)*0;g.beginPath();g.arc(px,py,2.6,0,Math.PI);g.fill()}
+    for(const k of [.3,.7]){const wx=x0+(x1-x0)*k-8,wy=base-hh+(hh-lh)*.22,ww2=16,wh=13;const gl=g.createRadialGradient(wx+8,wy+6,1,wx+8,wy+6,20);gl.addColorStop(0,'rgba(255,200,120,.45)');gl.addColorStop(1,'rgba(255,200,120,0)');g.fillStyle=gl;g.fillRect(wx-14,wy-14,44,40);
+      g.fillStyle='#FFD98A';g.fillRect(wx,wy,ww2,wh);g.strokeStyle='#3A2A20';g.lineWidth=1.2;g.beginPath();g.moveTo(wx+ww2/3,wy);g.lineTo(wx+ww2/3,wy+wh);g.moveTo(wx+2*ww2/3,wy);g.lineTo(wx+2*ww2/3,wy+wh);g.moveTo(wx,wy+wh/2);g.lineTo(wx+ww2,wy+wh/2);g.stroke();g.lineWidth=2;g.strokeRect(wx,wy,ww2,wh)}
+    const dx=(x0+x1)/2;g.fillStyle='#3A2A20';g.fillRect(dx-6,base-lh*.62,12,lh*.62);if(i%2===0){g.strokeStyle='#2E4A34';g.lineWidth=3.2;g.beginPath();g.arc(dx,base-lh*.78,5,0,7);g.stroke();g.fillStyle='#A8282A';g.beginPath();g.moveTo(dx,base-lh*.78+4);g.lineTo(dx-4,base-lh*.78+8);g.lineTo(dx+4,base-lh*.78+8);g.closePath();g.fill()}
+    else{g.fillStyle='rgba(255,217,138,.9)';g.fillRect(dx-11,base-lh*.55,4,6);g.fillRect(dx+7,base-lh*.55,4,6)}
+    for(let k=0;k<=9;k++){const t=k/9;bulbs.push([rx0+(rx1-rx0)*t,ry+3+Math.sin(t*Math.PI)*5])}};
+  [[-.01,.2,H*.3],[.17,.17,H*.26],[.64,.18,H*.28],[.81,.21,H*.31]].forEach(([a,w,hh],i)=>house(a,w,hh,i));
+  {const tx=X+W*.49,tb=Y+H*.81,th=H*.44;g.fillStyle='#3A2A20';g.fillRect(tx-3,tb-10,6,10);for(let k=0;k<5;k++){const w=th*(.3-k*.05),y=tb-8-k*th*.17;cpoly(g,[tx-w,y,tx,y-th*.27,tx+w,y],k%2?'#23382A':'#2E4A34');g.fillStyle='rgba(230,211,184,.75)';g.fillRect(tx-w*.6,y-2,w*1.2,2)}
+    for(let i=0;i<46;i++){const t=r(),y=tb-12-t*th*.82,w=th*.29*(1-t*.85),x=tx+(r()*2-1)*w*.9;bulbs.push([x,y])}
+    const sy=tb-8-4*th*.17-th*.27,sg=g.createRadialGradient(tx,sy,1,tx,sy,26);sg.addColorStop(0,'rgba(255,231,176,.8)');sg.addColorStop(1,'rgba(255,231,176,0)');g.fillStyle=sg;g.fillRect(tx-26,sy-26,52,52);
+    g.fillStyle='#FFE7B0';g.beginPath();for(let k=0;k<10;k++){const a=k*Math.PI/5-Math.PI/2,rr=k%2?3:8;g.lineTo(tx+Math.cos(a)*rr,sy+Math.sin(a)*rr)}g.closePath();g.fill()}
+  for(let k=0;k<26;k++){const t=k/25,x=X+W*(.37+t*.26),y=Y+H*(.5+Math.sin(t*Math.PI)*.04);bulbs.push([x,y])}
+  for(const [x,y] of bulbs){const bg=g.createRadialGradient(x,y,0,x,y,5);bg.addColorStop(0,'rgba(255,226,160,.55)');bg.addColorStop(1,'rgba(255,226,160,0)');g.fillStyle=bg;g.fillRect(x-5,y-5,10,10);g.fillStyle='#FFE7B0';g.beginPath();g.arc(x,y,1.5,0,7);g.fill()}
+  for(let i=0;i<80;i++){g.fillStyle=`rgba(244,248,252,${(.45+r()*.4).toFixed(2)})`;g.beginPath();g.arc(X+r()*W,Y+r()*H,.8+r()*1.4,0,7);g.fill()}
+  cghost(g,X+W*.9,Y+H*.63,17)}
+{const f=CARDART.leavenworth;CARDART.leavenworth=function(g,X,Y,W,H,r,xm){if(!xm)return f.apply(this,arguments);return wtrLeav(g,X,Y,W,H,r)}}
+// ---- fix (W2-3): his job vs trips. A trip whose time away overlaps one of his shifts is not a candidate (tripOk: the boot catch-up, the live picker and the mind agree);
+// a running trip that would run into a shift comes home on an earlier train, or he is a little late, with a short diary note. Hoisted, data-only (tripOk runs inside catchUp at boot).
+function wtrShifts(t0,t1){const C=S&&S.career,j=C&&C.j;if(!j||!Array.isArray(j.dw)||!Array.isArray(j.h))return 0;for(let d=+startOfDay(t0-864e5);d<t1&&d<t0+9*864e5;d+=864e5){const D=+startOfDay(d+3*36e5),a=D+j.h[0]*36e5,b=D+j.h[1]*36e5;if(j.dw.includes(new Date(D).getDay())&&b>(+j.s||0)&&a<t1&&b>t0)return a}return 0}
+function wtrTripEnd(id,at){const T=TRIPS[id];if(!T)return at;const ride=T.ride[1]*60e3,dur=Math.max(T.hrs[1]*36e5,2*ride+20*60e3),t0=at+25*60e3;let e=t0+dur+10*60e3;
+  if(T.night){try{const h0=hourAt(t0),bed=sched().bed,bedT=t0+((((bed%24)-h0)+24)%24)*36e5,wakeT=bedT+secondsToWake(bedT)*1000+60e3;e=Math.max(e,wakeT+2.6*36e5+ride)}catch(_){}}return e}
+function wtrTripClash(id,at){try{const s=wtrShifts(at,wtrTripEnd(id,at));if(!s)return'';const j=S.career.j;let pn='work';try{pn=byId[j.b].name}catch(_){}return`he has a shift at ${pn} at ${fmtH(hourAt(s))}${dkey(s)!==dkey(at)?' tomorrow':''}, and the trip would run into it`}catch(e){return''}}
+function wtrTripFit(now,live){const tp=S&&S.trip;if(!tp||tp.wf||!Array.isArray(tp.ev))return;const s=wtrShifts(Math.max(now,tp.t0),tp.back);if(!s||s<tp.t0)return;tp.wf=1;const T=TRIPS[tp.id];if(!T)return;
+  const ride=T.ride[0]*60e3,iL=tp.ev.findIndex(e=>e[1]==='leave'),gone=iL>=0&&iL<tp.i,t0=Math.max(now,tp.t0);
+  if(gone){if(tp.back>s)tp.late=s}
+  else{const target=Math.max(t0+ride+15*60e3,s-25*60e3);if(target<tp.back){const lv=target-ride;let ev=tp.ev.slice(tp.i).filter(e=>e[1]!=='leave'&&e[1]!=='home');const wk=ev.find(e=>e[1]==='wake');if(wk&&wk[0]>lv-10*60e3)ev=ev.filter(e=>e[1]!=='sleep'&&e[1]!=='wake');
+    let k=0;for(let i=ev.length-1;i>=0;i--)if(ev[i][0]>lv-5*60e3)ev[i][0]=Math.round(Math.max(t0+(i+1)*1000,lv-(++k)*5*60e3));ev.sort((a,b)=>a[0]-b[0]);tp.ev=tp.ev.slice(0,tp.i).concat(ev,[[Math.round(lv),'leave'],[Math.round(target),'home']]);tp.back=Math.round(target);if(!ev.some(e=>e[1]==='sleep'))tp.over=0}
+    if(tp.back>s)tp.late=s}
+  let pn='work',kn='my boss';try{const j=S.career.j;pn=byId[j.b].name;const kk=econK(j.b);if(kk)kn=kk.name.split(' ')[0]}catch(_){}
+  addEntry('Trip',tp.late?`Uh oh. The next train home gets in after my shift at ${pn} starts. I'll go straight there from the station. ${kn} will understand. I hope.`:`Remembered I have a shift at ${pn} at ${fmtH(hourAt(s))}! Changed my ticket for an earlier train home. Work is work, even for ghosts.`,T.s,t0)}
+// ---- fix (W2-5): the first-run hint ('tap to walk around...') never sits under a speech bubble: it waits out Mocha's hello, then steps aside (fades) whenever a shown bubble would overlap it ----
+const TAMH={el:null,r:null,rT:-1e9,w:0,wt:0,y:false,n:0};
+{const st=document.createElement('style');st.textContent='#hint.wtrY{opacity:0!important;transition:none!important}';document.head.appendChild(st)}
+try{if(isNew&&!hintGone){TAMH.w=1;const h=$('#hint');if(h){h.classList.add('wtrY');TAMH.y=true}}}catch(e){}// first launch: the hint waits until his hello bubble has come and gone (20 s of frames at most)
+function wtrHint(now){const h=TAMH.el||(TAMH.el=$('#hint'));if(!h)return;let y=false;
+  if(TAMH.w){const sh=bubble.classList.contains('show')&&!bubble._off&&bubble.style.visibility!=='hidden';if(!TAMH.t0)TAMH.t0=now;TAMH.wt=+((now-TAMH.t0)/1000).toFixed(1);if(TAMH.w===1){if(sh){TAMH.w=2;TAMH.t2=now}else if(now-TAMH.t0>8000)TAMH.w=0}else if(!sh||now-TAMH.t2>6000||now-TAMH.t0>10000)TAMH.w=0}// fix1: real time, at most ~6 s after the hello shows (the thought bubbles that follow it no longer hold the hint back)
+  if(!hintGone&&h.style.display!=='none'){if(TAMH.w)y=true;else{if(now-TAMH.rT>1000||!TAMH.r){TAMH.rT=now;const q=h.getBoundingClientRect();TAMH.r=q.width>0?[q.left-6,q.top-6,q.right+6,q.bottom+6]:null}const R=TAMH.r;
+    if(R)for(const s of POPB){const el=s.el;if(!el||!el.classList.contains('show')||el._off||el.style.visibility==='hidden'||el._sl==null)continue;const w=el._w||120,hh=el._h||40,L=el._sl,T0=el._st;if(L+w/2>R[0]&&L-w/2<R[2]&&T0+8>R[1]&&T0-hh<R[3]){y=true;break}}}}
+  if(!y&&!TAMH.w&&!hintGone&&!TAMH.seenT)TAMH.seenT=now;if(y!==TAMH.y){TAMH.y=y;h.classList.toggle('wtrY',y);if(y)TAMH.n++}}
+{const sy=say;say=function(){const r=sy.apply(this,arguments);try{if(!hintGone){TAMH.rT=-1e9;wtrHint(performance.now())}}catch(e){}return r}}// a new line yields the hint at once (no one-frame overlap)
+function tamFrame(sd,t,dt){if((TAM.hT-=dt)<=0){TAM.hT=.2;try{wtrHint(performance.now())}catch(e){}}if(!TAM.obj)return;
+  if((TAM.pT-=dt)<=0){TAM.pT=.5;try{tamPhaseStep(Date.now())}catch(e){console.warn('tam',e)}}if((TAM.dT-=dt)<=0){TAM.dT=1;try{tamTick(Date.now())}catch(e){console.warn('tamTick',e)}}
+  if(TAM.st!=='hide')try{tamStep(sd,t)}catch(e){}tamPuffStep(dt)}
+function tamInfo(){const o=TAM.obj,r=TAM.r||{},now=Date.now(),s=tamSeason(now);return{here:!!(o&&o.visible&&TAM.st!=='hide'),pos:o?[+o.position.x.toFixed(2),+o.position.z.toFixed(2)]:null,act:TAM.st+(TAM.goal?'>'+TAM.goal:'')+(TAM.task&&TAM.st==='task'?':'+TAM.task.k:''),
+  phase:TAM.ph,force:TAM.force,met:!!(S.tam&&S.tam.met),gifts:S.tam?S.tam.gifts:0,seen:S.tam?S.tam.seen:0,bye:S.tam?S.tam.bye:0,draws:r.lvl===0?r.d0:r.lvl===1?1:0,lod:r.lvl,d0:r.d0,path:TAM.path?TAM.path.length-TAM.pi:0,
+  season:s?{ta:new Date(s.ta).toString().slice(0,24),td:new Date(s.td).toString().slice(0,24)}:null,n:Object.assign({},TAM.n),listed:!TAMC.hideP,role:TAMC.role}}
+Object.assign(window.__mocha,{tam:o=>{o=o||{};if('force' in o){TAM.force=o.force||null;TAM.pT=0}if(o.place){tamSpawn(o.place[0],o.place[1],false);TAM.st='task';TAM.task=TAMS[0];TAM.taskT=30}if(o.phase)tamPhaseStep(Date.now());if(o.tick)tamTick(Date.now());
+    if(o.ff){for(let i=0,n=Math.min(6000,Math.round(o.ff/.1));i<n;i++){if(i%5===0)tamPhaseStep(Date.now());tamStep(.1,T+i*.1)}try{CHARLOD.tick()}catch(e){}}if(o.lod)try{CHARLOD.tick()}catch(e){}
+    if(o.talk)return Object.assign(tamInfo(),{talk:talkOpen('tamarack',{place:true}),card:TK.open?$('#tkTxt').textContent:''});if(o.reply)return npcReply('tamarack',o.reply);if(o.acts)return TAMACT.map(a=>({fx:a.fx,ok:a.ok(o.at||Date.now()),at:a.at||null,hw:a.hw}));
+    if(o.lofx){const a=TAMACT.find(q=>q.fx===o.lofx);return a?localOutcome(a,Date.now(),false):null}return tamInfo()},
+  wtr:o=>{o=o||{};if(o.clash)return wtrTripClash(o.clash,o.at||Date.now());if(o.shift)return wtrShifts(o.shift[0],o.shift[1]);return{hint:{y:TAMH.y,n:TAMH.n,wait:TAMH.w},season:tamSeason(Date.now())}},
+  tamCard:()=>cardImg('leavenworth',7,1)});
 // ---------- the Town tab: shops (funds, petitions, campaigns, a business board with mood faces) ----------
 function econBoard(){const now=Date.now(),dk=dkey(now);return Object.keys(EB37).filter(p=>byId[p]).map(pid=>{const b=econB(pid),k=econK(pid),st=b[3]&&dk<=b[6]?b[3]:'',lg=S.econ.log.slice().reverse().find(l=>l[1]===pid&&dk-l[0]<4),sg=econSign(pid);
   const line=lg?lg[2]:st?`${ESTN[st]}${sg?': '+sg[1]:''}`:b[2]>=2?'a busy, happy week':b[2]===1?'a good week':b[2]===0?'a steady week':b[2]===-1?'a slow week':'a quiet stretch';
@@ -15096,6 +15354,191 @@ try{inWorldBuild()}catch(e){console.error('LF1 inWorldBuild',e)}
   '#hint{background:rgba(44,30,24,.5);padding:5px 12px;border-radius:14px;opacity:.95;text-shadow:none;line-height:1.35}';document.head.appendChild(st)}
 // B42-FIXES
 }
+// ====================================================================
+//  W1 THE DECEMBER WINTER MARKET (winter update, Nov 7): Lantern Square in [Dec 1, Jan 7), after the owner's s5 picture (Addendum S S15).
+//  Six stalls in ONE merged group (BAKEMI vc + PBM.win glow parts + PBM.sign boards/hearts; bulbs on the shared DRS strand; candle halos in
+//  GLOWPTS), the ONE town tree rebuilt at TOWNTREE (an xmasTree override: 7 firTierG tiers + snow merged, a 400-bulb spiral IM in HOL.g = the
+//  B41 'tree' strand, so the cascade and chime still run; an emissive star with a GLOWPTS halo), the stone heron with a lantern on the fountain
+//  (year-round, merged into its PB chunk: 0 draws), the iced fountain (snow lips, wreath, bow; spray off), fir garland on the square's bunting
+//  lines, keepers at the stalls 16:30-21:30 (tPlan blocks weighted by their own day), LF5 name cards, the market-night grade (darker mids on
+//  B41's 'market' key; lights protected), shots. Built lazily on the first market day: nothing of it exists outside the window. Hook __mocha.market(o).
+// ====================================================================
+const WMK={on:null,built:0,g:null,tree:null,treeOn:false,top:0,tiers:0,bulbs:0,tb:null,str:null,sm:[],zm:[],cand:[],th:[],star:[],pools:[],tpool:-1,col:[],tsp:{},lab:{},t4:0,gw:0,dim:.14,heron:0,ms:0,err:null,iceC:null,huv:null,nuv:{},n:0};
+const W1K={tb:'#3A2A20',pl:'#CDB79A',plank:'#5A4030',top:'#6E4A30',snow:'#ECE9F2',lip:'#F4F2F8',ice:'#B9C4D2',fir:'#2E4A34',bow:'#A8282A',berry:'#B0302A',ginger:'#A8683A',icing:'#F6E6CC',candle:'#F3E6CC',flame:'#FFF0CC',stone:'#C2BAAD',stone2:'#A39B8F'};
+const W1G={};let W1B=null;const W1F={x:0,z:0,c:1,s:0,ry:0},_w1m=new THREE.Object3D(),_w1z=new THREE.Matrix4().makeScale(0,0,0);
+function w1Win(t){const d=new Date(t==null?Date.now():t),m=d.getMonth();return m===11||(m===0&&d.getDate()<7)}
+function w1Geo(){if(W1G.box)return W1G;W1G.box=dBox();W1G.c8=dCyl(8);W1G.c12=dCyl(12);W1G.sph=dSph();W1G.ico=new THREE.IcosahedronGeometry(1,0);W1G.k4=dCone(4);W1G.k6=dCone(6);W1G.pl=new THREE.PlaneGeometry(1,1);
+  W1G.ring=new THREE.TorusGeometry(1,.05,5,36).rotateX(Math.PI/2);
+  {const st=new THREE.Shape();for(let i=0;i<10;i++){const a=Math.PI/2+i*Math.PI/5,r=i%2?.42:1;i?st.lineTo(Math.cos(a)*r,Math.sin(a)*r):st.moveTo(Math.cos(a)*r,Math.sin(a)*r)}W1G.star=new THREE.ExtrudeGeometry(st,{depth:.24,bevelEnabled:false}).translate(0,0,-.12)}
+  {const h=new THREE.Shape();h.moveTo(0,-.5);h.bezierCurveTo(-.15,-.32,-.5,-.12,-.5,.14);h.bezierCurveTo(-.5,.38,-.28,.5,-.14,.5);h.bezierCurveTo(-.05,.5,0,.42,0,.35);h.bezierCurveTo(0,.42,.05,.5,.14,.5);h.bezierCurveTo(.28,.5,.5,.38,.5,.14);h.bezierCurveTo(.5,-.12,.15,-.32,0,-.5);
+   const g=new THREE.ShapeGeometry(h,6),u=g.attributes.uv;for(let i=0;i<u.count;i++)u.setXY(i,u.getX(i)+.5,u.getY(i)+.5);W1G.heart=g}
+  return W1G}
+function w1F(x,z,ry=0){W1F.x=x;W1F.z=z;W1F.ry=ry;W1F.c=Math.cos(ry);W1F.s=Math.sin(ry)}
+function w1W(lx,lz){return[W1F.x+lx*W1F.c+lz*W1F.s,W1F.z-lx*W1F.s+lz*W1F.c]}
+function w1P(k,g,col,lx,ly,lz,sx,sy,sz,ry=0,rz=0,rx=0,uv=null){const p=w1W(lx,lz);W1B.add(k,g,col,p[0],ly,p[1],sx,sy,sz,p[0],p[1],W1F.ry+ry,rz,uv,rx)}
+function w1Seg(k,g,col,a,b,r){const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2],L=Math.hypot(dx,dy,dz);w1P(k,g,col,(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2,r,L,r,0,0,Math.atan2(dz,dy))}// a rod between two local points (no yaw)
+// sign atlas: one gingerbread-heart cell (icing scallop, a ribbon dot) and one painted name board per stall (strip, or a half cell when strips run out)
+function w1Atlas(){if(WMK.huv)return;const hp=(g,w,h,k)=>{const X=x=>(x*k+.5)*w,Y=y=>(.5-y*k)*h;g.beginPath();g.moveTo(X(0),Y(-.5));g.bezierCurveTo(X(-.15),Y(-.32),X(-.5),Y(-.12),X(-.5),Y(.14));g.bezierCurveTo(X(-.5),Y(.38),X(-.28),Y(.5),X(-.14),Y(.5));g.bezierCurveTo(X(-.05),Y(.5),X(0),Y(.42),X(0),Y(.35));
+    g.bezierCurveTo(X(0),Y(.42),X(.05),Y(.5),X(.14),Y(.5));g.bezierCurveTo(X(.28),Y(.5),X(.5),Y(.38),X(.5),Y(.14));g.bezierCurveTo(X(.5),Y(-.12),X(.15),Y(-.32),X(0),Y(-.5));g.closePath()};
+  WMK.huv=SIGN.cell('w1:heart',(g,w,h)=>{const gr=g.createRadialGradient(w*.45,h*.4,4,w/2,h/2,w*.6);gr.addColorStop(0,'#C07E48');gr.addColorStop(1,'#93582E');g.fillStyle=gr;g.fillRect(0,0,w,h);
+    g.strokeStyle='#F6E6CC';g.lineWidth=5;g.setLineDash([7,5]);hp(g,w,h,.8);g.stroke();g.setLineDash([]);g.fillStyle='#B0302A';g.beginPath();g.arc(w/2,h*.36,7,0,6.29);g.fill();
+    g.strokeStyle='#F6E6CC';g.lineWidth=3;g.beginPath();g.moveTo(w*.34,h*.56);g.quadraticCurveTo(w/2,h*.68,w*.66,h*.56);g.stroke()});
+  let str=99;try{str=SIGN.used().strips}catch(e){}
+  for(const s of W1S){const d=sgStrip(s[6],'#3A2A20','#F3E6CC');WMK.nuv[s[0]]=str<=16-W1S.length?SIGN.strip('w1:'+s[0],d):SIGN.half('w1:'+s[0],d)}}
+// ---- one stall (local frame: front +z, the counter at the front, the keeper behind it); bulbs go to WMK.sb for the shared strand
+function w1Stall(s,i,R){const [id,x,z,ry,w,d]=s,K=W1K,G=W1G,hp=2.3,pitch=.52,half=d/2+.36,rl=half/Math.cos(pitch)+.06,rise=half*Math.tan(pitch);w1F(x,z,ry);
+  for(const sx of [-1,1])for(const sz of [-1,1])w1P('vc',G.box,K.tb,sx*(w/2-.07),hp/2,sz*(d/2-.07),.14,hp,.14);
+  w1P('vc',G.box,K.plank,0,.5,d/2-.14,w-.12,1,.1);for(let j=0;j<Math.round(w/.3);j++)w1P('vc',G.box,'#47322A',-w/2+.2+j*.3,.5,d/2-.085,.025,.94,.02);
+  w1P('vc',G.box,K.top,0,1.04,d/2-.28,w+.1,.08,.6);w1P('vc',G.box,K.pl,0,hp/2,-d/2+.05,w-.1,hp,.08);for(const sx of [-1,1])w1P('vc',G.box,K.plank,sx*(w/2-.05),.5,0,.06,1,d-.2);
+  w1P('vc',G.box,K.tb,0,1.25,-d/2+.1,w-.1,.08,.04);w1P('vc',G.box,K.tb,0,hp-.08,-d/2+.1,w-.1,.08,.04);if(w>2)for(const sx of [-1,1])w1P('vc',G.box,K.tb,sx*w/4,1.75,-d/2+.1,.07,1.05,.04,0,sx*.5);
+  for(const sz of [1,-1]){const ly=hp+rise/2,lz=sz*half/2;w1P('vc',G.box,K.tb,0,ly,lz,w+.5,.07,rl,0,0,sz*pitch);w1P('vc',G.box,K.snow,0,ly+.09,lz,w+.56,.12,rl+.05,0,0,sz*pitch);
+    w1P('vc',G.c8,K.lip,0,hp-.03,sz*(half+.03),.1,w+.62,.1,0,Math.PI/2);for(let j=0;j<6;j++)w1P('vc',G.k4,'#DCE4EE',-w/2+.15+j*(w-.3)/5+(R()-.5)*.12,hp-.22,sz*(half+.04),.03,.18+R()*.2,.03,0,0,Math.PI)}
+  w1P('vc',G.box,K.tb,0,hp+rise-.02,0,w+.5,.1,.12);w1P('vc',G.c8,K.lip,0,hp+rise+.1,0,.13,w+.58,.13,0,Math.PI/2);for(const sx of [-1,1])w1P('vc',G.box,K.tb,sx*(w/2+.2),hp+rise*.45,0,.08,rise*.9,.08);
+  // fir garland swags (#2E4A34 puffs) with berries, a red bow in the middle; gingerbread hearts on strings
+  const gy=hp-.1,gz=half+.08,L=w+.5,n=Math.round(L/.16);for(let j=0;j<=n;j++){const u=j/n,lx=-L/2+u*L,sag=.2*Math.sin(u*Math.PI*2)**2;w1P('vc',G.ico,dJit(K.fir,R,.09),lx,gy-sag,gz,.12,.1,.1,R()*6,R()*6,R()*6);if(j%4===2)w1P('vc',G.sph,K.berry,lx,gy-sag-.07,gz+.07,.035,.035,.035)}
+  for(const sx of [-1,1]){w1P('vc',G.sph,K.bow,sx*.13,gy+.07,gz+.07,.14,.09,.05,0,sx*.45);w1P('vc',G.box,K.bow,sx*.08,gy-.17,gz+.06,.05,.32,.02,0,sx*.3)}w1P('vc',G.sph,'#8E2224',0,gy+.06,gz+.1,.055,.055,.05);
+  const nh=w>2?6:3;for(let j=0;j<nh;j++){const lx=-w/2+.35+j*(w-.7)/(nh-1),ly=gy-.5-(j%2)*.14;w1P('vc',G.box,'#E6D3B8',lx,ly+.3,gz-.03,.01,.4,.01);w1P('sign',G.heart,'#ffffff',lx,ly,gz-.02,.3,.28,1,(R()-.5)*.3,(R()-.5)*.25,0,WMK.huv)}
+  // the painted name board on the ridge (both faces)
+  w1P('vc',G.box,K.tb,0,hp+rise+.5,0,Math.min(2,w)+.08,.5,.06);for(const sx of [-.6,.6])w1P('vc',G.box,K.tb,sx*Math.min(1,w/2),hp+rise+.2,0,.06,.32,.06);
+  const bw=Math.min(2,w)-.06;w1P('sign',G.pl,'#ffffff',0,hp+rise+.5,.035,bw,.44,1,0,0,0,WMK.nuv[id]);w1P('sign',G.pl,'#ffffff',0,hp+rise+.5,-.035,bw,.44,1,Math.PI,0,0,WMK.nuv[id]);
+  // two candles on the counter (cream body, an emissive flame, a GLOWPTS halo kept dark outside the window)
+  for(const sx of [-1,1]){const lx=sx*(w/2-.2),lz=d/2-.16;w1P('vc',G.c8,K.candle,lx,1.2,lz,.045,.24,.045);w1P('win',G.sph,K.flame,lx,1.36,lz,.028,.055,.028);const p=w1W(lx,lz);WMK.cand.push(glowPt(p[0],1.38,p[1],'#FFC27A',1.25,0,1,'w1'))}
+  // goods
+  const cy=1.08,cz=d/2-.34;
+  if(id==='cocoa'){for(let j=0;j<5;j++){const lx=-.75+j*.3;w1P('vc',G.c8,j%2?K.bow:K.icing,lx,cy+.07,cz,.06,.13,.06);w1P('vc',G.c8,'#4A2A1C',lx,cy+.14,cz,.05,.012,.05)}w1P('vc',G.c12,'#2F3A34',.78,cy+.16,cz-.08,.17,.3,.17);w1P('vc',G.c12,'#3A4640',.78,cy+.33,cz-.08,.12,.04,.12);w1P('vc',G.c8,'#F6F2EA',.45,cy+.1,cz-.12,.07,.2,.07)}
+  else if(id==='chestnut'){w1P('vc',G.c12,'#2F3A34',0,cy+.2,cz-.06,.27,.36,.27);w1P('win',G.c12,'#FF9A4A',0,cy+.39,cz-.06,.23,.02,.23);for(let j=0;j<4;j++)w1P('vc',G.k6,'#F3E6CC',(j%2?.42:-.42),cy+.12,cz+(j>1?-.1:.08),.07,.22,.07,0,0,Math.PI);const p=w1W(0,cz-.06);WMK.cand.push(glowPt(p[0],cy+.5,p[1],'#FF9A4A',1.6,0,1,'w1'))}
+  else if(id==='knits'){const C=['#8E3A2A','#F3E6CC','#6C7A5A','#5A3A5E','#A8282A','#C9A06A'];for(let j=0;j<6;j++){const lx=-.9+j*.36,c=C[j];w1P('vc',G.sph,c,lx,cy+.06,cz,.13,.14,.13);w1P('vc',G.c8,j%2?'#F3E6CC':'#5A3A5E',lx,cy+.05,cz,.135,.04,.135);w1P('vc',G.sph,j%2?'#5A3A5E':'#F3E6CC',lx,cy+.22,cz,.05,.05,.05)}
+    w1P('vc',G.c8,K.tb,0,hp-.45,d/2-.2,.025,w-.3,.025,0,Math.PI/2);for(let j=0;j<4;j++)w1P('vc',G.box,C[(j*2+1)%6],-.75+j*.5,hp-.82,d/2-.2,.16,.7,.03)}
+  else if(id==='ornaments'){w1P('vc',G.c8,K.tb,0,hp-.38,d/2-.22,.025,w-.3,.025,0,Math.PI/2);const C=[K.bow,'#B5804A','#F3E6CC','#6C7A5A','#C9C2B0'];for(let j=0;j<9;j++){const lx=-w/2+.35+j*(w-.7)/8,dy=.18+(j%3)*.12;w1P('vc',G.box,'#3A3430',lx,hp-.38-dy/2,d/2-.22,.008,dy,.008);w1P('vc',G.sph,C[j%5],lx,hp-.42-dy,d/2-.22,.075,.075,.075)}
+    for(let j=0;j<10;j++)w1P('vc',G.sph,C[j%5],-.7+(j%5)*.35,cy+.07,cz+(j>4?-.13:.05),.065,.065,.065)}
+  else if(id==='ginger'){for(let j=0;j<4;j++)for(let k=0;k<3;k++)w1P('vc',G.c12,k===2?K.icing:K.ginger,-.8+j*.45,cy+.03+k*.035,cz,.13,.03,.13);w1P('sign',G.heart,'#ffffff',0,1.72,-d/2+.1,.7,.66,1,0,0,0,WMK.huv)}
+  else{const C=['#F3E6CC','#E8C77A','#F3E6CC','#D9B26A'];for(let j=0;j<8;j++){const lx=-.9+j*.26,h=.14+((j*5)%4)*.07;w1P('vc',G.c8,C[j%4],lx,cy+h/2,cz+(j%2?-.1:.06),.04,h,.04);if(j%3===1){w1P('win',G.sph,K.flame,lx,cy+h+.04,cz+(j%2?-.1:.06),.022,.045,.022);const p=w1W(lx,cz);WMK.cand.push(glowPt(p[0],cy+h+.06,p[1],'#FFC27A',.9,0,1,'w1'))}}}
+  // 9 warm bulbs under the front eave (shared strand) and a pool in front
+  for(let j=0;j<9;j++){const u=j/8,p=w1W(-L/2+.12+u*(L-.24),gz+.04);WMK.sb.push([p[0],gy-.3-.12*Math.sin(u*Math.PI),p[1]])}
+  {const p=w1W(0,d/2+1.1);WMK.pools.push(poolAdd(p[0],p[1],2.4,'#ffb35a',0))}
+}
+// ---- the fountain in the window: snow lips, upper ice, a fir wreath with a red bow on the column (B36's lower ice disc is recoloured)
+function w1Fountain(R){const G=W1G,K=W1K;w1F(-30,33,0);w1P('vc',G.ring,K.lip,0,.77,0,3.42,2.4,3.42);w1P('vc',G.c12,K.ice,0,2.99,0,1.36,.03,1.36);w1P('vc',G.ring,K.lip,0,3.03,0,1.58,2,1.58);
+  for(let j=0;j<20;j++){const a=j/20*6.283;w1P('vc',G.ico,dJit(K.fir,R,.09),Math.cos(a)*.68,2.05+Math.sin(a*3)*.03,Math.sin(a)*.68,.14,.11,.12,R()*6,R()*6,R()*6);if(j%3===0)w1P('vc',G.sph,K.berry,Math.cos(a)*.78,2.0,Math.sin(a)*.78,.04,.04,.04)}
+  for(const sx of [-1,1]){w1P('vc',G.sph,K.bow,sx*.15,2.2,-.8,.16,.1,.06,0,sx*.45);w1P('vc',G.box,K.bow,sx*.09,1.92,-.8,.06,.36,.02,0,sx*.3)}w1P('vc',G.sph,'#8E2224',0,2.19,-.83,.06,.06,.05)}
+// ---- the square's bunting lines become fir garland (puffs on the existing wires, bows at the lamps)
+function w1Garland(R){const G=W1G,K=W1K;w1F(0,0,0);for(const [a,b] of POLBU){const Lh=Math.hypot(b[0]-a[0],b[2]-a[2]),sag=Math.min(.36,Lh*.03),n=Math.round(Lh/.21);// fix1: higher, less sag, thinner and a lighter fir (it read as a black chain at head height)
+    for(let j=0;j<=n;j++){const p=dSpan(a,b,j/n,sag);w1P('vc',G.ico,dJit('#628A6A',R,.09),p[0],p[1]-.08,p[2],.09,.075,.075,R()*6,R()*6,R()*6);if(j%4===2)w1P('vc',G.sph,K.berry,p[0],p[1]-.16,p[2],.04,.04,.04);else if(j%4===0)w1P('win',G.sph,'#FFD89A',p[0],p[1]-.13,p[2],.045,.045,.045)}// fix1: small warm 'win' bulbs tucked in the fir (night emissive, same draw), so it reads as lit greenery, not a dark chain
+    for(const q of [a,b]){for(const sx of [-1,1])w1P('vc',G.sph,K.bow,q[0]+sx*.13,q[1]-.18,q[2],.14,.09,.06,0,sx*.45);w1P('vc',G.sph,'#8E2224',q[0],q[1]-.19,q[2],.055,.055,.05)}}}
+// ---- the market build (first market day only)
+function w1Build(){if(WMK.built)return;const t0=performance.now();w1Geo();w1Atlas();WMK.g=new THREE.Group();WMK.g.name='w1market';worldAdd(WMK.g);W1B=Batcher(Infinity);WMK.sb=[];const R=seeded(5151);
+  W1S.forEach((s,i)=>w1Stall(s,i,R));w1Fountain(R);w1Garland(R);W1B.build({vc:BAKEMI,win:PBM.win,sign:PBM.sign},{vc:true},WMK.g).forEach(m=>{m.userData.w1=1});W1B=null;
+  const S=DRS.strand;if(S){const i0=S.n;for(const p of WMK.sb){if(S.n>=S.N)break;_w1m.position.set(p[0],p[1],p[2]);_w1m.rotation.set(0,0,0);_w1m.scale.setScalar(1);_w1m.updateMatrix();WMK.sm.push(_w1m.matrix.clone());WMK.zm.push(new THREE.Matrix4().makeScale(0,0,0).setPosition(p[0],p[1],p[2]));S.im.setMatrixAt(S.n,_w1m.matrix);S.im.setColorAt(S.n,_gc.set(AUTB.bulb));S.n++}
+    S.im.count=S.n;S.im.instanceMatrix.needsUpdate=true;if(S.im.instanceColor)S.im.instanceColor.needsUpdate=true;WMK.str=[i0,S.n];for(let k=0;k<WMK.sb.length;k+=4)WMK.cand.push(glowPt(WMK.sb[k][0],WMK.sb[k][1],WMK.sb[k][2],'#FFC27A',1.1,0,1,'w1'))}
+  WMK.reg=1;WMK.built=1;WMK.ms=+(performance.now()-t0).toFixed(1)}
+// ---- the one town tree: 7 firTierG tiers with snow on each, baubles, a trunk (BAKEMI) and a two-way star (PBM.win); halos in GLOWPTS
+function w1TreeBuild(){const G=w1Geo(),x=TOWNTREE.x,z=TOWNTREE.z,RS=[3.0,2.6,2.2,1.85,1.45,1.05,.7],R=seeded(7151),T=[];WMK.tree=new THREE.Group();WMK.tree.name='w1tree';worldAdd(WMK.tree);W1B=Batcher(Infinity);w1F(x,z,0);
+  w1P('vc',G.c8,'#4A3022',0,.5,0,.26,1.0,.26);const fg=firTierG(11);for(let k=0;k<7;k++){const r=RS[k]*.7,y=.75+k*1.07,hh=1.55;T.push([r,y,hh]);w1P('vc',fg,dJit(k===6?'#7A9882':'#6E8C78',R,.05),0,y,0,r,hh,r,k*1.3);w1P('vc',fg,'#F0EEF6',0,y+hh*.36,0,r*.8,hh*.42,r*.8,k*1.3+.5)}
+  const top=T[6][1]+T[6][2],rad=y=>{let m=0;for(const [r,y0,hh] of T){const u=(y-y0)/hh;if(u>=-.04&&u<=1)m=Math.max(m,r*(u<.33?1-.6*Math.max(0,u):.8*(1-(u-.33)/.67)))}return m};WMK.top=top;WMK.tiers=7;
+  for(let i=0;i<44;i++){const y=1.1+R()*(top-2),a=R()*6.283,r=rad(y)*.95;w1P('vc',G.sph,[AUT.bowRed,AUT.brassOrn,AUT.cream][i%3],Math.cos(a)*r,y-.15,Math.sin(a)*r,.11,.11,.11)}
+  for(const a of [0,Math.PI/2])w1P('win',G.star,'#FFE6A0',0,top+.42,0,.44,.44,.44,a);
+  W1B.build({vc:BAKEMI,win:PBM.win},{vc:true},WMK.tree);W1B=null;
+  WMK.tb=[];for(let i=0;i<400;i++){const q=i%5,u=(Math.floor(i/5)+R()*.6)/80,y=.95+u*(top-1.15),a=u*6.283*3.2+q*1.2566+(R()-.5)*.3,r=rad(y)*.88+.05;WMK.tb.push([x+Math.cos(a)*r,y,z+Math.sin(a)*r,i%3===2?'#FFE2B0':AUT.bulb]);if(i%11===5)WMK.th.push(glowPt(x+Math.cos(a)*r,y,z+Math.sin(a)*r,'#FFC27A',1.1,0,1,'w1'))}
+  WMK.star=[glowPt(x,top+.42,z,'#FFE08A',2.6,0,1,'w1'),glowPt(x,top+.42,z,'#FFF4D8',1.3,0,1,'w1')];/* fix1: smaller star halos (HIGH/ULTRA bloom) */WMK.tpool=poolAdd(x,z,4.4,'#ffb35a',0);WMK.tree.visible=false}
+function w1TreeShow(on){w1Col(12,13,on);if(!WMK.tree)return;WMK.tree.visible=on;WMK.star.forEach((i,k)=>glowSet(i,on?(k?.75:.5):0));WMK.th.forEach(i=>glowSet(i,on?.2:0));poolSet(WMK.tpool,on?.7:0)}
+// colliders recorded in COLP at boot (W1C): park far away when off, restore when on
+function w1ColFind(){if(WMK.col.length)return;for(const q of W1C){let f=-1;for(let i=0;i<COL.nc;i++)if(Math.abs(COL.CX[i]-q[0])<.01&&Math.abs(COL.CZ[i]-q[1])<.01&&Math.abs(COL.CR[i]-q[2])<.01){f=i;break}WMK.col.push([f,q[0],q[1]])}}
+function w1Col(a,b,on){w1ColFind();for(let k=a;k<b&&k<WMK.col.length;k++){const [i,x,z]=WMK.col[k];if(i<0)continue;COL.CX[i]=on?x:1e5;COL.CZ[i]=on?z:1e5}}
+// ---- on/off with the window (4 Hz from b41Frame); force re-applies
+function w1Sync(force){const on=w1Win();if(on===WMK.on&&!force)return;WMK.on=on;if(on&&!WMK.built){try{w1Build()}catch(e){WMK.err='build:'+e.message;console.warn('W1 market',e)}}
+  if(WMK.g)WMK.g.visible=on;const S=DRS.strand;if(S&&WMK.str){for(let i=WMK.str[0];i<WMK.str[1];i++)S.im.setMatrixAt(i,(on?WMK.sm:WMK.zm)[i-WMK.str[0]]);S.im.instanceMatrix.needsUpdate=true}
+  WMK.cand.forEach(i=>glowSet(i,on?.5:0));WMK.pools.forEach(i=>poolSet(i,on?.75:0));w1Col(0,12,on);if(WMK.hglow>=0)glowSet(WMK.hglow,on?.35:0);WLT.u.v.value.set(1,on?.12:1,on?1.5:1,on?2.4:1);// fix1 CORE 5: holiday window variants (silhouettes dark, candles hot) only in the window
+  try{if(SQ.ice){if(!WMK.iceC)WMK.iceC=SQ.ice.material.color.clone();SQ.ice.material.color.copy(on?_gc.set(W1K.ice):WMK.iceC)}B36.frozen=sqFrozen(Date.now())}catch(e){}
+  WMK.n++}
+function w1Keeper(i){const s=W1S[i];for(const id of [s[7],W1K2[s[0]]]){if(!id)continue;try{const b=blockAt(tPlan(id),townHour());if(b&&b[3]==='mk'+i){const c=CASTB[id];return c?c.name.split(' ')[0]:id}}catch(e){}}return null}
+// LF5 name card when the walker steps up to a stall (one per stall per 45 s)
+function w1Labels(){if(!WMK.on||!WMK.built||camS.mode!=='walk'||IN.on)return;const now=performance.now();for(let i=0;i<W1S.length;i++){const s=W1S[i],fx=s[1]+Math.sin(s[3])*(s[5]/2+.8),fz=s[2]+Math.cos(s[3])*(s[5]/2+.8);
+    if(Math.hypot(YOU.x-fx,YOU.z-fz)<2.4&&!(now-(WMK.lab[s[0]]||-1e9)<45e3)){WMK.lab[s[0]]=now;const k=w1Keeper(i);try{typeof ncShow==='function'&&ncShow(s[6],k?`${k} is minding the stall · ${s[8]}`:s[8],'w1:'+s[0],false)}catch(e){}WMK.lastLab=s[0];break}}}
+function w1Frame(dt){if((WMK.t4-=dt)>0)return;WMK.t4=.25;w1Sync();w1Labels();if(WMK.reg&&B41.boot&&!B41.casc){WMK.reg=0;try{b41Theme(HOL.theme)}catch(e){}}}// re-register the strands only outside a tree cascade (a snapshot mid-cascade would keep the bulbs dark)
+// ---- the heron with a lantern (year-round): merged into the fountain's PB chunk (vc) and the PB 'win' chunk for the glass, 0 draws; a GLOWPTS halo at night
+function w1Append(m,g2){const g=m.geometry,n1=g.attributes.position.count,n2=g2.attributes.position.count,out=new THREE.BufferGeometry();for(const k in g.attributes){const a=g.attributes[k],b=g2.attributes[k],it=a.itemSize,arr=new Float32Array((n1+n2)*it);arr.set(a.array.subarray(0,n1*it),0);if(b&&b.itemSize===it)arr.set(b.array.subarray(0,n2*it),n1*it);out.setAttribute(k,new THREE.BufferAttribute(arr,it))}
+  const I1=g.index?g.index.array:Uint32Array.from({length:n1},(_,i)=>i),I2=g2.index?g2.index.array:Uint32Array.from({length:n2},(_,i)=>i),I=new Uint32Array(I1.length+I2.length);I.set(I1);for(let i=0;i<I2.length;i++)I[I1.length+i]=I2[i]+n1;out.setIndex(new THREE.BufferAttribute(I,1));out.computeBoundingSphere();out.computeBoundingBox();out.userData=g.userData;m.geometry=out;g.dispose()}
+function w1Chunk(key,x,y,z){let best=null,bd=1e9;const v=new THREE.Vector3(x,y,z);for(const m of PBMESH){if(m.userData.batch!==key)continue;const g=m.geometry;if(!g.boundingBox)g.computeBoundingBox();const b=g.boundingBox;if(x<b.min.x||x>b.max.x||z<b.min.z||z>b.max.z)continue;const d=g.boundingSphere?g.boundingSphere.center.distanceTo(v):0;if(d<bd){bd=d;best=m}}return best}
+function w1Heron(){const G=w1Geo(),K=W1K,S=K.stone,S2=K.stone2,y0=4.22,HS=1.55;W1B=Batcher(Infinity);w1F(-30,33,Math.PI);const P0=W1B.add;W1B.add=(k,g,col,x,y,z,sx,sy,sz,cx,cz,ry,rz,uv,rx)=>P0(k,g,col,-30+(x+30)*HS,y0+(y-y0)*HS,33+(z-33)*HS,sx*HS,sy*HS,sz*HS,cx,cz,ry,rz,uv,rx);// he faces north, toward the notice board and the cafe
+  for(const sx of [-1,1]){w1P('vc',G.c8,S2,sx*.07,y0+.3,0,.028,.6,.028);w1P('vc',G.box,S2,sx*.07,y0+.02,.06,.05,.03,.18)}
+  w1P('vc',G.sph,S,0,y0+.78,-.05,.21,.18,.36,0,0,-.32);for(const sx of [-1,1])w1P('vc',G.sph,'#A0988C',sx*.11,y0+.8,-.08,.09,.14,.3,0,0,-.3);w1P('vc',G.k4,S2,0,y0+.66,-.42,.09,.26,.05,0,0,-2.1);
+  const N=[[0,y0+.88,.2],[0,y0+1.12,.31],[0,y0+1.32,.2],[0,y0+1.5,.27]];for(let k=0;k<3;k++){w1Seg('vc',G.c8,S,N[k],N[k+1],.055);w1P('vc',G.sph,S,N[k+1][0],N[k+1][1],N[k+1][2],.055,.055,.055)}
+  w1P('vc',G.sph,S,0,y0+1.55,.31,.075,.07,.1);w1P('vc',G.k4,'#9A8E7A',0,y0+1.54,.53,.026,.3,.026,0,0,Math.PI/2);w1P('vc',G.k4,S2,0,y0+1.64,.2,.015,.26,.015,0,0,-2.0);for(const sx of [-1,1])w1P('vc',G.sph,'#4A443E',sx*.06,y0+1.57,.35,.015,.015,.015);
+  // the lantern hangs from the bill: bail, cap, frame and the glass (PB win)
+  const lz=.62,ly=y0+1.2;w1P('vc',G.box,'#2F3A34',0,y0+1.42,lz,.012,.2,.012);w1P('vc',G.k4,'#2F3A34',0,ly+.14,lz,.1,.09,.1,Math.PI/4);w1P('vc',G.box,'#2F3A34',0,ly-.1,lz,.14,.025,.14);for(const [a,b] of [[-1,-1],[1,-1],[-1,1],[1,1]])w1P('vc',G.box,'#2F3A34',a*.06,ly+.01,lz+b*.06,.014,.2,.014);
+  w1P('win',G.box,'#FFE7B8',0,ly+.01,lz,.1,.17,.1);
+  const tmp=new THREE.Group(),out=W1B.build({vc:PBM.vc,win:PBM.win},true,tmp);W1B=null;let n=0;
+  for(const m of out){const c=w1Chunk(m.userData.batch,-30,3,33);if(c){w1Append(c,m.geometry);n++}m.geometry.dispose()}
+  const p=w1W(0,lz*HS);WMK.hglow=glowPt(p[0],y0+(ly-y0)*HS,p[1],'#FFC27A',1.0,0,1,'w1');// fix1: small and only in the market window (w1Sync), so nothing changes outside December
+  WMK.heron=n;return n}
+try{w1Heron()}catch(e){WMK.err='heron:'+e.message;console.warn('W1 heron',e)}
+// ---- the town tree: holBuild's xmasTree at TOWNTREE becomes the W1 tree (built once; its 400 bulbs are an hBulbG IM in HOL.g, registered by B41 as the 'tree' strand)
+{const xt0=xmasTree;xmasTree=function(x,y0,z){if(x!==TOWNTREE.x||z!==TOWNTREE.z||y0!==0)return xt0.apply(this,arguments);try{if(!WMK.tree)w1TreeBuild();const K=IK(W1G.oct||(W1G.oct=KEEPG(new THREE.OctahedronGeometry(.135,0))),hBulbM,400,1);for(const b of WMK.tb)K.add(b[0],b[1],b[2],0,.56,.56,.56,b[3]);K.done();K.im.castShadow=false;// fix1: 8-tri bulbs (was 36), no shadow
+  WMK.bulbs=WMK.tb.length;WMK.treeOn=true;w1TreeShow(true);return{G:WMK.tree,top:WMK.top,bot:.75}}
+  catch(e){WMK.err='tree:'+e.message;console.warn('W1 tree',e);return xt0.apply(this,arguments)}}}
+// holBuild: the tree hides with its theme; the three old tree hGlow sprites are dropped (the star and bulb halos are GLOWPTS now)
+{const hb1=holBuild;holBuild=function(th){WMK.treeOn=false;const r=hb1.apply(this,arguments);try{if(!WMK.treeOn)w1TreeShow(false);for(const g of HOL.glows.slice())if(Math.hypot(g.position.x-TOWNTREE.x,g.position.z-TOWNTREE.z)<.5){HOL.g.remove(g);const i=nightGlows.indexOf(g);if(i>=0)nightGlows.splice(i,1);HOL.glows.splice(HOL.glows.indexOf(g),1);g.material.dispose()}}catch(e){WMK.err='hol:'+e.message}return r}}
+// the fountain is iced through the window (B36 turns the spray off and shows its ice); B36's own 'market' event stalls stay away while ours stand
+{const sf0=sqFrozen;sqFrozen=function(t){if(w1Win(t||Date.now()))return true;return sf0.apply(this,arguments)}}
+{const h0=b36Hz;b36Hz=function(){const r=h0.apply(this,arguments);try{if(WMK.on&&B36.dress.market)B36.dress.market.visible=false}catch(e){}return r}}
+{const f0=b41Frame;b41Frame=function(dt){const r=f0.apply(this,arguments);try{w1Frame(dt)}catch(e){if(!WMK.err)WMK.err='frame:'+e.message}return r}}
+// ---- keepers at the stalls, 16:30-21:30, when their own day leaves the evening free (weighted by how free it is; never forced)
+const W1FREE=new Set(['rest','rainrest','eve','read','caps','radio','snack','home','idle']);
+// fix1: a second keeper per stall (townsfolk whose December evenings are free) takes over when the first one's evening is busy, so the market is staffed from about 16:30
+const W1K2={cocoa:'marigold',chestnut:'dale',ornaments:'hollis',candles:'birch'},W1PK=new Map(),W1SAT={gus:'chestnut',hollis:'ornaments',honey:'candles'};// W1SAT: December Saturdays 8-12 (the seam fix below)
+function w1Free(v){let h0=null;for(let h=16.5;h<21.25;h+=.25){const b=blockAt(v,h),free=!b||W1FREE.has(b[5])||b[5]==='stall'||b[4]==='home'||b[4]==='back';if(!free)h0=null;else if(h0==null)h0=h}return h0}
+function w1Pick(i,t,tp0){const dk=dkey(t),key=i+'|'+dk;if(W1PK.has(key))return W1PK.get(key);if(W1PK.size>80)W1PK.clear();let out=null;const s=W1S[i];
+  for(const id of [s[7],W1K2[s[0]]]){if(!id||!CASTB[id])continue;let v=null;try{v=tp0(id,t)}catch(e){}if(!v)continue;const h0=w1Free(v),fit=h0==null?0:(21.5-h0)/5,r=seeded(wxHash('w1'+id+dk))();if(fit>=.3&&r<.3+.6*fit){out={id,h0};break}}
+  W1PK.set(key,out);return out}
+{const tp0=tPlan;tPlan=function(id,date){const v=tp0.apply(this,arguments);try{if(v&&!v.w1){v.w1=1;const t=date==null?Date.now():+date;if(w1Win(t)&&W1SAT[id]&&new Date(t).getDay()===6){const i=W1S.findIndex(s=>s[0]===W1SAT[id]);if(i>=0)v.push([8,12,'out','mk'+i,null,'stall'])}if(w1Win(t))for(let i=0;i<W1S.length;i++){const s=W1S[i];if(s[7]!==id&&W1K2[s[0]]!==id)continue;const p=w1Pick(i,t,tp0);if(p&&p.id===id){v.push([p.h0,21.5,'out','mk'+i,null,'stall']);break}}}}catch(e){}return v}}
+{const tw0=tWhere;tWhere=function(T,b){const o=tw0.apply(this,arguments);try{if(b&&o&&WMK.tsp[b[3]]!=null)o.ry=WMK.tsp[b[3]]}catch(e){}return o}}
+// TSP spots exist from boot (plans may be read before the first market day): the keeper stands behind the counter
+W1S.forEach((s,i)=>{const c=Math.cos(s[3]),n=Math.sin(s[3]),lz=-s[5]/2+.42;TSP['mk'+i]=[+(s[1]+lz*n).toFixed(2),+(s[2]+lz*c).toFixed(2),0,'the '+s[6]+' stall'];WMK.tsp['mk'+i]=s[3]});
+// fix1 (merge seam W1 x B36): in the market window B36's Saturday 'Market Morning' becomes the Winter Market Morning (its own name, board/toast text, act and diary line),
+//  and B36's Saturday stall-holders mind their December stalls 8-12: Gus the chestnuts, Hollis the ornaments, Honey the beeswax candles (the B36 stalls are hidden in the window)
+{const e=TEVB.market,A=B36ACT.find(a=>a.ev==='market');if(e){const n0=e.n,i0=e.info,d0=e.doing,dp=(o,k,w,v)=>Object.defineProperty(o,k,{get:()=>w1Win()?w:v,enumerable:true,configurable:true});
+  dp(e,'n','Winter Market Morning',n0);dp(e,'info','Gus roasts chestnuts, Hollis brings his ornaments and Honey her beeswax candles, under the big tree.',i0);dp(e,'doing','browsing the Winter Market Morning',d0);if(A)dp(A,'doing','browsing the Winter Market Morning',A.doing)}
+ const lt0=LOFX.tev;LOFX.tev=(act,t,live)=>{if(!act||act.ev!=='market'||!e||!w1Win(t))return lt0(act,t,live);i5Base(act,t,act.p,act.p+'.'+act.ev);try{bondAdd('gus',2,'event',t)}catch(_){}
+  addEntry('Town',pick(['Winter Market Morning in Lantern Square. Gus was roasting chestnuts, Hollis had his ornaments out and Honey\'s beeswax candles smelled like honey. I just floated around smelling everything.','Winter Market Morning under the big tree. Gus gave me a chestnut that was too hot to hold. I held it anyway. Hollis hung a tiny ornament on my, um, me.']),e.where||'Lantern Square',t);return e.id}}
+// ---- market-night grade: on B41's 'market' key the mids go down (S2c night targets; near-white lights are protected by the grade's gkP)
+{const g0=b41Grade;b41Grade=function(){const r=g0.apply(this,arguments);try{const m=(GK.w&&GK.w.market)||0;WMK.gw=m;if(m>0&&WMK.on)GK.G.multiplyScalar(1-Math.min(.4,WMK.dim*m*(TIER.n>=3?1:TIER.n>=2?.6:.3)))}/* fix1: the phone tiers keep the S2c market key almost as is (L50 toward 70-80); HIGH/ULTRA take a little more for their bloom */catch(e){}return r}}
+PREWARM.add('w1:market',()=>{const g=new THREE.Group(),b=new THREE.BoxGeometry(.1,.1,.1);for(const m of [BAKEMI,PBM.win,PBM.sign])g.add(new THREE.Mesh(b,m));g.add(new THREE.InstancedMesh(hBulbG,hBulbM,1));return g});
+const W1SH={market:[-27,35,1.45,19,.7],/* fix1: from the east, high, across the square to Town Hall: 4 of 6 stalls, the tree on the left, the heron fountain to the right (was 1 stall, fountain-filled) */square:[-26,29.3,Math.PI,9.5,.7],/* fix1: higher and closer, so the planter shrub behind the walker leaves the bottom of the frame */ov:[-29,33,1.2,34,.82]};// [walker x,z, yaw, dist, pitch]
+// ---- shots (B42 shotMode): the winter market frames the stalls and the tree; the square shot keeps the planter maple out of the lens
+{const sh=STYLE.shots,walk=(x,z,yaw,dist,pitch)=>{const M=window.__mocha;try{sh.reset&&sh.reset()}catch(e){}if(M.cam().mode!=='walk')M.setCamMode('walk');M.you(x,z);M.cam({yaw,dist,pitch,tx:x,tz:z});M.cam.tick&&M.cam.tick(80,.05)};
+ W1SH.mk=walk;sh['winter-market']=()=>{walk(...W1SH.market);return'winter-market'};sh['lantern-square']=()=>{walk(...W1SH.square);return'lantern-square'};
+ {const ov0=sh['town-overview'];if(ov0)sh['town-overview']=()=>{if(!w1Win())return ov0();walk(...W1SH.ov);return'town-overview'}}}// fix1 (CORE 8): in the window the overview frames the lit square and the roofs round it, not wherever Mocha's road is
+// ---- hook: __mocha.market(o) -> state; o:{day:'MM-DD',h} jumps the calendar (tests), o:{sync:1} re-applies
+function w1Jump(o){const R=Date,now=new R(),t=new R(now);if(o.day){const [mo,dd]=String(o.day).split('-').map(Number);t.setMonth(mo-1,dd)}if(o.h!=null)t.setHours(Math.floor(o.h),Math.round((o.h%1)*60),0,0);const off=t-now;
+  class D extends R{constructor(...a){if(a.length)super(...a);else super(R.now()+off)}static now(){return R.now()+off}}D.UTC=R.UTC;D.parse=R.parse;window.Date=D;try{holDirty=1;HOL.t=0;HOL.tick=0;holFrame(0,0)}catch(e){}try{dressCal()}catch(e){}w1Sync(true);return t.toString()}
+function w1Info(){const st=W1S.map((s,i)=>{const c=Math.cos(s[3]),n=Math.sin(s[3]);let dm=1e9;for(const [lx,lz] of [[-s[4]/2,-s[5]/2],[s[4]/2,-s[5]/2],[-s[4]/2,s[5]/2],[s[4]/2,s[5]/2],[0,s[5]/2],[0,-s[5]/2],[-s[4]/2,0],[s[4]/2,0]])dm=Math.min(dm,Math.hypot(s[1]+lx*c+lz*n+30,s[2]-lx*n+lz*c-33));
+    return{id:s[0],name:s[6],x:s[1],z:s[2],ry:+s[3].toFixed(3),w:s[4],d:s[5],rim:+(dm-3.5).toFixed(2),keeper:s[7],staffed:w1Keeper(i)}});
+  let rs=0,rn=0;try{for(const p of PLACES){if(!(p.w&&p.d&&p.h)||WSN.skip.has(p.kind))continue;rn++;if(p.snowRoof)rs++}}catch(e){}// fix1: building places whose roofs carry the snow patch (or B41's lerp for Mocha's house)
+  const gfx=renderer.info.render;const tl=(typeof HACTS!=='undefined'?HACTS:[]).find(a=>a.k==='townlights');return{on:!!WMK.on,built:!!WMK.built,ms:WMK.ms,stalls:st,townlights:tl?{p:tl.p,at:tl.at}:null,tree:{x:TOWNTREE.x,z:TOWNTREE.z,bulbs:WMK.treeOn?WMK.bulbs:0,tiers:WMK.tiers,top:+WMK.top.toFixed(2),on:!!(WMK.tree&&WMK.tree.visible),star:WMK.star.length?GLOWPTS.A[WMK.star[0]]:0},
+    fountain:{heron:WMK.heron>0,iced:!!(WMK.on&&B36.frozen),wreath:!!(WMK.on&&WMK.g&&WMK.g.visible),spray:!!(SQ.sp&&SQ.sp.visible)},roofsSnow:rn&&SNOWU.value>=.5?+(rs/rn).toFixed(2):0,roofs:{k:SNOWU.value,flagged:rs,of:rn,mats:WSN.mats,pb:WSN.pb,err:WSN.err||null},holWin:{n:WLT.hol||0,v:WLT.u.v.value.toArray()},candles:WMK.cand.filter(i=>GLOWPTS.A[i]>0).length,
+    grade:{key:GK.key,market:+(WMK.gw||0).toFixed(3),dim:WMK.dim,G:[GK.G.x,GK.G.y,GK.G.z].map(v=>+v.toFixed(3))},draws:(()=>{try{return window.__mocha.gfx().calls}catch(e){return gfx.calls}})(),strand:WMK.str,glow:GLOWPTS.n,pools:POOLS.n,syncs:WMK.n,err:WMK.err,lastLab:WMK.lastLab||null}}
+{const H=m=>{m.market=o=>{o=o||{};if(o.day||o.h!=null)w1Jump(o);if(o.sync)w1Sync(true);if(o.dim!=null)WMK.dim=+o.dim;return w1Info()};m.w1dbg=()=>({WMK,W1S,W1C,W1SH,COL,NAV,SQ,B36,GK,HOL,DRS,tPlan,blockAt,W1FREE,CAST,W1K2})};STYLE.hooks.push(H);H(window.__mocha)}
+// ---- fix1 (W1 CORE 4): flag every building's exterior materials that reach above the eaves for the 'n' snow patch (winter only: 0 programs outside it).
+//  Per-place shell/roof materials are flagged in place (the cutaway fades keep working); shared lam() materials get one flagged clone each; the town PB
+//  'vc' chunks swap to PBM.vcS. Interiors (p.inner) are never touched. Mocha's house keeps B41's roofMats lerp; the cabin paints its own snow.
+function wsnFlag(){if(WSN.done)return;WSN.done=1;const C=new Map(),V=new THREE.Box3();
+  const plain=m=>!!(m&&m.isMeshToonMaterial&&!m.map&&!m.emissiveMap&&!m.vertexColors&&!m.userData.win&&!m.userData.sway&&!m.userData.rim&&!m.userData.noSnow&&!Object.prototype.hasOwnProperty.call(m,'onBeforeCompile')&&!Object.prototype.hasOwnProperty.call(m,'customProgramCacheKey')),strict=m=>plain(m)&&!m.transparent&&m.userData.nightK==null&&!(m.emissive&&m.emissive.r+m.emissive.g+m.emissive.b>0);// clones only for plain opaque, non-glowing materials (lamp glass and night-driven materials keep their identity)
+  const flag=m=>{if(!m.userData.snow){m.userData.snow=1;m.needsUpdate=true;WSN.mats++}return m};
+  const cl=m=>{let c=C.get(m);if(!c){c=m.clone();c.userData=Object.assign({},m.userData,{snow:1});C.set(m,c);WSN.mats++}return c};
+  for(const p of PLACES){if(!(p.w&&p.d&&p.h)||WSN.skip.has(p.kind)||!p.obj)continue;if(p.id==='home'||p.id==='cabin'){p.snowRoof=1;continue}
+    const own=new Set((p.shell||[]).concat(p.roofShell||[]));let n=0;p.obj.updateMatrixWorld(true);
+    p.obj.traverse(o=>{if(!o.isMesh||o.isInstancedMesh)return;for(let q=o;q&&q!==p.obj;q=q.parent)if(q===p.inner||q.name==='inner')return;const g=o.geometry;if(!g||!g.attributes||!g.attributes.normal)return;if(!g.boundingBox)g.computeBoundingBox();V.copy(g.boundingBox).applyMatrix4(o.matrixWorld);if(V.max.y<2.6)return;
+      if(Array.isArray(o.material)){let ch=false;const a=o.material.map(m=>{if(own.has(m)){if(!plain(m))return m;n++;return flag(m)}if(!strict(m))return m;n++;ch=true;return cl(m)});if(ch)o.material=a}
+      else{const m=o.material;if(own.has(m)){if(plain(m)){n++;flag(m)}}else if(strict(m)){n++;o.material=cl(m)}}});
+    if(n)p.snowRoof=1}
+  if(!PBM.vcS){PBM.vcS=PBM.vc.clone();PBM.vcS.userData=Object.assign({},PBM.vc.userData,{snow:1})}for(const m of PBMESH)if(m.material===PBM.vc){m.material=PBM.vcS;WSN.pb++}
+  if(byId.cabin)byId.cabin.snowRoof=1}
+if(SEASON_KEY==='winter'||w1Win()){try{wsnFlag()}catch(e){WSN.err=String(e&&e.message||e)}}// flagged before the first frame in winter, so the two snow programs compile with the scene
+// W1-END
+// ---- merge W1xW2 glue ----
+{const ns0=npcStatus;npcStatus=function(id){try{const n=TN[id],b=n&&n.b;if(b&&b[5]==='stall'&&/^mk\d$/.test(b[3])){const q=W1S[+b[3].slice(2)];if(q)return n.walk?`walking to the ${q[6]} stall`:`minding the ${q[6]} stall at the winter market`}}catch(e){}return ns0.apply(this,arguments)}}
+{const H=m=>{const mk=m.market;if(typeof mk!=='function'||mk.w2)return;const f=o=>{const r=mk(o);try{const i=tamInfo();r.tamarack={here:i.here,pos:i.pos,act:i.act,phase:i.phase}}catch(e){}return r};f.w2=1;m.market=f;m.tamNav=o=>{o=o||{};if(o.path)return tamSeg([],o.path[0],o.path[1],o.path[2],o.path[3]);if(o.free)return tamFree(o.free[0],o.free[1]);return{spots:TAMS.map(q=>[q.x,q.z,q.n]),inn:[TAMIN.x,TAMIN.z],grids:TAMNV.n1,key:TAMNV.k}}};STYLE.hooks.push(H);H(window.__mocha)}
+// MERGE-W1W2-END
 })();
 </script>
 </body>
