@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>Mocha's Ghost Town</title>
+<style>
+  :root{--ink:#2a2547;--paper:#fffaf3;--lav:#b9a7ff;--line:#e9e1f7;--mocha:#8b5a3c}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:#3d3f7e;font-family:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI",system-ui,sans-serif;color:var(--ink);touch-action:none}
+  canvas#c{position:fixed;inset:0;display:block;cursor:grab}
+  .pill{white-space:nowrap;background:var(--paper);border-radius:999px;padding:8px 14px;box-shadow:0 4px 0 rgba(0,0,0,.18);display:inline-flex;gap:8px;align-items:center;font-weight:800;font-size:14px}
+  #top{position:fixed;top:max(12px,env(safe-area-inset-top));left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;gap:8px}
+  #top>*{pointer-events:auto}
+  .status{background:#efe9ff;color:#6a55c9;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:700;max-width:40vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lvl{background:var(--mocha);color:#fff;border-radius:999px;padding:2px 8px;font-size:11px}
+  #meters{background:var(--paper);border-radius:16px;padding:8px 12px;box-shadow:0 4px 0 rgba(0,0,0,.18);font-size:11px;font-weight:700;display:grid;grid-template-columns:auto 70px;gap:4px 8px;align-items:center}
+  .bar{height:7px;border-radius:9px;background:#eee8f8;overflow:hidden}.bar i{display:block;height:100%;border-radius:9px;transition:width .6s}
+  #panel{position:fixed;top:170px;right:12px;width:350px;max-height:calc(100% - 260px);background:var(--paper);border-radius:22px;box-shadow:0 6px 0 rgba(0,0,0,.2);display:flex;flex-direction:column;overflow:hidden;transition:transform .35s,opacity .35s}
+  #panel.hidden{transform:translateX(120%);opacity:0;pointer-events:none}
+  #panel header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 6px}
+  #panel header b{font-size:16px}
+  .x{border:0;background:#efe9ff;width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer;color:var(--ink)}
+  nav{display:flex;gap:4px;padding:4px 12px 10px}
+  nav button{border:0;border-radius:999px;padding:6px 11px;font:inherit;font-size:13px;font-weight:700;background:transparent;color:#8a82a8;cursor:pointer}
+  nav button.on{background:var(--ink);color:#fff}
+  .tab{overflow-y:auto;padding:0 16px 16px;display:none}.tab.on{display:block}
+  .entry{border-top:1.5px dashed var(--line);padding:11px 0;font-size:14px;line-height:1.45;animation:pop .5s}
+  .entry .meta{display:flex;justify-content:space-between;font-size:11px;color:#a49cc0;margin-bottom:4px;font-weight:700}
+  .tag{border:1.5px solid var(--line);border-radius:999px;padding:1px 8px;margin-left:6px;color:#7b6fb0}
+  .tag.big{border-color:#f3c9a8;color:var(--mocha);background:#fff1e6}
+  @keyframes pop{from{opacity:0;transform:translateY(-6px)}}
+  h4{margin:14px 0 6px;font-size:13px;color:#7b6fb0}
+  .chip{display:inline-block;background:#f3eefe;border-radius:999px;padding:4px 10px;margin:3px 4px 3px 0;font-size:13px}
+  .muted{color:#a49cc0;font-size:13px}
+  .skill{display:grid;grid-template-columns:118px 1fr 34px;gap:8px;align-items:center;font-size:13px;margin:5px 0}
+  .skill small{color:#a49cc0;font-weight:700;text-align:right}
+  .goal{background:#fff1e6;border-radius:14px;padding:10px 12px;font-size:14px}
+  #diaryBtn{position:fixed;top:170px;right:12px;display:none}
+  #panel.hidden~#diaryBtn{display:inline-flex}
+  button.pill{border:0;cursor:pointer;font:inherit;font-weight:700;font-size:14px}
+  #mini{position:fixed;left:12px;bottom:max(84px,calc(env(safe-area-inset-bottom) + 76px));width:120px;height:120px;border-radius:50%;background:var(--paper);box-shadow:0 5px 0 rgba(0,0,0,.2);cursor:pointer}
+  #chatwrap{position:fixed;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));width:min(520px,calc(100% - 24px))}
+  #chatlog{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;align-items:flex-end;pointer-events:none}
+  .msg{background:var(--ink);color:#fff;border-radius:16px 16px 4px 16px;padding:7px 12px;font-size:14px;max-width:80%;transition:opacity 1s}
+  form#chat{display:flex;gap:8px;background:var(--paper);border-radius:999px;padding:6px;box-shadow:0 5px 0 rgba(0,0,0,.2)}
+  form#chat input{flex:1;border:0;background:transparent;font:inherit;font-size:16px;padding:6px 10px;outline:none;color:var(--ink);min-width:0}
+  form#chat button{border:0;background:var(--lav);color:var(--ink);font:inherit;font-weight:800;border-radius:999px;padding:8px 16px;cursor:pointer}
+  #bubble{position:fixed;left:0;top:0;transform:translate(-50%,-100%);background:var(--paper);border-radius:16px;padding:8px 12px;font-size:14px;max-width:240px;box-shadow:0 4px 0 rgba(0,0,0,.18);pointer-events:none;opacity:0;transition:opacity .3s;text-align:center;line-height:1.35;z-index:3}
+  #bubble:after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-7px;border:7px solid transparent;border-bottom:0;border-top-color:var(--paper)}
+  #bubble.show{opacity:1}
+  #bubble.think{font-style:italic;color:#6a55c9}
+  .lbl{position:fixed;left:0;top:0;transform:translate(-50%,-100%);background:rgba(255,250,243,.93);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:800;white-space:nowrap;pointer-events:none;box-shadow:0 3px 0 rgba(0,0,0,.15);transition:opacity .3s}
+  .lbl.new{background:#fff1e6;color:var(--mocha)}
+  #toast{position:fixed;left:50%;top:70px;transform:translate(-50%,-20px);background:var(--mocha);color:#fff;border-radius:999px;padding:8px 16px;font-weight:800;font-size:14px;opacity:0;transition:.4s;pointer-events:none;white-space:nowrap;z-index:4;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+  .opts{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+  .opts button{border:2px solid var(--line);background:#fff;border-radius:14px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer;color:var(--ink)}
+  .opts button.on{border-color:var(--ink);background:#f3eefe}
+  .danger{border:0;background:#ffe3ea;color:#b2365c;font:inherit;font-weight:700;border-radius:999px;padding:7px 14px;cursor:pointer;margin-top:14px}
+  #hint{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom));transform:translateX(-50%);color:#fff;font-size:12px;font-weight:700;opacity:.8;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.4);transition:opacity 1s;white-space:nowrap}
+  #err{position:fixed;inset:0;display:none;align-items:center;justify-content:center;color:#fff;font-size:16px;text-align:center;padding:30px}
+  @media (max-width:760px){
+    #panel{left:8px;right:8px;width:auto;top:auto;bottom:calc(76px + env(safe-area-inset-bottom));max-height:55%}
+    #panel.hidden{transform:translateY(120%)}
+    #diaryBtn{top:auto;bottom:calc(150px + env(safe-area-inset-bottom));right:12px}
+    #mini{width:90px;height:90px;bottom:calc(150px + env(safe-area-inset-bottom))}
+    #meters{grid-template-columns:auto 46px;font-size:10px;padding:6px 10px}
+    #hint{bottom:calc(250px + env(safe-area-inset-bottom))}
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="labels"></div>
+<div id="err">Mocha's town needs WebGL to load 👻</div>
+
+<div id="top">
+  <div class="pill">👻 Mocha <span class="lvl" id="lvl">lv 1</span><span class="status" id="status">floating</span></div>
+  <div id="meters"></div>
+</div>
+<div id="toast"></div>
+
+<aside id="panel">
+  <header><b>Mocha's diary</b><button class="x" id="closePanel" aria-label="close">×</button></header>
+  <nav>
+    <button data-tab="diary" class="on">his diary</button>
+    <button data-tab="grow">growing</button>
+    <button data-tab="about">about you</button>
+  </nav>
+  <div class="tab on" id="tab-diary"></div>
+  <div class="tab" id="tab-grow"></div>
+  <div class="tab" id="tab-about"></div>
+</aside>
+<button class="pill" id="diaryBtn">📖 diary</button>
+
+<canvas id="mini" width="240" height="240" title="map"></canvas>
+<div id="hint">drag to look around · tap to call Mocha</div>
+
+<div id="chatwrap">
+  <div id="chatlog"></div>
+  <form id="chat" autocomplete="off"><input id="say" maxlength="160" placeholder="say something to Mocha…"><button>send</button></form>
+</div>
+<div id="bubble"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(()=>{
+if(!window.THREE){document.getElementById('err').style.display='flex';return}
+const $=s=>document.querySelector(s);
+const rand=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function seeded(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=seeded(2026);const rpick=a=>a[Math.floor(R()*a.length)];
+
+// =============== WORLD DATA ===============
+const SKILLS={reading:'📚 Reading',music:'🎵 Music',frog:'🐸 Frog-speak',nose:'🥐 Baking nose',story:'🎬 Storytelling',dream:'💤 Dreaming',stars:'✨ Stargazing',garden:'🌱 Gardening',explore:'🧭 Exploring',socks:'🧦 Sock wisdom'};
+const PLACES=[
+ {id:'bakery', name:'Crumb & Moon Bakery', x:-42,z:-30,w:14,h:9,d:10,wall:'#f6bccb',roof:'#c45f80',need:'snack',skill:'nose',tag:'Food',keys:['bakery','bake','bread','cake','pastry','cookie','bun','croissant']},
+ {id:'library',name:'Whisper Library',     x:22,z:-44,w:20,h:12,d:12,wall:'#a9bdec',roof:'#4d5bab',need:'curious',skill:'reading',tag:'Hobby',keys:['library','book','read']},
+ {id:'tower',  name:'Clocktower Attic',    x:58,z:-24,w:8,h:28,d:8,wall:'#cdbdea',roof:'#5a4991',need:'energy',skill:'dream',tag:'Nap',keys:['tower','clock','attic']},
+ {id:'cinema', name:'Old Lantern Cinema',  x:54,z:26,w:18,h:11,d:12,wall:'#f3d683',roof:'#b2583f',need:'curious',skill:'story',tag:'Visited',keys:['cinema','movie','film','theater','theatre']},
+ {id:'music',  name:'Hum & Strum Records', x:-54,z:14,w:13,h:8,d:10,wall:'#ace3cd',roof:'#3e8e78',need:'social',skill:'music',tag:'Hobby',keys:['music','record','song','vinyl','guitar','dance']},
+ {id:'museum', name:'Museum of Lost Socks',x:-8,z:50,w:22,h:12,d:14,wall:'#ebe6f8',roof:'#7a6bb8',need:'curious',skill:'socks',tag:'Visited',keys:['museum','sock','art']},
+ {id:'pond',     name:'Moonlit Pond',  x:40,z:64,spot:1,need:'social',skill:'frog',tag:'Friends',keys:['pond','frog','water','lake','swim']},
+ {id:'graveyard',name:'Cozy Graveyard',x:-62,z:62,spot:1,need:'energy',skill:'dream',tag:'Nap',keys:['grave','cemetery','graveyard','neighbo']},
+ {id:'patch',    name:'Pumpkin Patch', x:84,z:66,spot:1,need:'snack',skill:'garden',tag:'Food',keys:['pumpkin','patch','halloween']},
+ {id:'plaza',    name:'Fountain Plaza',x:0,z:0,spot:1,need:'social',skill:'music',tag:'Friends',keys:['plaza','fountain','center','square']},
+ // secret places Mocha has to discover by exploring
+ {id:'greenhouse', name:'Forgotten Greenhouse',x:-100,z:-62,w:13,h:7,d:10,wall:'#bff0dc',roof:'#57b394',need:'curious',skill:'garden',tag:'Discovery',hidden:1,keys:['greenhouse','plant','garden','flower']},
+ {id:'observatory',name:'Hilltop Observatory', x:4,z:-100,w:12,h:10,d:12,wall:'#d8d0f5',roof:'#3b3170',need:'energy',skill:'stars',tag:'Discovery',hidden:1,dome:1,keys:['observatory','star','telescope','sky','moon']},
+ {id:'lighthouse', name:'Little Lighthouse',  x:108,z:-70,w:7,h:24,d:7,wall:'#fff3f3',roof:'#d4566b',need:'curious',skill:'stars',tag:'Discovery',hidden:1,round:1,keys:['lighthouse','sea','ocean']},
+ {id:'carousel',   name:'Sleepy Carousel',    x:-104,z:100,spot:1,need:'social',skill:'music',tag:'Discovery',hidden:1,keys:['carousel','horse','ride']},
+];
+const byId=Object.fromEntries(PLACES.map(p=>[p.id,p]));
+PLACES.forEach(p=>{
+  p.ry=Math.atan2(-p.x,-p.z);
+  if(p.id==='plaza'){p.dx=0;p.dz=9}
+  else if(p.spot){const l=Math.hypot(p.x,p.z),o=p.id==='pond'?13:p.id==='carousel'?9:4;p.dx=p.x-p.x/l*o;p.dz=p.z-p.z/l*o}
+  else{const off=p.d/2+3.5;p.dx=p.x+Math.sin(p.ry)*off;p.dz=p.z+Math.cos(p.ry)*off}
+  p.r=p.spot?8:Math.max(p.w,p.d)/2+1.5;
+});
+const ITEMS={bakery:['a crumb shaped like a moon','a paper cupcake liner'],library:['a bookmark from 1987','a flower pressed in a book'],tower:['a tiny brass gear','a feather from the clock owl'],cinema:['a ticket stub','one perfect popcorn kernel'],music:['a guitar pick','a record chip that still hums'],museum:['a lonely striped sock','an argyle button'],pond:['a smooth skipping stone','a dried lily pad'],graveyard:['an old brass key','a marigold'],patch:['a pumpkin seed','a twisty vine curl'],plaza:['a wishing coin','a lost mitten'],greenhouse:['a seed packet labeled ???','a glowing mushroom'],observatory:['a star chart','a tiny meteor pebble'],lighthouse:['a sea-glass marble','a map with an X on it'],carousel:['a painted horse ribbon','a brass ring']};
+
+const F={pastry:['cinnamon bun','pumpkin scone','moon cookie','cocoa croissant','maple twist','mocha éclair (my namesake!)'],book:['"Haunting for Beginners"','"The Very Quiet Owl"','"Soup: A History"','"Moon Phases & You"','"Knitting with Fog"','a mystery where the butler was a ghost'],movie:['a black-and-white romance','a documentary about clouds','a very scary movie (I was the scariest thing there)','a cartoon about a lost mitten'],song:['"Fly Me to the Moon"','a lullaby in a minor key','lo-fi rain beats','an accordion waltz'],frog:['Ribbert','Lady Croaksworth','Toad (who is a frog)','Lil Puddle'],flower:['dandelion','marigold','tiny pinecone','very nice leaf'],star:['the Teacup','the Sleepy Cat','Big Spoon','the Wobbly Hat']};
+const fill=s=>s.replace(/\{(\w+)\}/g,(_,k)=>k==='n'?Math.floor(rand(3,13)):k==='user'?(S.mem.userName||'my visitor'):pick(F[k]||['?']));
+// diary lines: [beginner lines, skilled lines (skill lv>=4)]
+const LINES={
+ bakery:[['Floated through the wall of Crumb & Moon and sniffed a {pastry}. Ghosts can\'t eat, but we can sniff very hard.','Tried to pick up a {pastry}. My hand went right through it. Ate the vibes instead. 9/10.','Got flour all over myself and for once nobody could tell.'],['My nose is getting good. I can tell a {pastry} from a {pastry} with my eyes closed now.','Helped the baker by blowing on the oven window so it wouldn\'t fog. She left a {pastry} out "for the draft."']],
+ library:[['Read {book} over someone\'s shoulder. They turned the page too fast.','Tried to turn a page myself. It took 20 minutes. Worth it.','Shushed a moth. It shushed me back.'],['Read all of {book} by myself! I can turn pages with a little breeze now.','Rearranged the poetry shelf by vibe. The librarian says it\'s "weirdly better."']],
+ tower:[['Napped in the clocktower attic. The ticking is like a heartbeat I don\'t have.','Curled up between the big gears. Very punctual nap.'],['Had a dream I was a cloud. Then I had a dream I was a ghost dreaming about a cloud. Deep.','I can nap through the midnight bells now. Professional napper.']],
+ cinema:[['Watched {movie} from the back row. Cried a little. Ghost tears are just mist.','Sat in the projector beam and did a shadow puppet show. Two people clapped.'],['Watched {movie} and guessed the ending. I\'m getting good at stories.','Made up my own movie in my head about a ghost who learns to bake. 5 stars.']],
+ music:[['Spun a record at Hum & Strum. It was {song}. Did a little float-dance.','Tried every instrument in the shop. The tuba and I understand each other.'],['Hummed {song} all the way through without forgetting the words!','The shop cat and I did a duet. She did the high parts.']],
+ museum:[['Visited the Museum of Lost Socks. Found a stripy one that looked lonely. Same, buddy.','Stood very still next to a statue for {n} minutes. A kid waved at me. I waved back.'],['I can tell which sock goes with which just by looking now. Reunited {n} pairs. They don\'t know it was me.','Gave a ghost tour of the Argyle wing. Audience: one moth. Great listener.']],
+ pond:[['Hung out with the frogs. {frog} told me a joke. I didn\'t get it but laughed anyway.','Looked for my reflection in the pond. Ghosts don\'t have one. Saw the moon though.'],['I understood a whole frog sentence today! {frog} said "ribbit" which I now know means "nice weather."','The frogs saved me a lily pad. I\'m basically in the frog club now.']],
+ graveyard:[['Visited the old neighbors at the graveyard. Everyone was sleeping in. Classic.','Napped behind the gravestone that says BRB. Felt seen.'],['Left a {flower} on Mr. Hollow\'s stone. Told him about my week.','Dreamt the gravestones were dominoes. Woke up giggling.']],
+ patch:[['Picked the roundest pumpkin in the patch and told it a secret.','Smelled {n} pumpkins. All of them smelled like pumpkin. Science!'],['Gave a sad little vine a pep talk. It grew an inch overnight. Coincidence? No.','I think the pumpkins grow faster when I hum. I\'m going to keep testing this.']],
+ plaza:[['Floated around the fountain {n} times. Got dizzy. Worth it.','Someone tossed a coin in the fountain. I made the wish for them.'],['People-watched at the plaza. A dog saw me. Dogs always see me. We\'re friends now.','Made the fountain spray into a heart shape for one second. Nobody saw. I saw.']],
+ greenhouse:[['Found glass walls full of overgrown plants. Everything\'s humming a little. I think they like me.','Watered a fern with fog. It perked right up.'],['The plants lean toward me when I float by. I think I\'m their sun now. A very cold sun.']],
+ observatory:[['Peeked through the big telescope. Found a constellation I\'m calling {star}.','Counted stars until I lost count. Started over. Lost count again.'],['Mapped {star} and {star} tonight. My star chart is getting serious.']],
+ lighthouse:[['Floated to the top of the little lighthouse. The light went round and round and so did I.','Waved at a boat. The boat flashed its light back. Friends?'],['I\'m the lighthouse\'s night shift now. Nobody asked me to. I just am.']],
+ carousel:[['Found an old carousel that only turns when nobody\'s looking. So I looked away. It turned!','Rode the painted horse with the ribbon mane. Three laps.'],['The carousel plays music for me now. Just for me.']],
+};
+const DOING={bakery:'sniffing pastries',library:'reading',tower:'napping',cinema:'at the movies',music:'listening to records',museum:'looking at socks',pond:'with the frogs',graveyard:'visiting neighbors',patch:'in the pumpkins',plaza:'by the fountain',greenhouse:'in the greenhouse',observatory:'stargazing',lighthouse:'at the lighthouse',carousel:'on the carousel'};
+const SAYS={bakery:['mmm… cinnamon','*sniff sniff*'],library:['shhh… reading','ooh, a new book'],tower:['so sleepy…','zzz'],cinema:['the movie\'s starting!','popcorn smell…'],music:['♪ la la la ♪','this one\'s a bop'],museum:['so many socks','very cultural'],pond:['ribbit!','hi frogs!'],graveyard:['morning, neighbors','shh, they\'re sleeping'],patch:['so many pumpkins!','this one\'s the roundest'],plaza:['wheee','fountain time'],greenhouse:['hello plants','so green…'],observatory:['look at all those stars','twinkle twinkle'],lighthouse:['round and round','hi boats!'],carousel:['wheee!','giddy-up'],explore:['what\'s over here…?','ooh, I wonder what\'s past the trees','exploring time 🧭']};
+const GOALS=[
+ {id:'read',text:'read 4 books',place:['library'],n:4},
+ {id:'frogs',text:'learn all the frogs\' names',place:['pond'],n:4},
+ {id:'naps',text:'take 3 really good naps',place:['tower','graveyard'],n:3},
+ {id:'movies',text:'watch 3 movies',place:['cinema'],n:3},
+ {id:'song',text:'learn a whole song',place:['music','plaza'],n:4},
+ {id:'treasure',text:'find 2 new treasures',type:'item',n:2},
+ {id:'secret',text:'discover a secret place',type:'discover',n:1},
+ {id:'pumpkin',text:'grow the biggest pumpkin',place:['patch','greenhouse'],n:3},
+ {id:'socks',text:'reunite lost socks',place:['museum'],n:3},
+ {id:'friend',text:'chat with you 5 times',type:'chat',n:5},
+];
+
+// =============== STATE ===============
+const KEY='mocha-ghost-v1';
+function fresh(){return{needs:{snack:70,energy:80,social:60,curious:75},xp:{},aff:{},visits:{},items:[],goal:null,goalsDone:0,discovered:[],words:[],taught:{},diary:[],mem:{userName:null,likes:[],favs:{},chats:0,met:Date.now()},hat:'scarf',born:Date.now(),lastSeen:Date.now(),lastThought:0}}
+let S=null;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+const isNew=!S||!S.mem;if(isNew)S=fresh();
+function save(){S.lastSeen=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+setInterval(save,5000);addEventListener('beforeunload',save);
+const totalXP=()=>Object.values(S.xp).reduce((a,b)=>a+b,0);
+const level=()=>Math.floor(Math.sqrt(totalXP()/18))+1;
+const skillLv=k=>Math.min(10,Math.floor((S.xp[k]||0)/30)+1);
+const known=p=>!p.hidden||S.discovered.includes(p.id);
+const favorite=()=>{const e=Object.entries(S.aff).filter(([k])=>byId[k]).sort((a,b)=>b[1]-a[1]);return e.length&&e[0][1]>4?byId[e[0][0]]:null};
+const ageDays=()=>Math.floor((Date.now()-S.born)/864e5);
+const growScale=()=>Math.min(2.3,1.55+level()*.06);
+
+// =============== DIARY / BRAIN ===============
+let onDiary=()=>{},liveToast=()=>{},liveLabel=()=>{};
+function addEntry(tag,text,place,t=Date.now(),big){S.diary.unshift({t,tag,text,place,big:!!big});S.diary.length=Math.min(S.diary.length,250);onDiary()}
+function newGoal(){const done=S.goal&&S.goal.id;const pool=GOALS.filter(g=>g.id!==done&&!(g.type==='discover'&&PLACES.every(known)));const g=pick(pool);S.goal={id:g.id,count:0};return g}
+function goalDef(){return S.goal&&GOALS.find(g=>g.id===S.goal.id)}
+function bumpGoal(kind,placeId,t=Date.now(),live=true){const g=goalDef();if(!g)return;
+  const hit=(g.type==='item'&&kind==='item')||(g.type==='discover'&&kind==='discover')||(g.type==='chat'&&kind==='chat')||(!g.type&&kind==='visit'&&g.place.includes(placeId));
+  if(!hit)return;S.goal.count++;
+  if(S.goal.count>=g.n){S.goalsDone++;addEntry('Goal',`I did it!! I set out to ${g.text} and I actually did. Goal #${S.goalsDone} complete. ✨`,'',t,true);if(live)liveToast(`🎯 Mocha finished a goal: ${g.text}`);
+    const ng=newGoal();addEntry('Goal',`New goal: ${ng.text}. Starting… now. (or after a nap)`,'',t+1000)}}
+function doVisit(p,t=Date.now(),live=true){
+  const lvBefore=level(),skBefore=skillLv(p.skill);
+  S.xp[p.skill]=(S.xp[p.skill]||0)+Math.round(rand(8,14));
+  S.aff[p.id]=(S.aff[p.id]||0)+rand(-0.5,2.5)+(S.mem.likes.some(l=>p.keys.some(k=>l.includes(k)))?1.5:0);
+  S.visits[p.id]=(S.visits[p.id]||0)+1;
+  S.needs[p.need]=clamp(S.needs[p.need]+45,0,100);
+  const tier=skillLv(p.skill)>=4&&Math.random()<.65?1:0;
+  let text=fill(pick(LINES[p.id][tier]));
+  if(S.visits[p.id]>3&&Math.random()<.2)text=`Back at ${p.name} again (visit #${S.visits[p.id]}). `+text;
+  if(S.words.length&&Math.random()<.18)text+=` It was all very ${pick(S.words)}, as ${S.mem.userName||'my visitor'} would say.`;
+  addEntry(p.tag,text,p.name,t);
+  bumpGoal('visit',p.id,t,live);
+  if(Math.random()<.22){const it=ITEMS[p.id].find(i=>!S.items.includes(i));if(it){S.items.push(it);addEntry('Treasure',`Found ${it} at ${p.name}. Putting it in my collection. That's ${S.items.length} treasure${S.items.length>1?'s':''} now.`,p.name,t+1);bumpGoal('item',p.id,t,live);if(live)liveToast(`💎 Mocha found ${it}`)}}
+  if(skillLv(p.skill)>skBefore)addEntry('Growing',`Getting better at ${SKILLS[p.skill].replace(/^\S+ /,'').toLowerCase()}! (level ${skillLv(p.skill)} now)`,'',t+2,true);
+  if(level()>lvBefore){addEntry('Growing',`I feel a little bigger today. Like… noticeably. Level ${level()}! 👻`,'',t+3,true);if(live)liveToast(`🌱 Mocha grew to level ${level()}!`)}
+  const fav=favorite();if(fav&&fav.id===p.id&&S.visits[p.id]%5===0)addEntry('Thought',`${p.name} is officially my favorite place. I don't make the rules. (I do, actually.)`,'',t+4);
+}
+function discover(p,t=Date.now(),live=true){if(known(p))return;S.discovered.push(p.id);S.xp.explore=(S.xp.explore||0)+25;
+  addEntry('Discovery',`I found a secret place!! Way out past the edge of town there's ${p.name}. Nobody told me about this. I'm going to come back here a lot.`,p.name,t,true);
+  bumpGoal('discover',p.id,t,live);if(live){liveToast(`🧭 Mocha discovered ${p.name}!`);liveLabel(p)}}
+function thought(t=Date.now()){const m=S.mem,n=m.userName||'my visitor',o=[];
+  if(m.likes.length){const l=pick(m.likes);o.push(`Thought about how ${n} likes ${l}. Maybe I'll find some ${l} on my next float.`)}
+  const fk=Object.keys(m.favs);if(fk.length){const k=pick(fk);o.push(`${n}'s favorite ${k} is ${m.favs[k]}. Wrote it down twice so I don't forget. Ghost memory is foggy.`)}
+  const tk=Object.keys(S.taught);if(tk.length){const k=pick(tk);o.push(`${n} taught me that "${k}" means ${S.taught[k]}. I've been thinking about it all day.`)}
+  if(S.items.length>2)o.push(`Lined up my treasures: ${S.items.slice(-3).join(', ')}… I'm becoming a collector.`);
+  const fav=favorite();if(fav)o.push(`I keep drifting back to ${fav.name}. I think it's where I feel most like me.`);
+  if(m.chats>4)o.push(`${n} keeps visiting me. My day got 40% less spooky (in a good way).`);
+  o.push(`Day ${ageDays()+1} in town. I'm level ${level()} now. Still figuring out what kind of ghost I want to be.`);
+  addEntry('Thought',pick(o),'',t)}
+// catch-up while away: Mocha keeps living
+(function catchUp(){if(isNew)return;const away=Date.now()-S.lastSeen;if(away<3*60e3)return;
+  const n=Math.min(8,Math.floor(away/(3*60e3)));
+  for(let i=1;i<=n;i++){const t=S.lastSeen+away*(i/(n+1));
+    const hidden=PLACES.filter(p=>!known(p));
+    if(hidden.length&&Math.random()<.15)discover(pick(hidden),t,false);
+    else doVisit(pick(PLACES.filter(known)),t,false);
+    if(Math.random()<.2)thought(t+5)}
+  S.diary.sort((a,b)=>b.t-a.t);for(const k in S.needs)S.needs[k]=clamp(S.needs[k]-rand(5,25),25,100);
+  S._away=n})();
+if(isNew){const g=newGoal();addEntry('Visited','Moved into town today! It\'s very cozy. There\'s a bakery, a library, and frogs. Everyone says there are secret places past the edge of town too… I\'m going to find them.','Fountain Plaza',Date.now()-1);addEntry('Goal',`First goal: ${g.text}. Let's go.`,'')}
+if(!S.goal)newGoal();
+
+// =============== THREE SETUP ===============
+const cv=$('#c');
+let renderer;try{renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true})}catch(e){$('#err').style.display='flex';return}
+const PR=Math.min(devicePixelRatio||1,1.75);renderer.setPixelRatio(PR);
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();const SKY=new THREE.Color('#6e6fc0');scene.background=SKY;scene.fog=new THREE.Fog(SKY,70,190);
+const camera=new THREE.PerspectiveCamera(50,1,0.5,500);
+scene.add(new THREE.HemisphereLight('#cfc8ff','#3d3380',0.7));
+const sun=new THREE.DirectionalLight('#fff0e0',0.6);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-45,right:45,top:45,bottom:-45,near:1,far:160});sun.shadow.bias=-0.0008;scene.add(sun,sun.target);
+
+// halftone post-process
+const rt=new THREE.WebGLRenderTarget(2,2);
+const post=new THREE.ShaderMaterial({uniforms:{tDiffuse:{value:rt.texture},res:{value:new THREE.Vector2(1,1)},size:{value:5*PR}},
+ vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
+ fragmentShader:`uniform sampler2D tDiffuse;uniform vec2 res;uniform float size;varying vec2 vUv;
+ void main(){vec4 c=texture2D(tDiffuse,vUv);vec2 p=vUv*res;float a=.785;mat2 r=mat2(cos(a),-sin(a),sin(a),cos(a));
+  vec2 q=r*p/size;vec2 cell=fract(q)-.5;float lum=dot(c.rgb,vec3(.299,.587,.114));
+  float rad=sqrt(clamp(1.05-lum*1.2,0.,1.))*.6;float d=length(cell);float dm=1.-smoothstep(rad-.09,rad+.09,d);
+  vec3 lt=c.rgb*1.02+.01;vec3 dk=c.rgb*.5+vec3(.03,.0,.08);vec3 col=mix(lt,dk,dm*.8);
+  float lr=1.-smoothstep(.12,.38,length(vUv-.5)*.9);col*=mix(.82,1.,lr);
+  gl_FragColor=vec4(col,1.);}`,depthTest:false,depthWrite:false});
+const postScene=new THREE.Scene(),postCam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),post));
+
+function canvasTex(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.anisotropy=4;return t}
+const lambert=(color,o={})=>new THREE.MeshLambertMaterial(Object.assign({color},o));
+
+// ground
+const gtex=canvasTex(256,256,(g,w,h)=>{g.fillStyle='#8a8cd6';g.fillRect(0,0,w,h);g.strokeStyle='#c9cbf7';g.lineWidth=5;g.strokeRect(0,0,w,h);g.fillStyle='rgba(255,255,255,.08)';for(let i=0;i<40;i++){g.beginPath();g.arc(R()*w,R()*h,2,0,7);g.fill()}});
+gtex.wrapS=gtex.wrapT=THREE.RepeatWrapping;gtex.repeat.set(60,60);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(600,600),lambert('#fff',{map:gtex}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+// paths
+const pathMat=lambert('#a3a5e6');
+PLACES.filter(p=>p.id!=='plaza').forEach(p=>{const len=Math.hypot(p.dx,p.dz);const m=new THREE.Mesh(new THREE.BoxGeometry(4.5,0.06,len),pathMat);m.position.set(p.dx/2,0.03,p.dz/2);m.rotation.y=Math.atan2(p.dx,p.dz);m.receiveShadow=true;scene.add(m);p.pathMesh=m;m.visible=known(p)});
+
+// buildings
+const glowTex=canvasTex(64,64,(g)=>{const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.4,'rgba(255,255,255,.35)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64)});
+const glow=(color,s,op=.6)=>{const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color,transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false}));sp.scale.set(s,s,1);return sp};
+function archPath(g,x,y){g.beginPath();g.moveTo(x,y+36);g.lineTo(x,y+12);g.arc(x+14,y+12,14,Math.PI,0);g.lineTo(x+28,y+36);g.closePath()}
+function wallTex(p,front){const ppu=16,W=Math.round(p.w*ppu),H=Math.round(p.h*ppu);
+  const lit=[];const map=canvasTex(W,H,(g)=>{g.fillStyle=p.wall;g.fillRect(0,0,W,H);
+    g.fillStyle='rgba(0,0,0,.06)';for(let y=0;y<H;y+=8)g.fillRect(0,y,W,1);
+    const cols=Math.max(2,Math.floor(p.w/3.4)),rows=Math.max(1,Math.floor((p.h-3.5)/3.4));
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){if(front&&r===0&&Math.abs(c-(cols-1)/2)<1)continue;
+      const x=(c+.5)*W/cols-14,y=H-((r+1)*3.4+.4)*ppu;const on=R()<.6;lit.push([x,y,on]);
+      g.fillStyle=on?'#ffd977':'#5a4f8f';archPath(g,x,y);g.fill();
+      g.fillStyle='rgba(0,0,0,.18)';g.fillRect(x-3,y+36,34,4)}
+    if(front){g.fillStyle='#5a3d55';const dx=W/2-24;g.beginPath();g.moveTo(dx,H);g.lineTo(dx,H-50);g.arc(dx+24,H-50,24,Math.PI,0);g.lineTo(dx+48,H);g.fill();g.fillStyle='#ffd977';g.beginPath();g.arc(dx+38,H-30,3,0,7);g.fill()}});
+  const em=canvasTex(W,H,(g)=>{g.fillStyle='#000';g.fillRect(0,0,W,H);for(const [x,y,on] of lit)if(on){g.fillStyle='#ffcf6a';archPath(g,x,y);g.fill()}});
+  return lambert('#fff',{map,emissive:new THREE.Color('#ffffff'),emissiveMap:em,emissiveIntensity:.7})}
+function signTex(text){return canvasTex(512,96,(g)=>{g.fillStyle='#fffaf3';g.beginPath();g.moveTo(48,6);g.arcTo(506,6,506,90,42);g.arcTo(506,90,6,90,42);g.arcTo(6,90,6,6,42);g.arcTo(6,6,506,6,42);g.fill();g.fillStyle='#2a2547';g.font='800 44px ui-rounded,Nunito,system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(text,256,52)})}
+function makeBuilding(p){const grp=new THREE.Group();grp.position.set(p.x,0,p.z);grp.rotation.y=p.ry;
+  const roofM=lambert(p.roof);let frontZ=p.d/2;
+  if(p.round){frontZ=p.w*.55;const m=new THREE.Mesh(new THREE.CylinderGeometry(p.w*.4,p.w*.55,p.h,16),lambert(p.wall));m.position.y=p.h/2;m.castShadow=m.receiveShadow=true;grp.add(m);
+    for(let i=0;i<3;i++){const s=new THREE.Mesh(new THREE.CylinderGeometry(p.w*.5-i*.35,p.w*.53-i*.35,1.2,16),roofM);s.position.y=4+i*7;grp.add(s)}
+    const top=new THREE.Mesh(new THREE.CylinderGeometry(1.8,1.8,2.4,12),lambert('#fff8c0',{emissive:'#ffe680',emissiveIntensity:1}));top.position.y=p.h+1.2;grp.add(top);
+    const cap=new THREE.Mesh(new THREE.ConeGeometry(2.6,2.6,12),roofM);cap.position.y=p.h+3.7;grp.add(cap);
+    const beam=glow('#fff3b0',16,.7);beam.position.y=p.h+1.2;grp.add(beam);p.beam=beam;
+    const door=new THREE.Mesh(new THREE.PlaneGeometry(1.8,2.8),lambert('#5a3d55'));door.position.set(0,1.4,frontZ-.15);grp.add(door);
+  }else{
+    const side=wallTex(p,false),front=wallTex(p,true);
+    const body=new THREE.Mesh(new THREE.BoxGeometry(p.w,p.h,p.d),[side,side,roofM,roofM,front,side]);body.position.y=p.h/2;body.castShadow=body.receiveShadow=true;grp.add(body);
+    if(p.dome){const d=new THREE.Mesh(new THREE.SphereGeometry(p.w*.42,20,12,0,Math.PI*2,0,Math.PI/2),lambert('#e6e1f7'));d.position.y=p.h;d.castShadow=true;grp.add(d);
+      const tel=new THREE.Mesh(new THREE.CylinderGeometry(.6,.9,6,10),lambert('#3b3170'));tel.position.set(0,p.h+4,1);tel.rotation.x=-.7;grp.add(tel)}
+    else if(p.id==='tower'){const r=new THREE.Mesh(new THREE.ConeGeometry(p.w*.8,8,4),roofM);r.position.y=p.h+4;r.rotation.y=Math.PI/4;r.castShadow=true;grp.add(r);
+      const face=new THREE.Mesh(new THREE.CircleGeometry(2.6,32),lambert('#fffaf0',{emissive:'#fff2c0',emissiveIntensity:.5}));face.position.set(0,p.h-3.5,p.d/2+.05);grp.add(face);
+      const hand=(len,w)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,len,.1),lambert('#2a2547'));m.geometry.translate(0,len/2,0);m.position.set(0,p.h-3.5,p.d/2+.12);grp.add(m);return m};p.hh=hand(1.4,.3);p.mh=hand(2.1,.2)}
+    else{const roof=new THREE.Mesh(new THREE.BoxGeometry(p.w+1.2,1,p.d+1.2),roofM);roof.position.y=p.h+.5;roof.castShadow=true;grp.add(roof);
+      if(p.id==='greenhouse'){const glass=lambert('#bff0dc',{transparent:true,opacity:.55,emissive:'#4fd1a0',emissiveIntensity:.3});body.material=[glass,glass,roofM,roofM,front,glass];body.castShadow=false;
+        for(let i=0;i<6;i++){const b=new THREE.Mesh(new THREE.IcosahedronGeometry(1.4,0),new THREE.MeshPhongMaterial({color:'#4fb07a',flatShading:true,shininess:0}));b.position.set(rand(-4,4),1.3,rand(-3,2));grp.add(b)}}
+      const awn=new THREE.Mesh(new THREE.BoxGeometry(Math.min(7,p.w*.5),.3,1.6),roofM);awn.position.set(0,3.9,p.d/2+.8);awn.rotation.x=.25;grp.add(awn)}
+  }
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(6.4,1.2),new THREE.MeshBasicMaterial({map:signTex(p.name),transparent:true}));sign.position.set(0,p.round?5:4.9,frontZ+(p.round?.1:.95));grp.add(sign);
+  p.litGlow=glow('#ffd977',p.w*1.6,0);p.litGlow.position.set(0,p.h*.5,frontZ+1);grp.add(p.litGlow);
+  scene.add(grp);p.obj=grp;}
+PLACES.filter(p=>!p.spot).forEach(makeBuilding);
+
+// plaza fountain
+{const base=new THREE.Mesh(new THREE.CylinderGeometry(6,6.4,1,32),lambert('#aeaae0'));base.position.y=.5;base.receiveShadow=base.castShadow=true;
+ const water=new THREE.Mesh(new THREE.CylinderGeometry(5.3,5.3,.2,32),lambert('#4f86cf',{emissive:'#1d3f7a',emissiveIntensity:.35}));water.position.y=1;
+ const col=new THREE.Mesh(new THREE.CylinderGeometry(.6,.9,4,12),lambert('#c3c0ec'));col.position.y=2.5;col.castShadow=true;
+ const bowl=new THREE.Mesh(new THREE.CylinderGeometry(2.2,1,1,20),lambert('#c3c0ec'));bowl.position.y=4.6;
+ const ring=new THREE.Mesh(new THREE.RingGeometry(9,14,48),lambert('#9799dd'));ring.rotation.x=-Math.PI/2;ring.position.y=.02;ring.receiveShadow=true;
+ scene.add(base,water,col,bowl,ring)}
+const drops=new THREE.Points(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(new Float32Array(60*3),3)),new THREE.PointsMaterial({color:'#dff0ff',size:.4,map:glowTex,transparent:true,opacity:.9,depthWrite:false}));scene.add(drops);
+
+// pond
+{const p=byId.pond;const rim=new THREE.Mesh(new THREE.CylinderGeometry(15,15.5,.4,40),lambert('#a9abea'));rim.scale.z=.65;rim.position.set(p.x,.2,p.z);rim.receiveShadow=true;
+ const w=new THREE.Mesh(new THREE.CylinderGeometry(14,14,.45,40),lambert('#4a7fd0',{emissive:'#21407a',emissiveIntensity:.5}));w.scale.z=.65;w.position.set(p.x,.22,p.z);scene.add(rim,w);
+ for(const [a,b] of [[-8,2],[6,-3],[9,4],[-2,5],[2,-5]]){const l=new THREE.Mesh(new THREE.CylinderGeometry(1.3,1.3,.1,12,1,false,0,5.6),lambert('#4fb07a'));l.position.set(p.x+a,.5,p.z+b);scene.add(l)}
+ const moon=glow('#fff6cf',6,.6);moon.position.set(p.x-4,.6,p.z);scene.add(moon)}
+const frogs=[0,1,2,3].map(i=>{const g=new THREE.Group();const b=new THREE.Mesh(new THREE.SphereGeometry(.7,12,8),lambert('#62c48c'));b.scale.set(1,.75,1);b.castShadow=true;g.add(b);
+  for(const s of [-1,1]){const e=new THREE.Mesh(new THREE.SphereGeometry(.28,10,8),lambert('#ffffff'));e.position.set(s*.35,.5,.25);const pu=new THREE.Mesh(new THREE.SphereGeometry(.14,8,6),lambert('#222'));pu.position.set(s*.35,.55,.48);g.add(e,pu)}
+  const p=byId.pond;const pos=[[-8,2],[6,-3],[9,4],[-2,5]][i];g.position.set(p.x+pos[0],.55,p.z+pos[1]);g.rotation.y=Math.PI+rand(-1,1);g.userData.ph=rand(0,6);scene.add(g);return g});
+
+// graveyard
+{const p=byId.graveyard;const txt=['BRB','zzz','BOO','RIP','hi!','nap','☾','ok','<3'];const stoneM=lambert('#9e9ac8');
+ for(let i=0;i<9;i++){const tex=canvasTex(64,64,(g)=>{g.fillStyle='#9e9ac8';g.fillRect(0,0,64,64);g.fillStyle='#4d4880';g.font='800 20px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(txt[i],32,34)});
+  const st=new THREE.Group();const b=new THREE.Mesh(new THREE.BoxGeometry(2,2.4,.6),[stoneM,stoneM,stoneM,stoneM,lambert('#fff',{map:tex}),stoneM]);b.position.y=1.2;
+  const top=new THREE.Mesh(new THREE.CylinderGeometry(1,1,.6,16,1,false,-Math.PI/2,Math.PI),stoneM);top.rotation.x=Math.PI/2;top.position.y=2.4;
+  b.castShadow=top.castShadow=true;st.add(b,top);st.position.set(p.x-9+(i%3)*9+rand(-1,1),0,p.z-7+Math.floor(i/3)*7);st.rotation.y=Math.atan2(p.dx-st.position.x,p.dz-st.position.z)+rand(-.2,.2);scene.add(st)}
+ const fM=lambert('#5c5a8f');const gap=Math.atan2(p.dz-p.z,p.dx-p.x);for(let a=0;a<Math.PI*2;a+=.16){let da=Math.atan2(Math.sin(a-gap),Math.cos(a-gap));if(Math.abs(da)<.35)continue;const f=new THREE.Mesh(new THREE.BoxGeometry(.3,2.2,.3),fM);f.position.set(p.x+Math.cos(a)*16,1.1,p.z+Math.sin(a)*13);scene.add(f)}}
+// pumpkins
+{const p=byId.patch;for(let i=0;i<16;i++){const s=rand(.7,1.5);const g=new THREE.Group();const lit=R()<.45;const m=lambert(lit?'#ff9a4a':'#f08a3c',lit?{emissive:'#ff6a00',emissiveIntensity:.35}:{});
+  for(const [ox,sc] of [[-.45,.85],[.45,.85],[0,1]]){const s1=new THREE.Mesh(new THREE.SphereGeometry(1,14,10),m);s1.scale.set(sc*.75,.75,sc*.9);s1.position.x=ox;s1.castShadow=true;g.add(s1)}
+  const st=new THREE.Mesh(new THREE.CylinderGeometry(.12,.18,.6,6),lambert('#4f7a3c'));st.position.y=.85;g.add(st);
+  if(lit){const gl=glow('#ff8a30',4,.5);gl.position.y=.4;g.add(gl)}
+  g.scale.setScalar(s);g.position.set(p.x+rand(-11,11),.6*s,p.z+rand(-9,9));g.rotation.y=rand(0,6);scene.add(g)}}
+// carousel
+const carousel=new THREE.Group();{const p=byId.carousel;carousel.position.set(p.x,0,p.z);
+ const base=new THREE.Mesh(new THREE.CylinderGeometry(7,7,.6,24),lambert('#f6bccb'));base.position.y=.3;const pole=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,7,12),lambert('#ffd977'));pole.position.y=3.8;
+ const roof=new THREE.Mesh(new THREE.ConeGeometry(8,3.4,24),lambert('#c45f80'));roof.position.y=8.6;roof.castShadow=true;carousel.add(base,pole,roof);
+ for(let i=0;i<6;i++){const a=i/6*Math.PI*2;const h=new THREE.Group();const hm=lambert(['#fff','#ffd9c7','#c9f6e6'][i%3]);const b=new THREE.Mesh(new THREE.BoxGeometry(.9,1.1,2.4),hm);const hd=new THREE.Mesh(new THREE.BoxGeometry(.8,1.2,.9),hm);hd.position.set(0,.8,1.2);const rod=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,7,6),lambert('#ffd977'));rod.position.y=1.5;
+  h.add(b,hd,rod);h.position.set(Math.cos(a)*5,2.2,Math.sin(a)*5);h.rotation.y=-a;h.userData.a=i;carousel.add(h)}
+ scene.add(carousel)}
+
+// trees, lamps
+const treeCols=['#c27bd8','#e08bb0','#7d6ad1','#5fb7a0','#f0a6c8','#a98cf0'];
+const blockers=PLACES.map(p=>({x:p.x,z:p.z,r:p.spot?(p.id==='graveyard'||p.id==='pond'?19:p.id==='carousel'?11:15):p.r+5}));
+function segD(px,pz,x2,z2){const l=x2*x2+z2*z2;const t=clamp((px*x2+pz*z2)/l,0,1);return Math.hypot(px-x2*t,pz-z2*t)}
+const trees=[];
+for(let i=0;i<1500&&trees.length<150;i++){const x=(R()-.5)*300,z=(R()-.5)*260;
+  if(blockers.some(b=>Math.hypot(x-b.x,z-b.z)<b.r))continue;
+  if(PLACES.some(p=>p.id!=='plaza'&&segD(x,z,p.dx,p.dz)<5.5))continue;
+  if(trees.some(t=>Math.hypot(t.x-x,t.z-z)<6.5))continue;
+  trees.push({x,z})}
+const trunkG=new THREE.CylinderGeometry(.35,.5,3,6),leafG=new THREE.IcosahedronGeometry(2.2,1),trunkM=lambert('#5b4470');
+const leafMs=treeCols.map(c=>new THREE.MeshPhongMaterial({color:c,flatShading:true,shininess:0}));
+trees.forEach(t=>{const g=new THREE.Group();const s=.8+R()*.7;const tr=new THREE.Mesh(trunkG,trunkM);tr.position.y=1.5;tr.castShadow=true;g.add(tr);
+  const m=rpick(leafMs);for(let k=0;k<3;k++){const l=new THREE.Mesh(leafG,m);l.position.set((R()-.5)*1.6,3.6+k*1.1,(R()-.5)*1.6);l.scale.setScalar(1-k*.22);l.castShadow=true;g.add(l)}
+  g.position.set(t.x,0,t.z);g.scale.setScalar(s);g.userData.ph=R()*6;scene.add(g);t.obj=g});
+const lampPole=new THREE.CylinderGeometry(.12,.16,4.2,6),lampBulb=new THREE.SphereGeometry(.42,10,8),poleM=lambert('#3c355f'),bulbM=lambert('#ffe9a8',{emissive:'#ffd36b',emissiveIntensity:1});
+PLACES.filter(p=>p.id!=='plaza').forEach(p=>{const len=Math.hypot(p.dx,p.dz),nx=-p.dz/len,nz=p.dx/len;
+  for(const t of [.4,.75]){const g=new THREE.Group();const pole=new THREE.Mesh(lampPole,poleM);pole.position.y=2.1;pole.castShadow=true;
+    const b=new THREE.Mesh(lampBulb,bulbM);b.position.y=4.4;const gl=glow('#ffcf6a',3.2,.35);gl.position.y=4.4;g.add(pole,b,gl);
+    g.position.set(p.dx*t+nx*3.4,0,p.dz*t+nz*3.4);g.visible=known(p);(p.lamps=p.lamps||[]).push(g);scene.add(g)}});
+
+// sky: stars + moon
+{const n=500,pos=new Float32Array(n*3);for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,e=rand(.15,1.2),r=220;pos[i*3]=Math.cos(a)*Math.cos(e)*r;pos[i*3+1]=Math.sin(e)*r;pos[i*3+2]=Math.sin(a)*Math.cos(e)*r}
+ const st=new THREE.Points(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(pos,3)),new THREE.PointsMaterial({color:'#fff',size:1.6,fog:false,sizeAttenuation:false}));st.frustumCulled=false;scene.add(st);
+ const moon=new THREE.Mesh(new THREE.CircleGeometry(9,32),new THREE.MeshBasicMaterial({color:'#fff6d8',fog:false}));moon.position.set(-90,110,-150);moon.lookAt(0,0,0);scene.add(moon);const mg=glow('#fff3c8',60,.35);mg.material.fog=false;mg.position.copy(moon.position);scene.add(mg)}
+// fireflies
+const FF=70,ffPos=new Float32Array(FF*3),ffData=[];for(let i=0;i<FF;i++){ffData.push({x:rand(-120,120),z:rand(-110,110),y:rand(.8,4),a:rand(0,6)})}
+const fireflies=new THREE.Points(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(ffPos,3)),new THREE.PointsMaterial({color:'#e6ffa0',size:.9,map:glowTex,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false}));fireflies.frustumCulled=false;scene.add(fireflies);
+
+// =============== MOCHA (3D ghost) ===============
+const mocha=new THREE.Group();scene.add(mocha);const body=new THREE.Group();mocha.add(body);
+const prof=[new THREE.Vector2(.66,-.5),new THREE.Vector2(.63,-.2),new THREE.Vector2(.59,.15)];
+for(let i=0;i<=12;i++){const a=i/12*Math.PI/2;prof.push(new THREE.Vector2(Math.max(.001,Math.cos(a)*.57),.42+Math.sin(a)*.6))}
+const SEG=40,ghostGeo=new THREE.LatheGeometry(prof,SEG);const gPos=ghostGeo.attributes.position,P=prof.length;
+const hemIdx=[],hemBase=[];for(let i=0;i<=SEG;i++){for(let j=0;j<2;j++){const idx=i*P+j;hemIdx.push([idx,i/SEG*Math.PI*2,j]);hemBase.push([gPos.getX(idx),gPos.getY(idx),gPos.getZ(idx)])}}
+const ghostMat=new THREE.MeshLambertMaterial({color:'#fff9f2',emissive:'#4a4378',emissiveIntensity:.5,side:THREE.DoubleSide,transparent:true,opacity:.96});
+const shell=new THREE.Mesh(ghostGeo,ghostMat);shell.castShadow=true;body.add(shell);
+const black=new THREE.MeshBasicMaterial({color:'#2a2547'}),white=new THREE.MeshBasicMaterial({color:'#fff'});
+const eyes=[-1,1].map(s=>{const e=new THREE.Group();const m=new THREE.Mesh(new THREE.SphereGeometry(.075,12,10),black);m.scale.set(1,1.4,.5);const h=new THREE.Mesh(new THREE.SphereGeometry(.025,8,6),white);h.position.set(.025,.04,.035);e.add(m,h);e.position.set(s*.19,.64,.53);body.add(e);return e});
+const sleepEyes=[-1,1].map(s=>{const m=new THREE.Mesh(new THREE.TorusGeometry(.06,.016,6,12,Math.PI),black);m.rotation.z=Math.PI;m.position.set(s*.19,.66,.54);m.visible=false;body.add(m);return m});
+[-1,1].forEach(s=>{const b=new THREE.Mesh(new THREE.SphereGeometry(.08,10,8),new THREE.MeshBasicMaterial({color:'#ff9cbf',transparent:true,opacity:.75}));b.scale.set(1.3,.7,.4);b.position.set(s*.33,.5,.47);b.rotation.y=s*.6;body.add(b)});
+const smile=new THREE.Mesh(new THREE.TorusGeometry(.06,.017,6,12,Math.PI),black);smile.rotation.z=Math.PI;smile.position.set(0,.53,.57);body.add(smile);
+const mouthO=new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),black);mouthO.scale.set(1,1,.4);mouthO.position.set(0,.5,.57);mouthO.visible=false;body.add(mouthO);
+const arms=[-1,1].map(s=>{const a=new THREE.Mesh(new THREE.SphereGeometry(.15,12,10),ghostMat);a.scale.set(.8,1.1,.8);a.position.set(s*.66,.2,.05);body.add(a);return a});
+const acc={};
+{const g=new THREE.Group();const sc=new THREE.Mesh(new THREE.TorusGeometry(.6,.09,10,32),lambert('#8b5a3c'));sc.rotation.x=Math.PI/2;sc.position.y=.3;
+ const tail=new THREE.Mesh(new THREE.BoxGeometry(.18,.5,.08),lambert('#8b5a3c'));tail.position.set(.32,.08,.56);tail.rotation.z=.25;
+ const stripe=new THREE.Mesh(new THREE.TorusGeometry(.605,.035,6,32),lambert('#f3d9b8'));stripe.rotation.x=Math.PI/2;stripe.position.y=.3;g.add(sc,tail,stripe);acc.scarf=g}
+{const g=new THREE.Group();const m=lambert('#ff7fae');for(const s of [-1,1]){const c=new THREE.Mesh(new THREE.ConeGeometry(.13,.28,10),m);c.rotation.z=s*Math.PI/2;c.position.x=s*.14;g.add(c)}g.add(new THREE.Mesh(new THREE.SphereGeometry(.07,8,8),lambert('#ff5c98')));g.position.set(.32,.93,.25);g.rotation.set(.3,.4,.3);acc.bow=g}
+{const g=new THREE.Group();const m=lambert('#4b3a8c');const brim=new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,.05,24),m);const cone=new THREE.Mesh(new THREE.ConeGeometry(.33,.9,20),m);cone.position.y=.45;const band=new THREE.Mesh(new THREE.CylinderGeometry(.335,.335,.1,20),lambert('#ffb347'));band.position.y=.08;g.add(brim,cone,band);g.position.y=.98;g.rotation.z=-.15;acc.witch=g}
+{const g=new THREE.Group();const leaf=new THREE.Mesh(new THREE.SphereGeometry(.16,10,8),lambert('#e8793a'));leaf.scale.set(.6,1.3,.2);g.add(leaf);g.position.set(.08,1.07,0);g.rotation.z=.4;acc.leaf=g}
+Object.values(acc).forEach(a=>{a.visible=false;body.add(a)});
+function setHat(h){Object.entries(acc).forEach(([k,a])=>a.visible=k===h)}setHat(S.hat);
+const mGlow=glow('#d8dcff',3.2,.25);mGlow.position.y=.4;body.add(mGlow);
+const mLight=new THREE.PointLight('#cfd6ff',.6,10,2);mLight.position.y=.6;mocha.add(mLight);
+const shadowBlob=new THREE.Mesh(new THREE.CircleGeometry(.6,24),new THREE.MeshBasicMaterial({color:'#000',transparent:true,opacity:.22,depthWrite:false}));shadowBlob.rotation.x=-Math.PI/2;shadowBlob.position.y=.05;scene.add(shadowBlob);
+const WN=24,wPos=new Float32Array(WN*3).fill(-50),wLife=new Float32Array(WN);let wI=0;
+const wisps=new THREE.Points(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(wPos,3)),new THREE.PointsMaterial({color:'#eef0ff',size:.5,map:glowTex,transparent:true,opacity:.6,depthWrite:false}));wisps.frustumCulled=false;scene.add(wisps);
+
+const G={x:0,z:10,y:2,vx:0,vz:0,yaw:0,mode:'idle',timer:3,target:null,place:null,last:null,startle:0,talk:0,sleep:false,explore:false};
+function goTo(p,why){G.target={x:p.dx+rand(-1,1),z:p.dz+rand(-1,1)};G.place=p;G.explore=false;G.mode='travel';G.sleep=false;if(why)say(why)}
+function goPoint(x,z,ex){G.target={x,z};G.place=null;G.explore=!!ex;G.mode='travel';G.sleep=false}
+function exploreToward(p){const a=Math.atan2(p.z,p.x)+rand(-.35,.35),r=Math.hypot(p.x,p.z)*rand(.8,1.02);goPoint(Math.cos(a)*r,Math.sin(a)*r,true)}
+function chooseNext(){
+  const hidden=PLACES.filter(p=>!known(p));
+  if(hidden.length&&(S.needs.curious<45||Math.random()<.12)&&Math.random()<.5){exploreToward(pick(hidden));say(pick(SAYS.explore),3,true);return}
+  const needs=S.needs;const low=Object.keys(needs).sort((a,b)=>needs[a]-needs[b])[0];const g=goalDef();
+  const cands=PLACES.filter(p=>known(p)&&p!==G.last);
+  const w=cands.map(p=>1+(p.need===low?4:0)+Math.max(0,S.aff[p.id]||0)*.35+(g&&g.place&&g.place.includes(p.id)?2.5:0));
+  let r=Math.random()*w.reduce((a,b)=>a+b,0);for(let i=0;i<cands.length;i++){r-=w[i];if(r<=0)return goTo(cands[i])}goTo(cands[0])}
+function altitudeAt(x,z){let h=2;for(const p of PLACES){if(p.spot)continue;if(Math.hypot(x-p.x,z-p.z)<p.r+1.5)h=Math.max(h,p.h+(p.id==='tower'?9:p.dome?6:p.round?6:2.5))}if(Math.hypot(x-byId.carousel.x,z-byId.carousel.z)<8.5)h=Math.max(h,11);return h}
+let musingT=rand(15,25);
+function updateMocha(dt,t){
+  for(const k in S.needs)S.needs[k]=clamp(S.needs[k]-dt*{snack:.2,energy:.14,social:.18,curious:.24}[k],0,100);
+  G.startle=Math.max(0,G.startle-dt);G.talk=Math.max(0,G.talk-dt);
+  if(G.mode==='travel'){const dx=G.target.x-G.x,dz=G.target.z-G.z,d=Math.max(.001,Math.hypot(dx,dz));
+    const sp=(S.needs.energy<20?3.5:6)*(1+level()*.02);
+    G.vx+=(dx/d*sp-G.vx)*Math.min(1,dt*2.2);G.vz+=(dz/d*sp-G.vz)*Math.min(1,dt*2.2);
+    for(const p of PLACES)if(p.hidden&&!known(p)&&Math.hypot(G.x-p.x,G.z-p.z)<p.r+16){discover(p);goTo(p,'whoa… what is THIS place?!');break}
+    if(d<.8){G.vx*=.4;G.vz*=.4;
+      if(G.place){G.mode='activity';G.timer=rand(15,24);G.last=G.place;say(pick(SAYS[G.place.id]));G.sleep=G.place.need==='energy'}
+      else{if(G.explore){say(pick(['hmm, nothing here… yet','i\'ll keep looking','so quiet out here']),3,true);S.xp.explore=(S.xp.explore||0)+4}G.explore=false;G.mode='idle';G.timer=rand(3,6)}}
+  }else{G.vx*=Math.pow(.04,dt);G.vz*=Math.pow(.04,dt);G.timer-=dt;
+    if(G.mode==='activity'){if(G.timer<=0){doVisit(G.place);G.sleep=false;G.mode='idle';G.timer=rand(2,4);
+        if(Date.now()-S.lastThought>140e3&&Math.random()<.45){S.lastThought=Date.now();thought()}save()}}
+    else if(G.timer<=0){if(Math.random()<.25)goPoint(G.x+rand(-12,12),G.z+rand(-12,12));else chooseNext()}}
+  G.x=clamp(G.x+G.vx*dt,-160,160);G.z=clamp(G.z+G.vz*dt,-150,150);
+  const sp=Math.hypot(G.vx,G.vz);
+  const ty=sp>.5?Math.atan2(G.vx,G.vz):Math.atan2(camera.position.x-G.x,camera.position.z-G.z);
+  let df=Math.atan2(Math.sin(ty-G.yaw),Math.cos(ty-G.yaw));G.yaw+=df*Math.min(1,dt*(sp>.5?5:1.5));
+  const alt=altitudeAt(G.x,G.z);G.y+=(alt-G.y)*Math.min(1,dt*2);
+  musingT-=dt;if(musingT<=0&&bubbleT<=0){musingT=rand(22,40);const m=muse();if(m)say(m,4,true)}
+  const sc=growScale();
+  const bob=Math.sin(t*2.2)*.18+(G.startle>0?Math.abs(Math.sin(G.startle*14))*.5:0);
+  mocha.position.set(G.x,G.y+bob,G.z);mocha.rotation.y=G.yaw;mocha.scale.setScalar(sc);
+  body.rotation.x=clamp(sp*.035,0,.3);body.rotation.z=Math.sin(t*1.3)*.05;
+  const squish=G.startle>0?1+Math.sin(G.startle*25)*.08:1;body.scale.set(squish,2-squish,squish);
+  for(let k=0;k<hemIdx.length;k++){const [idx,ang,j]=hemIdx[k],[bx,by,bz]=hemBase[k];const w=Math.sin(ang*6+t*4)*(j?0.03:.08);gPos.setXYZ(idx,bx*(1+w*.4),by+w,bz*(1+w*.4))}gPos.needsUpdate=true;
+  arms.forEach((a,i)=>{a.position.y=.2+Math.sin(t*4+i*Math.PI)*.06+(G.talk>0?Math.abs(Math.sin(t*8))*.12:0)});
+  const blink=(t%4.3)<.13;eyes.forEach(e=>{e.visible=!G.sleep;e.scale.y=blink?.1:G.startle>0?1.3:1});sleepEyes.forEach(e=>e.visible=G.sleep);
+  smile.visible=!(G.startle>0||(G.talk>0&&!G.sleep));mouthO.visible=!smile.visible;mouthO.scale.y=G.startle>0?1.4:.6+Math.abs(Math.sin(t*14))*.8;
+  const cozy=Object.values(S.needs).reduce((a,b)=>a+b)/4;smile.rotation.z=cozy<30?0:Math.PI;smile.position.y=cozy<30?.49:.53;
+  shadowBlob.position.set(G.x,.05,G.z);shadowBlob.scale.setScalar(sc*(1.2-bob*.3));shadowBlob.visible=alt<2.5;
+  if(sp>1&&Math.random()<dt*20){wPos[wI*3]=G.x+rand(-.3,.3);wPos[wI*3+1]=G.y+bob-.2;wPos[wI*3+2]=G.z+rand(-.3,.3);wLife[wI]=1;wI=(wI+1)%WN}
+  for(let i=0;i<WN;i++){if(wLife[i]>0){wLife[i]-=dt;wPos[i*3+1]+=dt*.6;if(wLife[i]<=0)wPos[i*3+1]=-50}}wisps.geometry.attributes.position.needsUpdate=true;
+  PLACES.forEach(p=>{if(p.litGlow)p.litGlow.material.opacity+=(((G.mode==='activity'&&G.place===p)?.35:0)-p.litGlow.material.opacity)*Math.min(1,dt*2)});
+}
+function muse(){const n=S.mem.userName;const o=[];
+  const g=goalDef();if(g)o.push(`goal: ${g.text} (${S.goal.count}/${g.n})`);
+  if(n)o.push(`i wonder what ${n} is up to`);
+  const fav=favorite();if(fav)o.push(`${fav.name}… i love it there`);
+  if(PLACES.some(p=>!known(p)))o.push('i bet there\'s more town out past the trees…');
+  if(S.words.length)o.push(`${pick(S.words)}… i like that word`);
+  if(S.items.length)o.push(`i still have ${pick(S.items)}`);
+  if(S.needs.energy<25)o.push('*yawn*');if(S.needs.snack<25)o.push('i could really go for a sniff of something');if(S.needs.social<25)o.push('kinda lonely… say hi?');
+  return o.length?pick(o):null}
+
+// =============== CAMERA & INPUT ===============
+const camS={yaw:Math.PI*.12,pitch:.5,dist:14,tx:G.x,ty:G.y,tz:G.z};
+function placeCam(dt){camS.tx+=(G.x-camS.tx)*Math.min(1,dt*2.5);camS.ty+=(G.y-camS.ty)*Math.min(1,dt*2);camS.tz+=(G.z-camS.tz)*Math.min(1,dt*2.5);
+  const cp=Math.cos(camS.pitch),sp=Math.sin(camS.pitch);
+  camera.position.set(camS.tx+Math.sin(camS.yaw)*cp*camS.dist,camS.ty+sp*camS.dist,camS.tz+Math.cos(camS.yaw)*cp*camS.dist);camera.lookAt(camS.tx,camS.ty+1,camS.tz);
+  sun.position.set(camS.tx-30,60,camS.tz+20);sun.target.position.set(camS.tx,0,camS.tz)}
+const ptrs=new Map();let downAt=null,pinch0=null,hintGone=false;
+cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(ptrs.size===1)downAt={x:e.clientX,y:e.clientY,t:performance.now()};else{downAt=null;const [a,b]=[...ptrs.values()];pinch0={d:Math.hypot(a.x-b.x,a.y-b.y),dist:camS.dist}}});
+cv.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+  if(ptrs.size===1){camS.yaw-=dx*.006;camS.pitch=clamp(camS.pitch+dy*.004,.18,1.25);if(!hintGone&&downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)>20){hintGone=true;$('#hint').style.opacity=0}}
+  else if(ptrs.size===2&&pinch0){const [a,b]=[...ptrs.values()];camS.dist=clamp(pinch0.dist*pinch0.d/Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),7,55)}});
+cv.addEventListener('pointerup',e=>{const was=ptrs.size;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch0=null;
+  if(was===1&&downAt&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<8&&performance.now()-downAt.t<600)tap(e.clientX,e.clientY);downAt=null});
+cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);downAt=null;pinch0=null});
+cv.addEventListener('wheel',e=>{e.preventDefault();camS.dist=clamp(camS.dist*(1+e.deltaY*.001),7,55)},{passive:false});
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
+function tap(x,y){ndc.set(x/innerWidth*2-1,-(y/innerHeight)*2+1);ray.setFromCamera(ndc,camera);
+  if(ray.intersectObject(shell,false).length){G.startle=.9;say(pick(['hehe that tickles','boo! 👻','hi hi hi!','*happy wiggle*']),2.5);S.needs.social=clamp(S.needs.social+5,0,100);return}
+  const objs=PLACES.filter(p=>p.obj&&known(p)).map(p=>p.obj);const hb=ray.intersectObjects(objs,true);
+  if(hb.length){let o=hb[0].object;while(o.parent&&!objs.includes(o))o=o.parent;const p=PLACES.find(q=>q.obj===o);if(p)return summonPlace(p)}
+  const hg=ray.intersectObject(ground);if(hg.length){const q=hg[0].point;const near=PLACES.find(p=>known(p)&&Math.hypot(p.x-q.x,p.z-q.z)<p.r+4);
+    if(near)return summonPlace(near);goPoint(clamp(q.x,-150,150),clamp(q.z,-140,140));say(pick(['coming!','whoosh~','you called? 👀','floating over!']),2.5);S.needs.social=clamp(S.needs.social+3,0,100)}}
+function summonPlace(p){goTo(p,pick([`ooh, ${p.name}!`,'on my way!','okay okay, going!']))}
+
+// =============== HTML OVERLAYS ===============
+const bubble=$('#bubble');let bubbleT=0;
+function say(t,dur=4.5,think){bubble.textContent=t;bubble.classList.toggle('think',!!think);bubble.classList.add('show');bubbleT=dur;if(!think)G.talk=Math.min(dur,2)}
+let toastT;liveToast=t=>{const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),3800)};
+const labels=[];liveLabel=p=>{if(labels.some(l=>l.p===p))return;const d=document.createElement('div');d.className='lbl'+(p.hidden?' new':'');d.textContent=(p.hidden?'✨ ':'')+p.name;$('#labels').appendChild(d);labels.push({p,el:d});
+  if(p.pathMesh)p.pathMesh.visible=true;(p.lamps||[]).forEach(l=>l.visible=true)};
+PLACES.filter(known).forEach(p=>liveLabel(p));
+const v3=new THREE.Vector3();
+function project(x,y,z){v3.set(x,y,z).project(camera);return{x:(v3.x+1)/2*innerWidth,y:(1-v3.y)/2*innerHeight,vis:v3.z<1&&v3.z>-1}}
+
+// minimap
+const mini=$('#mini'),mc=mini.getContext('2d'),MS=240/300;
+function drawMini(t){mc.clearRect(0,0,240,240);mc.save();mc.beginPath();mc.arc(120,120,118,0,7);mc.clip();mc.fillStyle='#fffaf3';mc.fillRect(0,0,240,240);
+  const X=x=>120+x*MS,Z=z=>120+z*MS;mc.fillStyle='#ece5fb';mc.fillRect(X(-150),Z(-140),300*MS,280*MS);
+  mc.strokeStyle='#d7cdf3';mc.lineWidth=4;mc.lineCap='round';PLACES.filter(p=>known(p)&&p.id!=='plaza').forEach(p=>{mc.beginPath();mc.moveTo(X(0),Z(0));mc.lineTo(X(p.dx),Z(p.dz));mc.stroke()});
+  PLACES.forEach(p=>{if(!known(p)){mc.fillStyle='#bdb3e0';mc.font='bold 15px system-ui';mc.textAlign='center';mc.textBaseline='middle';mc.fillText('?',X(p.x),Z(p.z));return}
+    mc.fillStyle=p.roof||({pond:'#7fb4e8',graveyard:'#8f8bb8',patch:'#f08a3c',plaza:'#b9a7ff',carousel:'#c45f80'})[p.id];mc.beginPath();mc.arc(X(p.x),Z(p.z),p.spot?6:5,0,7);mc.fill()});
+  if(G.mode==='travel'&&G.target){mc.strokeStyle='#b9a7ff';mc.setLineDash([4,4]);mc.lineWidth=2;mc.beginPath();mc.moveTo(X(G.x),Z(G.z));mc.lineTo(X(G.target.x),Z(G.target.z));mc.stroke();mc.setLineDash([])}
+  mc.save();mc.translate(X(G.x),Z(G.z));mc.rotate(-camS.yaw);mc.fillStyle='rgba(185,167,255,.35)';mc.beginPath();mc.moveTo(0,0);mc.arc(0,0,26,-Math.PI/2-.5,-Math.PI/2+.5);mc.fill();mc.restore();
+  mc.fillStyle='#2a2547';mc.beginPath();mc.arc(X(G.x),Z(G.z),6+Math.sin(t*4)*1.2,0,7);mc.fill();mc.fillStyle='#fff';mc.beginPath();mc.arc(X(G.x),Z(G.z),2.6,0,7);mc.fill();mc.restore()}
+mini.addEventListener('click',e=>{const r=mini.getBoundingClientRect();const x=((e.clientX-r.left)/r.width*240-120)/MS,z=((e.clientY-r.top)/r.height*240-120)/MS;const near=PLACES.find(p=>known(p)&&Math.hypot(p.x-x,p.z-z)<12);if(near)summonPlace(near);else{goPoint(clamp(x,-150,150),clamp(z,-140,140));say('floating over!',2)}});
+
+// HUD / panel
+const MLAB={snack:'Snacky',energy:'Energy',social:'Social',curious:'Curious'},MCOL={snack:'#ffb38a',energy:'#9be8cf',social:'#ff9fc0',curious:'#b9a7ff'};
+function statusText(){if(G.startle>0)return'startled!';if(G.mode==='activity')return DOING[G.place.id];if(G.mode==='travel')return G.explore?'exploring 🧭':G.place?'→ '+G.place.name:'floating';return'floating'}
+function hud(){$('#lvl').textContent='lv '+level();$('#status').textContent=statusText();const mood=Object.values(S.needs).reduce((a,b)=>a+b,0)/4;
+  $('#meters').innerHTML=`<span>Cozy</span><div class="bar"><i style="width:${mood}%;background:#2a2547"></i></div>`+Object.keys(MLAB).map(k=>`<span>${MLAB[k]}</span><div class="bar"><i style="width:${S.needs[k]}%;background:${MCOL[k]}"></i></div>`).join('')}
+function ago(t){const s=(Date.now()-t)/1000;if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
+let curTab='diary';
+function renderDiary(){$('#tab-diary').innerHTML=(S._away?`<p class="muted">✨ Mocha did ${S._away} things while you were away</p>`:'')+S.diary.map(e=>`<div class="entry"><div class="meta"><span>${esc(e.place||'thoughts')}<span class="tag${e.big?' big':''}">${esc(e.tag)}</span></span><span class="when" data-t="${e.t}">${ago(e.t)}</span></div>${esc(e.text)}</div>`).join('')}
+function renderGrow(){const lv=level(),xp=totalXP(),cur=(lv-1)**2*18,nxt=lv**2*18;const g=goalDef();
+  const sk=Object.keys(SKILLS).sort((a,b)=>(S.xp[b]||0)-(S.xp[a]||0));
+  const favs=Object.entries(S.aff).filter(([k,v])=>byId[k]&&v>0).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  $('#tab-grow').innerHTML=`<h4 style="margin-top:4px">level ${lv} · day ${ageDays()+1} in town</h4><div class="bar" style="height:10px"><i style="width:${(xp-cur)/(nxt-cur)*100}%;background:var(--mocha)"></i></div><p class="muted" style="margin:4px 0">${nxt-xp} xp until Mocha grows again</p>
+  <h4>his current goal</h4>${g?`<div class="goal">🎯 ${esc(g.text)} <b style="float:right">${S.goal.count}/${g.n}</b></div>`:''}<p class="muted" style="margin:4px 0">${S.goalsDone} goals completed (he picks his own)</p>
+  <h4>skills</h4>${sk.map(k=>`<div class="skill"><span>${SKILLS[k]}</span><div class="bar"><i style="width:${skillLv(k)>=10?100:((S.xp[k]||0)%30)/30*100}%;background:#b9a7ff"></i></div><small>lv ${skillLv(k)}</small></div>`).join('')}
+  <h4>favorite places</h4>${favs.length?favs.map(([k])=>`<span class="chip">${esc(byId[k].name)}</span>`).join(''):'<p class="muted">still deciding…</p>'}
+  <h4>secret places found: ${PLACES.filter(p=>p.hidden&&known(p)).length}/${PLACES.filter(p=>p.hidden).length}</h4>${PLACES.filter(p=>p.hidden).map(p=>`<span class="chip">${known(p)?'✨ '+esc(p.name):'???'}</span>`).join('')}
+  <h4>treasure collection (${S.items.length})</h4>${S.items.length?S.items.map(i=>`<span class="chip">${esc(i)}</span>`).join(''):'<p class="muted">nothing yet — he finds things while out and about</p>'}
+  <h4>words learned from you</h4>${Object.entries(S.taught).map(([k,v])=>`<span class="chip">${esc(k)} = ${esc(v)}</span>`).join('')}${S.words.map(w=>`<span class="chip">${esc(w)}</span>`).join('')}${!S.words.length&&!Object.keys(S.taught).length?'<p class="muted">teach him: "snorkel means a happy accident"</p>':''}
+  <h4>accessory</h4><div class="opts">${[['scarf','☕ mocha scarf'],['bow','🎀 bow'],['witch','🧙 witch hat'],['leaf','🍂 leaf'],['none','none']].map(([k,v])=>`<button data-h="${k}" class="${S.hat===k?'on':''}">${v}</button>`).join('')}</div>
+  <button class="danger" id="resetBtn">start Mocha over</button>`;
+  $('#tab-grow').querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{S.hat=b.dataset.h;setHat(S.hat);save();renderGrow()});
+  $('#resetBtn').onclick=e=>{const b=e.target;if(b.dataset.sure){try{localStorage.removeItem(KEY)}catch(_){}location.reload()}else{b.dataset.sure=1;b.textContent='tap again — this erases his diary 🥺'}}}
+function renderAbout(){const m=S.mem;
+  $('#tab-about').innerHTML=`<h4 style="margin-top:4px">your name</h4>${m.userName?`<span class="chip">${esc(m.userName)}</span>`:'<p class="muted">He doesn\'t know yet. Try "my name is …"</p>'}
+  <h4>things you like</h4>${m.likes.length?m.likes.map(l=>`<span class="chip">${esc(l)}</span>`).join(''):'<p class="muted">Try "I like …"</p>'}
+  <h4>favorites</h4>${Object.keys(m.favs).length?Object.entries(m.favs).map(([k,v])=>`<span class="chip">${esc(k)}: ${esc(v)}</span>`).join(''):'<p class="muted">Try "my favorite color is …"</p>'}
+  <h4>friendship</h4><p class="muted">${m.chats} chats · met ${new Date(m.met).toLocaleDateString()}</p>`}
+function renderTab(){if(curTab==='diary')renderDiary();if(curTab==='grow')renderGrow();if(curTab==='about')renderAbout()}
+onDiary=()=>{if(curTab==='diary')renderDiary();else if(curTab==='grow'&&!document.querySelector('#resetBtn[data-sure]'))renderGrow()};
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');curTab=b.dataset.tab;$('#tab-'+curTab).classList.add('on');renderTab()});
+$('#closePanel').onclick=()=>$('#panel').classList.add('hidden');$('#diaryBtn').onclick=()=>$('#panel').classList.remove('hidden');
+if(innerWidth<760)$('#panel').classList.add('hidden');
+setInterval(()=>{document.querySelectorAll('.when').forEach(el=>el.textContent=ago(+el.dataset.t))},15000);
+
+// =============== CHAT ===============
+const log=$('#chatlog');let pendingQ=null;
+const STOP=new Set('about above after again against because before being below between could doing during further having itself myself ourselves should themselves through under until where which while yourself yourselves really things gonna wanna today tomorrow hello thanks please maybe little something anything everything nothing someone people always never actually probably pretty though another around'.split(' '));
+function learnWords(raw){raw.toLowerCase().replace(/[^a-z\s'-]/g,' ').split(/\s+/).filter(w=>w.length>=6&&!STOP.has(w)&&!/'/.test(w)).forEach(w=>{if(!S.words.includes(w)&&Math.random()<.5){S.words.push(w);if(S.words.length>30)S.words.shift()}})}
+const JOKES=['why don\'t ghosts lie? you can see right through them 👻','what\'s a ghost\'s favorite coffee? a boo-ristretto. (i\'m named after a coffee, i\'m allowed)','i tried stand-up comedy but i kept getting booed. honestly loved it','what room does a ghost not need? a living room!'];
+const QUESTIONS=[['snack','what\'s your favorite snack?'],['color','what\'s your favorite color?'],['season','what\'s your favorite season?'],['animal','what\'s your favorite animal?'],['song','what song is stuck in your head?'],['place','what\'s your favorite place in the real world?']];
+function reply(raw){const m=raw.toLowerCase().trim(),me=S.mem,N=me.userName;let k;
+  me.chats++;S.needs.social=clamp(S.needs.social+12,0,100);bumpGoal('chat');
+  if(k=raw.match(/(?:my name is|my name's|call me)\s+([a-z][a-z'\-]{0,18})/i)||raw.trim().match(/^(?:hi|hey|hello)?[ ,!]*(?:i'm|im|i am)\s+([A-Z][a-z'\-]{1,18})[.!]*$/)){const nm=k[1][0].toUpperCase()+k[1].slice(1);me.userName=nm;pendingQ=null;addEntry('Friends',`Met someone named ${nm} today. Writing it in big letters so I don't forget: ${nm.toUpperCase()}.`,'');return pick([`${nm}! what a good name. writing it in my diary 📝`,`hi ${nm}!! i'm mocha. i'll remember you (ghost promise)`])}
+  if(k=m.match(/^(?:the word )?["']?([a-z]{2,20})["']? (?:means|is when)\s+(.{2,50}?)[.!]*$/)){S.taught[k[1]]=k[2];return pick([`${k[1]}… means ${k[2]}… got it. i'm going to use that all the time now`,`ooh a new word! ${k[1]}! 📝`])}
+  if(k=m.match(/my fav(?:ou?rite)?\s+([a-z ]{2,20}?)\s+(?:is|are)\s+(.{1,40}?)[.!?]*$/)){me.favs[k[1].trim()]=k[2].trim();pendingQ=null;return pick([`${k[2]}? excellent taste. noted!`,`ooh, ${k[2]}. i'll think about that while i float around`])}
+  if(k=m.match(/\bi (?:really |also )?(?:like|love|adore|enjoy)\s+(.{2,40}?)[.!?]*$/)){const l=k[1].replace(/^to /,'');if(!/^(you|u)$/.test(l)){if(!me.likes.includes(l))me.likes.push(l);me.likes=me.likes.slice(-12);pendingQ=null;const rel=PLACES.find(p=>known(p)&&p.keys.some(kw=>l.includes(kw)));if(rel){S.aff[rel.id]=(S.aff[rel.id]||0)+2;return`you like ${l}?? then i'm gonna love ${rel.name} even more now`}return pick([`you like ${l}?? adding it to my notes 📝`,`${l}! i'll keep an eye out for some while i'm haunting`,`noted: ${N||'you'} + ${l} = 💜`])}}
+  if(pendingQ&&m.split(/\s+/).length<=6&&!m.includes('?')){me.favs[pendingQ]=raw.trim().replace(/[.!]+$/,'');const q=pendingQ;pendingQ=null;return pick([`${me.favs[q]}! good answer. i'm keeping that`,`ooh. ${me.favs[q]}. very ${N?N+'-like':'you'}`])}
+  learnWords(raw);
+  if(/\bboo+\b/.test(m)){G.startle=1.2;return pick(['AAH! …oh. it\'s you. you got me 😳','hey!! that\'s MY line','eek! my whole sheet jumped'])}
+  if(/(what.*(learn|know)|what can you do|your skills|good at)/.test(m)){const top=Object.keys(SKILLS).sort((a,b)=>(S.xp[b]||0)-(S.xp[a]||0))[0];return S.xp[top]?`i'm getting really good at ${SKILLS[top].replace(/^\S+ /,'').toLowerCase()} (level ${skillLv(top)})! i'm level ${level()} overall`:'not much yet! but i\'m practicing everything'}
+  if(/(what.*(found|collect|treasure)|your collection)/.test(m))return S.items.length?`i've found ${S.items.length} treasure${S.items.length>1?'s':''}! my newest is ${S.items[S.items.length-1]}`:'nothing yet… but i\'m looking!';
+  if(/(favorite|favourite) place/.test(m)){const f=favorite();return f?`${f.name}, for sure`:'still deciding! everywhere is so good'}
+  if(/(goal|what are you working on|your plan)/.test(m)){const g=goalDef();return g?`right now i'm trying to ${g.text}. ${S.goal.count}/${g.n} so far!`:'figuring out my next goal'}
+  if(/(secret|explore|hidden|new place|adventure)/.test(m)){const h=PLACES.filter(p=>!known(p));if(h.length){exploreToward(pick(h));return'ooh yes, let\'s go exploring! 🧭'}return'i think i\'ve found every secret place… or have i 👀'}
+  if(/(nap|sleep|tired|rest\b|bed)/.test(m)){goTo(byId.tower);return'a nap sounds perfect… heading to the clocktower 😴'}
+  if(/(hungry|food|eat|snack|coffee|latte)/.test(m)){goTo(byId.bakery);return/coffee|latte/.test(m)?'coffee?? that\'s basically my family. to the bakery! ☕':'ooh, snack time! (well… smell time) → bakery!'}
+  const place=PLACES.find(p=>known(p)&&p.keys.some(kw=>m.includes(kw)));
+  if(place){goTo(place);return pick([`${place.name}? yes!! on my way`,`ooh good idea. floating to ${place.name} 👻`])}
+  if(/(how are (you|u)|how r u|how're you|you ok|u ok)/.test(m)){const mood=Object.values(S.needs).reduce((a,b)=>a+b)/4;const low=Object.keys(S.needs).sort((a,b)=>S.needs[a]-S.needs[b])[0];return mood>65?pick(['super cozy right now 💜','floaty and happy!','like a warm mocha on a cold night']):`a little ${({snack:'snacky',energy:'sleepy',social:'lonely',curious:'bored'})[low]}, honestly. but better now that you're here`}
+  if(/(what are you doing|what're you doing|wyd|whatcha|what r u doing)/.test(m))return G.mode==='activity'?`i'm ${DOING[G.place.id]} at ${G.place.name}!`:G.explore?'exploring the edge of town!':G.place?`floating over to ${G.place.name}`:'just floating around, being ghostly';
+  if(/(who are you|your name|what are you)/.test(m))return`i'm mocha! a small ghost. day ${ageDays()+1} in town, level ${level()}. i like ${pick(['smelling pastries','old books','frogs','naps in the clocktower','finding treasures'])}`;
+  if(/(how (big|old)|your level|grow)/.test(m))return`i'm level ${level()} and i've been here ${ageDays()+1} day${ageDays()?'s':''}. i get a little bigger every time i learn stuff!`;
+  if(/(joke|funny|laugh)/.test(m))return pick(JOKES);
+  if(/(love you|ily|cute|adorable|best ghost|good ghost|good boy)/.test(m)){G.startle=.5;return pick(['*turns slightly pink* 🩷','stoppp (don\'t stop)','you\'re the best visitor a ghost could ask for'])}
+  if(/(sad|bad day|upset|lonely|stressed|anxious|cry)/.test(m))return pick(['come float with me for a bit. i\'ll hum something soft 🎶','sending you a very gentle haunting 🫶 you\'re doing your best','want me to tell the frogs to cheer for you? they will']);
+  if(/(halloween|trick|treat|spooky|costume)/.test(m))return pick(['happy halloween!! it\'s basically my birthday 🎃','i\'m going as a ghost this year. very convincing costume','trick OR treat? why not both 👻']);
+  if(/^(hi|hey|hello|yo|hiya|heyy+|sup|good (morning|evening|night))\b/.test(m))return N?pick([`${N}!! hiii 👻`,`oh hi ${N}! i missed you`,`${N}! guess what, i'm level ${level()} now`]):pick(['hi!! i\'m mocha 👻 what\'s your name?','oh! a visitor! hello! who are you?']);
+  if(/(bye|goodnight|good night|see you|gtg|later)/.test(m))return pick(['bye!! i\'ll keep exploring while you\'re gone and tell you everything','see you soon. i\'ll write it all in my diary','night night 🌙']);
+  if(/\?$/.test(m))return pick(['hmm… i\'d have to ask the frogs','great question. the library might know','i think so? ghosts are bad at facts','that\'s a mystery even to me 👀']);
+  if(Math.random()<.5){const qs=QUESTIONS.filter(([k])=>!me.favs[k]);if(qs.length){const q=pick(qs);pendingQ=q[0];return pick(['ooh! ','mhm mhm. ','hehe. '])+q[1]}}
+  const w=S.words.length?pick(S.words):null;
+  return pick(['mhm! tell me more','that\'s so interesting. i\'m floating thoughtfully','*nods ghostily*',w?`that's very ${w} of you`:'you\'re funny',N?`you're funny, ${N}`:'you\'re funny']);
+}
+function showUserMsg(t){const d=document.createElement('div');d.className='msg';d.textContent=t;log.appendChild(d);while(log.children.length>3)log.firstChild.remove();setTimeout(()=>d.style.opacity=0,6000);setTimeout(()=>d.remove(),7200)}
+$('#chat').addEventListener('submit',e=>{e.preventDefault();const inp=$('#say'),t=inp.value.trim();if(!t)return;inp.value='';showUserMsg(t);say('…',1.2);
+  setTimeout(()=>{const r=reply(t);say(r,Math.max(3.5,r.length/14));if(S.mem.chats%5===0&&Date.now()-S.lastThought>60e3){S.lastThought=Date.now();addEntry('Friends',`Chatted with ${S.mem.userName||'a visitor'}. They said "${t.slice(0,60)}${t.length>60?'…':''}". I'm keeping that one.`,'')}save();if(curTab!=='diary')renderTab()},rand(500,1000))});
+
+// =============== LOOP ===============
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);cv.style.width=w+'px';cv.style.height=h+'px';camera.aspect=w/h;camera.fov=w<h?64:50;camera.updateProjectionMatrix();rt.setSize(Math.round(w*PR),Math.round(h*PR));post.uniforms.res.value.set(w*PR,h*PR)}
+addEventListener('resize',resize);resize();
+let last=performance.now(),T=0,hudT=0;
+function frame(now){const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;T+=dt;
+  updateMocha(dt,T);placeCam(dt);
+  trees.forEach(t=>{t.obj.rotation.z=Math.sin(T*.9+t.obj.userData.ph)*.025});
+  frogs.forEach(f=>{const h=Math.max(0,Math.sin(T*1.3+f.userData.ph))**10;f.position.y=.55+h*1.2});
+  carousel.rotation.y+=dt*(G.mode==='activity'&&G.place===byId.carousel?.6:.08);carousel.children.forEach(c=>{if(c.userData.a!==undefined)c.position.y=2.2+Math.sin(T*2+c.userData.a)*.4});
+  {const a=drops.geometry.attributes.position;for(let i=0;i<60;i++){const ph=(T*.7+i/60)%1,ang=i*2.4;a.setXYZ(i,Math.cos(ang)*ph*3.5,5+Math.sin(ph*Math.PI)*2.2-ph*4,Math.sin(ang)*ph*3.5)}a.needsUpdate=true}
+  for(let i=0;i<FF;i++){const f=ffData[i];f.a+=dt*.5;ffPos[i*3]=f.x+Math.cos(f.a*1.3)*3;ffPos[i*3+1]=f.y+Math.sin(f.a*2)*.6;ffPos[i*3+2]=f.z+Math.sin(f.a)*3}fireflies.geometry.attributes.position.needsUpdate=true;fireflies.material.opacity=.6+Math.sin(T*3)*.3;
+  const tw=byId.tower;if(tw.hh){const d=new Date();tw.hh.rotation.z=-((d.getHours()%12)+d.getMinutes()/60)/12*Math.PI*2;tw.mh.rotation.z=-d.getMinutes()/60*Math.PI*2}
+  const lh=byId.lighthouse;if(lh.beam)lh.beam.material.opacity=.45+Math.sin(T*2)*.3;
+  renderer.setRenderTarget(rt);renderer.render(scene,camera);renderer.setRenderTarget(null);renderer.render(postScene,postCam);
+  if(bubbleT>0){bubbleT-=dt;if(bubbleT<=0)bubble.classList.remove('show')}
+  const bp=project(G.x,mocha.position.y+1.5*growScale(),G.z);bubble.style.left=bp.x+'px';bubble.style.top=bp.y+'px';
+  labels.forEach(({p,el})=>{const pp=project(p.x,(p.spot?5:p.h+(p.id==='tower'?9:p.dome?6:p.round?6:2)),p.z);const dist=Math.hypot(camera.position.x-p.x,camera.position.z-p.z);el.style.opacity=pp.vis&&dist<110?1:0;el.style.left=pp.x+'px';el.style.top=pp.y+'px'});
+  hudT-=dt;if(hudT<=0){hudT=.3;hud()}
+  drawMini(T);requestAnimationFrame(frame)}
+hud();renderTab();
+setTimeout(()=>{if(isNew)say('hi! i\'m mocha 👻 i just moved in!',4.5);else say(S._away?`you're back! i did ${S._away} things while you were gone — check my diary!`:(S.mem.userName?`${S.mem.userName}! hi again 👻`:'oh hi again!'),5)},900);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

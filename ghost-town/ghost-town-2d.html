@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>Ghost Town Diary</title>
+<style>
+  :root{--ink:#2a2547;--paper:#fffaf3;--lav:#b9a7ff;--mint:#9be8cf;--pink:#ff9fc0;--line:#e9e1f7}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:#1d1f3d;font-family:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI",system-ui,sans-serif;color:var(--ink)}
+  canvas#c{position:fixed;inset:0;display:block;cursor:pointer}
+  .pill{background:var(--paper);border-radius:999px;padding:8px 14px;box-shadow:0 4px 0 rgba(0,0,0,.18);display:inline-flex;gap:8px;align-items:center;font-weight:700;font-size:14px}
+  #top{position:fixed;top:max(12px,env(safe-area-inset-top));left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;gap:8px}
+  #top>*{pointer-events:auto}
+  .status{background:#efe9ff;color:#6a55c9;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:700}
+  #meters{background:var(--paper);border-radius:16px;padding:8px 12px;box-shadow:0 4px 0 rgba(0,0,0,.18);font-size:11px;font-weight:700;display:grid;grid-template-columns:auto 70px;gap:4px 8px;align-items:center}
+  .bar{height:7px;border-radius:9px;background:#eee8f8;overflow:hidden}.bar i{display:block;height:100%;border-radius:9px;transition:width .6s}
+  #panel{position:fixed;top:170px;right:12px;width:340px;max-height:calc(100% - 260px);background:var(--paper);border-radius:22px;box-shadow:0 6px 0 rgba(0,0,0,.2);display:flex;flex-direction:column;overflow:hidden;transition:transform .35s,opacity .35s}
+  #panel.hidden{transform:translateX(120%);opacity:0;pointer-events:none}
+  #panel header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 6px}
+  #panel header b{font-size:16px}
+  .x{border:0;background:#efe9ff;width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer;color:var(--ink)}
+  nav{display:flex;gap:6px;padding:4px 14px 10px}
+  nav button{border:0;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:700;background:transparent;color:#8a82a8;cursor:pointer}
+  nav button.on{background:var(--ink);color:#fff}
+  .tab{overflow-y:auto;padding:0 16px 16px;display:none}.tab.on{display:block}
+  .entry{border-top:1.5px dashed var(--line);padding:11px 0;font-size:14px;line-height:1.45;animation:pop .5s}
+  .entry .meta{display:flex;justify-content:space-between;font-size:11px;color:#a49cc0;margin-bottom:4px;font-weight:700}
+  .tag{border:1.5px solid var(--line);border-radius:999px;padding:1px 8px;margin-left:6px;color:#7b6fb0}
+  @keyframes pop{from{opacity:0;transform:translateY(-6px)}}
+  .about h4{margin:14px 0 6px;font-size:13px;color:#7b6fb0}
+  .chip{display:inline-block;background:#f3eefe;border-radius:999px;padding:4px 10px;margin:3px 4px 3px 0;font-size:13px}
+  .muted{color:#a49cc0;font-size:13px}
+  #diaryBtn{position:fixed;top:170px;right:12px;display:none}
+  #panel.hidden~#diaryBtn{display:inline-flex}
+  button.pill{border:0;cursor:pointer;font:inherit;font-weight:700;font-size:14px}
+  #mini{position:fixed;left:12px;bottom:max(84px,calc(env(safe-area-inset-bottom) + 76px));width:120px;height:120px;border-radius:50%;background:var(--paper);box-shadow:0 5px 0 rgba(0,0,0,.2);cursor:pointer}
+  #chatwrap{position:fixed;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));width:min(520px,calc(100% - 24px))}
+  #chatlog{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;align-items:flex-end;pointer-events:none}
+  .msg{background:var(--ink);color:#fff;border-radius:16px 16px 4px 16px;padding:7px 12px;font-size:14px;max-width:80%;transition:opacity 1s}
+  form#chat{display:flex;gap:8px;background:var(--paper);border-radius:999px;padding:6px;box-shadow:0 5px 0 rgba(0,0,0,.2)}
+  form#chat input{flex:1;border:0;background:transparent;font:inherit;font-size:16px;padding:6px 10px;outline:none;color:var(--ink);min-width:0}
+  form#chat button{border:0;background:var(--lav);color:var(--ink);font:inherit;font-weight:800;border-radius:999px;padding:8px 16px;cursor:pointer}
+  #bubble{position:fixed;left:0;top:0;transform:translate(-50%,-100%);background:var(--paper);border-radius:16px;padding:8px 12px;font-size:14px;max-width:230px;box-shadow:0 4px 0 rgba(0,0,0,.18);pointer-events:none;opacity:0;transition:opacity .3s;text-align:center;line-height:1.35}
+  #bubble:after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-7px;border:7px solid transparent;border-bottom:0;border-top-color:var(--paper)}
+  #bubble.show{opacity:1}
+  #setup{position:fixed;inset:0;background:rgba(20,18,45,.6);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
+  #setup.hidden{display:none}
+  .card{background:var(--paper);border-radius:26px;padding:22px;width:min(380px,100%);box-shadow:0 8px 0 rgba(0,0,0,.25);text-align:center}
+  .card h2{margin:4px 0 4px}
+  .card input{width:100%;border:2px solid var(--line);border-radius:14px;padding:10px 12px;font:inherit;font-size:16px;text-align:center;margin:10px 0;outline:none}
+  .opts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:6px 0 12px}
+  .opts button{border:2px solid var(--line);background:#fff;border-radius:14px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer;color:var(--ink)}
+  .opts button.on{border-color:var(--ink);background:#f3eefe}
+  .sw{width:26px;height:26px;border-radius:50%;display:inline-block;vertical-align:middle;border:2px solid rgba(0,0,0,.1)}
+  .go{border:0;background:var(--ink);color:#fff;font:inherit;font-weight:800;border-radius:999px;padding:11px 26px;cursor:pointer;font-size:15px}
+  #preview{width:120px;height:120px}
+  .danger{border:0;background:#ffe3ea;color:#b2365c;font:inherit;font-weight:700;border-radius:999px;padding:7px 14px;cursor:pointer;margin-top:14px}
+  @media (max-width:760px){
+    #panel{left:8px;right:8px;width:auto;top:auto;bottom:calc(76px + env(safe-area-inset-bottom));max-height:52%}
+    #panel.hidden{transform:translateY(120%)}
+    #diaryBtn{top:auto;bottom:calc(150px + env(safe-area-inset-bottom));right:12px}
+    #mini{width:90px;height:90px;bottom:calc(150px + env(safe-area-inset-bottom))}
+    #meters{grid-template-columns:auto 46px;font-size:10px;padding:6px 10px}
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="top">
+  <div class="pill"><span id="gname">👻</span><span class="status" id="status">floating</span></div>
+  <div id="meters"></div>
+</div>
+
+<aside id="panel">
+  <header><b id="panelTitle">diary</b><button class="x" id="closePanel" aria-label="close">×</button></header>
+  <nav>
+    <button data-tab="diary" class="on" id="tabBtnDiary">their diary</button>
+    <button data-tab="about">about you</button>
+    <button data-tab="ghost">ghost</button>
+  </nav>
+  <div class="tab on" id="tab-diary"></div>
+  <div class="tab about" id="tab-about"></div>
+  <div class="tab" id="tab-ghost"></div>
+</aside>
+<button class="pill" id="diaryBtn">📖 diary</button>
+
+<canvas id="mini" width="240" height="240" title="map"></canvas>
+
+<div id="chatwrap">
+  <div id="chatlog"></div>
+  <form id="chat" autocomplete="off"><input id="say" maxlength="160" placeholder="say something…"><button>send</button></form>
+</div>
+
+<div id="bubble"></div>
+
+<div id="setup" class="hidden">
+  <div class="card">
+    <canvas id="preview" width="240" height="240"></canvas>
+    <h2>A ghost moved into town!</h2>
+    <div class="muted">They'll float around, do little ghost things, and keep a diary. Give them a name.</div>
+    <input id="nameIn" maxlength="16" placeholder="Mochi">
+    <div class="opts" id="colorOpts"></div>
+    <div class="opts" id="hatOpts"></div>
+    <button class="go" id="startBtn">let them haunt ✨</button>
+  </div>
+</div>
+
+<script>
+(()=>{
+// ---------- utils ----------
+const $=s=>document.querySelector(s);
+const rand=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function seeded(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+const COLORS={Moonbeam:'#f8f7ff',Mint:'#c9f6e6',Lavender:'#e4d8ff',Peach:'#ffdccb'};
+const HATS={none:'no hat',bow:'🎀 bow',witch:'🧙 witch hat',flower:'🌼 flower',leaf:'🍂 leaf'};
+
+// ---------- world ----------
+const WW=2000,WH=1500;
+const PLACES=[
+ {id:'bakery', name:'Crumb & Moon Bakery', x:470,y:300,w:230,d:110,h:115,wall:'#f6bccb',roof:'#c45f80',need:'snack',tag:'Food',keys:['bakery','bake','bread','cake','pastry','cookie','bun','croissant']},
+ {id:'library',name:'Whisper Library',     x:1080,y:250,w:290,d:120,h:150,wall:'#a9bdec',roof:'#4d5bab',need:'curious',tag:'Hobby',keys:['library','book','read']},
+ {id:'tower',  name:'Clocktower Attic',    x:1640,y:230,w:130,d:100,h:270,wall:'#cdbdea',roof:'#5a4991',need:'energy',tag:'Nap',keys:['tower','clock','attic']},
+ {id:'cinema', name:'Old Lantern Cinema',  x:1530,y:640,w:270,d:120,h:140,wall:'#f3d683',roof:'#b2583f',need:'curious',tag:'Visited',keys:['cinema','movie','film','theater','theatre']},
+ {id:'music',  name:'Hum & Strum Records', x:230,y:700,w:220,d:110,h:105,wall:'#ace3cd',roof:'#3e8e78',need:'social',tag:'Hobby',keys:['music','record','song','vinyl','guitar','dance']},
+ {id:'museum', name:'Museum of Lost Socks',x:760,y:1010,w:310,d:130,h:150,wall:'#ebe6f8',roof:'#7a6bb8',need:'curious',tag:'Visited',keys:['museum','sock','art']},
+];
+const SPOTS=[
+ {id:'pond',     name:'Moonlit Pond',  x:1380,y:1150,need:'social',tag:'Friends',keys:['pond','frog','water','lake','swim']},
+ {id:'graveyard',name:'Cozy Graveyard',x:300, y:1210,need:'energy',tag:'Nap',keys:['grave','cemetery','graveyard','neighbo']},
+ {id:'patch',    name:'Pumpkin Patch', x:1770,y:1170,need:'snack',tag:'Food',keys:['pumpkin','patch','halloween']},
+ {id:'plaza',    name:'Fountain Plaza',x:1000,y:720,need:'social',tag:'Friends',keys:['plaza','fountain','center','square']},
+];
+PLACES.forEach(p=>{p.px=p.x+p.w/2;p.py=p.y+p.d+34;p.building=true});
+SPOTS.forEach(p=>{p.px=p.x;p.py=p.y+(p.id==='pond'?-110:p.id==='plaza'?95:20)});
+const ALL=[...PLACES,...SPOTS];
+const byId=Object.fromEntries(ALL.map(p=>[p.id,p]));
+const plaza=byId.plaza;
+
+// paths: plaza -> each place door
+const PATHS=ALL.filter(p=>p!==plaza).map(p=>[plaza.x,plaza.y,p.px,p.py-10]);
+function segDist(px,py,[x1,y1,x2,y2]){const dx=x2-x1,dy=y2-y1,l=dx*dx+dy*dy;let t=((px-x1)*dx+(py-y1)*dy)/l;t=clamp(t,0,1);return Math.hypot(px-(x1+t*dx),py-(y1+t*dy))}
+
+const R=seeded(1031);
+const props=[]; // {type,x,y,...}
+// trees
+for(let i=0;i<500&&props.filter(p=>p.type==='tree').length<75;i++){
+  const x=R()*WW,y=R()*WH;
+  if(PLACES.some(b=>x>b.x-50&&x<b.x+b.w+50&&y>b.y-30&&y<b.y+b.d+70))continue;
+  if(SPOTS.some(s=>Math.hypot(x-s.x,(y-s.y)*1.3)<(s.id==='pond'?240:170)))continue;
+  if(PATHS.some(p=>segDist(x,y,p)<55))continue;
+  if(props.some(p=>Math.hypot(p.x-x,p.y-y)<60))continue;
+  props.push({type:'tree',x,y,s:0.8+R()*0.5,c:pick2(['#7d6ad1','#5fb7a0','#c27bd8','#6c8fe0','#e08bb0'])});
+}
+function pick2(a){return a[Math.floor(R()*a.length)]}
+// lamps along paths
+PATHS.forEach(([x1,y1,x2,y2])=>{for(const t of [0.35,0.72]){const nx=-(y2-y1),ny=x2-x1,l=Math.hypot(nx,ny);props.push({type:'lamp',x:x1+(x2-x1)*t+nx/l*36,y:y1+(y2-y1)*t+ny/l*36})}});
+// gravestones
+const epitaphs=['BRB','zzz','BOO','RIP','hi!','nap','☾','ok'];
+for(let i=0;i<9;i++)props.push({type:'grave',x:byId.graveyard.x-150+(i%3)*110+R()*20,y:byId.graveyard.y-40+Math.floor(i/3)*55+R()*10,txt:epitaphs[i%epitaphs.length]});
+// pumpkins
+for(let i=0;i<14;i++)props.push({type:'pumpkin',x:byId.patch.x-140+R()*260,y:byId.patch.y-60+R()*140,s:0.7+R()*0.6,face:R()<.5});
+// frogs (friends)
+const frogs=[0,1,2].map(i=>({type:'frog',x:byId.pond.x-110+i*110,y:byId.pond.y+(i===1?30:-5),ph:R()*6}));
+
+// ---------- state & persistence ----------
+const KEY='ghost-town-v1';
+let S=load();
+function fresh(){return{ghost:null,needs:{snack:70,energy:80,social:60,curious:75},diary:[],mem:{userName:null,likes:[],favs:{},chats:0,met:Date.now()},lastSeen:Date.now(),lastThought:0}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.mem)return s}catch(e){}return fresh()}
+function save(){S.lastSeen=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+setInterval(save,5000);addEventListener('beforeunload',save);
+
+// ---------- diary writing ----------
+const F={
+ pastry:['cinnamon bun','pumpkin scone','moon cookie','cocoa croissant','maple twist','sugar-skull cookie','blueberry muffin'],
+ book:['"Haunting for Beginners"','"The Very Quiet Owl"','"Soup: A History"','"Moon Phases & You"','"Knitting with Fog"','a cookbook with no pictures','a mystery where the butler was a ghost (relatable)'],
+ movie:['a black-and-white romance','a documentary about clouds','a very scary movie (I was the scariest thing there)','a cartoon about a lost mitten','a musical where everyone was a teapot'],
+ song:['"Fly Me to the Moon"','a lullaby in a minor key','lo-fi rain beats','an accordion waltz','a song that was just humming'],
+ frog:['Ribbert','Lady Croaksworth','Toad (who is a frog)','Lil Puddle'],
+ flower:['dandelion','marigold','tiny pinecone','very nice leaf','clover (3 leaves, still lucky)'],
+ wing:['Mismatched','Argyle','Ancient Tube Sock','Fuzzy'],
+ fact:['socks used to be knit from moss','the left sock is always the one that runs away','one sock has been to the moon (allegedly)','"sock" is 4 letters and so is "boo!"'],
+};
+const fill=s=>s.replace(/\{(\w+)\}/g,(_,k)=>k==='mins'?Math.floor(rand(3,40)):k==='n'?Math.floor(rand(3,13)):k==='hour'?Math.floor(rand(1,13)):k==='user'?(S.mem.userName||'my visitor'):pick(F[k]||['?']));
+const LINES={
+ bakery:['Floated through the wall of Crumb & Moon and borrowed the smell of a {pastry}. Ghosts can\'t eat, but we can sniff very hard.','The baker left a {pastry} cooling on the windowsill. I hovered next to it for {mins} minutes. We have a bond now.','Tried to pick up a {pastry}. My hand went right through it. Ate the vibes instead. 9/10.','Got flour all over myself and for once nobody could tell.'],
+ library:['Read {book} over someone\'s shoulder. They turned the page too fast. Rude, but understandable.','Rearranged the poetry shelf by vibe. The librarian thinks it was the wind. It was me.','Found a bookmark from 1987 inside {book}. Kept it. Ghosts are allowed to keep things.','Shushed a moth. It shushed me back.'],
+ tower:['Napped in the clocktower attic. The ticking is like a heartbeat I don\'t have.','Curled up between the big gears. Woke up at exactly {hour} o\'clock. Very punctual nap.','Watched the town from behind the clock face. Everyone\'s little windows look like fireflies.'],
+ cinema:['Watched {movie} from the very back row. Cried a little. Ghost tears are just mist, so it\'s fine.','Sat in the projector beam and did a shadow puppet show. Two people clapped (I think they were also ghosts).','The popcorn machine hummed at me. I hummed back. We\'re friends now.'],
+ music:['Spun a record at Hum & Strum. It was {song}. Did a little float-dance.','Tried every instrument in the shop. The tuba and I understand each other.','Hummed {song} with the shop cat. She knows all the words.'],
+ museum:['Visited the Museum of Lost Socks. Found a stripy one that looked lonely. Same, buddy.','Stood very still next to a statue for {mins} minutes. A kid pointed at me. I waved. Neither of us told anyone.','Read every placard in the {wing} wing. Now I know {fact}.'],
+ pond:['Hung out with the frogs. {frog} told me a joke. I didn\'t get it but laughed anyway.','Looked for my reflection in the pond. Ghosts don\'t have one. Saw the moon though, which is better.','Thought about skipping a stone. Thinking about it counts.'],
+ graveyard:['Visited the old neighbors at the graveyard. Everyone was sleeping in. Classic.','Napped on the soft moss behind the gravestone that says BRB. Felt seen.','Left a {flower} on Mr. Hollow\'s stone. He\'d have liked that.'],
+ patch:['Picked the roundest pumpkin in the patch and told it a secret.','Everyone\'s dressing up as ghosts this time of year. Honestly? Flattering.','Smelled {n} pumpkins. All of them smelled like pumpkin. Science!'],
+ plaza:['Floated around the fountain {n} times. Got dizzy. Worth it.','Someone tossed a coin in the fountain. I made the wish for them. It was a good one.','People-watched at the plaza. A dog saw me. Dogs always see me.'],
+};
+const DOING={bakery:'sniffing pastries',library:'reading',tower:'napping',cinema:'at the movies',music:'listening to records',museum:'looking at socks',pond:'with the frogs',graveyard:'visiting neighbors',patch:'in the pumpkins',plaza:'by the fountain'};
+const SAYS={bakery:['mmm… cinnamon','*sniff sniff*'],library:['shhh… reading','ooh, a new book'],tower:['so sleepy…','zzz'],cinema:['the movie\'s starting!','popcorn smell…'],music:['♪ la la la ♪','this one\'s a bop'],museum:['so many socks','very cultural'],pond:['ribbit!','hi frogs!'],graveyard:['morning, neighbors','shh, they\'re sleeping'],patch:['so many pumpkins!','this one\'s the roundest'],plaza:['wheee','fountain time']};
+function addEntry(tag,text,place,t=Date.now()){S.diary.unshift({t,tag,text,place});S.diary.length=Math.min(S.diary.length,200);renderDiary(true);save()}
+function placeEntry(p,t){addEntry(p.tag,fill(pick(LINES[p.id])),p.name,t)}
+function thoughtEntry(){
+  const m=S.mem,n=m.userName||'my visitor';const opts=[];
+  if(m.likes.length){const l=pick(m.likes);opts.push(`Thought about how ${n} likes ${l}. I might haunt some ${l} one day.`,`Saw something that reminded me of ${l}. Thought of ${n}.`)}
+  const fk=Object.keys(m.favs);if(fk.length){const k=pick(fk);opts.push(`${n}'s favorite ${k} is ${m.favs[k]}. Wrote it down twice so I don't forget. Ghost memory is foggy.`)}
+  if(m.chats>3)opts.push(`${n} keeps visiting me. My day got 40% less spooky (in a good way).`);
+  if(!opts.length)return false;addEntry('Thought',pick(opts),'');return true;
+}
+
+// catch up while away
+(function catchUp(){
+  const away=Date.now()-S.lastSeen;
+  if(!S.ghost||away<3*60e3)return;
+  const n=Math.min(5,Math.floor(away/(4*60e3)));
+  for(let i=n;i>=1;i--){const p=pick(ALL);placeEntry(p,S.lastSeen+away*(i/(n+1)))}
+  S.diary.sort((a,b)=>b.t-a.t);
+  for(const k in S.needs)S.needs[k]=clamp(S.needs[k]-rand(5,25),25,100);
+})();
+
+// ---------- ghost ----------
+const G={x:plaza.x+60,y:plaza.y+120,vx:0,vy:0,face:1,mode:'idle',timer:2,target:null,place:null,lastPlace:null,startle:0,talk:0,sleep:false,trail:[]};
+function goTo(p,why){G.target={x:p.px+rand(-20,20),y:p.py+rand(-6,6)};G.place=p;G.mode='travel';G.sleep=false;if(why)say(why)}
+function goPoint(x,y){G.target={x,y};G.place=null;G.mode='travel';G.sleep=false}
+function chooseNext(){
+  const needs=S.needs;let lowest=Object.keys(needs).sort((a,b)=>needs[a]-needs[b])[0];
+  let pool=ALL.filter(p=>p.need===lowest&&p!==G.lastPlace);
+  if(Math.random()<.3||!pool.length)pool=ALL.filter(p=>p!==G.lastPlace);
+  goTo(pick(pool));
+}
+function updateGhost(dt){
+  for(const k in S.needs)S.needs[k]=clamp(S.needs[k]-dt*{snack:.22,energy:.15,social:.2,curious:.25}[k],0,100);
+  G.startle=Math.max(0,G.startle-dt);G.talk=Math.max(0,G.talk-dt);
+  if(G.mode==='travel'){
+    const dx=G.target.x-G.x,dy=G.target.y-G.y,d=Math.hypot(dx,dy);
+    const sp=S.needs.energy<20?70:115;
+    const ax=dx/d*sp,ay=dy/d*sp;
+    G.vx+=(ax-G.vx)*Math.min(1,dt*2.5);G.vy+=(ay-G.vy)*Math.min(1,dt*2.5);
+    if(d<14){G.vx*=.5;G.vy*=.5;
+      if(G.place){G.mode='activity';G.timer=rand(14,24);G.lastPlace=G.place;say(pick(SAYS[G.place.id]));G.sleep=G.place.need==='energy'}
+      else{G.mode='idle';G.timer=rand(4,7)}}
+  }else{
+    G.vx*=Math.pow(.05,dt);G.vy*=Math.pow(.05,dt);
+    G.timer-=dt;
+    if(G.mode==='activity'){
+      S.needs[G.place.need]=clamp(S.needs[G.place.need]+dt*3.2,0,100);
+      if(G.timer<=0){placeEntry(G.place);G.sleep=false;G.mode='idle';G.timer=rand(2,4);
+        if(Date.now()-S.lastThought>150e3&&Math.random()<.4&&thoughtEntry())S.lastThought=Date.now()}
+    }else if(G.timer<=0){
+      if(Math.random()<.35){goPoint(clamp(G.x+rand(-160,160),60,WW-60),clamp(G.y+rand(-120,120),80,WH-40))}else chooseNext()
+    }
+  }
+  G.x+=G.vx*dt;G.y+=G.vy*dt;
+  if(Math.abs(G.vx)>8)G.face=G.vx>0?1:-1;
+  if(Math.random()<dt*14&&Math.hypot(G.vx,G.vy)>20)G.trail.push({x:G.x+rand(-10,10),y:G.y-22+rand(-6,6),life:1});
+  G.trail.forEach(p=>{p.life-=dt*1.3;p.y-=dt*8});G.trail=G.trail.filter(p=>p.life>0);
+}
+function statusText(){
+  if(G.startle>0)return'startled!';
+  if(G.mode==='activity')return DOING[G.place.id];
+  if(G.mode==='travel')return G.place?'floating to '+G.place.name.replace(/^(The )/,''):'floating';
+  return 'floating';
+}
+
+// ---------- speech bubble ----------
+const bubble=$('#bubble');let bubbleT=0;
+function say(t,dur=4.5){bubble.textContent=t;bubble.classList.add('show');bubbleT=dur;G.talk=Math.min(dur,2)}
+
+// ---------- rendering ----------
+const cv=$('#c'),ctx=cv.getContext('2d');
+let dpr=1,vw=0,vh=0,Z=1;const cam={x:G.x,y:G.y};
+function resize(){dpr=Math.min(devicePixelRatio||1,2);vw=innerWidth;vh=innerHeight;cv.width=vw*dpr;cv.height=vh*dpr;cv.style.width=vw+'px';cv.style.height=vh+'px';Z=clamp(Math.min(vw,vh)/720,.62,1.15)}
+addEventListener('resize',resize);resize();
+
+const dotPat=(()=>{const c=document.createElement('canvas');c.width=c.height=10;const g=c.getContext('2d');g.fillStyle='rgba(150,140,255,.10)';g.beginPath();g.arc(5,5,1.6,0,7);g.fill();return ctx.createPattern(c,'repeat')})();
+const halftone=(()=>{const c=document.createElement('canvas');c.width=c.height=6;const g=c.getContext('2d');g.fillStyle='rgba(255,255,255,.035)';g.beginPath();g.arc(3,3,1.1,0,7);g.fill();return ctx.createPattern(c,'repeat')})();
+const fireflies=Array.from({length:45},()=>({x:Math.random()*WW,y:Math.random()*WH,a:Math.random()*6,s:rand(.4,1)}));
+const fogs=Array.from({length:7},()=>({x:Math.random()*WW,y:Math.random()*WH,r:rand(160,320),v:rand(6,16)}));
+
+function ell(x,y,rx,ry){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2)}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h)}
+function glow(x,y,r,col){const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,col);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2)}
+
+function drawGround(t){
+  ctx.fillStyle='#262a52';ctx.fillRect(-400,-400,WW+800,WH+800);
+  ctx.fillStyle=dotPat;ctx.fillRect(0,0,WW,WH);
+  // edge fade
+  ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=40;ctx.strokeRect(-20,-20,WW+40,WH+40);
+  // paths
+  ctx.lineCap='round';
+  for(const [x1,y1,x2,y2] of PATHS){ctx.strokeStyle='#3b3f74';ctx.lineWidth=50;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+  ctx.setLineDash([2,14]);
+  for(const [x1,y1,x2,y2] of PATHS){ctx.strokeStyle='rgba(200,190,255,.25)';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+  ctx.setLineDash([]);
+  // plaza
+  ell(plaza.x,plaza.y,170,110);ctx.fillStyle='#3e4279';ctx.fill();
+  ctx.strokeStyle='rgba(200,190,255,.2)';ctx.lineWidth=2;for(let r=40;r<170;r+=32){ell(plaza.x,plaza.y,r,r*.65);ctx.stroke()}
+  // pond
+  const p=byId.pond;ell(p.x,p.y,200,105);ctx.fillStyle='#4a4f8a';ctx.fill();ell(p.x,p.y,188,95);ctx.fillStyle='#1b3459';ctx.fill();
+  for(let i=0;i<3;i++){const rp=((t*0.3+i/3)%1);ctx.strokeStyle=`rgba(180,220,255,${.25*(1-rp)})`;ctx.lineWidth=2;ell(p.x+40,p.y+10,20+rp*90,(20+rp*90)*.45);ctx.stroke()}
+  glow(p.x-50,p.y-5,45,'rgba(255,250,210,.5)');ell(p.x-50,p.y-5,16,9);ctx.fillStyle='#fff6cf';ctx.fill();
+  for(const [lx,ly] of [[-120,20],[90,-40],[130,40],[-20,55]]){ell(p.x+lx,p.y+ly,18,10);ctx.fillStyle='#3e9a6e';ctx.fill()}
+  // graveyard fence + moss
+  const g=byId.graveyard;ell(g.x,g.y+20,230,120);ctx.fillStyle='#2c3a52';ctx.fill();
+  ctx.strokeStyle='#5c5a8f';ctx.lineWidth=3;for(let i=-210;i<=210;i+=20){ctx.beginPath();ctx.moveTo(g.x+i,g.y-90);ctx.lineTo(g.x+i,g.y-110);ctx.stroke()}
+  ctx.beginPath();ctx.moveTo(g.x-210,g.y-100);ctx.lineTo(g.x+210,g.y-100);ctx.stroke();
+  // pumpkin patch soil
+  const pp=byId.patch;ell(pp.x,pp.y+10,200,115);ctx.fillStyle='#3a2f4a';ctx.fill();
+  ctx.strokeStyle='rgba(120,90,140,.6)';ctx.lineWidth=3;for(let i=-80;i<=100;i+=30){ctx.beginPath();ctx.moveTo(pp.x-170,pp.y+i);ctx.quadraticCurveTo(pp.x,pp.y+i+12,pp.x+170,pp.y+i);ctx.stroke()}
+}
+
+function drawBuilding(b,t){
+  const {x,y,w,d,h}=b,fy=y+d-h;
+  ctx.fillStyle='rgba(0,0,0,.28)';ell(x+w/2,y+d+4,w*.58,16);ctx.fill();
+  // wall
+  ctx.fillStyle=b.wall;ctx.fillRect(x,fy,w,h);
+  const sh=ctx.createLinearGradient(0,fy,0,y+d);sh.addColorStop(0,'rgba(0,0,0,0)');sh.addColorStop(1,'rgba(30,20,70,.35)');ctx.fillStyle=sh;ctx.fillRect(x,fy,w,h);
+  // roof top
+  ctx.fillStyle=b.roof;ctx.fillRect(x-8,y-h,w+16,d);
+  ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(x-8,y-h,w+16,6);
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-8,fy-8,w+16,8);
+  // windows
+  const lit=G.mode==='activity'&&G.place===b;
+  const cols=Math.max(2,Math.floor(w/62)),rows=Math.max(1,Math.floor((h-80)/48));
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    const wx=x+(c+.5)*w/cols-13,wy=fy+18+r*48;
+    if(b.id==='tower'&&r===0)continue;
+    const on=(Math.sin(c*3.1+r*7.7+b.x)+1)/2>.3||lit;
+    ctx.fillStyle=on?(lit?'#fff3a8':'#ffd977'):'#4a4380';rr(wx,wy,26,32,[13,13,3,3]);ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(wx+13,wy+2);ctx.lineTo(wx+13,wy+32);ctx.stroke();
+  }
+  if(b.id==='tower'){const cx=x+w/2,cy=fy+40;ell(cx,cy,30,30);ctx.fillStyle='#fffaf0';ctx.fill();ctx.strokeStyle=b.roof;ctx.lineWidth=4;ctx.stroke();
+    const tm=new Date(),ha=(tm.getHours()%12+tm.getMinutes()/60)/12*Math.PI*2,ma=tm.getMinutes()/60*Math.PI*2;
+    ctx.strokeStyle='#2a2547';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.sin(ha)*15,cy-Math.cos(ha)*15);ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.sin(ma)*23,cy-Math.cos(ma)*23);ctx.stroke()}
+  // door
+  const dx=x+w/2-17;ctx.fillStyle='#5a3d55';rr(dx,y+d-50,34,50,[17,17,0,0]);ctx.fill();
+  ctx.fillStyle='#ffd977';ell(dx+26,y+d-24,2.5,2.5);ctx.fill();
+  // sign
+  ctx.font='700 13px ui-rounded,Nunito,system-ui,sans-serif';const tw=ctx.measureText(b.name).width+18;
+  ctx.fillStyle='#fffaf3';rr(x+w/2-tw/2,y+d-h-2-28-(b.id==='tower'?0:0),tw,22,11);
+  if(b.id==='tower'){ctx.beginPath();rr(x+w/2-tw/2,y-h-30,tw,22,11)}
+  ctx.fill();ctx.fillStyle='#2a2547';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(b.name,x+w/2,(b.id==='tower'?y-h-19:y+d-h-19));
+  if(lit)glow(x+w/2,fy+h/2,w*.7,'rgba(255,230,140,.16)');
+}
+function spotLabel(s,dy){ctx.font='700 13px ui-rounded,Nunito,system-ui,sans-serif';const tw=ctx.measureText(s.name).width+18;ctx.fillStyle='rgba(255,250,243,.92)';rr(s.x-tw/2,s.y+dy-11,tw,22,11);ctx.fill();ctx.fillStyle='#2a2547';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.name,s.x,s.y+dy)}
+
+function drawTree(p,t){const s=p.s,sw=Math.sin(t*1.2+p.x)*2;
+  ctx.fillStyle='rgba(0,0,0,.25)';ell(p.x,p.y,26*s,8*s);ctx.fill();
+  ctx.fillStyle='#4b3a5c';ctx.fillRect(p.x-5*s,p.y-34*s,10*s,34*s);
+  ctx.fillStyle=p.c;ell(p.x+sw,p.y-62*s,34*s,38*s);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.18)';ell(p.x-10*s+sw,p.y-76*s,14*s,12*s);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.12)';ell(p.x+8*s+sw,p.y-46*s,22*s,14*s);ctx.fill();}
+function drawLamp(p,t){ctx.fillStyle='rgba(0,0,0,.25)';ell(p.x,p.y,10,4);ctx.fill();ctx.fillStyle='#3c355f';ctx.fillRect(p.x-2.5,p.y-58,5,58);ctx.fillStyle='#ffe28a';ell(p.x,p.y-62,8,9);ctx.fill()}
+function drawGrave(p){ctx.fillStyle='rgba(0,0,0,.25)';ell(p.x,p.y,18,5);ctx.fill();ctx.fillStyle='#8f8bb8';rr(p.x-15,p.y-38,30,38,[15,15,2,2]);ctx.fill();ctx.fillStyle='#a9a5d0';rr(p.x-15,p.y-38,30,8,[15,15,0,0]);ctx.fill();ctx.fillStyle='#4d4880';ctx.font='700 10px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.txt,p.x,p.y-20)}
+function drawPumpkin(p,t){const s=p.s;ctx.fillStyle='rgba(0,0,0,.25)';ell(p.x,p.y,20*s,5*s);ctx.fill();
+  ctx.fillStyle='#f08a3c';for(const o of [-9,9,0]){ell(p.x+o*s,p.y-13*s,(o?11:12)*s,13*s);ctx.fill();ctx.fillStyle=o?'#f08a3c':'#ff9d4f'}
+  ctx.fillStyle='#4f7a3c';ctx.fillRect(p.x-2*s,p.y-30*s,4*s,6*s);
+  if(p.face){ctx.fillStyle=`rgba(255,${200+Math.sin(t*6+p.x)*30|0},90,1)`;ctx.beginPath();ctx.moveTo(p.x-8*s,p.y-17*s);ctx.lineTo(p.x-4*s,p.y-12*s);ctx.lineTo(p.x-11*s,p.y-12*s);ctx.fill();ctx.beginPath();ctx.moveTo(p.x+8*s,p.y-17*s);ctx.lineTo(p.x+11*s,p.y-12*s);ctx.lineTo(p.x+4*s,p.y-12*s);ctx.fill();ctx.fillRect(p.x-7*s,p.y-8*s,14*s,3*s)}}
+function drawFrog(f,t){const hop=Math.max(0,Math.sin(t*1.5+f.ph))**8*12;ctx.fillStyle='#62c48c';ell(f.x,f.y-6-hop,11,8);ctx.fill();ctx.fillStyle='#fff';ell(f.x-5,f.y-13-hop,3.5,3.5);ctx.fill();ell(f.x+5,f.y-13-hop,3.5,3.5);ctx.fill();ctx.fillStyle='#222';ell(f.x-5,f.y-13-hop,1.6,1.8);ctx.fill();ell(f.x+5,f.y-13-hop,1.6,1.8);ctx.fill()}
+function drawFountain(t){const x=plaza.x,y=plaza.y;ctx.fillStyle='rgba(0,0,0,.25)';ell(x,y+4,62,18);ctx.fill();ctx.fillStyle='#8f8bc8';ell(x,y-6,60,22);ctx.fill();ctx.fillStyle='#3d6fb0';ell(x,y-10,50,16);ctx.fill();
+  ctx.fillStyle='#a9a5d8';ctx.fillRect(x-6,y-48,12,40);ell(x,y-48,20,7);ctx.fill();
+  for(let i=0;i<10;i++){const a=(t*1.4+i/10)%1,ang=i/10*Math.PI*2;ctx.fillStyle=`rgba(190,225,255,${1-a})`;ell(x+Math.cos(ang)*a*40,y-50-Math.sin(a*Math.PI)*24+a*30+Math.sin(ang)*a*10,2.2,2.2);ctx.fill()}}
+
+function drawGhost(c,x,y,t,o){ // o:{color,hat,face,sleep,startle,talk,vx,scale}
+  const r=26,bob=Math.sin(t*2.2)*6+(o.startle>0?-Math.sin(o.startle*12)*10:0),gy=y-46+bob;
+  c.save();
+  if(o.shadow!==false){c.fillStyle='rgba(0,0,0,.25)';c.beginPath();c.ellipse(x,y,20+bob*.6,6,0,0,7);c.fill()}
+  const gg=c.createRadialGradient(x,gy,0,x,gy,80);gg.addColorStop(0,'rgba(220,230,255,.32)');gg.addColorStop(1,'rgba(220,230,255,0)');c.fillStyle=gg;c.fillRect(x-80,gy-80,160,160);
+  c.translate(x,gy);c.rotate(clamp((o.vx||0)*.002,-.25,.25));c.scale(o.face||1,1);
+  if(o.startle>0)c.scale(1+Math.sin(o.startle*20)*.06,1-Math.sin(o.startle*20)*.06);
+  // body
+  c.beginPath();c.arc(0,0,r,Math.PI,0);c.lineTo(r,r*1.05);
+  const n=4;for(let i=0;i<n;i++){const x0=r-i*(2*r/n),x1=r-(i+1)*(2*r/n),wv=Math.sin(t*5+i*1.7)*3.5;c.quadraticCurveTo((x0+x1)/2,r*1.05+11+wv,x1,r*1.05+(i<n-1?Math.sin(t*5+i)*1.5:0))}
+  c.closePath();c.globalAlpha=.94;c.fillStyle=o.color;c.fill();c.globalAlpha=1;
+  c.fillStyle='rgba(120,110,200,.13)';c.beginPath();c.ellipse(r*.35,r*.45,r*.55,r*.6,0,0,7);c.fill();
+  c.fillStyle='rgba(255,255,255,.7)';c.beginPath();c.ellipse(-r*.45,-r*.5,6,4,-.6,0,7);c.fill();
+  // arms
+  const aw=Math.sin(t*4)*3;c.fillStyle=o.color;
+  c.beginPath();c.ellipse(-r-1,r*.35+aw,7,10,.5,0,7);c.fill();c.beginPath();c.ellipse(r+1,r*.35-aw,7,10,-.5,0,7);c.fill();
+  // face
+  const ex=3;c.fillStyle='#2a2547';c.strokeStyle='#2a2547';c.lineWidth=2.4;c.lineCap='round';
+  if(o.sleep){c.beginPath();c.arc(-9+ex,-1,4.5,.2,Math.PI-.2);c.stroke();c.beginPath();c.arc(9+ex,-1,4.5,.2,Math.PI-.2);c.stroke()}
+  else if(o.startle>0){c.beginPath();c.ellipse(-9+ex,-3,4.5,6,0,0,7);c.ellipse(9+ex,-3,4.5,6,0,0,7);c.fill();c.fillStyle='#fff';c.beginPath();c.arc(-8+ex,-5,1.6,0,7);c.arc(10+ex,-5,1.6,0,7);c.fill()}
+  else{const bl=(t%4.3)<.13?.12:1;c.beginPath();c.ellipse(-9+ex,-2,3.6,5*bl,0,0,7);c.ellipse(9+ex,-2,3.6,5*bl,0,0,7);c.fill();if(bl>.5){c.fillStyle='#fff';c.beginPath();c.arc(-8+ex,-4,1.3,0,7);c.arc(10+ex,-4,1.3,0,7);c.fill()}}
+  c.fillStyle='rgba(255,140,180,.55)';c.beginPath();c.ellipse(-16+ex,7,5,3,0,0,7);c.ellipse(16+ex,7,5,3,0,0,7);c.fill();
+  c.fillStyle='#2a2547';c.strokeStyle='#2a2547';
+  if(o.startle>0){c.beginPath();c.ellipse(ex,11,4,5.5,0,0,7);c.fill()}
+  else if(o.talk>0&&!o.sleep){const m=Math.abs(Math.sin(t*14))*3+1;c.beginPath();c.ellipse(ex,9,3.5,m,0,0,7);c.fill()}
+  else if(o.sleep){c.beginPath();c.ellipse(ex,9,2.5,2,0,0,7);c.fill()}
+  else{c.beginPath();c.arc(ex,6,3.6,.15,Math.PI-.15);c.stroke()}
+  // hats
+  if(o.hat==='bow'){c.fillStyle='#ff7fae';c.save();c.translate(14,-20);c.rotate(.35);c.beginPath();c.moveTo(0,0);c.lineTo(-11,-8);c.lineTo(-11,8);c.closePath();c.moveTo(0,0);c.lineTo(11,-8);c.lineTo(11,8);c.closePath();c.fill();c.beginPath();c.arc(0,0,3.5,0,7);c.fillStyle='#ff5c98';c.fill();c.restore()}
+  if(o.hat==='witch'){c.save();c.translate(0,-r+2);c.rotate(-.12);c.fillStyle='#4b3a8c';c.beginPath();c.ellipse(0,0,26,6,0,0,7);c.fill();c.beginPath();c.moveTo(-15,-1);c.quadraticCurveTo(-4,-30,10+Math.sin(t*2)*2,-40);c.quadraticCurveTo(6,-20,15,-1);c.closePath();c.fill();c.fillStyle='#ffb347';c.fillRect(-14,-7,29,5);c.restore()}
+  if(o.hat==='flower'){c.save();c.translate(-15,-19);c.fillStyle='#fff6a8';for(let i=0;i<5;i++){const a=i/5*Math.PI*2+t*.3;c.beginPath();c.ellipse(Math.cos(a)*6,Math.sin(a)*6,4.5,4.5,0,0,7);c.fill()}c.fillStyle='#ffb347';c.beginPath();c.arc(0,0,4,0,7);c.fill();c.restore()}
+  if(o.hat==='leaf'){c.save();c.translate(4,-r-4);c.rotate(.5+Math.sin(t*2)*.1);c.fillStyle='#e8793a';c.beginPath();c.moveTo(0,8);c.quadraticCurveTo(-11,-4,0,-14);c.quadraticCurveTo(11,-4,0,8);c.fill();c.strokeStyle='#a44d1f';c.lineWidth=1.5;c.beginPath();c.moveTo(0,10);c.lineTo(0,-10);c.stroke();c.restore()}
+  c.restore();
+  if(o.sleep){c.fillStyle='rgba(255,255,255,.85)';c.font='700 14px system-ui';c.textAlign='left';for(let i=0;i<3;i++){const a=((t*.5+i/3)%1);c.globalAlpha=1-a;c.fillText('z',x+24+a*18,gy-26-a*30);}c.globalAlpha=1}
+}
+
+let last=performance.now(),T=0;
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;T+=dt;
+  if(S.ghost)updateGhost(dt);
+  // camera
+  const tx=G.x-vw/2/Z,ty=G.y-40-vh/2/Z;cam.x+=(tx-cam.x)*Math.min(1,dt*2.2);cam.y+=(ty-cam.y)*Math.min(1,dt*2.2);
+  ctx.setTransform(dpr*Z,0,0,dpr*Z,-cam.x*dpr*Z,-cam.y*dpr*Z);
+  drawGround(T);
+  spotLabel(byId.pond,-128);spotLabel(byId.graveyard,-140);spotLabel(byId.patch,-130);spotLabel(plaza,130);
+  // sortable
+  const list=[];
+  PLACES.forEach(b=>list.push([b.y+b.d,()=>drawBuilding(b,T)]));
+  props.forEach(p=>list.push([p.y,()=>p.type==='tree'?drawTree(p,T):p.type==='lamp'?drawLamp(p,T):p.type==='grave'?drawGrave(p):drawPumpkin(p,T)]));
+  frogs.forEach(f=>list.push([f.y,()=>drawFrog(f,T)]));
+  list.push([plaza.y,()=>drawFountain(T)]);
+  if(S.ghost)list.push([G.y,()=>{
+    G.trail.forEach(p=>{ctx.fillStyle=`rgba(230,235,255,${p.life*.35})`;ell(p.x,p.y,4*p.life+1,4*p.life+1);ctx.fill()});
+    drawGhost(ctx,G.x,G.y,T,{color:COLORS[S.ghost.color]||COLORS.Moonbeam,hat:S.ghost.hat,face:G.face,sleep:G.sleep,startle:G.startle,talk:G.talk,vx:G.vx});
+  }]);
+  list.sort((a,b)=>a[0]-b[0]).forEach(d=>d[1]());
+  // light layer
+  ctx.globalCompositeOperation='lighter';
+  props.forEach(p=>{if(p.type==='lamp')glow(p.x,p.y-60,70,'rgba(255,210,120,.22)');if(p.type==='pumpkin'&&p.face)glow(p.x,p.y-14,30,'rgba(255,150,60,.18)')});
+  fireflies.forEach(f=>{f.a+=dt*f.s;f.x+=Math.cos(f.a*1.3)*dt*12;f.y+=Math.sin(f.a)*dt*10;const b=(Math.sin(f.a*3)+1)/2;glow(f.x,f.y,10,`rgba(220,255,160,${.5*b})`)});
+  ctx.globalCompositeOperation='source-over';
+  fogs.forEach(f=>{f.x+=f.v*dt;if(f.x-f.r>WW)f.x=-f.r;glow(f.x,f.y,f.r,'rgba(200,200,255,.05)')});
+  // screen-space overlays
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle=halftone;ctx.fillRect(0,0,vw,vh);
+  const vg=ctx.createRadialGradient(vw/2,vh/2,Math.min(vw,vh)*.35,vw/2,vh/2,Math.max(vw,vh)*.75);vg.addColorStop(0,'rgba(10,8,30,0)');vg.addColorStop(1,'rgba(10,8,30,.55)');ctx.fillStyle=vg;ctx.fillRect(0,0,vw,vh);
+  // bubble position
+  if(bubbleT>0){bubbleT-=dt;if(bubbleT<=0)bubble.classList.remove('show')}
+  bubble.style.left=((G.x-cam.x)*Z)+'px';bubble.style.top=((G.y-110-cam.y)*Z)+'px';
+  if(Math.floor(T*4)!==Math.floor((T-dt)*4))hud();
+  drawMini();
+  requestAnimationFrame(frame);
+}
+
+// ---------- minimap ----------
+const mini=$('#mini'),mc=mini.getContext('2d');
+function drawMini(){const s=240/WW,oy=(240-WH*s)/2;mc.clearRect(0,0,240,240);mc.save();mc.beginPath();mc.arc(120,120,118,0,7);mc.clip();mc.fillStyle='#fffaf3';mc.fillRect(0,0,240,240);
+  mc.fillStyle='#ece5fb';mc.fillRect(0,oy,240,WH*s);
+  mc.strokeStyle='#d7cdf3';mc.lineWidth=5;mc.lineCap='round';PATHS.forEach(([a,b,c,d])=>{mc.beginPath();mc.moveTo(a*s,b*s+oy);mc.lineTo(c*s,d*s+oy);mc.stroke()});
+  PLACES.forEach(b=>{mc.fillStyle=b.roof;mc.fillRect(b.x*s,b.y*s+oy,b.w*s,b.d*s)});
+  mc.fillStyle='#7fb4e8';mc.beginPath();mc.ellipse(byId.pond.x*s,byId.pond.y*s+oy,20,10,0,0,7);mc.fill();
+  mc.fillStyle='#f08a3c';mc.beginPath();mc.arc(byId.patch.x*s,byId.patch.y*s+oy,8,0,7);mc.fill();
+  mc.fillStyle='#8f8bb8';mc.beginPath();mc.arc(byId.graveyard.x*s,byId.graveyard.y*s+oy,8,0,7);mc.fill();
+  if(G.target&&G.mode==='travel'){mc.strokeStyle='#b9a7ff';mc.setLineDash([4,4]);mc.lineWidth=2;mc.beginPath();mc.moveTo(G.x*s,G.y*s+oy);mc.lineTo(G.target.x*s,G.target.y*s+oy);mc.stroke();mc.setLineDash([])}
+  const pul=6+Math.sin(T*4)*1.5;mc.fillStyle='#2a2547';mc.beginPath();mc.arc(G.x*s,G.y*s+oy,pul,0,7);mc.fill();mc.fillStyle='#fff';mc.beginPath();mc.arc(G.x*s,G.y*s+oy,3,0,7);mc.fill();
+  mc.restore()}
+mini.addEventListener('click',e=>{const r=mini.getBoundingClientRect(),s=240/WW,oy=(240-WH*s)/2;const x=(e.clientX-r.left)/r.width*240/s,y=((e.clientY-r.top)/r.height*240-oy)/s;summon(clamp(x,40,WW-40),clamp(y,60,WH-30))});
+
+// ---------- HUD ----------
+const MLAB={snack:'Snacky',energy:'Energy',social:'Social',curious:'Curious'},MCOL={snack:'#ffb38a',energy:'#9be8cf',social:'#ff9fc0',curious:'#b9a7ff'};
+function hud(){if(!S.ghost)return;$('#gname').textContent='👻 '+S.ghost.name;$('#status').textContent=statusText();
+  const mood=Object.values(S.needs).reduce((a,b)=>a+b,0)/4;
+  $('#meters').innerHTML=`<span>Cozy</span><div class="bar"><i style="width:${mood}%;background:#2a2547"></i></div>`+Object.keys(MLAB).map(k=>`<span>${MLAB[k]}</span><div class="bar"><i style="width:${S.needs[k]}%;background:${MCOL[k]}"></i></div>`).join('');
+  if(Math.floor(T)%15===0)renderDiary(false)}
+function ago(t){const s=(Date.now()-t)/1000;if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
+let renderedCount=-1;
+function renderDiary(force){if(!S.ghost)return;if(!force&&renderedCount===S.diary.length){[...document.querySelectorAll('.entry .when')].forEach((el,i)=>el.textContent=ago(S.diary[i].t));return}
+  renderedCount=S.diary.length;
+  $('#tab-diary').innerHTML=S.diary.length?S.diary.map(e=>`<div class="entry"><div class="meta"><span>${esc(e.place||'thoughts')}<span class="tag">${esc(e.tag)}</span></span><span class="when">${ago(e.t)}</span></div>${esc(e.text)}</div>`).join(''):`<p class="muted">Nothing yet… ${esc(S.ghost.name)} just moved in. Give them a minute to do something ghostly.</p>`;
+  renderAbout()}
+function renderAbout(){const m=S.mem;
+  $('#tab-about').innerHTML=`<h4>your name</h4>${m.userName?`<span class="chip">${esc(m.userName)}</span>`:'<p class="muted">They don\'t know yet. Try "my name is …"</p>'}
+  <h4>things you like</h4>${m.likes.length?m.likes.map(l=>`<span class="chip">${esc(l)}</span>`).join(''):'<p class="muted">Try "I like …"</p>'}
+  <h4>favorites</h4>${Object.keys(m.favs).length?Object.entries(m.favs).map(([k,v])=>`<span class="chip">${esc(k)}: ${esc(v)}</span>`).join(''):'<p class="muted">Try "my favorite color is …"</p>'}
+  <h4>friendship</h4><p class="muted">${m.chats} chats · met ${new Date(m.met).toLocaleDateString()}</p>`}
+function renderGhostTab(){const g=S.ghost;
+  $('#tab-ghost').innerHTML=`<h4 style="margin:6px 0">name</h4><input id="rename" value="${esc(g.name)}" maxlength="16" style="width:100%;border:2px solid var(--line);border-radius:12px;padding:8px;font:inherit">
+  <h4 style="margin:12px 0 4px">color</h4><div class="opts" style="justify-content:flex-start">${Object.entries(COLORS).map(([k,v])=>`<button data-c="${k}" class="${g.color===k?'on':''}"><span class="sw" style="background:${v}"></span> ${k}</button>`).join('')}</div>
+  <h4 style="margin:4px 0">accessory</h4><div class="opts" style="justify-content:flex-start">${Object.entries(HATS).map(([k,v])=>`<button data-h="${k}" class="${g.hat===k?'on':''}">${v}</button>`).join('')}</div>
+  <p class="muted">Tip: tap anywhere on the map (or the minimap) to call ${esc(g.name)} over.</p>
+  <button class="danger" id="resetBtn">start over with a new ghost</button>`;
+  $('#rename').onchange=e=>{const v=e.target.value.trim();if(v){g.name=v;$('#panelTitle').textContent=v+"'s diary";save();hud()}};
+  $('#tab-ghost').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{g.color=b.dataset.c;save();renderGhostTab()});
+  $('#tab-ghost').querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{g.hat=b.dataset.h;save();renderGhostTab()});
+  $('#resetBtn').onclick=e=>{const b=e.target;if(b.dataset.sure){try{localStorage.removeItem(KEY)}catch(_){}location.reload()}else{b.dataset.sure=1;b.textContent='tap again to say goodbye to '+g.name+' 🥺'}}}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('#tab-'+b.dataset.tab).classList.add('on');if(b.dataset.tab==='ghost')renderGhostTab();if(b.dataset.tab==='about')renderAbout()});
+$('#closePanel').onclick=()=>$('#panel').classList.add('hidden');
+$('#diaryBtn').onclick=()=>$('#panel').classList.remove('hidden');
+if(innerWidth<760)$('#panel').classList.add('hidden');
+
+// ---------- click to summon ----------
+function summon(x,y){if(!S.ghost)return;const near=ALL.find(p=>Math.hypot(p.px-x,p.py-y)<120||(p.building&&x>p.x&&x<p.x+p.w&&y>p.y-p.h&&y<p.y+p.d));
+  if(near){goTo(near,pick(['ooh, '+near.name+'!','on my way!','okay okay, going!']))}
+  else{goPoint(clamp(x,40,WW-40),clamp(y,60,WH-30));say(pick(['coming!','whoosh~','you called? 👀','floating over!']),2.5)}
+  S.needs.social=clamp(S.needs.social+3,0,100)}
+let down=null;
+cv.addEventListener('pointerdown',e=>down={x:e.clientX,y:e.clientY});
+cv.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>10)return;
+  const wx=e.clientX/Z+cam.x,wy=e.clientY/Z+cam.y;
+  // tapped the ghost itself?
+  if(Math.hypot(wx-G.x,wy-(G.y-46))<34){G.startle=.8;say(pick(['hehe that tickles','boo! 👻','hi hi hi!','*happy wiggle*']),2.5);S.needs.social=clamp(S.needs.social+5,0,100);return}
+  summon(wx,wy+30)});
+
+// ---------- chat ----------
+const log=$('#chatlog');let pendingQ=null;
+function showUserMsg(t){const d=document.createElement('div');d.className='msg';d.textContent=t;log.appendChild(d);while(log.children.length>3)log.firstChild.remove();setTimeout(()=>d.style.opacity=0,6000);setTimeout(()=>d.remove(),7200)}
+const JOKES=['why don\'t ghosts lie? you can see right through them 👻','what\'s a ghost\'s favorite dessert? i-scream!','i tried to be a stand-up comedian but i kept getting booed. which, honestly, i loved','what room does a ghost not need? a living room!'];
+const QUESTIONS=[['snack','what\'s your favorite snack?'],['color','what\'s your favorite color?'],['season','what\'s your favorite season?'],['animal','what\'s your favorite animal?'],['song','what song is stuck in your head?']];
+function reply(raw){
+  const m=raw.toLowerCase().trim(),me=S.mem,N=me.userName;let k;
+  me.chats++;S.needs.social=clamp(S.needs.social+12,0,100);
+  if(k=raw.match(/(?:my name is|my name's|call me)\s+([a-z][a-z'\-]{0,18})/i)||raw.trim().match(/^(?:hi|hey|hello)?[ ,!]*(?:i'm|im|i am)\s+([A-Z][a-z'\-]{1,18})[.!]*$/)){
+    const nm=k[1][0].toUpperCase()+k[1].slice(1);me.userName=nm;pendingQ=null;renderAbout();return pick([`${nm}! what a good name. writing it in my diary 📝`,`hi ${nm}!! i'll remember that (ghost promise)`,`${nm}… ${nm}… okay i've got it memorized 👻`])}
+  if(k=m.match(/my fav(?:ou?rite)?\s+([a-z ]{2,20}?)\s+(?:is|are)\s+(.{1,40}?)[.!?]*$/)){me.favs[k[1].trim()]=k[2].trim();pendingQ=null;renderAbout();return pick([`${k[2]}? excellent taste. noted!`,`ooh, ${k[2]}. i'll think about that while i float around`])}
+  if(k=m.match(/\bi (?:really |also )?(?:like|love|adore|enjoy)\s+(.{2,40}?)[.!?]*$/)){const l=k[1].replace(/^(?:to )/,'');if(!/^(you|u)$/.test(l)){if(!me.likes.includes(l))me.likes.push(l);me.likes=me.likes.slice(-12);pendingQ=null;renderAbout();return pick([`you like ${l}?? me too probably. adding it to my notes 📝`,`${l}! i'll keep an eye out for some while i'm haunting`,`noted: ${N||'you'} + ${l} = 💜`])}}
+  if(pendingQ&&m.split(/\s+/).length<=6&&!m.includes('?')){me.favs[pendingQ]=raw.trim().replace(/[.!]+$/,'');const q=pendingQ;pendingQ=null;renderAbout();return pick([`${me.favs[q]}! good answer. i'm keeping that`,`ooh. ${me.favs[q]}. very ${N?N+'-like':'you'}`])}
+  if(/\bboo+\b/.test(m)){G.startle=1.2;return pick(['AAH! …oh. it\'s you. you got me 😳','hey!! that\'s MY line','eek! my whole sheet jumped'])}
+  if(/(nap|sleep|tired|rest|bed)/.test(m)){goTo(byId.tower);return'a nap sounds perfect… heading to the clocktower 😴'}
+  if(/(hungry|food|eat|snack|treat)/.test(m)&&!/trick/.test(m)){goTo(byId.bakery);return'ooh, snack time! (well… smell time) → bakery!'}
+  const place=ALL.find(p=>p.keys.some(kw=>m.includes(kw)));
+  if(place){goTo(place);return pick([`the ${place.name}? yes!! on my way`,`ooh good idea. floating to ${place.name} 👻`,`${place.name} it is!`])}
+  if(/(how are (you|u)|how r u|how're you|you ok|u ok)/.test(m)){const mood=Object.values(S.needs).reduce((a,b)=>a+b)/4;const low=Object.keys(S.needs).sort((a,b)=>S.needs[a]-S.needs[b])[0];
+    return mood>65?pick(['super cozy right now 💜','floaty and happy!','i feel like a freshly washed sheet']):`a little ${({snack:'snacky',energy:'sleepy',social:'lonely',curious:'bored'})[low]}, honestly. but better now that you're here`}
+  if(/(what are you doing|what're you doing|wyd|whatcha doing|what r u doing)/.test(m))return G.mode==='activity'?`i'm ${DOING[G.place.id]} at ${G.place.name}!`:G.place?`floating over to ${G.place.name}`:'just floating around, being ghostly';
+  if(/(who are you|your name|what are you)/.test(m))return`i'm ${S.ghost.name}! a small ghost. i live here now. i like ${pick(['pastries (smelling them)','old books','frogs','naps in the clocktower'])}`;
+  if(/(joke|funny|laugh)/.test(m))return pick(JOKES);
+  if(/(love you|ily|cute|adorable|best ghost|good ghost)/.test(m)){G.startle=.5;return pick(['*turns slightly pink* 🩷','stoppp (don\'t stop)','you\'re the best visitor a ghost could ask for'])}
+  if(/(sad|bad day|upset|lonely|tired of|stressed|anxious|cry)/.test(m))return pick(['come float with me for a bit. i\'ll hum something soft 🎶','sending you a very gentle haunting 🫶 you\'re doing your best','want me to visit the frogs and tell them to cheer for you? they will'])+'';
+  if(/(halloween|trick|treat|spooky|costume)/.test(m))return pick(['happy halloween!! it\'s basically my birthday 🎃','i\'m going as a ghost this year. very convincing costume','trick OR treat? why not both 👻']);
+  if(/^(hi|hey|hello|yo|hiya|heyy+|sup|good (morning|evening|night))\b/.test(m))return N?pick([`${N}!! hiii 👻`,`oh hi ${N}! i missed you`,`${N}! welcome back to ghost town`]):pick(['hi!! 👻 i don\'t know your name yet…','oh! a visitor! hello!','hiii! who are you?']);
+  if(/(bye|goodnight|good night|see you|gtg|later)/.test(m))return pick(['bye!! i\'ll write about you in my diary','see you soon. i\'ll be here. obviously. i\'m a ghost','night night 🌙']);
+  if(/\?$/.test(m))return pick(['hmm… i\'d have to ask the frogs','great question. the library might know','i think so? ghosts are bad at facts','that\'s a mystery even to me 👀']);
+  if(Math.random()<.55){const q=pick(QUESTIONS.filter(([k])=>!me.favs[k]));if(q){pendingQ=q[0];return pick(['ooh! ','mhm mhm. ','hehe. '])+q[1]}}
+  return pick(['mhm! tell me more','that\'s so interesting. i\'m floating thoughtfully','wow. i\'ll be thinking about that all night','*nods ghostily*',N?`you're funny, ${N}`:'you\'re funny']);
+}
+$('#chat').addEventListener('submit',e=>{e.preventDefault();const inp=$('#say'),t=inp.value.trim();if(!t||!S.ghost)return;inp.value='';showUserMsg(t);
+  say('…',1.2);setTimeout(()=>{const r=reply(t);say(r,Math.max(3.5,r.length/14));
+    if(S.mem.chats%4===0&&Date.now()-S.lastThought>60e3){S.lastThought=Date.now();addEntry('Friends',`Chatted with ${S.mem.userName||'a visitor'}. They said "${t.slice(0,60)}${t.length>60?'…':''}". I'm keeping that one.`,'')}
+    save();hud()},rand(500,1000))});
+
+// ---------- setup ----------
+function setup(){const st=$('#setup');st.classList.remove('hidden');let col='Moonbeam',hat='bow';
+  const pv=$('#preview'),pc=pv.getContext('2d');
+  const draw=()=>{$('#colorOpts').innerHTML=Object.entries(COLORS).map(([k,v])=>`<button data-c="${k}" class="${col===k?'on':''}"><span class="sw" style="background:${v}"></span></button>`).join('');
+    $('#hatOpts').innerHTML=Object.entries(HATS).map(([k,v])=>`<button data-h="${k}" class="${hat===k?'on':''}">${v}</button>`).join('');
+    st.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{col=b.dataset.c;draw()});st.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{hat=b.dataset.h;draw()})};
+  draw();
+  let run=true;(function anim(t){if(!run)return;pc.setTransform(1,0,0,1,0,0);pc.clearRect(0,0,240,240);pc.fillStyle='#262a52';pc.beginPath();pc.arc(120,120,118,0,7);pc.fill();pc.setTransform(2,0,0,2,0,0);drawGhost(pc,60,92,t/1000,{color:COLORS[col],hat,face:1,talk:0});requestAnimationFrame(anim)})(0);
+  $('#startBtn').onclick=()=>{run=false;const name=$('#nameIn').value.trim()||'Mochi';S=fresh();S.ghost={name,color:col,hat};st.classList.add('hidden');start();
+    addEntry('Visited',`Moved into town today! It's very cozy. There's a bakery, a library, and frogs. I think I'm going to like it here.`,'Fountain Plaza');
+    say(`hi! i'm ${name} 👻`,4)};
+}
+function start(){$('#panelTitle').textContent=S.ghost.name+"'s diary";$('#say').placeholder=`say something to ${S.ghost.name}…`;renderedCount=-1;renderDiary(true);hud();G.mode='idle';G.timer=3}
+if(S.ghost){start();setTimeout(()=>say(S.mem.userName?`${S.mem.userName}! you're back 👻`:'oh hi again!'),800)}else setup();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
