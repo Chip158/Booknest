@@ -13498,7 +13498,7 @@ function nestSol(p,on,L,unp){const k=(on?1:0)+'|'+(on?(S.homeItems.home||''):'')
 {const na=nestApply;nestApply=function(){const r=na.apply(this,arguments);try{nestVis();nestTick()}catch(e){B32.err=String(e&&e.message||e)}return r}}
 // 1 Hz (from b14Frame): the housewarming on the first evening, unpacking boxes once he is home
 function nestTick(){if(!S||!S.v2fresh||!FEAT.nest)return;const now=Date.now(),N=S.nest||{},h=hourAt(now);if(now-B32.t<1000)return;B32.t=now;
-  if(!N.hw&&!S.trip){const sod=startOfDay(+S.born||now),first=now>=sod+17*36e5,both=(()=>{try{return mochaHome()&&W.inside&&!wAsleep()}catch(e){return false}})();
+  if(!N.hw&&!S.trip&&now-(+S.born||0)>=12e5){const sod=startOfDay(+S.born||now),first=now>=sod+17*36e5,both=(()=>{try{return mochaHome()&&W.inside&&!wAsleep()}catch(e){return false}})();
     if(h>=17&&h<19&&(both||h>=18.5&&(()=>{try{return mochaHome()}catch(e){return false}})())||first&&h>=9&&h<21.5&&both)housewarming(now,true)}
   if(B32.unp&&(()=>{try{return mochaHome()}catch(e){return false}})()){const e=nestItems().find(x=>!x.pre&&!x.placed);if(e){const r=arrangeHome(e.code,e.v);const it=catItem(e.code);if(r&&r.ok){try{say(`unpacked the ${it?it.name.toLowerCase():'box'}!`,3.5)}catch(_){}try{sfx('tok')}catch(_){}}}}}
 // round-1 home acts keep their place but use the fallback spot (sleep on the blanket, cold snacks on the box, the floor cushions)
@@ -14734,26 +14734,51 @@ function tamPhase(t){const s=tamSeason(t);if(!s||t<s.ta||t>=s.te)return'off';if(
 const TAMLOOK={fur:'#3A2C26',light:'#5E4C40',ears:'side',earC:'#3A2C26',snout:'short',nose:'#241C14',legC:'#3A2C26',shoe:'#241C14',tail:'short',x:['beard'],beardC:'#D9B26A',sc:1.24};
 const TAMC={id:'tamarack',name:'Tamarack',species:'larch goat',pr:'he',kind:'visitor',role:'a winter visitor from up the Icicle',home:'square',likes:['cocoa','swept doorsteps','licorice','first snow'],dislikes:['slush','rushing','loud sleigh bells'],look:TAMLOOK,spot:[-30,30,0],hideP:true};
 const TAMEYE=new THREE.MeshBasicMaterial({vertexColors:true});// warm amber eyes: unlit (reads as emissive), no light
-// the look (S15): chibi kit ~1.24x; a coat of stacked scalloped fringes (firTierG) in #3A2C26 with frost tips #D9D2E4, a larch-gold mane, short curled horns with tiny brass bells,
-// a birch-twig bundle tied with a red ribbon, a garland of tin stars. 7 draws at full (body, head, 2 arms, 2 legs, eyes); the face atlas is hidden (his eyes are their own mesh)
-function tamBuild(c){const L=c.look,P=castParts(L),PI=Math.PI,F=firTierG(9),S2=[-1,1],h=(g,col,p,s,r)=>P.HEAD.push({g,c:col,p,s,r}),b=(g,col,p,s,r)=>P.BODY.push({g,c:col,p,s,r}),E=[];
-  for(const [y,R,H] of [[.9,.4,.34],[.64,.46,.38],[.38,.5,.36]]){b(F,'#D9D2E4',[0,y-.045,0],[R*1.09,H*.34,R*1.0]);b(F,'#3A2C26',[0,y,0],[R,H,R*.92])}
-  h('s','#D9B26A',[0,.77,-.06],[.27,.15,.25]);for(const a of [-.55,-.2,.2,.55])h('k','#D9B26A',[Math.sin(a)*.17,.86,-.02],[.06,.17,.06],[-.25,0,-a*.7]);
-  b('k','#D9B26A',[0,1.07,-.2],[.14,.26,.1],[-.9,0,0]);b('k','#C9A25A',[0,.95,-.28],[.12,.22,.08],[-1.1,0,0]);
-  for(const s of S2){h('t:.09,.032,5,10,3.6','#CDBB9C',[s*.27,.82,-.07],1,[0,s*PI/2,.25*s]);h('s8','#C9A04A',[s*.33,.7,-.01],[.05,.058,.05]);h('c','#7A5A22',[s*.33,.65,-.01],[.018,.02,.018])}
-  b('t:.4,.016,4,26','#C9C2B0',[0,.86,0],[1,1,.92],[PI/2-.22,0,0]);for(let i=0;i<5;i++){const a=.45+i*.56,x=Math.cos(a)*.4,z=Math.sin(a)*.37+.02,y=.86-Math.sin(a)*.085;b('b','#E2DCCB',[x,y,z],[.07,.07,.02],[0,0,PI/4]);b('b','#C9C2B0',[x,y,z+.003],[.07,.07,.02])}
+// the look (S15; W4 redesign so he reads at once as a cute, cozy little mountain goat, never an owl or a dress): chibi kit ~1.24x; a round goat head with a soft cream snout, a small dark nose,
+// a tiny smile, a little goatee, sideways floppy ears and round friendly eyes (a thin warm amber ring, catchlights); short curled ivory horns with tiny brass bells; a shaggy coat of layered
+// tufts (#3A2C26, frost tips #D9D2E4) that hugs a round barrel body down to the knees; a larch-gold forelock and mane down the nape; two stubby legs with dark hooves; the birch-twig bundle
+// with its red ribbon and the tin-star garland. 7 draws at full (body, head, 2 arms, 2 legs, eyes); the face atlas is hidden (his eyes are their own mesh); LOD1 is the same parts merged
+const TAMARM=[.39,.96];// W4: his shoulders sit a little wider than the kit's so the shaggy arms stay outside the coat (the LOD uses the same offsets)
+function tamHorn(s,u0,u1,r0){const V=THREE.Vector3,C=new THREE.CatmullRomCurve3([[.12,.64,.08],[.15,.8,.075],[.2,.91,-.01],[.265,.915,-.14],[.305,.82,-.225],[.315,.7,-.19]].map(q=>new V(s*q[0],q[1],q[2]))),n=12,R=8,pts=[];
+  for(let i=0;i<=n;i++)pts.push(C.getPointAt(u0+(u1-u0)*i/n));const c2=new THREE.CatmullRomCurve3(pts),g=new THREE.TubeGeometry(c2,n,1,R,false),a=g.attributes.position;
+  for(let i=0;i<=n;i++){const u=u0+(u1-u0)*i/n,cp=c2.getPointAt(i/n),r=r0*(1-.58*u)*(1+.09*Math.sin(u*44));for(let j=0;j<=R;j++){const k=i*(R+1)+j;a.setXYZ(k,cp.x+(a.getX(k)-cp.x)*r,cp.y+(a.getY(k)-cp.y)*r,cp.z+(a.getZ(k)-cp.z)*r)}}
+  g.computeVertexNormals();return g}
+let TAMLK=null;function tamLock(){if(TAMLK)return TAMLK;const pr=[[0,-1],[.3,-.62],[.7,-.15],[.92,.3],[.78,.72],[.42,.95],[0,1]].map(q=>new THREE.Vector2(q[0],q[1]));return TAMLK=new THREE.LatheGeometry(pr,7)}// a fur lock: round top, pointed tip
+function tamBuild(c){const L=c.look,P=castParts(L),PI=Math.PI,S2=[-1,1],h=(g,col,p,s,r)=>P.HEAD.push({g,c:col,p,s,r}),b=(g,col,p,s,r)=>P.BODY.push({g,c:col,p,s,r}),E=[];
+  const FU='#3A2C26',FR='#D9D2E4',GO='#D6A548',IV='#F7E6C0',TN='#CDAE80',CR='#E8D7B6',HD='#45362D',MK='#5A473B',TF='sp:7,5';
+  P.HEAD.length=1;P.HEAD[0].c=HD;P.BODY.length=1;P.BODY[0].s=[.33,.42,.32];
+  // the shaggy coat: five rows of soft tufts round a barrel body; the bottom row tucks in above the knees (no hem flare); frost tips scattered on the upper rows
+  const ROW=[[1.0,.23,.24,10,.14],[.84,.31,.335,13,.17],[.67,.3,.325,14,.17],[.5,.28,.305,13,.16],[.35,.235,.255,12,.13]],RN=seeded(5150),LK=tamLock();// shingled: each row sits just outside the row below, so the coat tucks in toward the knees
+  ROW.forEach(([y,rx,rz,n,h0],ri)=>{for(let i=0;i<n;i++){const a=(i+(ri%2)*.5+(RN()-.5)*.35)/n*PI*2,sx=Math.sin(a),cz=Math.cos(a),k=.88+RN()*.24,yy=y+(RN()-.5)*.04,hh=h0*k,tz=(RN()-.5)*.45;
+    b(LK,i%4===1?'#433229':FU,[sx*rx,yy,cz*rz],[.135*k,hh,.09],[0,a,tz]);if(ri<4&&RN()<.22)b('sp:6,4',FR,[sx*(rx+.05)+Math.cos(a)*Math.sin(tz)*hh*.85,yy-hh*.85,cz*(rz+.05)-Math.sin(a)*Math.sin(tz)*hh*.85],[.02,.03,.018],[0,a,tz])}});
+  b(TF,FU,[0,.6,-.43],[.07,.12,.06],[-.7,0,0]);b('s8',FR,[0,.69,-.49],[.032,.026,.026]);// a short up-turned tail
+  b('s8',GO,[0,1.06,-.2],[.15,.09,.11]);b('s8','#C99640',[0,.99,-.25],[.11,.08,.07],[-.5,0,0]);// the mane runs down the nape
+  // the head: a lighter face round the eyes, a soft cream snout with a small dark nose, rosy cheeks, a little goatee, sideways floppy ears, a gold forelock, curled horns with brass bells
+  h('s8',MK,[0,.43,.13],[.29,.26,.28]);h('s',MK,[0,.37,.33],[.115,.12,.23]);h('s',CR,[0,.265,.47],[.125,.105,.21]);h('s8','#241C14',[0,.318,.652],[.058,.034,.034]);// fix1: a longer, lower muzzle (longer than wide in profile), the nose at its tip
+  h('s8','#E6D6B8',[0,.135,.43],[.058,.07,.048]);h('s8','#D8CCB6',[0,.085,.42],[.04,.048,.036]);for(const s of S2)h('s8',FR,[s*.03,.118,.445],[.034,.048,.034]);// fix1: a soft cream goatee tuft under the chin (rounded, no point: it never reads as a beak)
+  for(const s of S2){h('s8','#C98A84',[s*.245,.33,.31],[.05,.03,.02],[0,s*.6,0]);h('s8',HD,[s*.41,.5,-.03],[.22,.066,.1],[0,s*.45,-s*.4]);h('s8','#B98C7A',[s*.43,.49,.03],[.15,.034,.03],[0,s*.45,-s*.4]);
+    h(tamHorn(s,0,.62,.09),IV,[0,0,0],1);h(tamHorn(s,.6,1,.09),TN,[0,0,0],1);h('s8',TN,[s*.315,.7,-.19],.032);h('s8','#C9A04A',[s*.318,.625,-.19],[.046,.052,.046]);h('c','#6E5020',[s*.318,.578,-.19],[.016,.012,.016])}
+  h('s8',GO,[0,.8,.1],[.11,.06,.12],[.5,0,0]);for(const s of S2)h('s8',GO,[s*.085,.785,.14],[.07,.05,.09],[.6,0,-s*.3]);h('s8',GO,[0,.82,-.08],[.12,.07,.12]);
+  for(let k=0;k<3;k++){const a=.55+k*.42;h('s8',k%2?'#C99640':GO,[0,.4+Math.cos(a)*.375,-Math.sin(a)*.375],[.08,.1,.05],[-a,0,0])}
+  // the tin-star garland round his neck, sitting on the coat
+  b('t:.4,.016,4,26','#C9C2B0',[0,.86,0],[1.05,1.05,.97],[PI/2-.22,0,0]);for(let i=0;i<5;i++){const a=.45+i*.56,x=Math.cos(a)*.42,z=Math.sin(a)*.4+.02,y=.86-Math.sin(a)*.085;b('b','#E2DCCB',[x,y,z],[.07,.07,.02],[0,0,PI/4]);b('b','#C9C2B0',[x,y,z+.003],[.07,.07,.02])}
+  // shaggy arms with little hooves (front legs), stubby legs with a fluffy cuff and dark hooves
+  for(const A of [P.ARML,P.ARMR]){A[0]={g:TF,c:FU,p:[0,-.12,0],s:[.1,.17,.1]};A[1]={g:'s8',c:'#2A201A',p:[0,-.3,.01],s:[.072,.062,.078]};A[2]={g:'s8',c:FU,p:[0,0,0],s:.09};A.push({g:'s8',c:FR,p:[0,-.235,.06],s:[.038,.028,.028]})}
+  for(const G of [P.LEGL,P.LEGR]){G[0]={g:'c',c:FU,p:[0,-.1,0],s:[.072,.2,.072]};G[1]={g:'cy:.9,1,1,10',c:'#241C14',p:[0,-.29,.03],s:[.085,.1,.1]};G.push({g:TF,c:FU,p:[0,-.18,.01],s:[.095,.06,.1]})}
   for(let j=0;j<7;j++)P.ARMR.push({g:'c',c:j%2?'#CFC3AA':'#B3A68C',p:[(j-3)*.017,-.53,.07+((j%3)-1)*.016],s:[.012,.46,.012],r:[0,0,(j-3)*.05]});
   P.ARMR.push({g:'t:.05,.016,4,12',c:'#A8282A',p:[0,-.36,.07],s:1,r:[PI/2,0,0]});for(const s of S2){P.ARMR.push({g:'s8',c:'#A8282A',p:[s*.05,-.33,.12],s:[.045,.03,.02],r:[0,0,s*.5]});P.ARMR.push({g:'b',c:'#A8282A',p:[s*.025,-.42,.12],s:[.018,.08,.01],r:[0,0,s*.2]})}
-  // fix1: a soft face (S15 'never threatening'): round dark pupils with a cream catchlight (no bar pupils), a cream muzzle with a tiny smile, rosy cheeks; all merged into the head and eye draws (+0 draws)
-  for(const s of S2){E.push({g:'s8',c:'#FFC873',p:[s*.15,.45,.352],s:[.075,.088,.04]});E.push({g:'s8',c:'#24160C',p:[s*.15,.44,.386],s:[.042,.048,.014]});E.push({g:'s8',c:'#FFF4DC',p:[s*.15-.016,.468,.398],s:[.016,.016,.006]});h('s8','#C98A84',[s*.25,.355,.3],[.05,.032,.02])}
-  h('s','#E6D3B2',[0,.33,.33],[.16,.11,.1]);E.push({g:'t:.032,.008,3,8,2.3',c:'#3A2416',p:[0,.33,.428],s:1,r:[0,0,Math.PI+.42]});
+  // the eyes (unlit TAMEYE, no light): a thin warm amber ring round a big dark pupil, a big and a small catchlight; the tiny smile on the snout
+  for(const s of S2){const nx=s*.39,nz=.92;E.push({g:'s8',c:'#D99A48',p:[s*.155,.47,.345],s:[.078,.088,.035],r:[0,s*.4,0]});E.push({g:'s8',c:'#24160E',p:[s*.155+nx*.02,.466,.345+nz*.02],s:[.064,.074,.024],r:[0,s*.4,0]});
+    E.push({g:'s8',c:'#FFF6E4',p:[s*.155+nx*.04-.022,.494,.345+nz*.04],s:[.021,.021,.008]});E.push({g:'s8',c:'#FFF6E4',p:[s*.155+nx*.04+.017,.444,.345+nz*.04],s:[.009,.009,.005]})}
+  E.push({g:'t:.034,.008,3,8,2.3',c:'#3A2416',p:[0,.224,.66],s:1,r:[.8,0,Math.PI+.42]});E.push({g:'c',c:'#3A2416',p:[0,.266,.676],s:[.006,.042,.006]});
   const g=chibiRig(P,{mark:'plain',shadow:false,mat:CHIBI_MAT}),u=g.userData;u.look=L;u.bob=1;u.face.visible=false;const ey=new THREE.Mesh(mergeParts(E,null),TAMEYE);u.head.add(ey);u.eyes=ey;
-  const lo=new THREE.Mesh(tamLod(P,E),CHIBI_MAT);lo.visible=false;g.add(lo);u.lod1=lo;const hb=u.M.HEAD.geometry;hb.computeBoundingBox();u.top=CHR.neck+hb.boundingBox.max.y;u.emY=u.top+.45;
+  u.arms[0].position.set(-TAMARM[0],TAMARM[1],0);u.arms[1].position.set(TAMARM[0],TAMARM[1],0);
+  const lo=new THREE.Mesh(tamLod(P,E,TAMARM),CHIBI_MAT);lo.visible=false;g.add(lo);u.lod1=lo;const hb=u.M.HEAD.geometry;hb.computeBoundingBox();u.top=CHR.neck+hb.boundingBox.max.y;u.emY=u.top+.45;
   g.traverse(o=>{if(o.isMesh&&u.M&&o!==u.M.BODY)o.castShadow=false});// fix1: only his body casts a shadow (was 6 shadow casters)
   g.scale.setScalar(L.sc||1);u.castId=c.id;return g}
 // his LOD1 (one draw): lod1Geo's rest-pose merge with his own amber eyes instead of the baked dark eye dots
-function tamLod(P,E){const o=[],add=(A,ox,oy,oz)=>{if(A)for(const q of A){const p=q.p||[0,0,0];o.push(Object.assign({},q,{p:[p[0]+ox,p[1]+oy,p[2]+oz]}))}};
-  add(P.BODY,0,0,0);add(P.HEAD,0,CHR.neck,0);add(E,0,CHR.neck,0);add(P.ARML,-CHR.sh[0],CHR.sh[1],0);add(P.ARMR,CHR.sh[0],CHR.sh[1],0);add(P.LEGL,-CHR.hip[0],CHR.hip[1],0);add(P.LEGR,CHR.hip[0],CHR.hip[1],0);add(P.TAIL,0,CHR.tail[0],CHR.tail[1]);return mergeParts(o,null)}
+function tamLod(P,E,sh){sh=sh||CHR.sh;const o=[],add=(A,ox,oy,oz)=>{if(A)for(const q of A){const p=q.p||[0,0,0];o.push(Object.assign({},q,{p:[p[0]+ox,p[1]+oy,p[2]+oz]}))}};
+  add(P.BODY,0,0,0);add(P.HEAD,0,CHR.neck,0);add(E,0,CHR.neck,0);add(P.ARML,-sh[0],sh[1],0);add(P.ARMR,sh[0],sh[1],0);add(P.LEGL,-CHR.hip[0],CHR.hip[1],0);add(P.LEGR,CHR.hip[0],CHR.hip[1],0);add(P.TAIL,0,CHR.tail[0],CHR.tail[1]);return mergeParts(o,null)}
 // places in Lantern Square: doorsteps to sweep, the fountain (warm hooves), two spots for a jingle; the den (rest, out of view) up Drizzle Alley
 const TAMS=[{k:'sweep',x:-41.7,z:33.6,ry:-Math.PI/2,n:'the Town Hall steps'},{k:'sweep',x:-19.5,z:35,ry:Math.PI/2,n:'the bakery step'},{k:'sweep',x:-36,z:41.3,ry:0,n:'the Drizzle Threads step'},{k:'sweep',x:+(TOWNTREE.x+.735*-2.75).toFixed(2),z:+(TOWNTREE.z+.678*-2.75).toFixed(2),ry:.825,n:'the snow round the big tree'},// merge W1xW2: the nursery step sits behind W1's town tree now
   {k:'warm',x:-34.05,z:33,ry:Math.PI/2,n:'the fountain'},{k:'warm',x:-30,z:37.05,ry:Math.PI,n:'the fountain'},{k:'bells',x:-35,z:28.6,ry:2.4,n:'the square'},{k:'bells',x:-24.6,z:30,ry:-2.2,n:'the square'}];
@@ -14839,7 +14864,7 @@ function tamStep(dt,t){const o=TAM.obj,q=o.position;if(dt<=0)return;const now=pe
   if(dy<6&&dy>1.2&&!TK.open&&now>TAM.sayT&&TAM.st!=='board'){TAM.sayT=now+28000;try{npcSay('tamarack',pick(TAMHI),3)}catch(e){}}
   try{if(S.tam&&!S.tam.met&&G.mode!=='trip'&&!G.sleep&&Math.hypot(G.x-q.x,G.z-q.z)<10)tamMeet(Date.now())}catch(e){}}
 // Mocha's first meeting: a field-notes entry in his diary (once ever)
-function tamMeet(t){tamFix(S);const T=S.tam;if(T.met)return false;T.met=t;addEntry('Note','Field notes: Tamarack, a Larch Goat. A coat like a little fir tree, with frost on every tip. A gold mane, the color the larches up in the Cascades turn in October. Tiny brass bells on his curly horns, and eyes like two warm lanterns. He says "hmph" a lot, but he swept the bakery step without anybody asking. He came down on December 5th: in the Alps they call that night Krampusnacht.','Lantern Square',t,true);
+function tamMeet(t){tamFix(S);const T=S.tam;if(T.met)return false;T.met=t;addEntry('Note','Field notes: Tamarack, a Larch Goat. A shaggy dark coat in little tufts, with frost on every tip. A gold mane, the color the larches up in the Cascades turn in October. Tiny brass bells on his curly horns, and eyes like two warm lanterns. He says "hmph" a lot, but he swept the bakery step without anybody asking. He came down on December 5th: in the Alps they call that night Krampusnacht.','Lantern Square',t,true);
   try{if(typeof spark==='function')spark('first',.8,t)}catch(e){}return true}
 const TAMGR=['otis','gus','marigold','barnaby','monty'],TAMKD=['pippin','juniper','bea','wendell','willa','jot','wren'];
 const TAMBYE="Mocha. The train is here and the bells are packed. Thank you for the cocoa, and for the giggling. I heard all of it. Keep the steps swept. I'll be back when the larches have gone gold and the snow comes down. -T. (one gingerbread heart enclosed. do not eat it all at once.)";
@@ -14853,7 +14878,7 @@ function tamGift(t,k){const T=S.tam,r=seeded(wxHash('tam'+k));if(T.met&&r()<.3){
 // 1 Hz (and on boot, so it catches up): the People list, his arrival news, a gift every evening, and the goodbye note in the mail after the Jan 6 train
 function tamTick(now){if(!S)return;tamFix(S);const T=S.tam,d=new Date(now),m=d.getMonth(),s=tamSeasonY(m===11?d.getFullYear():d.getFullYear()-1),inS=now>=s.ta&&now<s.te;
   TAMC.hideP=!(inS||T.met);TAMC.role=inS?'a winter visitor from up the Icicle (evenings in Lantern Square)':'back home up the Icicle until next December';
-  const born=+S.born||0;if(now>=s.ta&&now<s.te+30*864e5&&T.seen<s.Y&&born<s.te){T.seen=s.Y;const t=Math.max(born,Math.min(now,s.ta+3*60e3));addEntry('Town',T.met?'Tamarack is back! He came in on the evening train with his twig bundle and his tiny bells, and went straight to Lantern Square to sweep the steps. Now it is really winter.':'Something new in town: a shaggy little goat with bells on his curly horns stepped off the evening train and trotted to Lantern Square. Jot says his name is Tamarack and he comes down "from up the Icicle" every December.','Lantern Square',t,true);
+  const born=+S.born||0;if(now>=s.ta&&now<s.te+30*864e5&&T.seen<s.Y&&born<s.te&&tamNews(now,born,s,T)){T.seen=s.Y;const t=born>s.ta+6*60e3?now:Math.max(born,Math.min(now,s.ta+3*60e3));addEntry('Town',T.met&&T.met<s.ta?'Tamarack is back! He came in on the evening train with his twig bundle and his tiny bells, and went straight to Lantern Square to sweep the steps. Now it is really winter.':'Something new in town: a shaggy little goat with bells on his curly horns stepped off the evening train and trotted to Lantern Square. Jot says his name is Tamarack and he comes down "from up the Icicle" every December.','Lantern Square',t,true);
     try{newsPush('visitor','Tamarack the Larch Goat came in on the evening train','',t,['tamarack'],true)}catch(e){}}
   if(now>=s.ta&&now<s.te+30*864e5){const D=new Date(s.ta);D.setHours(21,0,0,0);for(let i=0;i<34;i++,D.setDate(D.getDate()+1)){const gt=+D;if(gt>now||gt>s.td)break;const k=dkey(gt);if(k<=T.d)continue;T.d=k;if(gt>born)tamGift(gt,k)}}
   if(now>=s.td+20e3&&T.bye<s.Y&&born<s.td&&now-s.td<40*864e5){T.bye=s.Y;S.mail=Array.isArray(S.mail)?S.mail:[];S.mail.unshift({id:'tam'+s.Y,h:'tamarack',k:'tam-bye-'+s.Y,t:s.td,from:'Tamarack',text:tamByeText(T),gift:'',reply:null,seen:0});S.mail.length=Math.min(S.mail.length,40);
@@ -14938,7 +14963,7 @@ try{if(isNew&&!hintGone){TAMH.w=1;const h=$('#hint');if(h){h.classList.add('wtrY
 function wtrHint(now){const h=TAMH.el||(TAMH.el=$('#hint'));if(!h)return;let y=false;
   if(TAMH.w){const sh=bubble.classList.contains('show')&&!bubble._off&&bubble.style.visibility!=='hidden';if(!TAMH.t0)TAMH.t0=now;TAMH.wt=+((now-TAMH.t0)/1000).toFixed(1);if(TAMH.w===1){if(sh){TAMH.w=2;TAMH.t2=now}else if(now-TAMH.t0>8000)TAMH.w=0}else if(!sh||now-TAMH.t2>6000||now-TAMH.t0>10000)TAMH.w=0}// fix1: real time, at most ~6 s after the hello shows (the thought bubbles that follow it no longer hold the hint back)
   if(!hintGone&&h.style.display!=='none'){if(TAMH.w)y=true;else{if(now-TAMH.rT>1000||!TAMH.r){TAMH.rT=now;const q=h.getBoundingClientRect();TAMH.r=q.width>0?[q.left-6,q.top-6,q.right+6,q.bottom+6]:null}const R=TAMH.r;
-    if(R)for(const s of POPB){const el=s.el;if(!el||!el.classList.contains('show')||el._off||el.style.visibility==='hidden'||el._sl==null)continue;const w=el._w||120,hh=el._h||40,L=el._sl,T0=el._st;if(L+w/2>R[0]&&L-w/2<R[2]&&T0+8>R[1]&&T0-hh<R[3]){y=true;break}}}}
+    if(R)for(const s of POPB){const el=s.el;if(!el||!el.classList.contains('show')||(el._off&&!(s.w==='mocha'&&bubbleT>0))||el.style.visibility==='hidden'||el._sl==null)continue;const w=el._w||120,hh=el._h||40,L=el._sl,T0=el._st;if(L+w/2>R[0]&&L-w/2<R[2]&&T0+8>R[1]&&T0-hh<R[3]){y=true;break}}}}
   if(!y&&!TAMH.w&&!hintGone&&!TAMH.seenT)TAMH.seenT=now;if(y!==TAMH.y){TAMH.y=y;h.classList.toggle('wtrY',y);if(y)TAMH.n++}}
 {const sy=say;say=function(){const r=sy.apply(this,arguments);try{if(!hintGone){TAMH.rT=-1e9;wtrHint(performance.now())}}catch(e){}return r}}// a new line yields the hint at once (no one-frame overlap)
 function tamFrame(sd,t,dt){if((TAM.hT-=dt)<=0){TAM.hT=.2;try{wtrHint(performance.now())}catch(e){}}if(!TAM.obj)return;
@@ -14953,6 +14978,51 @@ Object.assign(window.__mocha,{tam:o=>{o=o||{};if('force' in o){TAM.force=o.force
     if(o.lofx){const a=TAMACT.find(q=>q.fx===o.lofx);return a?localOutcome(a,Date.now(),false):null}return tamInfo()},
   wtr:o=>{o=o||{};if(o.clash)return wtrTripClash(o.clash,o.at||Date.now());if(o.shift)return wtrShifts(o.shift[0],o.shift[1]);return{hint:{y:TAMH.y,n:TAMH.n,wait:TAMH.w},season:tamSeason(Date.now())}},
   tamCard:()=>cardImg('leavenworth',7,1)});
+// ======== W4 (Nov 7 afternoon): Tamarack's arrival news on new saves, stall keepers fade in/out (never pop), the follow-up thought respects the hint, hooks ========
+// fix 1: a save that starts after his arrival train never gets his arrival news back-dated above 'Moved in'; it comes (dated now) once he is seen (Mocha meets him, or he is
+//  on screen within 30 m of the camera) or on the first evening after the save began (16:00)
+function tamNews(now,born,s,T){if(born<=s.ta+6*60e3||(T&&T.met))return true;try{const r=TAM.r;if(TAM.obj&&TAM.obj.visible&&TAM.st!=='hide'&&r&&r.lvl>=0&&r.d<30)return true}catch(e){}
+  const d=new Date(born);if(d.getHours()>=16)d.setDate(d.getDate()+1);d.setHours(16,0,0,0);return now>=+d}
+// fix 4: the follow-up thought ('i wonder what's past those trees') shows on the frame popBub clears its popOff, up to 200 ms after say()'s own check, so the hint
+//  re-checks right after popBub every frame while it is still up (cheap: the hint rect is re-measured at most once a second, or when the front bubble changes)
+{const pb0=popBub;popBub=function(){const r=pb0.apply(this,arguments);try{if(!hintGone&&TAMH.el){const b=POP.bub.el;if(b!==TAMH.pb){TAMH.pb=b;TAMH.rT=-1e9}wtrHint(performance.now())}}catch(e){}return r}}
+// fix 3: market stall keepers never pop in or out at the counter. Entering a stall block they fade in behind the counter (from hidden), or walk to a spot beside the
+//  stall's side plank (outside every wall; the side away from the neighbour stall) and fade across to the counter; leaving, they fade out at the counter, fade in beside
+//  the stall and walk on (or stay hidden). A fade swaps the rig's materials to one transparent clone per keeper (same program, +0 draws) for under a second.
+//  Forced ticks (boot, __mocha.town.at) and keepers far from the camera keep the plain snap. Nothing here touches Mocha.
+const W4F={on:[],n:{fin:0,fout:0,walk:0}};
+function w4Stall(b){return b&&typeof b[3]==='string'&&/^mk\d$/.test(b[3])?+b[3].slice(2):-1}
+function w4Side(i){const s=W1S[i],c=Math.cos(s[3]),n=Math.sin(s[3]);let best=null,bd=-1;for(const k of [-1,1]){const lx=k*(s[4]/2+.6),x=s[1]+lx*c,z=s[2]-lx*n;let d=1e9;for(let j=0;j<W1S.length;j++)if(j!==i)d=Math.min(d,Math.hypot(W1S[j][1]-x,W1S[j][2]-z));if(d>bd){bd=d;best=[+x.toFixed(2),+z.toFixed(2)]}}return best}
+function w4Mat(T,on){const u=T.c.obj.userData,F=T.w4m||(T.w4m={m:null,f:null}),L=[];if(u.M)for(const k in u.M)if(u.M[k])L.push(u.M[k]);if(u.lod1)L.push(u.lod1);
+  if(on&&!F.m){F.m=CHIBI_MAT.clone();F.m.transparent=true;F.f=FACE_MAT.clone()}for(const m of L){if(on&&m.material===CHIBI_MAT)m.material=F.m;else if(!on&&m.material===F.m)m.material=CHIBI_MAT}
+  if(u.face){if(on&&u.face.material===FACE_MAT)u.face.material=F.f;else if(!on&&u.face.material===F.f)u.face.material=FACE_MAT}
+  const r=T.c.lod;if(r&&r.cast)for(const m of r.cast)m.castShadow=on?false:!!r.sh}// no full-strength shadow under a half-faded keeper
+function w4Put(T,x,z,ry,vis){const n=T.n,g=T.c.obj;n.walk=false;n.x=x;n.z=z;if(ry!=null)n.ry=ry;n.inP=null;n.hide=!vis;g.position.set(x,navFloor(x,z),z);g.rotation.y=n.ry;g.visible=vis;if(T.c.lod)T.c.lod.y0=g.position.y}
+// a fade: dir 1 = in, -1 = out; then() runs when it ends. The keeper is pinned (townTick skips him) while it runs
+function w4Fade(T,dir,then,dur){const o=W4F.on.find(q=>q.T===T)||(W4F.on.push({T}),W4F.on[W4F.on.length-1]);o.dir=dir;o.k=dir>0?0:1;o.dur=dur||.7;o.then=then||null;T.n.pin=Date.now()+4e3;w4Mat(T,true);if(dir>0)T.c.obj.visible=true;W4F.n[dir>0?'fin':'fout']++;w4Op(T,o.k)}
+function w4Op(T,k){const F=T.w4m;if(!F||!F.m)return;F.m.opacity=k;F.m.color.copy(CHIBI_MAT.color);F.m.emissive.copy(CHIBI_MAT.emissive);F.f.opacity=k;F.f.color.copy(FACE_MAT.color);F.f.visible=k>.5}
+function w4Tick(dt){for(let i=W4F.on.length-1;i>=0;i--){const o=W4F.on[i],T=o.T;o.k=Math.max(0,Math.min(1,o.k+o.dir*dt/o.dur));w4Op(T,o.k);if(o.dir>0?o.k<1:o.k>0)continue;
+    W4F.on.splice(i,1);if(o.dir>0)w4Mat(T,false);else T.c.obj.visible=false;T.n.pin=0;const f=o.then;o.then=null;if(f)try{f()}catch(e){console.warn('w4',e)}}}
+function w4Go(T,snap,g0){const n=T.n,i=w4Stall(n.b),j=n.w4i==null?-1:n.w4i,g=T.c.obj;if(i===j&&!n.w4go)return false;
+  if(snap||TOWN.ov!=null||!WMK.on||!(tNear(n.x,n.z)||tNear(n.w.x,n.w.z))){n.w4i=i>=0?i:null;n.w4go=null;return false}
+  const vis=g.visible&&!n.hide,o=n.w,tx=o.x,tz=o.z,tr=o.ry,th=o.hide,tp=o.inP;
+  if(i>=0){n.w4i=i;n.w4go=null;// entering stall i
+    if(!vis||!tNear(n.x,n.z)){w4Put(T,tx,tz,tr,true);w4Fade(T,1,null,.8);return true}// hidden, or out of view far away: fade in behind the counter
+    const sd=w4Side(i);if(T.a&&Math.hypot(n.x-sd[0],n.z-sd[1])>1.2){n.w4go={x:tx,z:tz,ry:tr};o.x=sd[0];o.z=sd[1];o.hide=false;o.inP=null;W4F.n.walk++;g0(T,false);return true}// n.w stays on the side spot until he gets there (tSnap below), so the arrival snap lands beside the stall
+    w4Fade(T,-1,()=>{w4Put(T,tx,tz,tr,true);w4Fade(T,1,null,.6)},.45);return true}
+  // leaving stall j: fade out at the counter, step out beside the stall, then on as usual
+  n.w4i=null;n.w4go=null;if(!vis||j<0)return false;const sd=w4Side(j);
+  w4Fade(T,-1,()=>{w4Put(T,sd[0],sd[1],null,false);if(th){g0(T,true);return}w4Fade(T,1,()=>{o.x=tx;o.z=tz;o.ry=tr;o.hide=th;o.inP=tp;g0(T,false)},.5)},.6);return true}
+{const g0=tGo;tGo=function(T,snap){try{if(T&&T.n&&w4Go(T,snap,g0))return}catch(e){console.warn('w4 go',e)}return g0.apply(this,arguments)}}
+// he reached the spot beside the stall: fade across to the counter
+{const s0=tSnap;tSnap=function(T){const r=s0.apply(this,arguments);try{const n=T.n,q=n.w4go;if(q&&n.w4i!=null&&w4Stall(n.b)===n.w4i){n.w4go=null;n.w.x=q.x;n.w.z=q.z;n.w.ry=q.ry;w4Fade(T,-1,()=>{w4Put(T,q.x,q.z,q.ry,true);w4Fade(T,1,null,.6)},.45)}}catch(e){}return r}}
+{const tf0=townFrame;townFrame=function(dt,t){const r=tf0.apply(this,arguments);if(W4F.on.length)try{w4Tick(dt)}catch(e){console.warn('w4',e)}return r}}
+// hooks: __mocha.w4() -> {stalls:[{id,keeper,side,spot}], fades, n, keepers:{id:{vis,op,x,z,walk,stall}}}; __mocha.w4dbg() exposes internals for the turnaround sheet and tests
+function w4Info(){const K={};for(let i=0;i<W1S.length;i++)for(const id of w1Cands(i)){const n=TN[id],c=CASTB[id];if(!n||!c||!c.obj)continue;const F=c.obj.userData,T=TOWN.set.find(q=>q.c.id===id),m=T&&T.w4m&&T.w4m.m;
+    K[id]={vis:!!c.obj.visible,op:m&&F.M&&F.M.BODY&&F.M.BODY.material===m?+m.opacity.toFixed(2):c.obj.visible?1:0,x:+n.x.toFixed(2),z:+n.z.toFixed(2),walk:!!n.walk,stall:n.w4i==null?null:n.w4i,block:n.b?n.b.slice(0,6):null}}
+  return{stalls:W1S.map((s,i)=>({id:s[0],cands:w1Cands(i),keeper:(()=>{try{return w1Keeper(i)}catch(e){return null}})(),side:w4Side(i),spot:TSP['mk'+i]?TSP['mk'+i].slice(0,2):null})),fades:W4F.on.map(o=>({id:o.T.c.id,dir:o.dir,k:+o.k.toFixed(2)})),n:Object.assign({},W4F.n),keepers:K,born:+S.born||0,diary:(S.diary||[]).slice(0,6).map(e=>({tag:e.tag,t:+e.t,tx:String(e.text).slice(0,70)})),tamSeen:S.tam?S.tam.seen:0}}
+try{Object.assign(window.__mocha,{w4:()=>w4Info(),w4dbg:()=>({TAM,TAMS,visitor,CHARLOD,floorAt,TN,TOWN,W1S,TSP,CASTB,tamBuild,TAMH,W4F})})}catch(e){}
+// W4END
 // ---------- the Town tab: shops (funds, petitions, campaigns, a business board with mood faces) ----------
 function econBoard(){const now=Date.now(),dk=dkey(now);return Object.keys(EB37).filter(p=>byId[p]).map(pid=>{const b=econB(pid),k=econK(pid),st=b[3]&&dk<=b[6]?b[3]:'',lg=S.econ.log.slice().reverse().find(l=>l[1]===pid&&dk-l[0]<4),sg=econSign(pid);
   const line=lg?lg[2]:st?`${ESTN[st]}${sg?': '+sg[1]:''}`:b[2]>=2?'a busy, happy week':b[2]===1?'a good week':b[2]===0?'a steady week':b[2]===-1?'a slow week':'a quiet stretch';
@@ -15450,10 +15520,12 @@ function w1Sync(force){const on=w1Win();if(on===WMK.on&&!force)return;WMK.on=on;
   WMK.cand.forEach(i=>glowSet(i,on?.5:0));WMK.pools.forEach(i=>poolSet(i,on?.75:0));w1Col(0,12,on);if(WMK.hglow>=0)glowSet(WMK.hglow,on?.35:0);WLT.u.v.value.set(1,on?.12:1,on?1.5:1,on?2.4:1);// fix1 CORE 5: holiday window variants (silhouettes dark, candles hot) only in the window
   try{if(SQ.ice){if(!WMK.iceC)WMK.iceC=SQ.ice.material.color.clone();SQ.ice.material.color.copy(on?_gc.set(W1K.ice):WMK.iceC)}B36.frozen=sqFrozen(Date.now())}catch(e){}
   WMK.n++}
-function w1Keeper(i){const s=W1S[i];for(const id of [s[7],W1K2[s[0]]]){if(!id)continue;try{const b=blockAt(tPlan(id),townHour());if(b&&b[3]==='mk'+i){const c=CASTB[id];return c?c.name.split(' ')[0]:id}}catch(e){}}return null}
+// fix1 (win2): the name card names a keeper only when he is actually at the counter (at a handover the incoming keeper may still be walking in)
+function w1KeeperAt(i){const sp=TSP['mk'+i];for(const id of w1Cands(i)){if(!id)continue;try{const b=blockAt(tPlan(id),townHour());if(b&&b[3]==='mk'+i){const n=TN[id],c=CASTB[id];if(sp&&n&&(n.walk||Math.hypot(n.x-sp[0],n.z-sp[1])>1.6||(c&&c.obj&&!c.obj.visible)))return null;return c?c.name.split(' ')[0]:id}}catch(e){}}return null}
+function w1Keeper(i){for(const id of w1Cands(i)){if(!id)continue;try{const b=blockAt(tPlan(id),townHour());if(b&&b[3]==='mk'+i){const c=CASTB[id];return c?c.name.split(' ')[0]:id}}catch(e){}}return null}
 // LF5 name card when the walker steps up to a stall (one per stall per 45 s)
 function w1Labels(){if(!WMK.on||!WMK.built||camS.mode!=='walk'||IN.on)return;const now=performance.now();for(let i=0;i<W1S.length;i++){const s=W1S[i],fx=s[1]+Math.sin(s[3])*(s[5]/2+.8),fz=s[2]+Math.cos(s[3])*(s[5]/2+.8);
-    if(Math.hypot(YOU.x-fx,YOU.z-fz)<2.4&&!(now-(WMK.lab[s[0]]||-1e9)<45e3)){WMK.lab[s[0]]=now;const k=w1Keeper(i);try{typeof ncShow==='function'&&ncShow(s[6],k?`${k} is minding the stall · ${s[8]}`:s[8],'w1:'+s[0],false)}catch(e){}WMK.lastLab=s[0];break}}}
+    if(Math.hypot(YOU.x-fx,YOU.z-fz)<2.4&&!(now-(WMK.lab[s[0]]||-1e9)<45e3)){WMK.lab[s[0]]=now;const k=w1KeeperAt(i);try{typeof ncShow==='function'&&ncShow(s[6],k?`${k} is minding the stall · ${s[8]}`:s[8],'w1:'+s[0],false)}catch(e){}WMK.lastLab=s[0];break}}}
 function w1Frame(dt){if((WMK.t4-=dt)>0)return;WMK.t4=.25;w1Sync();w1Labels();if(WMK.reg&&B41.boot&&!B41.casc){WMK.reg=0;try{b41Theme(HOL.theme)}catch(e){}}}// re-register the strands only outside a tree cascade (a snapshot mid-cascade would keep the bulbs dark)
 // ---- the heron with a lantern (year-round): merged into the fountain's PB chunk (vc) and the PB 'win' chunk for the glass, 0 draws; a GLOWPTS halo at night
 function w1Append(m,g2){const g=m.geometry,n1=g.attributes.position.count,n2=g2.attributes.position.count,out=new THREE.BufferGeometry();for(const k in g.attributes){const a=g.attributes[k],b=g2.attributes[k],it=a.itemSize,arr=new Float32Array((n1+n2)*it);arr.set(a.array.subarray(0,n1*it),0);if(b&&b.itemSize===it)arr.set(b.array.subarray(0,n2*it),n1*it);out.setAttribute(k,new THREE.BufferAttribute(arr,it))}
@@ -15485,12 +15557,16 @@ try{w1Heron()}catch(e){WMK.err='heron:'+e.message;console.warn('W1 heron',e)}
 // ---- keepers at the stalls, 16:30-21:30, when their own day leaves the evening free (weighted by how free it is; never forced)
 const W1FREE=new Set(['rest','rainrest','eve','read','caps','radio','snack','home','idle']);
 // fix1: a second keeper per stall (townsfolk whose December evenings are free) takes over when the first one's evening is busy, so the market is staffed from about 16:30
-const W1K2={cocoa:'marigold',chestnut:'dale',ornaments:'hollis',candles:'birch'},W1PK=new Map(),W1SAT={gus:'chestnut',hollis:'ornaments',honey:'candles'};// W1SAT: December Saturdays 8-12 (the seam fix below)
-function w1Free(v){let h0=null;for(let h=16.5;h<21.25;h+=.25){const b=blockAt(v,h),free=!b||W1FREE.has(b[5])||b[5]==='stall'||b[4]==='home'||b[4]==='back';if(!free)h0=null;else if(h0==null)h0=h}return h0}
-function w1Pick(i,t,tp0){const dk=dkey(t),key=i+'|'+dk;if(W1PK.has(key))return W1PK.get(key);if(W1PK.size>80)W1PK.clear();let out=null;const s=W1S[i];
-  for(const id of [s[7],W1K2[s[0]]]){if(!id||!CASTB[id])continue;let v=null;try{v=tp0(id,t)}catch(e){}if(!v)continue;const h0=w1Free(v),fit=h0==null?0:(21.5-h0)/5,r=seeded(wxHash('w1'+id+dk))();if(fit>=.3&&r<.3+.6*fit){out={id,h0};break}}
+const W1K2={cocoa:['marigold','jot'],chestnut:['dale','reed'],knits:['wren','clem'],ornaments:['hollis','barnaby'],ginger:['morel'],candles:['birch','odalie']},W1PK=new Map(),W1SAT={gus:'chestnut',hollis:'ornaments',honey:'candles'};// W1SAT: December Saturdays 8-12 (the seam fix below)
+// W4 fix 2: candidates per stall (its own keeper first, then townsfolk whose December evenings are free; disjoint lists); their free runs cover 16:30-21:30 in shifts.
+//  W1SOFT: daytime outdoor pastimes that end at the winter dusk (hives, the patch, wading, fishing...) count as free in the window. Each candidate still says yes by weight.
+const W1SOFT=new Set(['hives','patch','wade','fish','putter','stories','desk','sort','strum','office']);function w1Cands(i){const s=W1S[i];return[s[7]].concat(W1K2[s[0]]||[])}
+function w1Runs(v){const R=[];let a=null;for(let h=16.5;h<21.5;h+=.25){const b=blockAt(v,h),free=!b||W1FREE.has(b[5])||W1SOFT.has(b[5])||b[5]==='stall'||b[4]==='home'||b[4]==='back';if(free){if(a==null)a=h}else if(a!=null){R.push([a,h]);a=null}}if(a!=null)R.push([a,21.5]);return R}
+function w1Pick(i,t,tp0){const dk=dkey(t),key=i+'|'+dk;if(W1PK.has(key))return W1PK.get(key);if(W1PK.size>80)W1PK.clear();const out=[];let gaps=[[16.5,21.5]];
+  for(const id of w1Cands(i)){if(!id||!CASTB[id]||!gaps.length)continue;let v=null;try{v=tp0(id,t)}catch(e){}if(!v)continue;const runs=w1Runs(v),fit=runs.reduce((a,q)=>a+q[1]-q[0],0)/5,r=seeded(wxHash('w1'+id+dk))();
+    if(fit<.15||r>=.6+.45*fit)continue;const ng=[];for(const g of gaps){let a=g[0];for(const q of runs){const s0=Math.max(a,q[0]),s1=Math.min(g[1],q[1]);if(s1-s0>=.75){out.push({id,h0:s0,h1:s1});if(s0>a)ng.push([a,s0]);a=s1}}if(g[1]-a>.01)ng.push([a,g[1]])}gaps=ng}
   W1PK.set(key,out);return out}
-{const tp0=tPlan;tPlan=function(id,date){const v=tp0.apply(this,arguments);try{if(v&&!v.w1){v.w1=1;const t=date==null?Date.now():+date;if(w1Win(t)&&W1SAT[id]&&new Date(t).getDay()===6){const i=W1S.findIndex(s=>s[0]===W1SAT[id]);if(i>=0)v.push([8,12,'out','mk'+i,null,'stall'])}if(w1Win(t))for(let i=0;i<W1S.length;i++){const s=W1S[i];if(s[7]!==id&&W1K2[s[0]]!==id)continue;const p=w1Pick(i,t,tp0);if(p&&p.id===id){v.push([p.h0,21.5,'out','mk'+i,null,'stall']);break}}}}catch(e){}return v}}
+{const tp0=tPlan;tPlan=function(id,date){const v=tp0.apply(this,arguments);try{if(v&&!v.w1){v.w1=1;const t=date==null?Date.now():+date;if(w1Win(t)&&W1SAT[id]&&new Date(t).getDay()===6){const i=W1S.findIndex(s=>s[0]===W1SAT[id]);if(i>=0)v.push([8,12,'out','mk'+i,null,'stall'])}if(w1Win(t))for(let i=0;i<W1S.length;i++){if(!w1Cands(i).includes(id))continue;for(const q of w1Pick(i,t,tp0))if(q.id===id)v.push([q.h0,q.h1,'out','mk'+i,null,'stall']);break}}}catch(e){}return v}}
 {const tw0=tWhere;tWhere=function(T,b){const o=tw0.apply(this,arguments);try{if(b&&o&&WMK.tsp[b[3]]!=null)o.ry=WMK.tsp[b[3]]}catch(e){}return o}}
 // TSP spots exist from boot (plans may be read before the first market day): the keeper stands behind the counter
 W1S.forEach((s,i)=>{const c=Math.cos(s[3]),n=Math.sin(s[3]),lz=-s[5]/2+.42;TSP['mk'+i]=[+(s[1]+lz*n).toFixed(2),+(s[2]+lz*c).toFixed(2),0,'the '+s[6]+' stall'];WMK.tsp['mk'+i]=s[3]});
@@ -15501,7 +15577,7 @@ W1S.forEach((s,i)=>{const c=Math.cos(s[3]),n=Math.sin(s[3]),lz=-s[5]/2+.42;TSP['
  const lt0=LOFX.tev;LOFX.tev=(act,t,live)=>{if(!act||act.ev!=='market'||!e||!w1Win(t))return lt0(act,t,live);i5Base(act,t,act.p,act.p+'.'+act.ev);try{bondAdd('gus',2,'event',t)}catch(_){}
   addEntry('Town',pick(['Winter Market Morning in Lantern Square. Gus was roasting chestnuts, Hollis had his ornaments out and Honey\'s beeswax candles smelled like honey. I just floated around smelling everything.','Winter Market Morning under the big tree. Gus gave me a chestnut that was too hot to hold. I held it anyway. Hollis hung a tiny ornament on my, um, me.']),e.where||'Lantern Square',t);return e.id}}
 // ---- market-night grade: on B41's 'market' key the mids go down (S2c night targets; near-white lights are protected by the grade's gkP)
-{const g0=b41Grade;b41Grade=function(){const r=g0.apply(this,arguments);try{const m=(GK.w&&GK.w.market)||0;WMK.gw=m;if(m>0&&WMK.on)GK.G.multiplyScalar(1-Math.min(.4,WMK.dim*m*(TIER.n>=3?1:TIER.n>=2?.6:.3)))}/* fix1: the phone tiers keep the S2c market key almost as is (L50 toward 70-80); HIGH/ULTRA take a little more for their bloom */catch(e){}return r}}
+{const g0=b41Grade;b41Grade=function(){const r=g0.apply(this,arguments);try{const m=(GK.w&&GK.w.market)||0;WMK.gw=m;if(m>0&&WMK.on)GK.G.multiplyScalar(1-Math.min(.4,WMK.dim*m*(TIER.n>=3?.5:TIER.n>=2?.4:0)))}/* fix1 (win2): ULTRA/HIGH take half as much (ULTRA lantern-square L50 was 41), the phone none (toward L50 70) *//* fix1: the phone tiers keep the S2c market key almost as is (L50 toward 70-80); HIGH/ULTRA take a little more for their bloom */catch(e){}return r}}
 PREWARM.add('w1:market',()=>{const g=new THREE.Group(),b=new THREE.BoxGeometry(.1,.1,.1);for(const m of [BAKEMI,PBM.win,PBM.sign])g.add(new THREE.Mesh(b,m));g.add(new THREE.InstancedMesh(hBulbG,hBulbM,1));return g});
 const W1SH={market:[-27,35,1.45,19,.7],/* fix1: from the east, high, across the square to Town Hall: 4 of 6 stalls, the tree on the left, the heron fountain to the right (was 1 stall, fountain-filled) */square:[-26,29.3,Math.PI,9.5,.7],/* fix1: higher and closer, so the planter shrub behind the walker leaves the bottom of the frame */ov:[-29,33,1.2,34,.82]};// [walker x,z, yaw, dist, pitch]
 // ---- shots (B42 shotMode): the winter market frames the stalls and the tree; the square shot keeps the planter maple out of the lens
@@ -15539,6 +15615,97 @@ if(SEASON_KEY==='winter'||w1Win()){try{wsnFlag()}catch(e){WSN.err=String(e&&e.me
 {const ns0=npcStatus;npcStatus=function(id){try{const n=TN[id],b=n&&n.b;if(b&&b[5]==='stall'&&/^mk\d$/.test(b[3])){const q=W1S[+b[3].slice(2)];if(q)return n.walk?`walking to the ${q[6]} stall`:`minding the ${q[6]} stall at the winter market`}}catch(e){}return ns0.apply(this,arguments)}}
 {const H=m=>{const mk=m.market;if(typeof mk!=='function'||mk.w2)return;const f=o=>{const r=mk(o);try{const i=tamInfo();r.tamarack={here:i.here,pos:i.pos,act:i.act,phase:i.phase}}catch(e){}return r};f.w2=1;m.market=f;m.tamNav=o=>{o=o||{};if(o.path)return tamSeg([],o.path[0],o.path[1],o.path[2],o.path[3]);if(o.free)return tamFree(o.free[0],o.free[1]);return{spots:TAMS.map(q=>[q.x,q.z,q.n]),inn:[TAMIN.x,TAMIN.z],grids:TAMNV.n1,key:TAMNV.k}}};STYLE.hooks.push(H);H(window.__mocha)}
 // MERGE-W1W2-END
+// ====================================================================
+//  W3 WINTER MARKET LOOK POLISH (Nov 7 pm), toward the owner's s5 picture: trodden lavender snow on the plaza, paths and lawns (PATCH 'g', December
+//  only: 1 program), a glowing fir-green town tree (foliage on its own night-lit 'fol' clone of BAKEMI), lit stall interiors ('glow' clone: back
+//  panel + goods), a hanging lantern per stall, a fir rope garland with warm bulbs on the square's lines, snow on low roof planes (per-material
+//  snowY on the 'n' patch for roof-coloured materials), HIGH/ULTRA halo cap for the tree and stalls, re-framed December shots. Hook: market()
+//  gains snowGround, tone (o.tone=1 measures the frame), garland and occ. Only wraps/rebinds W1 functions; nothing outside the window changes.
+// ====================================================================
+const W3={R:seeded(3131),mode:null,s:null,hk:'',ft:0,rt:0,rec:0,recT:-1,gTgt:0,gOn:0,mats:0,tone:null,err:null,ns:0,lan:[],
+  glowM:null,folM:null,snwM:null,slowT:0,tail:0,win0:null,jmp:0,sq:[-26,30.5,Math.PI,9.5,.8],mk:[-28.2,37.4,1.72,13.5,.66],ov:[-27,30,1.2,38,1.05]};// fix1: the market and overview walker spots sit outside the fountain collider (the market was (-29.5,35.5), inside it, so the frame depended on the previous shot); the December overview is higher and steeper so the near roof leaves most of the bottom// W3 poses [walker x,z,yaw,dist,pitch]: the square looks south over the walker, steeper (the north garland line falls below him, not across his head); the market looks WSW from the east edge: the lit tree large on the left, the cocoa, chestnut and knits stalls behind, no post up the middle
+const SNOWG={value:0},SNOWGE={value:new THREE.Color(0,0,0)};
+{const mk=(e)=>{const m=BAKEMI.clone();m.emissive=new THREE.Color(e);m.emissiveIntensity=0;m.name='W3'+e;return m};W3.glowM=mk('#C98A4C');W3.folM=mk('#3F7A3A');W3.snwM=mk('#000000');W3.snwM.emissiveIntensity=1;W3.glowM.userData.w3=W3.folM.userData.w3=W3.snwM.userData.w3=1}// fix1: snwM = the tree's snow tiers, stall roof snow and the fountain lip/ice, with the ground snow's night lavender lift
+// ---- PATCH 'g': snow over the ground (world xz value noise, so trodden brick shows through on the plaza; gsA=1 covers lawns fully); emissive lift keeps it lavender at night
+PATCH.push({id:'g',test:m=>m.userData.gsnow!=null&&!!m.isMeshToonMaterial&&bendOK(m),apply(sh,m){if(!sh.vertexShader.includes('#include <begin_vertex>')||!sh.fragmentShader.includes('#include <color_fragment>')||!sh.fragmentShader.includes('#include <emissivemap_fragment>'))return;
+  sh.uniforms.gsK=SNOWG;sh.uniforms.gsE=SNOWGE;sh.uniforms.gsA={value:+m.userData.gsnow||0};// fix1: gsA -1 = masked cover (the town's batched vc chunks: only low, flat, green faces, i.e. the lawns); applied after color_fragment so vertex colours never tint the snow
+  sh.vertexShader='varying vec4 vGw;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n{vec4 gw=modelMatrix*vec4(transformed,1.);vGw=vec4(gw.xz,gw.y,normalize(mat3(modelMatrix)*objectNormal).y);}');
+  sh.fragmentShader='uniform float gsK;uniform float gsA;uniform vec3 gsE;varying vec4 vGw;\nfloat gsH(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}\nfloat gsN(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(gsH(i),gsH(i+vec2(1.,0.)),f.x),mix(gsH(i+vec2(0.,1.)),gsH(i+vec2(1.,1.)),f.x),f.y);}\n'+
+   sh.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat gsC;{float ga=gsA,gm=1.;if(gsA<-.5){ga=1.;gm=(1.-step(.3,vGw.z))*step(.9,vGw.w);\n#ifdef USE_COLOR\ngm*=step(vColor.r*1.15,vColor.g)*step(vColor.b*1.2,vColor.g);\n#else\ngm=0.;\n#endif\n}float n=gsN(vGw.xy*.42)*.55+gsN(vGw.xy*1.6)*.3+gsN(vGw.xy*5.3)*.15;gsC=gsK*gm*mix(smoothstep(.2,.45,n),1.,ga);}\ndiffuseColor.rgb=mix(diffuseColor.rgb,vec3(.9,.89,.95),gsC);')
+   .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance+=gsE*gsC;')}});
+function w3GroundFlag(){if(W3.gOn)return;W3.gOn=1;for(const [m,a] of [[autHerrM,0],[autSlabM,.1],[autSett2M,0],[autWalkM,.3],[roadMat,0],[groundMat,1]]){if(!m||!m.isMaterial)continue;m.userData.gsnow=a;m.needsUpdate=true;W3.mats++}w3VcFlag()}
+// fix1: the lawns inside the town's batched vc chunks (PBM.vcS, flagged by wsnFlag) take the masked cover too (0 draws; it replaces vcS's program, so +0 programs)
+function w3VcFlag(){const m=PBM.vcS;if(!m||m.userData.gsnow!=null)return;m.userData.gsnow=-1;m.needsUpdate=true;W3.mats++}
+// snowed in the last 24 h (the almanac) or snowing now (what you see)
+function w3Recent(t){const hr=Math.floor(t/36e5);if(hr===W3.recT)return W3.rec;W3.recT=hr;let r=0;try{for(let k=0;k<=24&&!r;k++)if(WX.at(t-k*36e5)==='snow')r=1}catch(e){}return W3.rec=r}
+function w3GroundTgt(){const t=Date.now(),win=w1Win(t);if(!win&&!W3.tail)return 0;let k=0;try{if(WEATHER.kind==='snow')k=1;else k=Math.max(Math.min(1,B41.SN*3),w3Recent(t))}catch(e){}if(!win&&k<=0)W3.tail=0;return k}// fix1: past the Jan 7 edge (a live crossing) the snow stays until it stops and the day-after rule lapses
+// ---- the 'n' roof patch takes a per-material eave height (snowY, default 2.6): roof-coloured materials snow down to .9 m (the station's lower slope, porch roofs)
+{const a0=PATCHI.n.apply;PATCHI.n.apply=function(sh,m){a0.call(this,sh,m);if(sh.fragmentShader.includes('smoothstep(2.4,2.8,vSn.x)')){sh.uniforms.snowY={value:(m&&m.userData.snowY)||2.6};sh.fragmentShader='uniform float snowY;\n'+sh.fragmentShader.replace('smoothstep(2.4,2.8,vSn.x)','smoothstep(snowY-.2,snowY+.2,vSn.x)')}
+  const R=/diffuseColor\.rgb=mix\(diffuseColor\.rgb,vec3\(\.957,\.973,\.988\),(snowK\*[^;]*)\);/;if(R.test(sh.fragmentShader)&&sh.fragmentShader.includes('#include <emissivemap_fragment>')){sh.uniforms.snE=SNOWGE;// fix1: roof snow takes the ground snow's night lavender lift (it read as grey ash beside the lit ground)
+   sh.fragmentShader='uniform vec3 snE;\n'+sh.fragmentShader.replace(R,'float snM=$1;diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.957,.973,.988),snM);').replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance+=snE*1.25*snM;')}}}
+function w3RoofY(){const rc=new Set();for(const p of PLACES)if(p.roof)rc.add(new THREE.Color(p.roof).getHex());try{for(const k in POL.roofC)rc.add(new THREE.Color(POL.roofC[k]).getHex())}catch(e){}const seen=new Set();
+  for(const p of PLACES){if(!p.obj)continue;p.obj.traverse(o=>{if(!o.isMesh)return;for(const m of Array.isArray(o.material)?o.material:[o.material]){if(!m||seen.has(m)||!m.userData.snow||!m.color)continue;seen.add(m);if(rc.has(m.color.getHex())&&!m.userData.snowY){m.userData.snowY=.9;m.needsUpdate=true;W3.ns++}}})}}
+{const f0=wsnFlag;wsnFlag=function(){const d=WSN.done,r=f0.apply(this,arguments);if(!d)try{w3RoofY();if(W3.gOn)w3VcFlag()}catch(e){W3.err='roofY:'+e.message}return r}}
+if(WSN.done)try{w3RoofY()}catch(e){W3.err='roofY:'+e.message}
+// ---- re-keying W1's parts while W1 builds: stall back panels and goods -> 'glow', fir puffs and tree tiers -> 'fol' (deep fir green)
+const W3FIR=['#2F6B45','#2A6340','#357249','#2C6842'];
+function w3Key(g,col,lx,ly,lz){const M=W3.mode;if(M==='tree'){if(col==='#F0EEF6')return['snw',null];if(g===W1G.sph||g===W1G.c8)return null;return['fol',dJit(W3FIR[Math.floor(W3.R()*4)],W3.R,.04)]}
+  if((M==='stall'||M==='mk')&&(col===W1K.snow||col===W1K.lip||col===W1K.ice))return['snw',null];
+  if(g===W1G.ico)return['fol',dJit(W3FIR[Math.floor(W3.R()*4)],W3.R,.06)];
+  if(M==='stall'){const s=W3.s,w=s[4],d=s[5];if(col===W1K.pl)return['glow','#EBC9A0'];if(g!==W1G.pl&&ly>1.06&&ly<1.95&&lz>d/2-.64&&lz<d/2-.04&&Math.abs(lx)<w/2-.08)return['glow',null]}return null}
+function w3Mats(){const B=W1B;if(!B||B.w3)return;B.w3=1;const b0=B.build;B.build=function(M,sh,par){const s=sh&&typeof sh==='object'?Object.assign({},sh,{fol:!!sh.vc&&W3.mode==='tree',glow:false,snw:false}):sh;return b0.call(this,Object.assign({},M,{glow:W3.glowM,fol:W3.folM,snw:W3.snwM}),s,par)}}
+{const p0=w1P;w1P=function(k,g,col,lx,ly,lz,sx,sy,sz,ry,rz,rx,uv){if(W3.mode&&k==='vc'){const r=w3Key(g,col,lx,ly,lz);if(r){k=r[0];if(r[1])col=r[1];w3Mats()}}return p0.call(this,k,g,col,lx,ly,lz,sx,sy,sz,ry,rz,rx,uv)}}
+// a small lantern hangs from each stall's front eave (frame BAKEMI, glass PBM.win, a soft halo that toggles with the market), plus warm bulbs along both side eaves
+function w3StallAdd(s){const [id,x,z,ry,w,d]=s,G=W1G,hp=2.3,half=d/2+.36,lx=w/2-.32,lz=half-.12,ly=hp-.55,F='#2F2A26';
+  w1P('vc',G.box,F,lx,hp-.2,lz,.012,.3,.012);w1P('vc',G.k4,F,lx,ly+.17,lz,.11,.1,.11,Math.PI/4);w1P('vc',G.box,F,lx,ly-.12,lz,.15,.025,.15);for(const [a,b] of [[-1,-1],[1,-1],[-1,1],[1,1]])w1P('vc',G.box,F,lx+a*.065,ly+.01,lz+b*.065,.014,.24,.014);
+  w1P('win',G.box,'#FFE2B0',lx,ly+.01,lz,.11,.2,.11);const p=w1W(lx,lz);const i=glowPt(p[0],ly,p[1],'#FFC27A',.9,0,1,'w3');if(i>=0){WMK.cand.push(i);W3.lan.push(i)}
+  for(const sx of [-1,1])for(let j=0;j<4;j++){const u=(j+.5)/4,lzz=-half+.2+u*(2*half-.4);w1P('win',G.ico,'#FFD89A',sx*(w/2+.22),hp-.06-.05*Math.sin(u*Math.PI),lzz,.045,.045,.045)}}// fix1: 20-tri bulbs (were spheres)
+{const s0=w1Stall;w1Stall=function(s,i,R){W3.mode='stall';W3.s=s;try{const r=s0.apply(this,arguments);w3StallAdd(s);return r}finally{W3.mode=null;W3.s=null}}}
+{const f0=w1Fountain;w1Fountain=function(){W3.mode='mk';try{return f0.apply(this,arguments)}finally{W3.mode=null}}}
+// the square's lines: a dense fir rope (night-lit 'fol'), a warm bulb every third puff, bows at the lamps; a touch higher, little sag
+const W3GY=-.27,w3Sag=Lh=>Math.min(.6,Lh*.05);// fix1: the rope rides on the square's bunting wire (same curve as dWires' bunting segments, so the bare wire no longer sags below it)
+w1Garland=function(R){const G=W1G,K=W1K;W3.mode='mk';try{w1F(0,0,0);for(const [a,b] of POLBU){const Lh=Math.hypot(b[0]-a[0],b[2]-a[2]),sag=w3Sag(Lh),n=Math.round(Lh/.12);
+    for(let j=0;j<=n;j++){const p=dSpan(a,b,j/n,sag),y=p[1]+W3GY;w1P('vc',G.ico,'#2F6B45',p[0],y,p[2],.1,.085,.085,R()*6,R()*6,R()*6);if(j%3===1)w1P('win',G.ico,'#FFDFA8',p[0],y-.09,p[2],.055,.055,.055);else if(j%9===5)w1P('vc',G.sph,K.berry,p[0],y-.07,p[2]+.05,.035,.035,.035)}
+    for(const q of [a,b]){const y=q[1]+W3GY;for(const sx of [-1,1])w1P('vc',G.sph,K.bow,q[0]+sx*.13,y-.12,q[2],.14,.09,.06,0,sx*.45);w1P('vc',G.sph,'#8E2224',q[0],y-.13,q[2],.055,.055,.05)}}}finally{W3.mode=null}};
+// the tree: foliage tiers on 'fol' (deep fir green, lit at night), bigger 8-tri bulbs (read as a warm cone on the phone)
+{const t0=w1TreeBuild;w1TreeBuild=function(){W3.mode='tree';try{return t0.apply(this,arguments)}finally{W3.mode=null;try{if(WMK.tb)WMK.tb.forEach((b,i)=>{b[3]=i%3===2?'#FFC27A':i%3===1?'#FFE2B0':AUT.bulb})}catch(e){}}}}// fix1: a third of the bulbs gold (S2b), a third warm cream
+if(!W1G.oct)W1G.oct=KEEPG(new THREE.OctahedronGeometry(.11,0));// fix1: under W1's .135 (the .165 bulbs read as near-white diamonds)
+// ---- 4 Hz: ground snow ease, night emissives, the HIGH/ULTRA halo cap, December shots
+function w3Halo(){if(!WMK.on)return;const T=TIER.n,k=T>=3?.42:T>=2?.58:1,key=T+'|'+WMK.n+'|'+(WMK.tree&&WMK.tree.visible?1:0)+'|'+WMK.cand.length;if(key===W3.hk)return;W3.hk=key;const G=GLOWPTS;
+  const kt=T>=3?.3:k;if(WMK.tree&&WMK.tree.visible){WMK.star.forEach((i,j)=>{glowSet(i,(j?.75:.5)*kt);if(i>=0){G.Z[i]=(j?1.3:2.6)*(T>=3?.5:T>=2?.62:1);G.at.s.needsUpdate=true}});WMK.th.forEach(i=>glowSet(i,.2*kt))}// fix1: ULTRA's tree halos a little smaller and softer (its bloom)
+  WMK.cand.forEach(i=>glowSet(i,(W3.lan.includes(i)?.4:.5)*k))}
+function w3Frame(dt){if((W3.ft-=dt)>0)return;W3.ft=.25;const win=w1Win(),pn=performance.now();
+  if(W3.win0!=null&&win!==W3.win0){if(!W3.jmp)W3.slowT=pn+9e4;W3.tail=!win&&!W3.jmp&&SNOWG.value>.05?1:0}W3.win0=win;W3.jmp=0;// fix1: a live calendar crossing (Dec 1, Jan 7) eases over about a minute; hook jumps keep the 1.2 s ease
+  if(win&&!W3.gOn)w3GroundFlag();
+  const tg=W3.gTgt=w3GroundTgt(),el=W3.pt?Math.min(5,(pn-W3.pt)/1e3):.25,tau=pn<W3.slowT?20:1.2;W3.pt=pn;SNOWG.value+=(tg-SNOWG.value)*(1-Math.exp(-el/tau));if(Math.abs(tg-SNOWG.value)<.004)SNOWG.value=tg;const na=nightAmt||0;SNOWGE.value.setRGB(.19,.17,.27).multiplyScalar(na*.6+.08);
+  if(W3.glowM)W3.glowM.emissiveIntensity=.12+na*.5;if(W3.folM)W3.folM.emissiveIntensity=.03+na*.19;if(W3.snwM)W3.snwM.emissive.copy(SNOWGE.value).multiplyScalar(1.25);w3Halo();// fix1: a deeper fir at night (was .04+.3)
+  w3Poses(win)}
+function w3Poses(win){if(!W3.p0)W3.p0=[W1SH.square,W1SH.market,W1SH.ov];W1SH.square=win?W3.sq:W3.p0[0];W1SH.market=win?W3.mk:W3.p0[1];W1SH.ov=win&&W3.ov?W3.ov:W3.p0[2]}
+{const j0=w1Jump;w1Jump=function(){W3.jmp=1;return j0.apply(this,arguments)}}// a hook/test calendar jump is not a live crossing
+{const f0=b41Frame;b41Frame=function(dt){const r=f0.apply(this,arguments);try{w3Frame(dt)}catch(e){if(!W3.err)W3.err='frame:'+e.message}return r}}
+if(w1Win())try{w3GroundFlag();w3Poses(true)}catch(e){W3.err='flag:'+e.message}
+PREWARM.add('w3:market',()=>{const g=new THREE.Group(),b=new THREE.BoxGeometry(.1,.1,.1);for(const m of [W3.glowM,W3.folM,W3.snwM])g.add(new THREE.Mesh(b,m));return g});
+// fix1: within 36 h before Dec 1 the ground-snow variants compile at boot (flagged clones, kept so their programs stay cached), so the live crossing compiles nothing new
+PREWARM.add('w3:ground',()=>{const t=Date.now();if(w1Win(t)||!w1Win(t+1296e5))return null;const g=new THREE.Group(),b=new THREE.BoxGeometry(.1,.1,.1),L=W3.pw=[];
+  for(const m of [autHerrM,autSlabM,autSett2M,autWalkM,roadMat,groundMat]){if(!m||!m.isMaterial)continue;const c=m.clone();c.userData=Object.assign({},m.userData,{gsnow:1});L.push(c)}
+  if(PBM.vc){const c=PBM.vc.clone();c.userData=Object.assign({},PBM.vc.userData,{snow:1,gsnow:-1});L.push(c)}for(const c of L)g.add(new THREE.Mesh(b,c));return g});
+// ---- measures for the hook: the night tone of the current frame (one synchronous render, like polMeasure), the garland vs the walker's head, foreground occluders
+function w3Tone(){const gl=renderer.getContext(),W=gl.drawingBufferWidth,H=gl.drawingBufferHeight;renderer.setRenderTarget(TIER.rt||rt);bendCull=true;renderer.render(scene,camera);bendCull=false;renderer.setRenderTarget(null);renderer.render(postScene,postCam);
+  const px=new Uint8Array(W*H*4);gl.readPixels(0,0,W,H,gl.RGBA,gl.UNSIGNED_BYTE,px);const L=[];let n=0,warm=0,cool=0,lit=0;const st=Math.max(2,Math.round(Math.sqrt(W*H/40000)));
+  for(let y=0;y<H;y+=st)for(let x=0;x<W;x+=st){const i=(y*W+x)*4,r=px[i]/255,g=px[i+1]/255,b=px[i+2]/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=.2126*r+.7152*g+.0722*b;n++;L.push(l*255);if(l*255>=215)lit++;
+    const s=mx?(mx-mn)/mx:0;if(s<.12||mx<.08)continue;let h=0;if(mx===r)h=((g-b)/(mx-mn))%6;else if(mx===g)h=(b-r)/(mx-mn)+2;else h=(r-g)/(mx-mn)+4;h*=60;if(h<0)h+=360;if(h<70||h>330)warm++;else if(h>170&&h<290)cool++}
+  L.sort((a,b)=>a-b);const q=f=>Math.round(L[Math.min(L.length-1,Math.floor(L.length*f))]||0);return W3.tone={L50:q(.5),L95:q(.95),warm:Math.round(100*warm/n),cool:Math.round(100*cool/n),lights:+(100*lit/n).toFixed(1),tier:TIER.n,w:W,h:H}}
+const _w3v=new THREE.Vector3();
+function w3Scr(x,y,z){_w3v.set(x,y,z).project(camera);return[(_w3v.x*.5+.5)*innerWidth,(.5-_w3v.y*.5)*innerHeight,_w3v.z]}
+function w3Garl(){camera.updateMatrixWorld();const hd=w3Scr(YOU.x,1.45,YOU.z),ft=w3Scr(YOU.x,.05,YOU.z),tp=w3Scr(YOU.x,2.05,YOU.z),hw=Math.max(14,Math.abs(tp[1]-ft[1])*.32),x0=hd[0]-hw,x1=hd[0]+hw,y0=tp[1]-6,y1=hd[1]+Math.abs(hd[1]-tp[1])*.6;let cross=0,dmin=1e9;
+  for(const [a,b] of POLBU){const Lh=Math.hypot(b[0]-a[0],b[2]-a[2]),sag=w3Sag(Lh);for(let j=0;j<=60;j++){const p=dSpan(a,b,j/60,sag),s=w3Scr(p[0],p[1]+W3GY-.02,p[2]);if(s[2]>1)continue;dmin=Math.min(dmin,Math.hypot(s[0]-hd[0],s[1]-hd[1]));if(s[0]>x0&&s[0]<x1&&s[1]>y0&&s[1]<y1)cross=1}}
+  return{cross:!!cross,headPx:Math.round(dmin),head:[Math.round(hd[0]),Math.round(hd[1])]}}
+function w3Occ(){camera.updateMatrixWorld();const rc=new THREE.Raycaster(),c=new THREE.Vector2(),dT=camera.position.distanceTo(_w3v.set(YOU.x,1,YOU.z)),L=[];scene.traverse(o=>{if((o.isMesh||o.isInstancedMesh)&&!o.isPoints&&o.name!=='pq-halo'&&!(o.material&&o.material.transparent&&o.material.opacity<.5))L.push(o)});
+  const vis=o=>{for(let q=o;q;q=q.parent){if(!q.visible)return false;if(q===WMK.tree||q===WMK.g||q===HOL.g||q===mocha||q===visitor||q.userData.castId!=null)return false}return true},ok=q=>vis(q.object),c2=new THREE.Vector2();/* fix1: characters (Mocha, the walker, townsfolk, Tamarack) are not scenery occluders *//* the tree and the stalls are the subject, not occluders */let near=0,n=0,mid=0,nm=0;const big={};
+  for(let gy=0;gy<9;gy++)for(let gx=0;gx<5;gx++){c.set(-.8+gx*.4,-.8+gy*.2);rc.setFromCamera(c,camera);const cm=gx>=1&&gx<=3&&gy<=5;rc.far=cm?Math.max(.5,dT-1.2):dT*.5;n++;const h=rc.intersectObjects(L,false).find(q=>ok(q)&&Math.hypot(q.point.x-YOU.x,q.point.z-YOU.z)>1.1);if(cm)nm++;if(h&&h.point.y>.8){if(h.distance<=dT*.5)near++;if(cm){c2.set(c.x,c.y+.02);rc.setFromCamera(c2,camera);const h2=rc.intersectObjects(L,false).find(ok);if(h2&&Math.abs(h2.distance-h.distance)<1)mid++}/* a hit counts in mid only if a ray .02 NDC higher meets it too (a thin wire does not; a post or a roof does) *//* fix1: mid = the lower 60% of the centre columns, cast all the way to the walker (the half-distance probe missed a post at 0.6 of the way) *//* ground hits are not occluders; mid = the centre columns ('up the middle') */const k=(h.object.name||h.object.userData.batch||h.object.type)+'<'+((h.object.parent&&(h.object.parent.name||h.object.parent.type))||'')+'@'+h.point.toArray().map(v=>Math.round(v)).join(',');big[k]=(big[k]||0)+1}}
+  return{share:+(near/n).toFixed(2),mid:+(mid/Math.max(1,nm)).toFixed(2),by:big,camDist:+dT.toFixed(1)}}
+{const H=m=>{const mk=m.market;if(typeof mk!=='function'||mk.w3)return;const f=o=>{o=o||{};const r=mk(o);try{r.snowGround={k:+SNOWG.value.toFixed(3),target:W3.gTgt,flagged:W3.gOn?W3.mats:0,on:SNOWG.value>.5,roofLow:W3.ns};r.tone=o.tone?w3Tone():W3.tone;if(o.garland)r.garland=w3Garl();if(o.occ)r.occ=w3Occ();r.w3={err:W3.err,glow:W3.glowM.emissiveIntensity,fol:W3.folM.emissiveIntensity,lanterns:W3.lan.length,poses:{square:W3.sq,market:W3.mk}}}catch(e){r.w3err=e.message}return r};f.w3=1;m.market=f;m.w3dbg=()=>({W3,SNOWG,SNOWGE,W1SH,WMK,POLBU})};STYLE.hooks.push(H);H(window.__mocha)}
+// W3-END
 })();
 </script>
 </body>
